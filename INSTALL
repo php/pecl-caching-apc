@@ -212,7 +212,7 @@ users should consider tuning the following parameters:
     apc.optimization        The optimization level. Zero disables the
                             optimizer, and higher values use more aggressive
                             optimizations. Expect very modest speed
-                            improvements. Note: not implemented yet!!
+                            improvements. This is experimental.
                             (Default: 0)
     
     apc.num_files_hint      A "hint" about the number of distinct source files
