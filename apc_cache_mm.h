@@ -29,17 +29,18 @@ struct mm_fl_element {
 	char *input;			/* mmap'd address of the file */
 };
 
+extern const char *apc_generate_cache_filename(char *filename);
+
 /*
  * apc_mmap_dump: generates output for apcinfo()
  */
-extern void apc_mmap_dump(HashTable* cache, apc_outputfn_t outputfn);
+extern void apc_mmap_dump(HashTable* cache, const char * url, apc_outputfn_t outputfn);
 
 /*
  * apc_mmap_dump_entry: prints information about a specified
  * cache entry
  */
-extern void apc_mmap_dump_entry(const char* filename, apc_outputfn_t outputfn);
-
+extern int apc_mmap_dump_entry(const char* filename, apc_outputfn_t outputfn);
 #endif
 	
 	

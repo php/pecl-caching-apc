@@ -15,14 +15,43 @@
 
 #include "apc_cache_mm.h"
 #include "apc_nametable.h"
+#include "apc_fcntl.h"
 #include "php_apc.h"
+#include <sys/stat.h>
+#include <unistd.h>
+#include <sys/mman.h>
+#include <sys/types.h>
+#include <fcntl.h>
 
 extern zend_apc_globals apc_globals;
+
+/* apc_generate_cache_filename returns the path of the compiled 
+ * data file associated with a php file. If no cachedir is specified, 
+ * cache files will be created in the same dir as their parent cache file 
+ */
+
+const char *apc_generate_cache_filename(char *filename)
+{
+  static char cache_filename[1024];
+  char *cp;
+
+  if(APCG(cachedir) == NULL)
+  {
+    snprintf(cache_filename, sizeof(cache_filename), "%s_apc", filename);
+    return cache_filename;
+  }
+  else
+  {
+        snprintf(cache_filename, sizeof(cache_filename), "%s/%s_apc",
+        APCG(cachedir),filename);
+        return cache_filename;
+  }
+}
 
 /* apc_mmap_dump recurses through the called child's cache table,
  * displaying the objects and their hit counts */
 
-void apc_mmap_dump(HashTable* cache, apc_outputfn_t outputfn)
+void apc_mmap_dump(HashTable* cache, const char *url, apc_outputfn_t outputfn)
 {
 	Bucket *p;
  /* display HEAD */
@@ -78,45 +107,160 @@ void apc_mmap_dump(HashTable* cache, apc_outputfn_t outputfn)
 	outputfn("<br>\n");
 	outputfn("<br>\n");
 }	
-
-void apc_mmap_dump_entry(const char* filename, apc_outputfn_t outputfn)
+int apc_mmap_dump_entry(const char* filename, apc_outputfn_t outputfn)
 {
-//	struct mm_fl_element* in_elem;
-	HashTable function_table;		// in lieu of global function table
-	HashTable class_table;			// in lieu of global class table
-	apc_nametable_t* dummy;
-	zend_op_array op_array;
-	Bucket* p;
 
-//	if (zend_hash_find(cache, name, strlen(name) + 1, (void**) &in_elem) ==
-//		FAILURE)
-//	{
-//		outputfn("error: entry '%s' not found\n", name);
-//	}
-//
-//	if (!apc_load(in_elem->cache_filename)) {
-//		outputfn("error: could not open '%s'\n", in_elem->cache_filename):
-//	}
+    static const char NBSP[] = "&nbsp;";
+    unsigned slot;      /* initial hash value */
+    unsigned k;         /* second hash value, for open-addressing */
+    int nprobe;         /* running count of cache probes */
+    int nbuckets;
+    int i, n, fd;
+	char* input;
+	char* cache_filename;
 
-	if (!apc_load(filename)) {
-		outputfn("error: could not open '%s'\n", filename);
-	}
+    HashTable function_table;
+    HashTable class_table;
+    apc_nametable_t* dummy;
+    zend_op_array* op_array;
+	struct stat statbuf;
+    Bucket* p;
+	
+	cache_filename = apc_generate_cache_filename(filename);
+	op_array = (zend_op_array*) malloc(sizeof(zend_op_array));
+	zend_hash_init(&function_table, 13, NULL, NULL, 1);
+	zend_hash_init(&class_table, 13, NULL, NULL, 1);
+	dummy = apc_nametable_create(97);
 
-	apc_deserialize_zend_op_array(&op_array);
-	apc_deserialize_zend_function_table(&function_table, dummy);
-	apc_deserialize_zend_class_table(&class_table, dummy);
+    if( (n = stat(cache_filename, &statbuf)) < 0) {
+        outputfn("error: '%s' is not in the cache\n", filename);
+        return;
+    }
+    if( (fd = open(cache_filename, O_RDONLY)) < 0) {
+        outputfn("error: '%s' is not in the cache\n", filename);
+        return;
+    }
+    readw_lock(fd, 0, SEEK_SET, 0);
+    input = (char *) mmap(0, statbuf.st_size,  PROT_READ,
+        MAP_SHARED, fd, 0);
+    close(fd);
+    un_lock(fd, 0, SEEK_SET, 0);
 
-	outputfn("!!! functions !!!\n");
-	p = function_table.pListHead;
-  	while(p !=NULL) {
-		zend_function* zf = (zend_function*) p->pData;
-		outputfn("%s\n", zf->common.function_name);
-	}
-	outputfn("!!! classes !!!\n");
-	p = class_table.pListHead;
-  	while(p !=NULL) {
-		zend_class_entry* zc = (zend_class_entry*) p->pData;
-		outputfn("%s\n", zc->name);
-	}
+    apc_init_deserializer(input, statbuf.st_size);
+    apc_deserialize_zend_op_array(op_array);
+    apc_deserialize_zend_function_table(&function_table, dummy, dummy);
+    apc_deserialize_zend_class_table(&class_table, dummy, dummy);
+    munmap(input, statbuf.st_size);
+
+    /* begin outer table */
+    outputfn("<table border=0 cellpadding=2 cellspacing=1>\n");
+
+  /* begin first row of outer table */
+    outputfn("<tr>\n");
+
+    /* display bucket info */
+    outputfn("<td colspan=3 valign=top>");
+    outputfn("<table border=1 cellpadding=2 cellspacing=1>\n");
+    outputfn("<tr>\n");
+    outputfn("<td colspan=3 bgcolor=#dde4ff>Bucket Data</td>\n");
+    outputfn("<tr>\n");
+    outputfn("<td bgcolor=#ffffff>Scriptname</td>\n");
+    outputfn("<td bgcolor=#ffffff>Length (B)</td>\n");
+    outputfn("<td bgcolor=#ffffff>Create Time</td>\n");
+    outputfn("<tr>\n");
+    outputfn("<td bgcolor=#eeeeee>%s</td>\n", filename);
+    outputfn("<td bgcolor=#eeeeee>%d</td>\n", statbuf.st_size);
+    outputfn("<td bgcolor=#eeeeee>%d</td>\n", statbuf.st_mtime);
+    outputfn("</table>\n");
+    outputfn("</td>\n");
+
+    /* end first row of outer table */
+    outputfn("</tr>\n");
+
+
+    /* deserialize bucket and see what's inside */
+
+    /* begin second row of outer table */
+    outputfn("<tr>\n");
+
+    /* display opcodes in the entry */
+    outputfn("<td valign=top>");
+    outputfn("<table border=1 cellpadding=2 cellspacing=1>\n");
+    outputfn("<tr>\n");
+    outputfn("<td colspan=3 bgcolor=#dde4ff>OpCodes</td>\n");
+    outputfn("<tr>\n");
+    outputfn("<td bgcolor=#ffffff>Value</td>\n");
+    outputfn("<td bgcolor=#ffffff>Extended</td>\n");
+	outputfn("<td bgcolor=#ffffff>Line</td>\n");
+    for (i = 0; i < op_array->last; i++) {
+        const char* name;
+
+        outputfn("<tr>\n");
+
+        /* print the regular opcode, or '&nbsp;' if empty */
+        name = apc_get_zend_opname(op_array->opcodes[i].opcode);
+        outputfn("<td bgcolor=#eeeeee>%s</td>\n", name);
+
+        /* print the extended opcode, or '&nbsp;' if empty */
+        if (op_array->opcodes[i].opcode != ZEND_NOP &&
+            op_array->opcodes[i].opcode != ZEND_DECLARE_FUNCTION_OR_CLASS)
+        {
+            /* this opcode does not have an extended value */
+            name = NBSP;
+        }
+        else {
+            name = apc_get_zend_extopname(op_array->opcodes[i].extended_value);
+        }
+        outputfn("<td bgcolor=#eeeeee>%s</td>\n", name);
+
+        /* print the line number of the opcode */
+        outputfn("<td bgcolor=#eeeeee>%u</td>\n", op_array->opcodes[i].lineno);
+    }
+    outputfn("</table>\n");
+    outputfn("</td>\n");
+
+    /* display functions in the entry */
+    outputfn("<td valign=top>");
+    outputfn("<table border=1 cellpadding=2 cellspacing=1>\n");
+    outputfn("<tr>\n");
+    outputfn("<td bgcolor=#dde4ff>Functions</td>\n");
+    p = function_table.pListHead;
+    while (p) {
+        zend_function* zf = (zend_function*) p->pData;
+        outputfn("<tr>\n");
+        outputfn("<td bgcolor=#eeeeee>%s</td>\n",
+            zf->common.function_name);
+        p = p->pListNext;
+    }
+    outputfn("</table>\n");
+    outputfn("</td>\n");
+
+    /* display classes in the entry */
+    outputfn("<td valign=top>");
+    outputfn("<table border=1 cellpadding=2 cellspacing=1>\n");
+    outputfn("<tr>\n");
+    outputfn("<td bgcolor=#dde4ff>Classes</td>\n");
+    p = class_table.pListHead;
+    while (p) {
+        zend_class_entry* zc = (zend_class_entry*) p->pData;
+        outputfn("<tr>\n");
+        outputfn("<td bgcolor=#eeeeee>%s</td>\n", zc->name);
+        p = p->pListNext;
+    }
+    outputfn("</table>\n");
+    outputfn("</td>\n");
+
+    /* end second row of outer table */
+    outputfn("</tr>\n");
+
+    /* close outer table */
+    outputfn("</table>\n");
+
+    /* clean up */
+    zend_hash_clean(&class_table);
+    zend_hash_clean(&function_table);
+    destroy_op_array(op_array);
+    free(op_array);
+
+    return 0;
 }
-
