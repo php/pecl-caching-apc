@@ -202,6 +202,10 @@ PHP_GSHUTDOWN_FUNCTION(apc)
 /* exported function definitions */
 
 /* generates an html page with cache statistics */
+/* {{{ proto int apcinfo([string uri])
+	Generate detailed information about the cache.  If uri is passed, link
+	all objects to uri, for detailed object information and deleteion
+	tags. *.
 PHP_FUNCTION(apcinfo)
 {
 	zval** param;
@@ -224,9 +228,10 @@ PHP_FUNCTION(apcinfo)
 
 	RETURN_NULL();
 }
+/* }}} */
 
-/* takes 1 argument (the path to a php file) and removes it's associated
- * entry from the cache, using the implementation-specific method. */
+/* {{{ proto int apc_rm(string /path/to/object) 
+	Removes the specified object from the cache */
 PHP_FUNCTION(apc_rm)
 {
 	pval **zv;
@@ -254,16 +259,20 @@ PHP_FUNCTION(apc_rm)
 		RETURN_TRUE;
 	}
 }
+/* }}} */
 
-/* clears all elements from the cache.  Only works on shm implementation */
+/* {{{ proto int apc_reset_cache()
+	Removes all cache entries.  Only works under shm implementation */
 PHP_FUNCTION(apc_reset_cache)
 {
 	apc_reset_cache();
 	RETURN_TRUE;
 }
+/* }}} */
 
-/* takes an int.  sets the ttl of the calling file to be that length in
- * seconds.  Only supported under shm implementation. */
+/* {{{ proto int apc_set_my_ttl(int ttl)
+	Sets the ttl of the calling page to ttl seconds.  Only works under shm
+	implemntation. */
 PHP_FUNCTION(apc_set_my_ttl)
 {
 	pval **param;
@@ -276,9 +285,11 @@ PHP_FUNCTION(apc_set_my_ttl)
 	apc_set_object_ttl(zend_get_executed_filename(ELS_C), (*param)->value.lval);
 	RETURN_TRUE;
 }
+/* }}} */
 
-/* takes a string. displays information about the cache entry with the
- * same name.  */
+/* {{{ proto int apc_dump_cache_object(string /path/to/object)
+	Dumps the specified objects op_tree and its serialized function/class tables. 
+*/
 PHP_FUNCTION(apc_dump_cache_object)
 {
 	zval** param;
@@ -297,6 +308,7 @@ PHP_FUNCTION(apc_dump_cache_object)
 
 	RETURN_TRUE;
 }
+/* }}} */
 
 /* zend extension support */
 
