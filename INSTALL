@@ -26,7 +26,8 @@ apc.mode - See "Runtime configuration"
   apc.mode = shm
   # for using MMAP support 
   apc.mode = mmap
-	don't forget that you can't put comments on the same line as your ini options
+
+   don't forget that you can't put comments on the same line as your ini options
    See FAQ for pros and contras of SHM / MMAP support
 7) You're all set!
 
