@@ -175,17 +175,26 @@ int apc_ropen(const char* pathname, int flags, int mode)
 	return open(pathname, flags, mode);
 }
 
-const char* apc_rstat(const char* filename, const char* searchpath)
+const char* apc_rstat(const char* filename, const char* searchpath, struct stat *buf)
 {
 	static const char SEPARATOR = ':';
 	static char try[1024];	/* filename to try */
 	char* path;				/* working copy of searchpath */
 	char* p;				/* start of current path string */
 	char* q;				/* pointer to next SEPARATOR in path */
-	struct stat st;
 
 	if (!searchpath) {
 		return filename;
+	}
+
+	if(!filename) {
+		return filename;
+	}
+	/* if this is an absolute path return immediately */
+	if(*filename == '.' || *filename == '/') {
+		if(stat(filename, buf) == 0) {
+			return filename;
+		}
 	}
 	
 	p = path = apc_estrdup(searchpath);
@@ -195,7 +204,7 @@ const char* apc_rstat(const char* filename, const char* searchpath)
 			*q = '\0';
 		}
 		snprintf(try, sizeof(try), "%s/%s", p, filename);
-		if (stat(try, &st) == 0) {
+		if (stat(try, buf) == 0) {
 			free(path);
 			return try;
 		}
@@ -205,7 +214,7 @@ const char* apc_rstat(const char* filename, const char* searchpath)
 	} while ((p = q) != 0);
 
 	free(path);
-	return filename;
+	return NULL;
 }
 
 

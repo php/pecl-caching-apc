@@ -15,7 +15,8 @@
 
 #ifndef INCLUDED_APC_LIB
 #define INCLUDED_APC_LIB
-
+#include <sys/stat.h>
+#include <unistd.h>
 #include <stdlib.h>
 
 /* generic printf-like function ptr type */
@@ -47,7 +48,8 @@ extern double apc_timerreport(void);
 /* filesystem routines */
 
 extern int apc_ropen(const char *pathname, int flags, int mode);
-extern const char* apc_rstat(const char* filename, const char* searchpath);
+extern const char* apc_rstat(const char* filename, const char* searchpath, 
+	struct stat *buf);
 
 
 /* zend-related */
