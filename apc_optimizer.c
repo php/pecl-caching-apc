@@ -698,14 +698,14 @@ zend_op_array* apc_optimize_op_array(zend_op_array* op_array)
     jumps = build_jump_array(op_array);
     for (i = 0; i < op_array->last; i++) {
         Pair* p;
-		
+/* For some reason this optimization _still_ causes a major slowdown
         if ((p = peephole_inc(op_array->opcodes, i, op_array->last))) {
             if (!are_branch_targets(cdr(p), jumps)) {
                 rewrite_inc(op_array->opcodes, p);
             }
             RESTART_PEEPHOLE_LOOP;
         }
-        
+*/
         if ((p = peephole_print(op_array->opcodes, i, op_array->last))) {
             if (!are_branch_targets(cdr(p), jumps)) {
                 rewrite_print(op_array->opcodes, p);
