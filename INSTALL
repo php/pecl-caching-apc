@@ -13,7 +13,6 @@ apc.mode - See "Runtime configuration"
 # Compiling and installing as a Zend extension (post-PHP install)
 #################################################################
 
-0) Untar these sources and cd apc/
 1) Run phpize (this shouldn't be necessary after 1.0.10)
 2) Run ./configure --enable-apc --with-php-config=<path to php-config>
 3) Run make
