@@ -21,6 +21,7 @@
 
 #include "zend.h"
 #include "zend_API.h"
+#include "zend_execute.h"
 #include "zend_compile.h"
 #include "zend_extensions.h"
 

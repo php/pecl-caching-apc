@@ -19,11 +19,15 @@
 /* declarations of functions to be exported */
 PHP_FUNCTION(apcinfo);
 PHP_FUNCTION(apc_rm);
+PHP_FUNCTION(apc_purge_cache);
+PHP_FUNCTION(apc_set_my_ttl);
 
 /* list of exported functions */
 function_entry apc_functions[] = {
 	PHP_FE(apcinfo, NULL)
 	PHP_FE(apc_rm, NULL)
+	PHP_FE(apc_purge_cache, NULL)
+	PHP_FE(apc_set_my_ttl, NULL)
 	{NULL, NULL, NULL}
 };
 
@@ -195,7 +199,7 @@ PHP_FUNCTION(apc_rm)
 			WRONG_PARAM_COUNT;
       break;
   }
-	if(!apc_rm_cache_object(filename))
+	if(!apc_remove_cache_object(filename))
 	{
 		RETURN_FALSE;
 	}
@@ -204,6 +208,25 @@ PHP_FUNCTION(apc_rm)
 		RETURN_TRUE;
 	}
 }
+
+PHP_FUNCTION(apc_purge_cache)
+{
+	apc_reset_cache();
+	RETURN_TRUE;
+}
+
+PHP_FUNCTION(apc_set_my_ttl)
+{
+	pval **num;
+	if(ZEND_NUM_ARGS() !=  1 || zend_get_parameters_ex(1, &num) == FAILURE) 
+	{
+		WRONG_PARAM_COUNT;
+	}
+	convert_to_long_ex(num);
+	apc_set_object_ttl(zend_get_executed_filename(ELS_C), num);
+	RETURN_TRUE;
+}
+
 /* zend extension support */
 
 ZEND_DLEXPORT int apc_zend_startup(zend_extension *extension)
