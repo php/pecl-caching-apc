@@ -243,7 +243,9 @@ users should consider tuning the following parameters:
                             this is the mktemp-style file_mask to pass to the
                             mmap module for determing whether your mmap'ed memory
                             region is going to be file-backed or shared memory
-                            backed.  To use POSIX-style shm_open/mmap put a ".shm"
+                            backed.  For straight file-backed mmap, set it to
+                            something like /tmp/apc.XXXXXX (exactly 6 X's).
+                            To use POSIX-style shm_open/mmap put a ".shm"
                             somewhere in your mask.  eg.  "/apc.shm.XXXXXX"
                             You can also set it to "/dev/zero" to use your 
                             kernel's /dev/zero interface to anonymous mmap'ed 

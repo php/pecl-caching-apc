@@ -326,7 +326,7 @@ int apc_cache_make_key(apc_cache_key_t* key,
                        const char* filename,
                        const char* include_path)
 {
-    struct stat buf;
+    struct stat buf, *tmp_buf=NULL;
 
     assert(key != NULL);
 
@@ -334,8 +334,9 @@ int apc_cache_make_key(apc_cache_key_t* key,
         return 0;
 
     if(!strcmp(SG(request_info).path_translated, filename)) {
-        buf = *sapi_get_stat();  /* Apache has already done this stat() for us */
+        tmp_buf = sapi_get_stat();  /* Apache has already done this stat() for us */
     }
+    if(tmp_buf) buf = *tmp_buf;
     else if (stat(filename, &buf) != 0 &&
         apc_stat_paths(filename, include_path, &buf) != 0)
     {
