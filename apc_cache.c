@@ -50,16 +50,17 @@ struct segment_t {
 enum { EMPTY = -1, UNUSED = -2 };
 typedef struct bucket_t bucket_t;
 struct bucket_t {
-	char key[MAX_KEY_LEN+1];	/* bucket key */
-	int shmid;					/* shm segment where data is stored */
-	int offset;					/* pointer to data in shm segment */
-	int length;					/* length of stored data in bytes */
-	int lastaccess;				/* time of last access (unix timestamp) */
-	int hitcount;				/* number of hits to this bucket */
-	int createtime;				/* time of creation (Unix timestamp) */
-	int ttl;					/* private time-to-live */
-	int mtime;					/* modification time of the source file */
-	unsigned int checksum;		/* checksum of stored data */
+	char key[MAX_KEY_LEN+1];		/* bucket key (often same as filename) */
+	char filename[MAX_KEY_LEN+1];	/* name of cached file */
+	int shmid;						/* shm segment where data is stored */
+	int offset;						/* pointer to data in shm segment */
+	int length;						/* length of stored data in bytes */
+	int lastaccess;					/* time of last access (unix timestamp) */
+	int hitcount;					/* number of hits to this bucket */
+	int createtime;					/* time of creation (Unix timestamp) */
+	int ttl;						/* private time-to-live */
+	int mtime;						/* modification time of the source file */
+	unsigned int checksum;			/* checksum of stored data */
 };
 
 typedef struct header_t header_t;
@@ -399,7 +400,7 @@ int apc_cache_retrieve(apc_cache_t* cache, const char* key, char** dataptr,
 
 /* apc_cache_insert: insert entry into cache */
 int apc_cache_insert(apc_cache_t* cache, const char* key,
-	const char* data, int size, int mtime)
+	const char* filename, const char* data, int size, int mtime)
 {
 	int i;
 	unsigned slot;		/* initial hash value */
@@ -467,6 +468,7 @@ int apc_cache_insert(apc_cache_t* cache, const char* key,
 
 	/* update the cache */
 	strncpy(buckets[slot].key, key, MAX_KEY_LEN);
+	strncpy(buckets[slot].filename, filename, MAX_KEY_LEN);
 	buckets[slot].shmid      = segments[i].shmid;
 	buckets[slot].offset     = offset;
 	buckets[slot].length     = size;

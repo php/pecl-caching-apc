@@ -71,8 +71,8 @@ extern int apc_cache_retrieve(T cache, const char* key, char** dataptr,
  * modification time of the file is supplied in mtime, it can be compared
  * subsequently in apc_cache_retrieve
  */
-extern int apc_cache_insert(T cache, const char* key, const char* data,
-                            int size, int mtime);
+extern int apc_cache_insert(T cache, const char* key, const char* filename,
+                            const char* data, int size, int mtime);
 
 /*
  * apc_cache_remove: removes a mapping from the cache

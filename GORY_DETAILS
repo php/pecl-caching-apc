@@ -44,6 +44,16 @@ If the file is deserialized when it is encountered for the first time and compil
 
 Our solution is to remember which files we have seen -- and compiled or deserialized -- during a particular request and remember exactly which functions and classes belonged to that file. Before we process a file we have seen before, we remove its functions and classes from the global tables and from the accumulator tables. This essentially returns the relevant parts of the compiler to the state they were in before we compiled the file for the first time.  
 
+* Class Inheritance
+
+Another sticky issue is supporting class hierarchies. When PHP compiles a derived class (i.e., a class that extends another class), it indicates that its inheritance relationships must be resolved at run time. Thus, when the derived class declaration is encountered during execution, PHP adds the base class's functions and data members to the child class, i.e., it merges the function and properties tables. Because classes must be declared in descending order of the class hierarchy, base classes are guaranteed to be fully inherited (from their base classes) before any derived classes are declared (assuming the PHP code is correct!).
+
+Unfortunately, we must resolve the class inheritance relationships ourselves, rather than at run time, because of the rare instance in which a file is included twice during a single request, the first time read from the cache, the second time compiled. (See "Wrinkles and Complications" above for more details on this problem.)
+
+Our solution is to remember deferred inheritance relationships as we encounter them and resolve them on demand. When we find a derived class declaration opcode, we find the class's base class and remember this base-derived relationship. Whenever we deserialize a class from the cache, we resolve every deferred inheritance relationship in which it is the base class. Because this is performed in the reverse order of the class hierarchy, that is, bottom-up instead of top-down, we must recursively inherit not only from the base class to all its direct children, but to its grandchildren, great-grandchildren, and so on.
+
+This is clearly not as efficient as the normal operation of PHP, but for most practical class hierarchies, the additional overhead should not be an issue. We welcome new ideas for implementing this.
+
 * Limitations
 
 Blah blah blah
