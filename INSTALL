@@ -234,11 +234,11 @@ users should consider tuning the following parameters:
 
     apc.ttl                 The number of seconds a cache entry is allowed to
                             idle in a slot in case this cache entry slot is 
-			    needed by another entry.  Leaving this at zero
-			    means that your cache could potentially fill up
-			    with stale entries while newer entries won't be
-			    cached.  
-			    (Default: 0)
+                            needed by another entry.  Leaving this at zero
+                            means that your cache could potentially fill up
+                            with stale entries while newer entries won't be
+                            cached.  
+                            (Default: 0)
 
     apc.gc_ttl              The number of seconds that a cache entry may
                             remain on the garbage-collection list. This value
@@ -252,20 +252,20 @@ users should consider tuning the following parameters:
 
     apc.cache_by_default    On by default, but can be set to off and used in
                             conjunction with positive apc.filters so that files
-			    are only cached if matched by a positive filter.
-			    (Default: On)
+                            are only cached if matched by a positive filter.
+                            (Default: On)
 
     apc.filters             A comma-separated list of POSIX extended regular
                             expressions. If any pattern matches the source
                             filename, the file will not be cached. Note that
                             the filename used for matching is the one passed
                             to include/require, not the absolute path.  If the
-			    first character of the expression is a + then the
-			    expression will be additive in the sense that any
-			    files matched by the expression will be cached, and
-			    if the first character is a - then anything matched
-			    will not be cached.  The - case is the default, so
-			    it can be left off.
+                            first character of the expression is a + then the
+                            expression will be additive in the sense that any
+                            files matched by the expression will be cached, and
+                            if the first character is a - then anything matched
+                            will not be cached.  The - case is the default, so
+                            it can be left off.
                             (Default: "")
 
     apc.mmap_file_mask      If compiled with MMAP support by using --enable-mmap
