@@ -250,7 +250,7 @@ static void rewrite_const_cast(zend_op* ops, Pair* p)
         convert_to_null(&convert);
         break;
       case IS_BOOL:
-        convert_to_bool(&convert);
+        convert_to_boolean(&convert);
         break;
       case IS_LONG:
         convert_to_long(&convert);
