@@ -26,6 +26,8 @@ if test "$PHP_APC" != "no"; then
   dnl Write more examples of tests here...
   PHP_EXTENSION(apc, $ext_shared)
 fi
+
+dnl Check for system type.
 AC_DEFUN(AC_SYSTEM,[
 	AC_MSG_CHECKING([system type])
 	SYSTEM="`uname -s | tr a-z A-Z`"
@@ -42,4 +44,5 @@ case $SYSTEM in
 	*SUNOS*)
 		AC_DEFINE(__SUNOS__, 1, [ ])
 		;;
+	dnl else define nothing
 esac
