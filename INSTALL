@@ -38,7 +38,7 @@ apc.mode - See "Runtime configuration"
 0) Untar these sources into PHP_SRC_DIR/ext/apc/
 1) In the top-level directory of the php source tree, run autoconf
 2) Run ./configure --enable-apc <whatever other compile flags you want>
-3) make; make install
+3) make;  make install
 4) in your php.ini file add the line
         apc.mode = off # for switching off the APC
         apc.mode = shm # for using SHM support
