@@ -96,7 +96,7 @@ extern void apc_cache_clear(T cache);
  * value is a cache entry returned by apc_cache_make_entry (see below).
  */
 extern int apc_cache_insert(T cache, apc_cache_key_t key,
-                            apc_cache_entry_t* value);
+                            apc_cache_entry_t* value, time_t t);
 
 /*
  * apc_cache_find searches for a cache entry by filename, and returns a
@@ -104,7 +104,7 @@ extern int apc_cache_insert(T cache, apc_cache_key_t key,
  *
  * key is a value created by apc_cache_make_key.
  */
-extern apc_cache_entry_t* apc_cache_find(T cache, apc_cache_key_t key);
+extern apc_cache_entry_t* apc_cache_find(T cache, apc_cache_key_t key, time_t t);
 
 /*
  * apc_cache_release decrements the reference count associated with a cache

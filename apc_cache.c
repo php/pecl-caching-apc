@@ -20,10 +20,6 @@
 #include "apc_lock.h"
 #include "apc_sma.h"
 #include "SAPI.h"
-#if HAVE_APACHE
-#include "httpd.h"
-#endif
-
 
 /* TODO: rehash when load factor exceeds threshold */
 
@@ -254,13 +250,36 @@ void apc_cache_clear(apc_cache_t* cache)
 }
 /* }}} */
 
+/* {{{ apc_cache_expunge */
+void apc_cache_expunge(apc_cache_t* cache, time_t t)
+{
+    int i;
+    slot_t *p;
+
+    if(!cache || (cache && !cache->ttl)) return;
+
+    LOCK(cache);
+    for (i = 0; i < cache->num_slots; i++) {
+        p = cache->slots[i];
+        while(p) {
+            if(p->access_time < (t - cache->ttl)) {
+                remove_slot(cache, &p);
+                continue;
+            }
+            p = p->next;
+        }
+    }
+    UNLOCK(cache);
+}
+/* }}} */
+
 /* {{{ apc_cache_insert */
 int apc_cache_insert(apc_cache_t* cache,
                      apc_cache_key_t key,
-                     apc_cache_entry_t* value)
+                     apc_cache_entry_t* value,
+                     time_t t)
 {
     slot_t** slot;
-    time_t t;
 
     if (!value) {
         return 0;
@@ -270,14 +289,6 @@ int apc_cache_insert(apc_cache_t* cache,
     process_pending_removals(cache);
 
     slot = &cache->slots[hash(key) % cache->num_slots];
-
-#if HAVE_APACHE
-    /* Save a syscall here under Apache.  This should actually be a SAPI call instead
-     * but we don't have that yet.  Once that is introduced in PHP this can be cleaned up  -Rasmus */
-    t = ((request_rec *)SG(server_context))->request_time;
-#else
-    t = time(0);
-#endif
 
     while (*slot) {
         if (key_equals((*slot)->key, key)) {
@@ -305,23 +316,14 @@ int apc_cache_insert(apc_cache_t* cache,
 /* }}} */
 
 /* {{{ apc_cache_find */
-apc_cache_entry_t* apc_cache_find(apc_cache_t* cache, apc_cache_key_t key)
+apc_cache_entry_t* apc_cache_find(apc_cache_t* cache, apc_cache_key_t key, time_t t)
 {
     slot_t** slot;
-    time_t t;
 
     LOCK(cache);
 
     slot = &cache->slots[hash(key) % cache->num_slots];
-    if(*slot) {
-#if HAVE_APACHE
-        /* Save a syscall here under Apache.  This should actually be a SAPI call instead
-         * but we don't have that yet.  Once that is introduced this can be cleaned up  -Rasmus */
-        t = ((request_rec *)SG(server_context))->request_time;
-#else
-        t = time(0);
-#endif
-    }
+
     while (*slot) {
         if (key_equals((*slot)->key, key)) {
             if ((*slot)->key.mtime < key.mtime) {
