@@ -706,7 +706,7 @@ zend_op_array* apc_optimize_op_array(zend_op_array* op_array)
             RESTART_PEEPHOLE_LOOP;
         }
         
-		if ((p = peephole_print(op_array->opcodes, i, op_array->last))) {
+        if ((p = peephole_print(op_array->opcodes, i, op_array->last))) {
             if (!are_branch_targets(cdr(p), jumps)) {
                 rewrite_print(op_array->opcodes, p);
             }
