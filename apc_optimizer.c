@@ -31,7 +31,7 @@ static void clear_znode(znode* n)
 }
 
 /* overwrites dst with contents of src, clears src */
-static move_znode(znode* dst, znode* src)
+static void move_znode(znode* dst, znode* src)
 {
     memcpy(dst, src, sizeof(znode));
     SET_UNUSED(*src);
@@ -108,7 +108,7 @@ static int is_branch_op(int opcode)
 /* squeezes no-ops out of the zend_op array */
 static int compress_ops(zend_op* ops, Pair** jumps, int num_ops)
 {
-    int i, j, k;
+    int i, j;
 
     for (i = 0, j = 0; j < num_ops; i++, j++) {
         if (ops[i].opcode == ZEND_NOP) {
@@ -192,6 +192,7 @@ static zval* compute_result_of_constant_op(zend_op* op)
     }
     
     assert(0);  /* no function found */
+    return NULL;
 }
 
 /* }}} */
@@ -481,13 +482,13 @@ zend_op_array *apc_optimize_op_array(zend_op_array* op_array)
 
     for (i = 0; i < op_array->last; i++) {
         Pair* p;
-        if (p = peephole_inc(op_array->opcodes, i, op_array->last)) {
+        if ((p = peephole_inc(op_array->opcodes, i, op_array->last))) {
             if (!are_branch_targets(cdr(p), jumps)) {
                 rewrite_inc(op_array->opcodes, p);
             }
             RESTART_PEEPHOLE_LOOP;
         }
-        if (p = peephole_add_string(op_array->opcodes, i, op_array->last)) {
+        if ((p = peephole_add_string(op_array->opcodes, i, op_array->last))) {
             if (!are_branch_targets(cdr(p), jumps)) {
                 rewrite_add_string(op_array->opcodes, p);
             }

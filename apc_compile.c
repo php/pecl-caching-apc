@@ -19,6 +19,7 @@
 #include "apc_compile.h"
 #include "apc_globals.h"
 #include "apc_zend.h"
+#include "apc_optimizer.h"
 
 typedef void* (*ht_copy_fun_t)(void*, void*, apc_malloc_t);
 typedef void  (*ht_free_fun_t)(void*, apc_free_t);
@@ -755,7 +756,6 @@ static void my_destroy_function_entry(zend_function_entry* src, apc_free_t deall
 /* {{{ my_destroy_class_entry */
 static void my_destroy_class_entry(zend_class_entry* src, apc_free_t deallocate)
 {
-    int n;
     int i;
 
     assert(src != NULL);
@@ -772,7 +772,7 @@ static void my_destroy_class_entry(zend_class_entry* src, apc_free_t deallocate)
                          deallocate);
 
     if (src->builtin_functions) {
-        for (i = 0; src->builtin_functions[n].fname != NULL; i++) {
+        for (i = 0; src->builtin_functions[i].fname != NULL; i++) {
             my_destroy_function_entry(&src->builtin_functions[i], deallocate);
         }
         deallocate(src->builtin_functions);
