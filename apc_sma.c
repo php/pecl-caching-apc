@@ -26,6 +26,11 @@ void *apc_mmap(char *file_mask, int size);
 void apc_unmap(void* shmaddr, int size);
 #endif
 
+/* {{{ locking macros */
+#define LOCK(c)         apc_lck_lock(c)
+#define UNLOCK(c)       apc_lck_unlock(c)
+/* }}} */
+
 enum { POWER_OF_TWO_BLOCKSIZE=0 };  /* force allocated blocks to 2^n? */
 
 enum { DEFAULT_NUMSEG=1, DEFAULT_SEGSIZE=30*1024*1024 };
@@ -291,12 +296,12 @@ void* apc_sma_malloc(size_t n)
     int i;
 
     assert(sma_initialized);
-    apc_lck_lock(sma_lock);
+    LOCK(sma_lock);
 
     off = sma_allocate(sma_shmaddrs[sma_lastseg], n);
     if (off != -1) {
         void* p = (void *)(((char *)(sma_shmaddrs[sma_lastseg])) + off);
-        apc_lck_unlock(sma_lock);
+        UNLOCK(sma_lock);
         return p;
     }
 
@@ -307,13 +312,13 @@ void* apc_sma_malloc(size_t n)
         off = sma_allocate(sma_shmaddrs[i], n);
         if (off != -1) {
             void* p = (void *)(((char *)(sma_shmaddrs[i])) + off);
-            apc_lck_unlock(sma_lock);
+            UNLOCK(sma_lock);
             sma_lastseg = i;
             return p;
         }
     }
 
-    apc_lck_unlock(sma_lock);
+    UNLOCK(sma_lock);
     return NULL;
 }
 /* }}} */
@@ -327,20 +332,20 @@ void apc_sma_free(void* p)
         return;
     }
 
-    apc_lck_lock(sma_lock);
+    LOCK(sma_lock);
     assert(sma_initialized);
 
     for (i = 0; i < sma_numseg; i++) {
-		unsigned int d_size = (unsigned int)((char *)p - (char *)(sma_shmaddrs[i]));
+        unsigned int d_size = (unsigned int)((char *)p - (char *)(sma_shmaddrs[i]));
         if (p >= sma_shmaddrs[i] && d_size < sma_segsize) {
             sma_deallocate(sma_shmaddrs[i], d_size);
-            apc_lck_unlock(sma_lock);
+            UNLOCK(sma_lock);
             return;
         }
     }
 
     apc_eprint("apc_sma_free: could not locate address %p", p);
-    apc_lck_unlock(sma_lock);
+    UNLOCK(sma_lock);
 }
 /* }}} */
 
@@ -364,7 +369,7 @@ apc_sma_info_t* apc_sma_info()
         info->list[i] = NULL;
     }
 
-    apc_lck_lock(sma_lock);
+    LOCK(sma_lock);
 
     /* For each segment */
     for (i = 0; i < sma_numseg; i++) {
@@ -387,7 +392,7 @@ apc_sma_info_t* apc_sma_info()
         }
     }
 
-    apc_lck_unlock(sma_lock);
+    UNLOCK(sma_lock);
     return info;
 }
 /* }}} */

@@ -148,6 +148,9 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
     /* search for the file in the cache */
     cache_entry = apc_cache_find(APCG(cache), key);
     if (cache_entry != NULL) {
+        if (h->opened_path == NULL) {
+            h->opened_path = estrdup(cache_entry->filename);
+        }
         zend_llist_add_element(&CG(open_files), h); /* XXX kludge */
         apc_stack_push(APCG(cache_stack), cache_entry);
         return cached_compile(TSRMLS_C);
@@ -163,22 +166,27 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
         return NULL;
     }
 
+    HANDLE_BLOCK_INTERRUPTIONS();
     if(!(alloc_op_array = apc_copy_op_array(NULL, op_array, apc_sma_malloc, apc_sma_free TSRMLS_CC))) {
         apc_log(APC_WARNING, "(apc_copy_op_array) unable to cache '%s': insufficient " "shared memory available", h->opened_path);
+        HANDLE_UNBLOCK_INTERRUPTIONS();
         return op_array;
     }
     
     if(!(alloc_functions = apc_copy_new_functions(num_functions, apc_sma_malloc, apc_sma_free TSRMLS_CC))) {
         apc_log(APC_WARNING, "(apc_copy_new_functions) unable to cache '%s': insufficient " "shared memory available", h->opened_path);
         apc_free_op_array(alloc_op_array, apc_sma_free);
+        HANDLE_UNBLOCK_INTERRUPTIONS();
         return op_array;
     }
     if(!(alloc_classes = apc_copy_new_classes(op_array, num_classes, apc_sma_malloc, apc_sma_free TSRMLS_CC))) {
         apc_log(APC_WARNING, "(apc_copy_new_classes) unable to cache '%s': insufficient " "shared memory available", h->opened_path);
         apc_free_op_array(alloc_op_array, apc_sma_free);
         apc_free_functions(alloc_functions, apc_sma_free);
+        HANDLE_UNBLOCK_INTERRUPTIONS();
         return op_array;
     }
+    HANDLE_UNBLOCK_INTERRUPTIONS();
 
     /* cache the compiler results */
     cache_entry = apc_cache_make_entry(h->opened_path, alloc_op_array, alloc_functions, alloc_classes);
@@ -336,7 +344,7 @@ void apc_deactivate()
 /* {{{ apc_version */
 const char* apc_version()
 {
-    return "2.0.4";
+    return "2.0.5";
 }
 /* }}} */
 
