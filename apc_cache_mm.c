@@ -167,9 +167,9 @@ int apc_mmap_dump_entry(const char* filename, apc_outputfn_t outputfn)
     un_lock(fd, 0, SEEK_SET, 0);
 
     apc_init_deserializer(input, statbuf.st_size);
-    apc_deserialize_zend_op_array(op_array);
     apc_deserialize_zend_function_table(&function_table, dummy, dummy);
     apc_deserialize_zend_class_table(&class_table, dummy, dummy);
+    apc_deserialize_zend_op_array(op_array);
     munmap(input, statbuf.st_size);
 
     /* begin outer table */
@@ -276,7 +276,7 @@ int apc_mmap_dump_entry(const char* filename, apc_outputfn_t outputfn)
 			outputfn("<td bgcolor=#eeeeee>&nbsp</td>\n");
 			outputfn("<td bgcolor=#eeeeee>%s</td>\n",
             	zf->common.function_name);
-        	q = p->pListNext;
+        	q = q->pListNext;
     	}
         p = p->pListNext;
     }

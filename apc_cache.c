@@ -871,7 +871,7 @@ int apc_cache_dump_entry(apc_cache_t* cache, const char* key,
             outputfn("<td bgcolor=#eeeeee>&nbsp</td>\n");
             outputfn("<td bgcolor=#eeeeee>%s</td>\n",
                 zf->common.function_name);
-            q = p->pListNext;
+            q = q->pListNext;
         }
 
 		p = p->pListNext;
