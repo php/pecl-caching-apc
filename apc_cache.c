@@ -31,7 +31,7 @@ enum { MAX_KEY_LEN = 256 };			/* must be >= maximum path length */
 
 enum { EMPTY = -1, UNUSED = -2 };
 enum { DO_CHECKSUM = 0 };			/* if this is true, perform checksums */
-enum { NEVER_EXPIRE = 1 << 31 };	/* 2^31 is almost never */
+//enum { NEVER_EXPIRE = 1 << 31 };	/* 2^31 is almost never */
 
 extern zend_apc_globals apc_globals;
 
@@ -301,7 +301,7 @@ int apc_cache_search(apc_cache_t* cache, const char* key)
 			continue;
 		}
 		if (strcmp(buckets[slot].key, key) == 0) {
-			if (time(0) > buckets[slot].createtime + buckets[slot].ttl) {
+			if ((buckets[slot].ttl) && time(0) > buckets[slot].createtime + buckets[slot].ttl) {
 				emptybucket(&buckets[slot]); /* FIXME */
 				break; /* the entry has expired */
 			}
@@ -342,7 +342,7 @@ int apc_cache_retrieve(apc_cache_t* cache, const char* key, char** dataptr,
 		}
 		if (strcmp(buckets[slot].key, key) == 0) {
 			curtime = time(0);
-			if (curtime > buckets[slot].createtime + buckets[slot].ttl) {
+			if ((buckets[slot].ttl) && curtime > buckets[slot].createtime + buckets[slot].ttl) {
 				emptybucket(&buckets[slot]); /* FIXME */
 				break; /* the entry has expired */
 			}
@@ -404,7 +404,7 @@ int apc_cache_retrieve_nl(apc_cache_t* cache, const char* key,
 		}
 		if (strcmp(buckets[slot].key, key) == 0) {
 			curtime = time(0);
-			if (curtime > buckets[slot].createtime + buckets[slot].ttl) {
+			if ((buckets[slot].ttl) && curtime > buckets[slot].createtime + buckets[slot].ttl) {
 				emptybucket(&buckets[slot]); /* FIXME */
 				break; /* the entry has expired */
 			}
@@ -475,7 +475,7 @@ int apc_cache_insert(apc_cache_t* cache, const char* key,
 			emptybucket(&buckets[slot]);
 			break;	/* overwrite existing entry */
 		}
-		if (curtime > buckets[slot].createtime + buckets[slot].ttl) {
+		if ((buckets[slot].ttl) && curtime > buckets[slot].createtime + buckets[slot].ttl) {
 			emptybucket(&buckets[slot]);
 			break;	/* this entry has expired, overwrite it */
 		}
@@ -516,10 +516,11 @@ int apc_cache_insert(apc_cache_t* cache, const char* key,
 	buckets[slot].ttl		 = cache->header->ttl;
 	buckets[slot].createtime = time(0);
 	
+/*	
 	if (cache->header->ttl == 0) { /* if ttl is zero, disable expiration */
 		buckets[slot].ttl = NEVER_EXPIRE;
 	}
-
+*/
 	/* store data in segment and update its record */
 	memcpy(shmaddr + offset, data, size);
 
