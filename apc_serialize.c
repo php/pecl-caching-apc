@@ -368,6 +368,7 @@ int apc_load(const char* filename)
 void apc_serialize_string(char* string);
 void apc_create_string(char** string);
 void apc_serialize_zstring(char* string, int len);
+void apc_create_zstring(char** string);
 void apc_serialize_arg_types(zend_uchar* arg_types);
 void apc_create_arg_types(zend_uchar** arg_types);
 
@@ -376,48 +377,64 @@ void apc_serialize_magic(void);
 int apc_deserialize_magic(void);
 
 /* routines for handling structures from zend_llist.h */
+zend_llist* apc_copy_zend_llist(zend_llist* nlist, zend_llist* list);
 void apc_serialize_zend_llist(zend_llist* list);
 void apc_deserialize_zend_llist(zend_llist* list);
 void apc_create_zend_llist(zend_llist** list);
 
 /* routines for handling structures from zend_hash.h */
+HashTable* apc_copy_hashtable(HashTable* nt, HashTable* ht, void* funcptr, int datasize);
 void apc_serialize_hashtable(HashTable* ht, void* funcptr);
 void apc_deserialize_hashtable(HashTable* ht, void* funcptr, int datasize);
 void apc_create_hashtable(HashTable** ht, void* funcptr, int datasize);
 
 /* routines for handling structures from zend.h */
+zvalue_value* apc_copy_zvalue_value(zvalue_value* nv, zvalue_value* zv, int type);
 void apc_serialize_zvalue_value(zvalue_value* zvv, int type);
 void apc_deserialize_zvalue_value(zvalue_value* zvv, int type);
+zval** apc_copy_zval_ptr(zval** nzvp, zval** zvp);
+zval* apc_copy_zval(zval* nv, zval* zv);
 void apc_serialize_zval_ptr(zval** zv);
 void apc_serialize_zval(zval* zv);
 void apc_deserialize_zval(zval* zv);
 void apc_create_zval(zval** zv);
+zend_function_entry* apc_copy_zend_function_entry(zend_function_entry* nfe, zend_function_entry* zfe);
 void apc_serialize_zend_function_entry(zend_function_entry* zfe);
 void apc_deserialize_zend_function_entry(zend_function_entry* zfe);
+zend_property_reference* apc_copy_zend_property_reference(zend_property_reference* npr, zend_property_reference* zpr);
 void apc_serialize_zend_property_reference(zend_property_reference* zpr);
 void apc_deserialize_zend_property_reference(zend_property_reference* zpr);
+zend_overloaded_element* apc_copy_zend_overloaded_element(zend_overloaded_element* noe, zend_overloaded_element* zoe);
 void apc_serialize_zend_overloaded_element(zend_overloaded_element* zoe);
 void apc_deserialize_zend_overloaded_element(zend_overloaded_element* zoe);
+zend_class_entry* apc_copy_zend_class_entry(zend_class_entry* nce, zend_class_entry* zce);
 void apc_serialize_zend_class_entry(zend_class_entry* zce);
 void apc_deserialize_zend_class_entry(zend_class_entry* zce);
 void apc_create_zend_class_entry(zend_class_entry** zce);
+zend_utility_functions* apc_copy_zend_utility_functions( zend_utility_functions* nuf, zend_utility_functions* zuf);
 void apc_serialize_zend_utility_functions(zend_utility_functions* zuf);
 void apc_deserialize_zend_utility_functions(zend_utility_functions* zuf);
 void apc_serialize_zend_utility_values(zend_utility_values* zuv);
 void apc_deserialize_zend_utility_values(zend_utility_values* zuv);
 
 /* routines for handling structures from zend_compile.h */
+znode* apc_copy_znode(znode *nn, znode *zn);
 void apc_serialize_znode(znode* zn);
 void apc_deserialize_znode(znode* zn);
+zend_op* apc_copy_zend_op(zend_op *no, zend_op* zo);
 void apc_serialize_zend_op(zend_op* zo);
 void apc_deserialize_zend_op(zend_op* zo);
+zend_op_array* apc_copy_op_array(zend_op_array* noa, zend_op_array* zoa);
 void apc_serialize_zend_op_array(zend_op_array* zoa);
 void apc_deserialize_zend_op_array(zend_op_array* zoa, int master);
 void apc_create_zend_op_array(zend_op_array** zoa);
+zend_internal_function* apc_copy_zend_internal_function(zend_internal_function* nif, zend_internal_function* zif);
 void apc_serialize_zend_internal_function(zend_internal_function* zif);
 void apc_deserialize_zend_internal_function(zend_internal_function* zif);
+zend_overloaded_function* apc_copy_zend_overloaded_function(zend_overloaded_function* nof, zend_overloaded_function* zof);
 void apc_serialize_zend_overloaded_function(zend_overloaded_function* zof);
 void apc_deserialize_zend_overloaded_function(zend_overloaded_function* zof);
+zend_function *apc_copy_zend_function(zend_function* nf, zend_function* zf);
 void apc_serialize_zend_function(zend_function* zf);
 void apc_deserialize_zend_function(zend_function* zf);
 void apc_create_zend_function(zend_function** zf);
@@ -486,20 +503,6 @@ void apc_serialize_string(char* string)
 	STORE_BYTES(string, len);
 }
 
-void apc_create_string(char** string)
-{
-	int len;
-
-	DESERIALIZE_SCALAR(&len, int);
-	if (len == -1) {
-		*string = NULL;
-		return;
-	}
-	*string = (char*) emalloc(len + 1);
-	LOAD_BYTES(*string, len);
-	(*string)[len] = '\0';
-}
-
 void apc_serialize_zstring(char* string, int len)
 {
   /* by convention, mark null strings with a length of -1 */
@@ -510,6 +513,20 @@ void apc_serialize_zstring(char* string, int len)
   len = strlen(string);
   SERIALIZE_SCALAR(len, int);
   STORE_BYTES(string, len);
+}
+
+void apc_create_string(char** string)
+{
+  int len = 0;
+
+  DESERIALIZE_SCALAR(&len, int);
+  if (len == -1) {
+    *string = NULL;
+    return;
+  }
+  *string = (char*) emalloc(len + 1);
+  LOAD_BYTES(*string, len);
+  (*string)[len] = '\0';
 }
 
 void apc_serialize_arg_types(zend_uchar* arg_types)
@@ -561,6 +578,43 @@ static void store_zend_llist_element(void* arg, void* data)
 {
 	int size = *((int*)arg);
 	STORE_BYTES((char*)data, size);
+}
+
+zend_llist* apc_copy_zend_llist(zend_llist* nlist, zend_llist* list)
+{
+	zend_llist_element *llelement;
+	int firstelement = 0;
+
+	if (nlist == NULL) {
+		nlist = (zend_llist*) apc_shm_malloc(sizeof(zend_llist));
+	}
+	if (list == NULL) {
+		nlist = NULL;
+		return NULL;
+	}
+	memcpy(nlist, list, sizeof(zend_llist));
+	llelement = list->head;
+	while( llelement != NULL) {
+		zend_llist_element *new_element;
+		new_element = (zend_llist_element*) apc_shm_malloc(sizeof(zend_llist_element) - 1 + nlist->size);
+		if(firstelement == 0) {
+			nlist->head = new_element;
+			nlist->tail = new_element;
+			new_element->next = NULL;
+			new_element->prev = NULL;
+			firstelement = 1;
+		}
+		else {
+			new_element->prev = nlist->tail;
+			nlist->tail->next = new_element;
+			nlist->tail = new_element;
+			new_element->next = NULL;
+		}
+		memcpy(new_element->data, llelement->data, nlist->size);
+		llelement-> next;
+	}
+	nlist->traverse_ptr = NULL;
+	return nlist;
 }
 
 void apc_serialize_zend_llist(zend_llist* list)
@@ -629,6 +683,69 @@ void apc_create_zend_llist(zend_llist** list)
 
 
 /* type: HashTable */
+
+typedef void* (*copy_bucket_t)(void*, void*);
+
+HashTable* apc_copy_hashtable(HashTable* nt, HashTable* ht, void* funcptr, int datasize)
+{
+	Bucket *p, *np, *prev_p;
+	copy_bucket_t copy_bucket;
+	int firstbucket = 0;
+
+	if (nt == NULL) {
+		nt = (HashTable*) apc_shm_malloc(sizeof(HashTable));
+	}
+
+	copy_bucket = (copy_bucket_t) funcptr;	
+	memcpy(nt, ht, sizeof(HashTable));
+	nt->arBuckets=(Bucket **) apc_shm_malloc(ht->nTableSize*sizeof(HashTable *));
+	memset(nt->arBuckets, 0, ht->nTableSize*sizeof(HashTable *));
+	nt->pInternalPointer = NULL;
+
+	p = ht->pListHead;
+	prev_p = NULL;
+	while(p != NULL) {
+		int nIndex;
+
+		/* Don't ask about the arithmatic, look at the zend bucket definition */
+		np = (Bucket *) apc_shm_malloc(sizeof(Bucket) - 1 + p->nKeyLength);
+
+		nIndex = p->h % ht->nTableSize;
+		if(nt->arBuckets[nIndex]) {
+      np->pNext = nt->arBuckets[nIndex];
+			np->pLast = NULL;
+			np->pNext->pLast = np;
+		}
+		else {
+			np->pNext = NULL;
+			np->pLast = NULL;
+		}
+		nt->arBuckets[nIndex] = np;
+		
+		np->h = p->h;
+		np->nKeyLength = p->nKeyLength;
+		if( datasize == sizeof(void *)) {
+			np->pDataPtr = copy_bucket(NULL, p->pData);
+			np->pData = &np->pDataPtr;
+		}
+		else {
+			np->pData = copy_bucket(NULL, p->pData);
+			np->pDataPtr = NULL;
+		}
+		np->pListLast = prev_p;
+		np->pListNext = NULL;
+		memcpy(np->arKey, p->arKey, p->nKeyLength);
+		if( firstbucket == 0) {
+			nt->pListHead = np;
+			firstbucket = 1;
+		}
+		prev_p = np;	
+		p->pListNext;
+	}
+	nt->pListTail = np;
+	return nt;
+}		
+		
 	
 void apc_serialize_hashtable(HashTable* ht, void* funcptr)
 {
@@ -743,6 +860,45 @@ void apc_create_hashtable(HashTable** ht, void* funcptr, int datasize)
 
 /* type: zvalue_value */
 
+zvalue_value* apc_copy_zvalue_value(zvalue_value* nv, zvalue_value* zv, int type)
+{
+	if (nv == NULL) {
+		nv = (zvalue_value *) apc_shm_malloc(sizeof(zvalue_value));
+	}
+  switch (type) {
+    case IS_RESOURCE:
+    case IS_BOOL:
+    case IS_LONG:
+    nv->lval = zv->lval;
+    break;
+    case IS_DOUBLE:
+    nv->dval = zv->dval;
+    break;
+    case IS_NULL:
+    /* null value, do nothing */
+    break;
+    case IS_CONSTANT:
+    case IS_STRING:
+    case FLAG_IS_BC:
+		nv->str.val = apc_shmcpy(zv->str.val, zv->str.len);
+		nv->str.len = zv->str.len;
+    break;
+    case IS_ARRAY:
+    case IS_CONSTANT_ARRAY:
+		nv->ht = apc_copy_hashtable(NULL, zv->ht, apc_copy_zval_ptr, sizeof(void*)); // FIXME
+    break;
+    case IS_OBJECT:
+		nv->obj.ce = apc_copy_zend_class_entry(NULL, zv->obj.ce);
+		nv->obj.properties = apc_copy_hashtable(NULL, zv->obj.properties, apc_copy_zval_ptr, sizeof(void*)); // FIXME
+    break;
+    default:
+    /* The above list enumerates all types.  If we get here,
+     * something very very bad has happened. */
+    assert(0);
+  }
+	return nv;
+}
+
 void apc_serialize_zvalue_value(zvalue_value* zv, int type)
 {
 	/* A zvalue_value is a union, and as such we first need to
@@ -832,6 +988,28 @@ void apc_serialize_zval_ptr(zval** zv)
 	apc_serialize_zval(*zv);
 }
 
+zval* apc_copy_zval(zval* nv, zval* zv)
+{
+	if(nv == NULL) {
+		nv = (zval*) apc_shm_malloc(sizeof(zval));
+	}
+	memcpy(nv,zv, sizeof(zval));
+	apc_copy_zvalue_value(&nv->value, &zv->value, zv->type);
+	return nv;
+}
+
+zval** apc_copy_zval_ptr(zval** nzvp, zval** zvp)
+{
+	if (nzvp == NULL) {
+		*nzvp = apc_copy_zval(NULL, *zvp);
+		return nzvp;
+	}
+	else {
+		*nzvp = apc_copy_zval(*nzvp, *zvp);
+		return nzvp;
+	}
+}
+	
 void apc_serialize_zval(zval* zv)
 {
 	/* type is the switch for serializing zvalue_value */
@@ -859,6 +1037,17 @@ void apc_create_zval(zval** zv)
 
 /* type: zend_function_entry */
 
+zend_function_entry* apc_copy_zend_function_entry(zend_function_entry* nfe, zend_function_entry* zfe)
+{
+	if (nfe == NULL) {
+		nfe = (zend_function_entry*) apc_shm_alloc(sizeof(zend_function_entry));
+	}
+	nfe->fname = apc_shm_strdup(zfe->fname);
+	nfe->handler = zfe->handler;
+	nfe->func_arg_types = apc_shmcpy(zfe->func_arg_types, zfe->func_arg_types[0]);
+	return nfe;
+}
+
 void apc_serialize_zend_function_entry(zend_function_entry* zfe)
 {
 	apc_serialize_string(zfe->fname);
@@ -875,6 +1064,18 @@ void apc_deserialize_zend_function_entry(zend_function_entry* zfe)
 
 
 /* type: zend_property_reference */
+
+zend_property_reference* apc_copy_zend_property_reference(zend_property_reference* npr, zend_property_reference* zpr)
+{
+	if (npr == NULL) {
+		npr = 
+			(zend_property_reference*) apc_shm_malloc(sizeof(zend_property_reference));
+	}
+	npr->type = zpr->type;
+	npr->object = apc_copy_zval(NULL, zpr->object);
+	npr->elements_list = apc_copy_zend_llist(NULL, zpr->elements_list);
+	return npr;
+}
 
 void apc_serialize_zend_property_reference(zend_property_reference* zpr)
 {
@@ -893,6 +1094,16 @@ void apc_deserialize_zend_property_reference(zend_property_reference* zpr)
 
 /* type: zend_overloaded_element */
 
+zend_overloaded_element* apc_copy_zend_overloaded_element(zend_overloaded_element* noe, zend_overloaded_element* zoe)
+{
+	if ( noe == NULL) {
+		noe = (zend_overloaded_element*) apc_shm_malloc(sizeof(zend_overloaded_element));
+	}
+	noe->type = zoe->type;
+	apc_copy_zval(&noe->element, &zoe->element);
+	return noe;
+}
+
 void apc_serialize_zend_overloaded_element(zend_overloaded_element* zoe)
 {
 	SERIALIZE_SCALAR(zoe->type, zend_uchar);
@@ -908,7 +1119,38 @@ void apc_deserialize_zend_overloaded_element(zend_overloaded_element* zoe)
 
 /* type: zend_class_entry */
 
-
+zend_class_entry* apc_copy_zend_class_entry(zend_class_entry* nce, zend_class_entry* zce)
+{
+	zend_function_entry* zfe;
+	int i, count;
+	
+	if( nce == NULL) {
+		nce = (zend_class_entry*) apc_shm_malloc(sizeof(zend_class_entry));
+	}
+	memcpy(nce, zce, sizeof(zend_class_entry));
+	nce->name = apc_shm_strdup(zce->name);
+	if(zce->parent) {
+//	FIXME this is for tracking parents for our inherit function
+//		nce->parent_name = apc_shm_strdup(zce->parent_name);
+	}
+	nce->refcount[0]++;  /* FIXME is this necessary? */
+	apc_copy_hashtable(&nce->function_table, &zce->function_table, apc_copy_zend_function, sizeof(zend_function)); /* FIXME */
+	apc_copy_hashtable(&nce->default_properties, &zce->default_properties, apc_copy_zval_ptr, sizeof(void*)); /* FIXME */
+  count = 0;
+  if (zce->builtin_functions) {
+    for (zfe = zce->builtin_functions; zfe->fname != NULL; zfe++) {
+      count++;
+    }
+  }
+	nce->builtin_functions = (zend_function_entry*)
+      apc_shm_malloc((count+1) * sizeof(zend_function_entry));
+	for (i = 0; i < count; i++) {
+		apc_copy_zend_function_entry(&nce->builtin_functions[i], 
+			&zce->builtin_functions[i]);
+	}
+	return nce;
+}
+	
 void apc_serialize_zend_class_entry(zend_class_entry* zce)
 {
 	zend_function_entry* zfe;
@@ -1050,6 +1292,15 @@ void apc_create_zend_class_entry(zend_class_entry** zce)
 
 /* type: zend_utility_functions */
 
+zend_utility_functions* apc_copy_zend_utility_functions( zend_utility_functions* nuf, zend_utility_functions* zuf)
+{
+	if( nuf == NULL) {
+		nuf = (zend_utility_functions*) apc_shm_malloc(sizeof(zend_utility_functions));
+	}
+	memcpy(nuf, zuf, sizeof(zend_utility_functions));
+	return nuf;
+}
+
 void apc_serialize_zend_utility_functions(zend_utility_functions* zuf)
 {
 	SERIALIZE_SCALAR(zuf->error_function, void*);
@@ -1078,6 +1329,7 @@ void apc_deserialize_zend_utility_functions(zend_utility_functions* zuf)
 
 
 /* type: zend_utility_values */
+/* FIXME  not used? */
 
 void apc_serialize_zend_utility_values(zend_utility_values* zuv)
 {
@@ -1093,6 +1345,23 @@ void apc_deserialize_zend_utility_values(zend_utility_values* zuv)
 
 
 /* type: znode */
+
+znode* apc_copy_znode(znode *nn, znode *zn)
+{
+	if(nn == NULL) {
+		nn = (znode *) apc_shm_malloc(sizeof(znode));
+	}
+	switch(zn->op_type) {
+    case IS_CONST:
+		// FIXME
+		apc_copy_zval(&nn->u.constant, &zn->u.constant);
+    break;
+    default:
+    memcpy(&nn->u, &zn->u, sizeof(zn->u));
+    break;
+  }
+	return nn;
+}
 
 void apc_serialize_znode(znode* zn)
 {
@@ -1133,6 +1402,19 @@ void apc_deserialize_znode(znode* zn)
 
 /* type: zend_op */
 
+zend_op* apc_copy_zend_op(zend_op *no, zend_op* zo)
+{	
+	if ( no == NULL) {
+		no = (zend_op *) apc_shm_malloc(sizeof(zend_op));
+	}
+	/* Do a copy first then overwrite any pointers */
+	memcpy(no, zo, sizeof(zend_op));
+	apc_copy_znode(&no->result, &zo->result);
+	apc_copy_znode(&no->op1, &zo->op1);
+	apc_copy_znode(&no->op2, &zo->op2);
+	return no;
+}	
+
 void apc_serialize_zend_op(zend_op* zo)
 {
 	SERIALIZE_SCALAR(zo->opcode, zend_uchar);
@@ -1155,6 +1437,27 @@ void apc_deserialize_zend_op(zend_op* zo)
 
 
 /* type: zend_op_array */
+
+
+zend_op_array* apc_copy_op_array(zend_op_array* noa, zend_op_array* zoa)
+{
+	int i;
+
+	if ( noa == NULL) {
+		noa = (zend_op_array*) apc_shm_malloc(sizeof(zend_op_array));
+	}
+	memcpy(noa, zoa, sizeof(zend_op_array));
+	noa->arg_types = apc_shmcpy(zoa->arg_types, zoa->arg_types[0]);
+	noa->function_name = apc_shm_strdup(zoa->function_name);
+	/* Increment ref count to avoid destroy_op_array */
+	noa->refcount++; 
+	noa->opcodes = (zend_op *) apc_shm_malloc(sizeof(zend_op)* zoa->last);
+	for(i = 0; i < zoa->last; i++) {
+		apc_copy_zend_op(&noa->opcodes[i], &zoa->opcodes[i]);
+	}
+	noa->filename = apc_shm_strdup(zoa->filename);
+	return noa;
+}
 
 void apc_serialize_zend_op_array(zend_op_array* zoa)
 {
@@ -1398,6 +1701,19 @@ void apc_create_zend_op_array(zend_op_array** zoa)
 
 /* type: zend_internal_function */
 
+zend_internal_function* apc_copy_zend_internal_function(zend_internal_function* nif, zend_internal_function* zif)
+{
+	if ( nif == NULL ) {
+		nif = (zend_internal_function*) apc_shm_malloc(sizeof(zend_internal_function));
+	}
+	nif->type = zif->type;
+	nif->function_name = apc_shm_strdup(zif->function_name);
+	nif->function_name = apc_shm_strdup(zif->function_name);
+	nif->handler = zif->handler;
+	return nif;
+}
+
+	
 void apc_serialize_zend_internal_function(zend_internal_function* zif)
 {
 	SERIALIZE_SCALAR(zif->type, zend_uchar);
@@ -1417,6 +1733,18 @@ void apc_deserialize_zend_internal_function(zend_internal_function* zif)
 
 /* type: zend_overloaded_function */
 
+zend_overloaded_function* apc_copy_zend_overloaded_function(zend_overloaded_function* nof, zend_overloaded_function* zof)
+{
+	if(nof == NULL) {
+		nof = (zend_overloaded_function*) apc_shm_malloc(sizeof(zend_overloaded_function));
+	}
+	nof->type = zof->type;
+	nof->arg_types = apc_shmcpy(zof->arg_types, zof->arg_types[0]);
+	nof->function_name = apc_shm_strdup(zof->function_name);
+	nof->var = zof->var;
+	return nof;
+}
+
 void apc_serialize_zend_overloaded_function(zend_overloaded_function* zof)
 {
 	SERIALIZE_SCALAR(zof->type, zend_uchar);
@@ -1435,6 +1763,30 @@ void apc_deserialize_zend_overloaded_function(zend_overloaded_function* zof)
 
 
 /* type: zend_function */
+
+zend_function *apc_copy_zend_function(zend_function* nf, zend_function* zf)
+{
+	if(nf == NULL) {
+		nf = (zend_function*) apc_shm_malloc(sizeof(zend_function));
+	}
+  switch(zf->type) {
+    case ZEND_INTERNAL_FUNCTION:
+    apc_copy_zend_internal_function(&nf->internal_function, &zf->internal_function);
+    break;
+    case ZEND_OVERLOADED_FUNCTION:
+    apc_copy_zend_overloaded_function(&nf->overloaded_function, &zf->overloaded_function);
+    break;
+    case ZEND_USER_FUNCTION:
+    case ZEND_EVAL_CODE:
+    apc_copy_zend_op_array(&nf->op_array, &zf->op_array);
+    break;
+    default:
+    /* the above are all valid zend_function types.  If we hit this
+     * case something has gone very very wrong. */
+    assert(0);
+  }
+	return nf;
+}
 
 void apc_serialize_zend_function(zend_function* zf)
 {
