@@ -16,6 +16,7 @@
 #include "php_apc.h"
 #include "php_globals.h"
 #include "php.h"
+#include "apc_cache.h"	/* for APC_CACHE_RT enum */
 
 /* declarations of functions to be exported */
 PHP_FUNCTION(apcinfo);
@@ -101,6 +102,25 @@ static PHP_INI_MH(set_cachedir)
 	return SUCCESS;
 }
 
+/* set the cache-retrieval policy for shared memory cache (shm).
+ * has no effect if running mmap implementation. */
+static PHP_INI_MH(set_cache_rt)
+{
+	static const char SAFE[] = "safe";
+	static const char FAST[] = "fast";
+
+	if (new_value == NULL || strcmp(new_value, SAFE) == 0) {
+		APCG(cache_rt) = APC_CACHE_RT_SAFE;
+	}
+	else if (strcmp(new_value, FAST) == 0) {
+		APCG(cache_rt) = APC_CACHE_RT_FAST;
+	}
+	else {
+		APCG(cache_rt) = APC_CACHE_RT_SAFE; /* default to safe policy */
+	}
+	return SUCCESS;
+}
+
 /* set a POSIX extended regex to match for NOT serializing objects */
 static PHP_INI_MH(set_regex)
 {
@@ -140,6 +160,7 @@ static PHP_INI_MH(set_regex)
 PHP_INI_BEGIN()
 	PHP_INI_ENTRY("apc.ttl",         NULL, PHP_INI_ALL, set_ttl)
 	PHP_INI_ENTRY("apc.cachedir",    NULL, PHP_INI_ALL, set_cachedir)
+	PHP_INI_ENTRY("apc.cache_rt",    NULL, PHP_INI_ALL, set_cache_rt)
 	PHP_INI_ENTRY("apc.regex",       NULL, PHP_INI_ALL, set_regex)
 
 	/* Flag to always check file modification time */

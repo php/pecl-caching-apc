@@ -22,6 +22,11 @@
 #define T apc_cache_t*
 typedef struct apc_cache_t apc_cache_t; /* opaque cache type */
 
+enum {	/* (see apc_cache_setretrievaltype below) */
+	APC_CACHE_RT_SAFE,	/* "correct" method */
+	APC_CACHE_RT_FAST	/* potentially unsafe but efficient */
+};
+
 /*
  * apc_cache_create: creates a new shared cache. nbuckets is the number
  * of buckets used in the cache's hashtable and should be about 25% - 50%
@@ -43,6 +48,14 @@ extern T apc_cache_create(const char* pathname, int nbuckets,
 extern void apc_cache_destroy(T cache);
 
 /*
+ * apc_cache_setretrievaltype: set the preferred method for cache index
+ * lookup and retrieval used in apc_cache_retrieve (see below). returns
+ * 0 if the specified type is supported, non-zero otherwise. note: the
+ * default retrieval type is APC_CACHE_RT_SAFE
+ */
+extern int apc_cache_setretrievaltype(int type);
+
+/*
  * apc_cache_clear: removes all entries from the cache
  */
 extern void apc_cache_clear(T cache);
@@ -60,9 +73,13 @@ extern int apc_cache_search(T cache, const char* key);
  * size of *dataptr if it is expanded. The current modification time of the
  * file may be optionally supplied, and if it is greater than the old time
  * the entry is expired (set mtime to zero to disable this check)
+ *
+ * note that apc_cache_retrieve is a pointer to the implementation function.
+ * the precise behavior of this function is controlled by
+ * apc_cache_setretrievaltype.
  */
-extern int apc_cache_retrieve(T cache, const char* key, char** dataptr,
-                              int* length, int* maxsize, int mtime);
+extern int (*apc_cache_retrieve)(T cache, const char* key, char** dataptr,
+                                 int* length, int* maxsize, int mtime);
 
 /*
  * apc_cache_insert: adds a new mapping to cache. If the key already has a

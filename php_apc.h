@@ -33,21 +33,21 @@ extern zend_module_entry apc_module_entry;
 
 ZEND_BEGIN_MODULE_GLOBALS(apc)
 	int	ttl;				/* default ttl for all cache objects */
-	char *cachedir;			/* directory for compiled objects (mmap) */
-	char *regex_text[10];		/* regex for filtering items from cache */
-	regex_t regex[10];			/* compiled regex_text */
+	char* cachedir;			/* directory for compiled objects (mmap) */
+	int cache_rt;			/* cache-retrieval policy */
+	char* regex_text[10];	/* regex for filtering items from cache */
+	regex_t regex[10];		/* compiled regex_text */
 	int nmatches;			/* no. of regex filters */
 	int hash_buckets;		/* no. of hash buckets in shared index (shm) */
 	int shm_segments;		/* max no. of segments for object storage (shm) */
 	int shm_segment_size;	/* max segment size for object storage (shm) */
 	int check_mtime;		/* check modification time of files? (shm) */
-	int relative_includes; /* provide generic support for relative includes? */
+	int relative_includes;	/* provide generic support for relative includes? */
 	int check_compiled_source; /* allows for compiled source files */
 ZEND_END_MODULE_GLOBALS(apc)
 
 #define APCG(v) (apc_globals.v)
 
 #define phpext_apc_ptr apc_module_ptr
-
 
 #endif
