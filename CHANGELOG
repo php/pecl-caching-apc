@@ -5,6 +5,8 @@ APC Change Log
 + fixed apc_rstat bug [gws 01.29.2001]
 + added hack to support included urls [gws 01.30.2001]
 + fixed apc_cache_index [mb 01.31.2001]
++ added multiple regex support [gs 02.03.2001]
++ added apc_cache_info [mb,gs 02.03.2001]
 
 1.0.7:
 + partially fixed for Solaris [gws 01.29.2001]
