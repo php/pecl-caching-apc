@@ -16,6 +16,7 @@ Contents.
     without it?
  7. Why do I keep running out of open files when I use the mmap version?
  8. What use are per object TTLs?
+ 9. Why can't I specify multiple exclusion filters in php.ini?
 
 
 1. How does all this stuff work?
@@ -132,4 +133,12 @@ page's individual TTL to 600 seconds:
 
         // Your code here...
     ?>
+
+
+9. Why can't I specify multiple exclusion filters in php.ini?
+
+Because PHP does not support multiple values for a single ini entry and we
+were too lazy to provide a workaround. If there is a great need for this
+feature from the public, we may implement it in the future. Of course, you
+are encouraged to implement and contribute the feature yourself!
 
