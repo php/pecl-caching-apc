@@ -11,86 +11,79 @@
  * George Schlossnagle <george@lethargy.org>
  * ==================================================================
 */
+
+
 #ifndef INCLUDED_APC_CACHE
 #define INCLUDED_APC_CACHE
 
 #include "apc_lib.h"
 
-/* TODO: note about apc_cache_destroy(): it does not modify shared memory;
- * it only attempts to remove shared memory segments and semaphores.
- * Thus, if the current process does not have permission to destroy those
- * IPC objects, apc_cache_destroy() may be safely called multiple times
- * without invalidating the cache */
-
+#define T apc_cache_t*
 typedef struct apc_cache_t apc_cache_t; /* opaque cache type */
 
 /*
- * apc_cache_create: creates a new shared cache
+ * apc_cache_create: creates a new shared cache. nbuckets is the number
+ * of buckets used in the cache's hashtable and should be about 25% - 50%
+ * greater than the number of files expected to be cached. maxseg is the
+ * maximum number of shared memory segments to use for cached data, and
+ * segsize is the size of each segment. ttl is the time-to-live for cache
+ * entries. if ttl is zero, entries do not expire
  */
-extern apc_cache_t* apc_cache_create(const char* pathname, int nbuckets,
-	int maxseg, int segsize, int ttl);
+extern T apc_cache_create(const char* pathname, int nbuckets,
+                          int maxseg, int segsize, int ttl);
 
 /*
- * apc_cache_destroy: destroys an existing cache
+ * apc_cache_destroy: destroys an existing cache. Does not modify shared
+ * memory and only attempts to remove shared memory segments and semaphores.
+ * (Thus, if the current process does not have permission to destroy those
+ * IPC objects, this function may be safely called multiple times without
+ * altering/invalidating the cache
  */
-extern void apc_cache_destroy(apc_cache_t* cache);
+extern void apc_cache_destroy(T cache);
 
 /*
- * apc_cache_clear: clears the cache
+ * apc_cache_clear: removes all entries from the cache
  */
-extern void apc_cache_clear(apc_cache_t* cache);
+extern void apc_cache_clear(T cache);
 
 /*
  * apc_cache_search: returns true if key exists in cache, else false
  */
-extern int apc_cache_search(apc_cache_t* cache, const char* key);
+extern int apc_cache_search(T cache, const char* key);
 
 /*
- * apc_cache_retrieve: lookups key in cache. Returns null if not found,
- * otherwise stores associated data in dataptr, expanding array as necessary.
- * length and maxsize are updated as appropriate
+ * apc_cache_retrieve: searches for key in cache. Returns null if not found,
+ * otherwise stores associated data in *dataptr, expanding array as necessary.
+ * *length will be set to the length of data stored in dataptr. *maxsize must
+ * contain the current size of the *dataptr array; it will be set to the new
+ * size of *dataptr if it is expanded
  */
-extern int apc_cache_retrieve(apc_cache_t* cache, const char* key,
-	char** dataptr, int* length, int* maxsize);
-
-/*
- * apc_cache_retrieve_nl: searches for key in cache, and if found, sets
- * *dataptr to point to the start of the cached data and *length to the
- * number of bytes cached. Note that this routine should be surrounded
- * by external locking calls (see below)
- */
-extern int apc_cache_retrieve_nl(apc_cache_t* cache, const char* key,
-	char** dataptr, int* length);
+extern int apc_cache_retrieve(T cache, const char* key, char** dataptr,
+                              int* length, int* maxsize);
 
 /*
  * apc_cache_insert: adds a new mapping to cache. If the key already has a
- * mapping, it is removed and replaced with the new one
+ * mapping, it is removed and replaced with the new one. The key is
+ * associated with the first size bytes stored in data
  */
-extern int apc_cache_insert(apc_cache_t* cache, const char* key,
-	const char* data, int size);
+extern int apc_cache_insert(T cache, const char* key, const char* data,
+                            int size);
 
 /*
  * apc_cache_remove: removes a mapping from the cache
  */
-extern int apc_cache_remove(apc_cache_t* cache, const char* key);
+extern int apc_cache_remove(T cache, const char* key);
 
 /*
  * apc_cache_set_object_ttl: sets the ttl for an individual object
  */
 
-extern int apc_cache_set_object_ttl(apc_cache_t* cache,
-	const char* key, int ttl);
-
-/*
- * routines to externally lock a cache
- */
-extern void apc_cache_readlock(apc_cache_t* cache);
-extern void apc_cache_writelock(apc_cache_t* cache);
-extern void apc_cache_unlock(apc_cache_t* cache);
+extern int apc_cache_set_object_ttl(T cache, const char* key, int ttl);
 
 /*
  * apc_cache_dump: display information about a cache
  */
-extern void apc_cache_dump(apc_cache_t* cache, apc_outputfn_t outputfn);
+extern void apc_cache_dump(T cache, apc_outputfn_t outputfn);
 
+#undef T
 #endif
