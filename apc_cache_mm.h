@@ -29,7 +29,7 @@ struct mm_fl_element {
 	char *input;			/* mmap'd address of the file */
 };
 
-extern const char *apc_generate_cache_filename(char *filename);
+extern char *apc_generate_cache_filename(const char *filename);
 
 /*
  * apc_mmap_dump: generates output for apcinfo()

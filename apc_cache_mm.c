@@ -30,7 +30,7 @@ extern zend_apc_globals apc_globals;
  * cache files will be created in the same dir as their parent cache file 
  */
 
-const char *apc_generate_cache_filename(char *filename)
+char *apc_generate_cache_filename(const char *filename)
 {
   static char cache_filename[1024];
   char *cp;
