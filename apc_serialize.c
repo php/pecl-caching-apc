@@ -886,6 +886,8 @@ void apc_deserialize_hashtable(HashTable* ht, void* funcptr, int datasize)
 				zend_hash_index_update(ht, h, pData, datasize, NULL);
 			}
 		}
+                efree(arKey); // ADDED BY MPB
+                efree(pData); // ADDED BY MPB
 	}
 }
 
@@ -2003,6 +2005,7 @@ void apc_deserialize_zend_function_table(HashTable* gft, apc_nametable_t* acc, a
 		apc_nametable_insert(acc, zf->common.function_name, 0);
 		apc_nametable_insert(priv, zf->common.function_name, 0);
 		DESERIALIZE_SCALAR(&exists, char);
+                efree(zf); // ADDED BY MPB
 	}
 }
 
@@ -2093,6 +2096,7 @@ int apc_deserialize_zend_class_table(HashTable* gct, apc_nametable_t* acc, apc_n
 		apc_nametable_insert(acc, zc->name, 0);
 		apc_nametable_insert(priv, zc->name, 0);
 		DESERIALIZE_SCALAR(&exists, char);
+                efree(zc); // ADDED BY MPB
 		i++;
 	}
 	return i;

@@ -307,7 +307,7 @@ int apc_cache_index_mmap(HashTable* cache, zval **hash) {
         struct mm_fl_element *in_elem;
 
         ALLOC_ZVAL(array);
-		INIT_PZVAL(array);
+	INIT_PZVAL(array);
         if(array_init(array) == FAILURE) {
             return 1;
         }
@@ -327,6 +327,7 @@ int apc_cache_info_mmap(zval **hash) {
 	int j;
 	char buf[20];
 
+        zval_dtor(*hash);
 	array_init(*hash);
 	add_assoc_string(*hash, "mode", "MMAP", 1);
 

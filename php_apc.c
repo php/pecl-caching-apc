@@ -432,12 +432,11 @@ PHP_FUNCTION(apc_cache_info)
         int ac = ZEND_NUM_ARGS();
 
         if(ac != 1 || zend_get_parameters_ex(ac, &hash) == FAILURE) {
-        WRONG_PARAM_COUNT;
+          WRONG_PARAM_COUNT;
         }
-        if( array_init(*hash) == FAILURE) {
-        zend_error(E_WARNING, "Couldn't convert arg1 to array");
-        RETURN_FALSE;
-        }
+
+        zval_dtor(*hash);
+        array_init(*hash);
 
         if(apc_cache_info(hash)) {
                 RETURN_FALSE;

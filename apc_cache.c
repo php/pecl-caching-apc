@@ -1050,70 +1050,92 @@ int apc_cache_index_shm(apc_cache_t* cache, zval **hash)
 //	return 0;
 //}
 //
-int apc_cache_info_shm(apc_cache_t* cache, zval **hash) 
-{
-    zend_printf("<html>\n");
-    zend_printf("Temporarly Deprecated\n");
-    zend_printf("</html>\n");
-	return 0;
-}
+//int apc_cache_info_shm(apc_cache_t* cache, zval **hash) 
+//{
+//    zend_printf("<html>\n");
+//    zend_printf("Temporarly Deprecated\n");
+//    zend_printf("</html>\n");
+//	return 0;
+//}
 
-//int apc_cache_info_shm(apc_cache_t* cache, zval **hash) {
-//        int i,j;
-//        double hitrate;
-//        long total_mem;
-//        long free_mem;
-//        char buf[20];
-//	
-//        READLOCK(cache->lock);
-//
-//        hitrate = (1.0 * cache->header->hits) /
-//                (cache->header->hits + cache->header->misses);
-//
-//        total_mem = 0;
-//        free_mem  = 0;
-//
-//        array_init(*hash);
-//
-//        snprintf(buf, sizeof(buf)-1, "0x%x", cache->header->magic);
-//        add_assoc_string(*hash, "magic", buf, 1);
-//				add_assoc_string(*hash, "mode", "SHM", 1);
-//        add_assoc_string(*hash, "version", (char *)apc_version(), 1);
-//        add_assoc_long(*hash, "total buckets", cache->header->nbuckets);
-//        add_assoc_long(*hash, "maximum shared memory segments", cache->header->maxseg);
-//        add_assoc_long(*hash, "shared memory segment size", cache->header->segsize);
-//        add_assoc_long(*hash, "time-to-live", cache->header->ttl);
-//        add_assoc_long(*hash, "hits", cache->header->hits);
-//        add_assoc_long(*hash, "misses", cache->header->misses);
-//        add_assoc_double(*hash, "hit rate", hitrate);
+int apc_cache_info_shm(apc_cache_t* cache, zval **hash) {
+        int i,j;
+        double hitrate;
+        long total_mem;
+        long free_mem;
+        char buf[20];
+	
+        READLOCK(cache->lock);
+
+        hitrate = (1.0 * cache->header->hits) /
+                (cache->header->hits + cache->header->misses);
+
+        total_mem = 0;
+        free_mem  = 0;
+
+        // Array is already initialized!
+        zval_dtor(*hash);
+        array_init(*hash);
+
+        snprintf(buf, sizeof(buf)-1, "0x%x", cache->header->magic);
+        add_assoc_string(*hash, "magic", buf, 1);
+        switch (APCG(mode)) {
+          case SHMDIRECT_MODE: add_assoc_string(*hash, "mode", "SHMDIRECT", 1); break;
+          case SHM_MODE      : add_assoc_string(*hash, "mode", "SHM", 1); break;
+          case MMAP_MODE     : add_assoc_string(*hash, "mode", "MMAP", 1); break;
+          default            : add_assoc_string(*hash, "mode", "OFF", 1); break;
+        }
+
+        add_assoc_string(*hash, "version", (char *)apc_version(), 1);
+        add_assoc_long(*hash, "total buckets", cache->header->nbuckets);
+        add_assoc_long(*hash, "time-to-live", APCG(ttl));
+        add_assoc_long(*hash, "hits", cache->header->hits);
+        add_assoc_long(*hash, "misses", cache->header->misses);
+        add_assoc_double(*hash, "hit rate", hitrate);
 //		for(j = 0; j < APCG(nmatches); j++) {
 //			snprintf(buf, sizeof(buf)-1, "cache filter (%d)", j);
 //        	add_assoc_string(*hash, buf, 
 //				APCG(regex_text)[j]?APCG(regex_text)[j]:"(none)", 1);
 //		}
 //        add_assoc_long(*hash, "shared memory ID", cache->shmid);
-//
-//        snprintf(buf, sizeof(buf)-1, "0x%x", (int)(cache->shmaddr));
-//        add_assoc_string(*hash, "local shared memory address", buf, 1);
-//
-//        add_assoc_string(*hash, "creation pathname", cache->pathname ?cache->pathname : "(null)", 1);
-//
-//        for (i = 0; i < cache->header->maxseg; i++) {
-//                if (cache->segments[i].shmid > 0) {
-//                   apc_smm_memory_info(apc_smm_attach(cache->segments[i].shmid), &total_mem, &free_mem);
-//                }
-//        }
-//
-//        add_assoc_long(*hash, "total size", total_mem);
-//        add_assoc_long(*hash, "total available", free_mem);
-//		add_assoc_long(*hash, "check file modification times", APCG(check_mtime));
-//		add_assoc_long(*hash, "support relative includes", APCG(relative_includes));
-//		add_assoc_long(*hash, "check for compiled source", APCG(check_compiled_source));
-//
-//        UNLOCK(cache->lock);
-//        return 0;
-//}
-//
+
+        snprintf(buf, sizeof(buf)-1, "0x%x", (int)(cache->shmaddr));
+        add_assoc_string(*hash, "local shared memory address", buf, 1);
+
+        add_assoc_string(*hash, "creation pathname", cache->pathname ?cache->pathname : "(null)", 1);
+        add_assoc_long(*hash, "shared memory segment size", APCG(shm_segment_size));
+        add_assoc_long(*hash, "shared memory segments", APCG(shm_segments));
+        add_assoc_long(*hash, "maximum shared memory segments", APCG(shm_segments));
+
+
+        total_mem =  APCG(shm_segments) * APCG(shm_segment_size);
+        add_assoc_long(*hash, "total size", total_mem);
+        free_mem = total_mem;
+        {
+          int nbuckets;
+          int i;
+
+          /* Free buckets */
+          nbuckets = cache->header->nbuckets;
+          for (i = 0; i < nbuckets; i++) {
+                  if (cache->buckets[i].shmaddr != 0) {
+                          free_mem -= cache->buckets[i].length;
+                  }
+          }
+        }
+
+        if (free_mem < 0) // Uh, shouldn't happen!? 
+           free_mem = -1;
+
+        add_assoc_long(*hash, "total available", free_mem);
+	add_assoc_long(*hash, "check file modification times", APCG(check_mtime));
+	add_assoc_long(*hash, "support relative includes", APCG(relative_includes));
+	add_assoc_long(*hash, "check for compiled source", APCG(check_compiled_source));
+
+        UNLOCK(cache->lock);
+        return 0;
+}
+
 int apc_object_info_shm(apc_cache_t* cache, char const*filename, zval **arr) 
 {
     zend_printf("<html>\n");
