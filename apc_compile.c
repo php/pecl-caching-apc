@@ -17,6 +17,7 @@
 /* $Id$ */
 
 #include "apc_compile.h"
+#include "apc_globals.h"
 #include "apc_zend.h"
 
 typedef void* (*ht_copy_fun_t)(void*, void*, apc_malloc_t);
@@ -287,7 +288,7 @@ static zend_function* my_copy_function(zend_function* dst, zend_function* src, a
     case ZEND_USER_FUNCTION:
     case ZEND_EVAL_CODE:
         CHECK(apc_copy_op_array(&dst->op_array,
-                                &src->op_array/*apc_optimize_op_array(&src->op_array)*/,
+                                &src->op_array,
                                 allocate));
         break;
 
@@ -481,8 +482,9 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_mal
     if (!dst) {
         CHECK(dst = (zend_op_array*) allocate(sizeof(src[0])));
     }
-
-    /* XXX apc_optimize_op_array(src); */
+    if(APCG(optimization)) {
+        apc_optimize_op_array(src);
+    }
 
     /* start with a bitwise copy of the array */
     memcpy(dst, src, sizeof(src[0]));
