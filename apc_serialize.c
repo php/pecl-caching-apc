@@ -964,7 +964,7 @@ void apc_deserialize_zend_function_table(HashTable* gft)
 			strlen(zf->common.function_name)+1, zf,
 			sizeof(zend_function), NULL) == FAILURE)
 		{
-			zend_error(E_WARNING, "failed to add '%s' to ftable\n", zf->common.function_name);
+//			zend_error(E_WARNING, "failed to add '%s' to ftable\n", zf->common.function_name);
 		//	assert(0); /* should never fail! */
 		}
 		DESERIALIZE_SCALAR(&exists, char);
