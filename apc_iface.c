@@ -166,7 +166,7 @@ void apc_module_init()
 
 	/* do apc one-time initialization */
 	if (APC_SHM_MODE)
-          cache = apc_cache_create("/tmp/.apc.lock", APCG(hash_buckets), APCG(shm_segments), 
+          cache = apc_cache_create(NULL, APCG(hash_buckets), APCG(shm_segments), 
 	 	                   APCG(shm_segment_size), APCG(ttl));
 
 	/* initialize serialization buffers */
