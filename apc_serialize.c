@@ -465,6 +465,9 @@ void apc_create_hashtable(HashTable** ht, void* funcptr, int datasize)
 
 void apc_serialize_zvalue_value(zvalue_value* zv, int type)
 {
+	/* a zvalue_value is a union, and as such we first need to determine
+	 * exactly what it's type is, the serialize the appropriate structure
+	 */
 	switch (type) {
 	  case IS_RESOURCE:
 	  case IS_BOOL:
@@ -491,12 +494,16 @@ void apc_serialize_zvalue_value(zvalue_value* zv, int type)
 		apc_serialize_hashtable(zv->obj.properties, apc_serialize_zval);
 		break;
 	  default:
+		/* The above list enumerates all types.  If we get here,
+		 * something very very bad has happened. */
 		assert(0);
 	}
 }
 
 void apc_deserialize_zvalue_value(zvalue_value* zv, int type)
 {
+	/* we peaked ahead in the calling routine to deserialize the type.
+	 * now we just deserialize. */
 	switch(type) {
 	  case IS_RESOURCE:
 	  case IS_BOOL:
@@ -524,6 +531,8 @@ void apc_deserialize_zvalue_value(zvalue_value* zv, int type)
 			sizeof(zval));
 		break;
 	  default:
+        /* The above list enumerates all types.  If we get here,
+         * something very very bad has happened. */
 		assert(0);
 	}	
 }
@@ -533,6 +542,7 @@ void apc_deserialize_zvalue_value(zvalue_value* zv, int type)
 
 void apc_serialize_zval(zval* zv)
 {
+	/* type is the switch for serializing zvalue_value */
 	SERIALIZE_SCALAR(zv->type, zend_uchar);
 	apc_serialize_zvalue_value(&zv->value, zv->type);
 	SERIALIZE_SCALAR(zv->is_ref, zend_uchar);
@@ -541,6 +551,7 @@ void apc_serialize_zval(zval* zv)
 
 void apc_deserialize_zval(zval* zv)
 {
+	/* type is the switch for deserializing zvalue_value */
 	DESERIALIZE_SCALAR(&zv->type, zend_uchar);
 	apc_deserialize_zvalue_value(&zv->value, zv->type);
 	DESERIALIZE_SCALAR(&zv->is_ref, zend_uchar);
@@ -613,14 +624,16 @@ void apc_serialize_zend_class_entry(zend_class_entry* zce)
 	SERIALIZE_SCALAR(zce->type, char);
 	apc_serialize_string(zce->name);
 	SERIALIZE_SCALAR(zce->name_length, uint);
-	/* ignore zce->parent */
+	/* ignore zce->parent - this should probably be fixed */
 	SERIALIZE_SCALAR(zce->refcount[0], int);
 	SERIALIZE_SCALAR(zce->constants_updated, zend_bool);
 	apc_serialize_hashtable(&zce->function_table, apc_serialize_zend_function);
 	apc_serialize_hashtable(&zce->default_properties, apc_serialize_zval);
 
 	/* zend_class_entry.builtin_functions: this array appears to be
-	 * terminated by an element where zend_function_entry.fname is null */
+	 * terminated by an element where zend_function_entry.fname is null 
+	 * First we count the number of elements, then we serialize that count
+	 * and all the functions. */
 
 	count = 0;
 	if (zce->builtin_functions) {
@@ -644,9 +657,10 @@ void apc_deserialize_zend_class_entry(zend_class_entry* zce)
 
 	DESERIALIZE_SCALAR(&zce->type, char);
 	apc_create_string(&zce->name);
-	printf("Deserializing class entry: %s\n", zce->name);
 	DESERIALIZE_SCALAR(&zce->name_length, uint);
-	zce->parent = NULL; /* parent is not stored */
+	zce->parent = NULL; /* parent is not stored - this should be fixed*/
+	/* refcount is a pointer to a single int.  Don't ask me why, I
+	 * just work here. */
 	zce->refcount = (int*) emalloc(sizeof(int));
 	DESERIALIZE_SCALAR(zce->refcount, int);
 	DESERIALIZE_SCALAR(&zce->constants_updated, zend_bool);
@@ -730,6 +744,9 @@ void apc_deserialize_zend_utility_values(zend_utility_values* zuv)
 void apc_serialize_znode(znode* zn)
 {
 	SERIALIZE_SCALAR(zn->op_type, int);
+	/* if a znode is a union.  We know precisely what it is, if it is
+	 * IS_CONST, otherwise it is too case dependent, so we just do
+	 * a byte copy. */
 	switch(zn->op_type) {
 	  case IS_CONST: 
 		apc_serialize_zval(&zn->u.constant);
@@ -743,6 +760,9 @@ void apc_serialize_znode(znode* zn)
 void apc_deserialize_znode(znode* zn)
 {
 	DESERIALIZE_SCALAR(&zn->op_type, int);
+	/* if a znode is a union.  We know precisely what it is, if it is
+     * IS_CONST, otherwise it is too case dependent, so we just do
+     * a byte copy. */
 	switch(zn->op_type) {
 	  case IS_CONST:
 		apc_deserialize_zval(&zn->u.constant);
@@ -790,6 +810,20 @@ void apc_serialize_zend_op_array(zend_op_array* zoa)
 	SERIALIZE_SCALAR(zoa->refcount[0], zend_uint);
 	SERIALIZE_SCALAR(zoa->last, zend_uint);
 	SERIALIZE_SCALAR(zoa->size, zend_uint);
+	/* If a file 'A' is included twice in a single request, the following 
+	 * situation acn occur: A is deserialized and it's functions added to
+	 * the global function table.  On it's next call, A is expired 
+	 * (either forcibly removed or expired due to an expired ttl).
+	 * Now when A is compiled, it's functions can't be added to the
+	 * global function_table (they're already present) so they are
+	 * serialized as an opcode ZEND_DECLARE_FUNCTION_OR_CLASS.  This
+	 * means that the functions will be declared at execution time.
+	 * Since they are present in the global function_table, they will 
+	 * will also be serialized.  This will cause a fatal 'failed to
+	 * redclare....' error.  We avoid this by simulating the action 
+	 * of the parser and changing all ZEND_DECLARE_FUNCTION_OR_CLASS ops
+	 * to ZEND_NOPs. */ 
+	 
 	for (i = 0; i < zoa->last; i++) {
 		if(zoa->opcodes[i].opcode == ZEND_DECLARE_FUNCTION_OR_CLASS)
 		{
@@ -926,6 +960,8 @@ void apc_deserialize_zend_overloaded_function(zend_overloaded_function* zof)
 
 void apc_serialize_zend_function(zend_function* zf)
 {
+	/* zend_function come in 4 different types with different internal 
+	 * structs. */
 	switch(zf->type) {
 	  case ZEND_INTERNAL_FUNCTION:
 		apc_serialize_zend_internal_function(&zf->internal_function);
@@ -938,7 +974,8 @@ void apc_serialize_zend_function(zend_function* zf)
 		apc_serialize_zend_op_array(&zf->op_array);
 		break;
 	  default:
-		fprintf(stderr, "zf->type=%d\n", zf->type);
+		/* the above are all valid zend_function types.  If we hit this
+		 * case something has gone very very wrong. */
 		assert(0);
 	}
 }
@@ -958,7 +995,8 @@ void apc_deserialize_zend_function(zend_function* zf)
 		apc_deserialize_zend_op_array(&zf->op_array);
 		break;
 	  default:
-		fprintf(stderr, "zf->type=%d\n", zf->type);
+		/* the above are all valid zend_function types.  If we hit this
+         * case something has gone very very wrong. */
 		assert(0);
 	}
 }
@@ -972,6 +1010,17 @@ void apc_create_zend_function(zend_function** zf)
 
 /* special purpose serialization functions */
 
+/* in serialize_function_table we serialize all the elements of the 
+ * global function_table that were inserted during this compilation.
+ * we track this using both a global accumulator table acc and a 
+ * table priv which tracks changes made specifically in this file.
+ * We need a priv table to handle another aspect of the situation
+ * when a file is included multiple times.  Whenever a file is serialized
+ * after having already been seen once during a particular request, all
+ * the functions it deserialized previously are deleted from the accumulator
+ * table.  If we don't do this, it won't appear to have declared any new
+ * functions during the second call to this routine, and no functions will
+ * be serialized. */
 static int store_function_table(void *element, int num_args,
 	va_list args, zend_hash_key *hash_key)
 {
@@ -1004,6 +1053,10 @@ void apc_serialize_zend_function_table(HashTable* gft,
 	SERIALIZE_SCALAR(0, char);
 }
 
+/* during deserialization we deserialize functions, and add them to the
+ * global_function_table, the accumulator table for that requst, and the
+ * private function_table for the file being compiled.  See the note at
+ * the top of apc_serialize_zend_function_table for the logic. */
 void apc_deserialize_zend_function_table(HashTable* gft, apc_nametable_t* acc, apc_nametable_t* priv)
 {
 	zend_function* zf;
@@ -1016,13 +1069,25 @@ void apc_deserialize_zend_function_table(HashTable* gft, apc_nametable_t* acc, a
 			strlen(zf->common.function_name)+1, zf,
 			sizeof(zend_function), NULL) == FAILURE)
 		{
-			//zend_error(E_WARNING, "failed to add '%s' to ftable\n", zf->common.function_name);
+		// This can validly happen.
 		}
 		apc_nametable_insert(acc, zf->common.function_name, 0);
 		apc_nametable_insert(priv, zf->common.function_name, 0);
 		DESERIALIZE_SCALAR(&exists, char);
 	}
 }
+
+/* in serialize_class_table we serialize all the elements of the 
+ * global class_table that were inserted during this compilation.
+ * we track this using both a global accumulator table acc and a 
+ * table priv which tracks changes made specifically in this file.
+ * We need a priv table to handle another aspect of the situation
+ * when a file is included multiple times.  Whenever a file is serialized
+ * after having already been seen once during a particular request, all
+ * the classs it deserialized previously are deleted from the accumulator
+ * table.  If we don't do this, it won't appear to have declared any new
+ * classs during the second call to this routine, and no classs will
+ * be serialized. */
 
 static int store_class_table(void *element, int num_args,
 	va_list args, zend_hash_key *hash_key)
@@ -1059,6 +1124,11 @@ void apc_serialize_zend_class_table(HashTable* gct,
 	SERIALIZE_SCALAR(0, char);
 }
 
+/* during deserialization we deserialize functions, and add them to the
+ * global_function_table, the accumulator table for that requst, and the
+ * private function_table for the file being compiled.  See the note at
+ * the top of apc_serialize_zend_function_table for the logic. */
+
 void apc_deserialize_zend_class_table(HashTable* gct, apc_nametable_t* acc, apc_nametable_t* priv)
 {
 	char exists;
@@ -1071,8 +1141,7 @@ void apc_deserialize_zend_class_table(HashTable* gct, apc_nametable_t* acc, apc_
 		if (zend_hash_add(gct, zc->name, zc->name_length + 1,
 			zc, sizeof(zend_class_entry), NULL) == FAILURE)
 		{
-//			zend_error(E_WARNING,"Failed to add %s to CG(class_table", zc->name);
-			//assert(0); /* should never fail! */
+		// This can validly happen.
 		}
 		apc_nametable_insert(acc, zc->name, 0);
 		apc_nametable_insert(priv, zc->name, 0);
