@@ -66,6 +66,7 @@ ZEND_GET_MODULE(apc)
 
 /* initialization file support */
 
+/* set the global ttl for all cache objects */
 static PHP_INI_MH(set_ttl)
 {
   if(new_value==NULL)
@@ -75,6 +76,8 @@ static PHP_INI_MH(set_ttl)
   return SUCCESS;
 }
 
+/* set the directory for compiled files for the mmap implementation.  
+ * has no effect if running shm implementation. */
 static PHP_INI_MH(set_cachedir)
 {
 	if(new_value == NULL)
@@ -84,18 +87,17 @@ static PHP_INI_MH(set_cachedir)
 	return SUCCESS;
 }
 
+/* set a POSIX extended regex to match for NOT serializing objects */
 static PHP_INI_MH(set_regex)
 {
+	if(regcomp(&APCG(regex), new_value, REG_EXTENDED|REG_ICASE) == 0)
 	{
-		if(regcomp(&APCG(regex), new_value, REG_EXTENDED|REG_ICASE) == 0)
-		{
-			APCG(regex_text) = new_value;
-			APCG(nmatches) = 1;
-			return SUCCESS;
-		}
-		else
-			return FAILURE;
+		APCG(regex_text) = new_value;
+		APCG(nmatches) = 1;
+		return SUCCESS;
 	}
+	else
+		return FAILURE;
 }
 		
 PHP_INI_BEGIN()
@@ -103,12 +105,24 @@ PHP_INI_BEGIN()
 		set_ttl)
 	PHP_INI_ENTRY("apc.cachedir", NULL, PHP_INI_ALL,  set_cachedir)
 	PHP_INI_ENTRY("apc.regex", NULL, PHP_INI_ALL,  set_regex)
-	STD_PHP_INI_ENTRY("apc.hash_buckets", "1024", PHP_INI_ALL, OnUpdateInt, hash_buckets, zend_apc_globals, apc_globals)
-	STD_PHP_INI_ENTRY("apc.shm_segment_size", "33554431", PHP_INI_ALL, OnUpdateInt, shm_segment_size, zend_apc_globals, apc_globals)
-	STD_PHP_INI_ENTRY("apc.shm_segments", "10", PHP_INI_ALL, OnUpdateInt, shm_segments, zend_apc_globals, apc_globals)
+
+	/* set number of hash_buckets in the master index for shm
+	 * implementation.  Ignored under mmap. */
+	STD_PHP_INI_ENTRY("apc.hash_buckets", "1024", PHP_INI_ALL, 
+		OnUpdateInt, hash_buckets, zend_apc_globals, apc_globals)
+
+	/* set size of shm segments in for shm implementation.  
+	 * Ignored under mmap. */
+	STD_PHP_INI_ENTRY("apc.shm_segment_size", "33554431", PHP_INI_ALL, 
+		OnUpdateInt, shm_segment_size, zend_apc_globals, apc_globals)
+
+  /* set number of shm segments in for shm implementation.  
+   * Ignored under mmap. */
+	STD_PHP_INI_ENTRY("apc.shm_segments", "10", PHP_INI_ALL, 
+		OnUpdateInt, shm_segments, zend_apc_globals, apc_globals)
 PHP_INI_END()
 
-
+/* printf style interface to zend_error */
 static int printlog(const char* fmt, ...)
 {
 	va_list args;
@@ -116,6 +130,7 @@ static int printlog(const char* fmt, ...)
 	zend_error(E_WARNING, fmt, args);
 	va_end(args);
 }
+
 static void apc_init_globals(void)
 {
 	APCG(nmatches) = 0;
@@ -123,6 +138,7 @@ static void apc_init_globals(void)
 
 /* module functions */
 
+/* all apc_ functions here are in apc_iface.c */
 PHP_MINIT_FUNCTION(apc)
 {
 	apc_init_globals();
@@ -154,7 +170,7 @@ PHP_RSHUTDOWN_FUNCTION(apc)
 PHP_MINFO_FUNCTION(apc)
 {
 	php_info_print_table_start();
-    php_info_print_table_header(2, "APC Support", "Enabled");
+  php_info_print_table_header(2, "APC Support", "Enabled");
 	php_info_print_table_row(2, "APC Version", apc_version());
 	php_info_print_table_end();
 }
@@ -174,12 +190,15 @@ PHP_GSHUTDOWN_FUNCTION(apc)
 
 /* exported function definitions */
 
+/* generates an html page with cache statistics */
 PHP_FUNCTION(apcinfo)
 {
 	apc_module_info();
 	RETURN_NULL();
 }
 
+/* takes 1 argument (the path to a php file) and removes it's associated
+ * entry from the cache, using the implementation-specific method. */
 PHP_FUNCTION(apc_rm)
 {
 	pval **zv;
@@ -208,12 +227,15 @@ PHP_FUNCTION(apc_rm)
 	}
 }
 
+/* clears all elements from the cache.  Only works on shm implementation */
 PHP_FUNCTION(apc_reset_cache)
 {
 	apc_reset_cache();
 	RETURN_TRUE;
 }
 
+/* takes an int.  sets the ttl of the calling file to be that length in
+ * seconds.  Only supported under shm implementation. */
 PHP_FUNCTION(apc_set_my_ttl)
 {
 	pval **num;
@@ -246,19 +268,24 @@ ZEND_DLEXPORT zend_extension zend_extension_entry = {
 	"APC Caching",
 	"0.1",
 	"Dan Cowgill and George Schlossnagle",
-	NULL,
+	"http://apc.communityconnect.com",
 	"Copyright (c) 2000 Community Connect Inc.",
 	apc_zend_startup,
 	apc_zend_shutdown,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
+	NULL, /* activate_func_t */
+	NULL, /* deactivate_func_t */
+	NULL, /* message_handler_func_t */
+	NULL, /* op_array_handler_func_t */
+	NULL, /* statement_handler_func_t */
+	NULL, /* fcall_begin_handler_func_t */
+	NULL, /* fcall_end_handler_func_t */
+	NULL, /* op_array_ctor_func_t */
+	NULL, /* op_array_dtor_func_t */
+#ifdef COMPAT_ZEND_EXTENSION_PROPERTIES
+	NULL, /* api_no_check */
+	COMPAT_ZEND_EXTENSION_PROPERTIES
+#else
 	STANDARD_ZEND_EXTENSION_PROPERTIES
+#endif
 };
 	
