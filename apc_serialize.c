@@ -339,7 +339,6 @@ void apc_deserialize_zend_llist(zend_llist* list)
 	DESERIALIZE_SCALAR(&size, size_t);
 	DESERIALIZE_SCALAR(&dtor, void*);
 	DESERIALIZE_SCALAR(&persistent, unsigned char);
-
 	/* initialize the list */
 	zend_llist_init(list, size, dtor, persistent);
 
@@ -443,8 +442,15 @@ void apc_deserialize_hashtable(HashTable* ht, void* funcptr, int datasize)
 		DESERIALIZE_SCALAR(&nKeyLength, uint);
 		apc_create_string(&arKey);
 		deserialize_bucket(&pData);
-		zend_hash_add_or_update(ht, arKey, nKeyLength, pData, datasize,
+		if(datasize == sizeof(zval *)) {
+		zend_hash_add_or_update(ht, arKey, nKeyLength, &pData, datasize,
 			NULL, HASH_ADD);
+		}
+		else {
+			zend_hash_add_or_update(ht, arKey, nKeyLength, pData, datasize,
+				NULL, HASH_ADD);
+		}
+
 	}
 }
 
@@ -547,8 +553,8 @@ void apc_deserialize_zvalue_value(zvalue_value* zv, int type)
 		break;
 	  case IS_OBJECT:
 		apc_create_zend_class_entry(&zv->obj.ce);
-		apc_create_hashtable(&zv->obj.properties, apc_create_zval_ptr,
-			sizeof(zval));
+		apc_create_hashtable(&zv->obj.properties, apc_create_zval,
+			sizeof(zval *));
 		break;
 	  default:
         /* The above list enumerates all types.  If we get here,
@@ -687,8 +693,8 @@ void apc_deserialize_zend_class_entry(zend_class_entry* zce)
 	DESERIALIZE_SCALAR(&zce->constants_updated, zend_bool);
 	apc_deserialize_hashtable(&zce->function_table, apc_create_zend_function,
 		sizeof(zend_function));
-	apc_deserialize_hashtable(&zce->default_properties, apc_create_zval_ptr,
-		sizeof(zval));
+	apc_deserialize_hashtable(&zce->default_properties, apc_create_zval,
+		sizeof(zval *));
 
 	/* see apc_serialize_zend_class_entry() for a description of the
 	 * zend_class_entry.builtin_functions member */
@@ -947,7 +953,7 @@ void apc_deserialize_zend_op_array(zend_op_array* zoa)
 		LOAD_BYTES(zoa->brk_cont_array, zoa->last_brk_cont *
 			sizeof(zend_brk_cont_element));
 	}
-	apc_create_hashtable(&zoa->static_variables, apc_create_zval_ptr, sizeof(zval));
+	apc_create_hashtable(&zoa->static_variables, apc_create_zval, sizeof(zval *));
 #if SUPPORT_INTERACTIVE
 	/* we accept patches */
 #endif
