@@ -131,7 +131,6 @@ void apc_smm_initsegment(int shmid, int segsize)
  * all pointers into shared memory managed by this system */
 void apc_smm_cleanup()
 {
-	header_t* header;
 	int i;
 
 	for (i = 0; i < NUM_BUCKETS; i++) {
@@ -171,12 +170,11 @@ void* apc_smm_attach(int shmid)
 
 /* apc_smm_detach: don't do anything */
 void apc_smm_detach(void* shmaddr)
-{
-}
+{}
 
 /* apc_smm_alloc: return offset to size bytes of contiguous memory, or -1 if
  * not enough memory is available in the segment */
-int apc_smm_alloc(void* shmaddr, int size)
+int apc_smm_alloc(void* shmaddr, int size, int smallblock)
 {
 	header_t* header;		/* header of shared memory segment */
 	block_t* prv;			/* block prior to working block */
@@ -191,7 +189,9 @@ int apc_smm_alloc(void* shmaddr, int size)
 	/* set realsize to the smallest power of 2 greater than or equal to
 	 * realsize. this increases the likelihood that neighboring blocks
 	 * can be coalesced, reducing memory fragmentation */
-	realsize = pow2(realsize);
+	if (!smallblock) {
+		realsize = pow2(realsize);
+	}
 
 	/* first insure that the segment contains at least realsize free
 	 * bytes, even if they are not contiguous */

@@ -51,7 +51,7 @@ extern void apc_smm_detach(void* shmaddr);
  * (relative to shmaddr, the start address (and location of the segment
  * header, or -1 if not enough memory is available in the segment.
  */
-extern int apc_smm_alloc(void* shmaddr, int size);
+extern int apc_smm_alloc(void* shmaddr, int size, int smallblock);
 
 /*
  * apc_smm_free: frees the memory at given offset, which must have been
