@@ -57,7 +57,7 @@ struct apc_cache_t {
     header_t* header;           /* cache header (stored in SHM) */
     slot_t** slots;             /* array of cache slots (stored in SHM) */
     int num_slots;              /* number of slots in cache */
-	int mask;                   /* Mask to find necessary slot */
+    int mask;                   /* Mask to find necessary slot */
     int gc_ttl;                 /* maximum time on GC list for a slot */
     int lock;                   /* global semaphore lock */
 };
@@ -202,7 +202,7 @@ apc_cache_t* apc_cache_create(int size_hint, int gc_ttl)
 
     cache->slots = (slot_t**) (((char*) cache->shmaddr) + sizeof(header_t));
     cache->num_slots = num_slots;
-	cache->mask = 1 << num_slots;
+    cache->mask = 1 << num_slots;
     cache->gc_ttl = gc_ttl;
     cache->lock = CREATE_LOCK;
 
