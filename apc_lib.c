@@ -225,7 +225,7 @@ int apc_check_compiled_file(const char *filename, char **dataptr, int *length)
 {
 	struct stat statbuf;
 	int fd;
-	char *realname;
+	const char *realname;
 	char *buffer;
 	char FIXME[1024];
 	char temp[32];

@@ -88,4 +88,9 @@ extern int apc_dump_cache_object(const char* name, apc_outputfn_t outputfn);
  * apc_cache_index: fills out a hash with cache object data
  */
 extern int apc_cache_index(zval** hash);
+
+/*
+ * apc_cache_index: fills out a hash with cache info data
+ */
+extern int apc_cache_info(zval** hash);
 #endif

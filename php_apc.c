@@ -24,6 +24,7 @@ PHP_FUNCTION(apc_reset_cache);
 PHP_FUNCTION(apc_set_my_ttl);
 PHP_FUNCTION(apc_dump_cache_object);
 PHP_FUNCTION(apc_cache_index);
+PHP_FUNCTION(apc_cache_info);
 
 /* list of exported functions */
 static unsigned char a1_arg_force_ref[] = { 2, BYREF_NONE, BYREF_FORCE };
@@ -35,6 +36,7 @@ function_entry apc_functions[] = {
 	PHP_FE(apc_set_my_ttl, NULL)
 	PHP_FE(apc_dump_cache_object, NULL)
 	PHP_FE(apc_cache_index, a1_arg_force_ref)
+	PHP_FE(apc_cache_info, a1_arg_force_ref)
 	{NULL, NULL, NULL}
 };
 
@@ -329,9 +331,8 @@ PHP_FUNCTION(apc_dump_cache_object)
 /* }}} */
 
 /* {{{ proto int apc_cache_index(array &output)
-    Generate detailed information about the cache.  If uri is passed, link
-    all objects to uri, for detailed object information and deleteion
-    tags. */
+    Generate detailed information about the cache indexed files.
+    */
 PHP_FUNCTION(apc_cache_index)
 {
 	zval **hash;
@@ -349,10 +350,36 @@ PHP_FUNCTION(apc_cache_index)
 		RETURN_FALSE;
 	}
 	else {
-		RETURN_TRUE
+		RETURN_TRUE;
 	}
 }	
 /* }}} */
+
+/* {{{ proto int apc_cache_index(array &output)
+    Generate detailed information about the cache.
+    */
+PHP_FUNCTION(apc_cache_info)
+{
+        zval **hash;
+        int ac = ZEND_NUM_ARGS();
+
+        if(ac != 1 || zend_get_parameters_ex(ac, &hash) == FAILURE) {
+        WRONG_PARAM_COUNT;
+        }
+        if( array_init(*hash) == FAILURE) {
+        zend_error(E_WARNING, "Couldn't convert arg1 to array");
+        RETURN_FALSE;
+        }
+
+        if(apc_cache_info(hash)) {
+                RETURN_FALSE;
+        }
+        else {
+                RETURN_TRUE;
+	}
+}	
+/* }}} */
+
 
 /* zend extension support */
 

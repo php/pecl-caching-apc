@@ -105,5 +105,11 @@ extern int apc_cache_dump_entry(T cache, const char* key,
  */
 extern int apc_cache_index_shm(apc_cache_t* cache, zval **hash); 
 
+/*
+ * apc_cache_info_shm: creates a hash keyed with information about the cache
+ * status
+ */
+extern int apc_cache_info_shm(apc_cache_t* cache, zval **hash);
+
 #undef T
 #endif

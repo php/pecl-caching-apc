@@ -65,4 +65,6 @@ extern void apc_smm_free(void* shmaddr, int offset);
  */
 extern void apc_smm_dump(void* shmaddr, apc_outputfn_t outputfn);
 
+extern void apc_smm_memory_info(void* shmaddr, long *total, long *avail);
+
 #endif

@@ -950,4 +950,53 @@ int apc_cache_index_shm(apc_cache_t* cache, zval **hash) {
 	return 0;
 }
 
+int apc_cache_info_shm(apc_cache_t* cache, zval **hash) {
+        int i;
+        double hitrate;
+        long total_mem;
+        long free_mem;
+        char buf[20];
 	
+        READLOCK(cache->lock);
+
+        hitrate = (1.0 * cache->header->hits) /
+                (cache->header->hits + cache->header->misses);
+
+        total_mem = 0;
+        free_mem  = 0;
+
+        array_init(*hash);
+
+        snprintf(buf, sizeof(buf)-1, "0x%x", cache->header->magic);
+        add_assoc_string(*hash, "magic", buf, 1);
+
+        add_assoc_long(*hash, "total buckets", cache->header->nbuckets);
+        add_assoc_long(*hash, "maximum shared memory segments", cache->header->maxseg);
+        add_assoc_long(*hash, "shared memory segment size", cache->header->segsize);
+        add_assoc_long(*hash, "time-to-live", cache->header->ttl);
+        add_assoc_long(*hash, "hits", cache->header->hits);
+        add_assoc_long(*hash, "misses", cache->header->misses);
+        add_assoc_double(*hash, "hit rate", hitrate);
+        add_assoc_string(*hash, "cache filter", APCG(regex_text)? APCG(regex_text): "(none)", 1);
+        add_assoc_long(*hash, "shared memory ID", cache->shmid);
+
+        snprintf(buf, sizeof(buf)-1, "0x%x", cache->shmaddr);
+        add_assoc_string(*hash, "local shared memory address", buf, 1);
+
+        add_assoc_string(*hash, "creation pathname", cache->pathname ?cache->pathname : "(null)", 1);
+
+        for (i = 0; i < cache->header->maxseg; i++) {
+                if (cache->segments[i].shmid > 0) {
+                   apc_smm_memory_info(apc_smm_attach(cache->segments[i].shmid), &total_mem, &free_mem);
+                }
+        }
+
+        add_assoc_long(*hash, "total size", total_mem);
+        add_assoc_long(*hash, "total available", free_mem);
+		add_assoc_long(*hash, "check file modification times", APCG(check_mtime));
+		add_assoc_long(*hash, "support relative includes", APCG(relative_includes));
+		add_assoc_long(*hash, "check for compiled source", APCG(check_compiled_source));
+
+        UNLOCK(cache->lock);
+        return 0;
+}

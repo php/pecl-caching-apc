@@ -352,3 +352,15 @@ void apc_smm_dump(void* shmaddr, apc_outputfn_t outputfn)
 
 	outputfn("</table>\n");
 }
+
+/* apc_smm_memory_info: add total and available memory of this segment to
+ * passed variables; called by apc_cache_info()
+ */
+void apc_smm_memory_info(void* shmaddr, long *total, long *avail)
+{
+        header_t* header;
+
+        header = (header_t*) shmaddr;
+        (*total) += header->segsize;
+        (*avail) += header->avail;
+}

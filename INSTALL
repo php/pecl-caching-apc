@@ -183,3 +183,26 @@ int apc_cache_index(array &output)
 		element4 -> inode
 	As with all other functions, the shm return global cache information
 	the mmap version returns that particular child's view of the cache.
+
+int apc_cache_info(array &output)
+        supported: (S,M)
+        Fetches an associative array keyed with cache header names and values
+        SHM:
+                "total buckets"
+                "maximum shared memory segments"
+                "shared memory segment size"
+                "time-to-live"
+                "hits"
+                "misses"
+                "hit rate"
+                "cache filter"
+                "shared memory ID"
+                "local shared memory address"
+                "creation pathname"
+        SHM Info:
+                "Total Size"
+                "Total Available"
+		SHM Toggles:
+				"check file modification times"
+				"support relative includes"
+				"check for compiled source"

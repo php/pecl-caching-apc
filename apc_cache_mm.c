@@ -319,3 +319,7 @@ int apc_cache_index_mmap(HashTable* cache, zval **hash) {
     return 0;
 }
 
+int apc_cache_info_mmap(zval **hash) {
+	return 1;
+}
+
