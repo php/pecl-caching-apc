@@ -1,24 +1,18 @@
-Why Cache?
+* Why Cache?
 
-PHP is an interpreted language.  A principle difference between compiled languages (like C) and interpreted languages is that when 
-an interpreted language is called upon to execute the source code contained in a file, it must parse and compile it prior to 
-execution.  When PHP executes a file, it compiles the file's source code into a series of instructions, or "opcodes," and then executes those instructions. Because the process of converting source code into executable instructions is costly in time and memory, we can benefit by storing the instructions for later use. Ideally, a file is compiled only when it is accessed for the first time, or when it changes.
+PHP is an interpreted language.  A principle difference between compiled languages (like C) and interpreted languages is that when an interpreted language is called upon to execute the source code contained in a file, it must parse and compile it prior to execution.  When PHP executes a file, it compiles the file's source code into a series of instructions, or "opcodes," and then executes those instructions. Because the process of converting source code into executable instructions is costly in time and memory, we can benefit by storing the instructions for later use. Ideally, a file is compiled only when it is accessed for the first time, or when it changes.
 
-APC provides such a caching mechanism by overriding PHP's compile routine, so that a cache is always consulted before compiling a file. If that file's instructions are already stored in the cache, the compilation step is skipped and the stored instructions are used. Otherwise, the compilation of the file proceeds and its instructions are inserted into the cache.  A shared memory implementation is
-used so that in a system where many interpreters are being run simultaneously (like a number of Apache children), they each have 
-access to the compilation results of the other interpreters.  This is a major difference between this caching implementation and 
-something like the Bware Cache, where each child is responsible for caching its own compile results and it is impossible for that
-information to be shared with other children or to persist past the death of the interpreter that generated them. 
+APC provides such a caching mechanism by overriding PHP's compile routine, so that a cache is always consulted before compiling a file. If that file's instructions are already stored in the cache, the compilation step is skipped and the stored instructions are used. Otherwise, the compilation of the file proceeds and its instructions are inserted into the cache.  A shared memory implementation is used so that in a system where many interpreters are being run simultaneously (like a number of Apache children), they each have access to the compilation results of the other interpreters.  This is a major difference between this caching implementation and something like the Bware Cache, where each child is responsible for caching its own compile results and it is impossible for that information to be shared with other children or to persist past the death of the interpreter that generated them. 
 
-Interfacing with the Zend Engine
+* Interfacing with the Zend Engine
 
 When APC starts up it replaces the function pointer 'zend_compile_file' with its own compile function, 'apc_compile_file' (defined in "apc_iface.c"). On shutdown, it reverses the change. 
 
-Include Statements
+* Include Statements
 
 When the PHP compiler encounters an include statement ('include' or 'include_once') it emits an "include-file" opcode, but does not access the file. Instead, the file is opened and compiled afterward, when PHP executes the include-file opcode. This recursive process continues until all the opcodes in the including file have been executed. Therefore, included files are compiled and executed at run-time, and the PHP compile function 'zend_compile_file' is called for each of them. Because we override this function, our 'apc_compile_file' function is also called for each of them.
 
-Compiler Results
+* Compiler Results
 
 PHP compiles a file's top-level statements -- those that are outside of its functions and classes -- into a sequence of opcodes and stores them in a variable of type 'zend_op_array'. PHP also compiles functions into sequences of opcodes, but they are stored in a global table that maps the functions' names to their opcodes. Note that a compiled file's opcodes do not contain or reference its functions or their opcodes except by name.
 
@@ -28,7 +22,7 @@ The PHP compile function 'zend_compile_file' takes a file name as a parameter an
 
 Because functions and classes are often inserted into the global tables during the compilation of the file in which they are defined, it is impossible to determine which functions and classes currently in the global tables are defined in a given file by examining that file's opcodes alone, or the opcodes of the functions and class in the global tables.
 
-Gathering the Compiler Results
+* Gathering the Compiler Results
 
 Although the sequence of opcodes for the top-level statements in a file is readily available to us (it is returned by 'zend_compile_file'), we cannot easily determine which functions and classes in the global function and class tables were defined by the file we just compiled. To solve this problem we use two auxiliary tables, one each for functions and classes, to find the differences in the global function and class tables after compilation; we call them "accumulator tables".
 
@@ -36,11 +30,11 @@ Before calling 'zend_compile_file', our function accumulator table contains all 
 
 When a file is retrieved from the cache instead of compiled, its functions and classes are obviously added to both the global tables and the accumulator tables.
 
-Storing the Compiler Results
+* Storing the Compiler Results
 
 We store all the opcode arrays for a given file and its functions and classes in a cache shared by all the web server processes. These compiler data structures ('zend_op_array', 'zend_function', 'zend_class_entry') are serialized into opaque blocks of bytes and mapped to the file by its file name. When the file is subsequently retrieved from the cache, its data structures are deserialized and rebuilt.
 
-Wrinkles and Complications
+* Wrinkles and Complications
 
 APC has some capabilities that add significant complexity to the simple view of things given above. For example, when a file is cached it is assigned a "time-to-live" (TTL), and when it expires from old age, it must be recompiled from scratch (the TTL can be infinite). Files can also have individual TTLs.
 
@@ -50,6 +44,6 @@ If the file is deserialized when it is encountered for the first time and compil
 
 Our solution is to remember which files we have seen -- and compiled or deserialized -- during a particular request and remember exactly which functions and classes belonged to that file. Before we process a file we have seen before, we remove its functions and classes from the global tables and from the accumulator tables. This essentially returns the relevant parts of the compiler to the state they were in before we compiled the file for the first time.  
 
-Limitations
+* Limitations
 
 Blah blah blah
