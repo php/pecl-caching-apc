@@ -63,6 +63,7 @@ extern void apc_create_hashtable(HashTable** ht, void* funcptr, int datasize);
 /* zend.h */
 extern void apc_serialize_zvalue_value(zvalue_value* zv, int type);
 extern void apc_deserialize_zvalue_value(zvalue_value* zv, int type);
+extern void apc_serialize_zval_ptr(zval** zv);
 extern void apc_serialize_zval(zval* zv);
 extern void apc_deserialize_zval(zval* zv);
 extern void apc_create_zval(zval** zv);

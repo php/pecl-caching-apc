@@ -1,4 +1,16 @@
-* fixed support for class inheritance [djc 01.16.2001]
-* added support for inherited classes [gws 01.15.2001]
-* fixed support for intialization of class variables and objects [gws 01.13.2001]
-* added configurable comparison of file modification times to shared memory implementation. the new ini entry is 'check_mtime'. [djc 01.12.2001]
+APC Change Log
+-------------------------------
+
+1.0.4:
++ support for class hierarchies greater than two levels deep [djc 01.17.2001]
+
+1.0.3:
++ fixed support for class inheritance [djc 01.16.2001]
+
+1.0.2:
++ support for inherited classes [gws 01.15.2001]
++ support for intialization of class variables and objects [gws 01.13.2001]
+
+1.0.1:
++ added optional file modification time check [djc 01.12.2001]
+

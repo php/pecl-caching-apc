@@ -28,44 +28,58 @@ struct namearray_t {
 	int size;		/* physical size of strings */
 };
 
+/* namearray_dtor: used to clean up deferred_inheritance table (see below) */
+static void namearray_dtor(void* p)
+{
+	namearray_t* na = (namearray_t*) p;
+
+	if (na->strings != 0) {
+		free(na->strings);
+	}
+	free(na);
+}
+
 /* deferred_inheritance is a mapping from parent class names to
  * namearray_t structures that contain the names of all classes
  * derived from the parent class that were compiled before the
  * parent class definition was encountered... */ 
 static apc_nametable_t* deferred_inheritance = 0;
 
-/* FIXME comment */
+/* inherit: recursively inherit methods from base to all the children
+ * of parent, the children of parent's children, and so on */
 static void inherit(zend_class_entry* base, zend_class_entry* parent)
 {
 	namearray_t* children;	/* classes derived directly from parent */
+	char* child_name;		/* name of the ith child of parent */
+	int i;
 	
 	children = apc_nametable_retrieve(deferred_inheritance, parent->name);
 
-	if (children != 0) {
-		/* One or more classes are derived from this one and have
-		 * already been deserialized. We must now perform the
-		 * inheritance that would normally be done at run-time. */
+	if (!children) {
+		return;		/* 'parent' has no children, nothing to do */
+	}
+
+	/* For each child of parent, resolve the inheritance from base
+	 * to the child. */
 	
-		char* child_name;	/* name of the ith derived class */
-		int i;
+	for (i = 0; i < children->length; i += strlen(child_name) + 1) {
+		zend_class_entry* child;
+		int result;
 		
-		for (i = 0; i < children->length; i += strlen(child_name)+1) {
-			zend_class_entry* child;	/* the ith derived class entry */
-			int result;
-			
-			child_name = children->strings + i;
+		child_name = children->strings + i;
 
-			/* get the child class entry */
-			result = zend_hash_find(CG(class_table), child_name,
-				strlen(child_name) + 1, (void**) &child);
-			assert(result == SUCCESS);	/* FIXME */
+		/* look up the child class entry */
+		result = zend_hash_find(CG(class_table), child_name,
+			strlen(child_name) + 1, (void**) &child);
+		assert(result == SUCCESS);	/* FIXME: is this correct? */
 
-			ZEND_DO_INHERITANCE(child, base);
-			inherit(base, child);
-		}
+		/* child inherits from base */
+		ZEND_DO_INHERITANCE(child, base);
+
+		/* all children of child inherit from base */
+		inherit(base, child);
 	}
 }
-
 
 enum { START_SIZE = 1, GROW_FACTOR = 2 };
 
@@ -86,17 +100,6 @@ static void expandbuf(char** bufptr, int* cursize, int minsize)
 	*bufptr = (char*) realloc(*bufptr, *cursize);
 }
 
-/* namearray_dtor: used to clean up deferred_inheritance table (see below) */
-static void namearray_dtor(void* p)
-{
-	namearray_t* na = (namearray_t*) p;
-
-	if (na->strings != 0) {
-		free(na->strings);
-	}
-	free(na);
-}
-
 /* apc_serializer_request_init: initialize this module per request */
 void apc_serializer_request_init()
 {
@@ -109,6 +112,7 @@ void apc_serializer_request_shutdown()
 	if (deferred_inheritance != 0) {
 		apc_nametable_clear(deferred_inheritance, namearray_dtor);
 		apc_nametable_destroy(deferred_inheritance);
+		deferred_inheritance = 0;
 	}
 }
 
@@ -229,6 +233,7 @@ void apc_create_hashtable(HashTable** ht, void* funcptr, int datasize);
 /* routines for handling structures from zend.h */
 void apc_serialize_zvalue_value(zvalue_value* zvv, int type);
 void apc_deserialize_zvalue_value(zvalue_value* zvv, int type);
+void apc_serialize_zval_ptr(zval** zv);
 void apc_serialize_zval(zval* zv);
 void apc_deserialize_zval(zval* zv);
 void apc_create_zval(zval** zv);
@@ -542,20 +547,6 @@ void apc_create_hashtable(HashTable** ht, void* funcptr, int datasize)
 	}
 }
 
-/* apc_serialize_zval_ptr() and apc_create_zval_ptr() are used to
- * serialize and deserialize the default_properties table in class
- * entries, which are tables of zval pointers, not zvals. */
-
-static void apc_serialize_zval_ptr(zval** zv)
-{
-        apc_serialize_zval(*zv);
-}
-
-static void apc_create_zval_ptr(zval*** zv)
-{
-        apc_create_zval(*zv);
-}
-
 /* type: zvalue_value */
 
 void apc_serialize_zvalue_value(zvalue_value* zv, int type)
@@ -584,7 +575,7 @@ void apc_serialize_zvalue_value(zvalue_value* zv, int type)
 		break;
 	  case IS_ARRAY:
 	  case IS_CONSTANT_ARRAY:
-		apc_serialize_hashtable(zv->ht, apc_serialize_string);
+		apc_serialize_hashtable(zv->ht, apc_serialize_zval_ptr);
 		break;
 	  case IS_OBJECT:
 		apc_serialize_zend_class_entry(zv->obj.ce);
@@ -622,7 +613,7 @@ void apc_deserialize_zvalue_value(zvalue_value* zv, int type)
 		break;
 	  case IS_ARRAY:
 	  case IS_CONSTANT_ARRAY:
-		apc_create_hashtable(&zv->ht, apc_create_string, sizeof(char*));
+		apc_create_hashtable(&zv->ht, apc_create_zval, sizeof(void*));
 		break;
 	  case IS_OBJECT:
 		apc_create_zend_class_entry(&zv->obj.ce);
@@ -638,6 +629,11 @@ void apc_deserialize_zvalue_value(zvalue_value* zv, int type)
 
 
 /* type: zval */
+
+void apc_serialize_zval_ptr(zval** zv)
+{
+	apc_serialize_zval(*zv);
+}
 
 void apc_serialize_zval(zval* zv)
 {
@@ -772,10 +768,11 @@ void apc_deserialize_zend_class_entry(zend_class_entry* zce)
 
 	DESERIALIZE_SCALAR(&exists, char);
 	if (exists) {
-		/* This class knows the name of its parent, most likely because its
-		 * parent is defined in the same source file. Therefore, we can
-		 * simply restore the parent link, and not worry about manually
-		 * inheriting methods from the parent. */
+		/* This class knows the name of its parent, most likely because
+		 * its parent is defined in the same source file. Therefore, we
+		 * can simply restore the parent link, and not worry about
+		 * manually inheriting methods from the parent (PHP will perform
+		 * the inheritance). */
 
 		char* parent_name;	/* name of parent class */
 
@@ -818,11 +815,13 @@ void apc_deserialize_zend_class_entry(zend_class_entry* zce)
 	DESERIALIZE_SCALAR(&zce->handle_property_set, void*);
 
 
-	/* FIXME comment */
-	/* Consult the deferred_inheritance table for this class's entries
-	 * (i.e. where this class is the missing parent). For each child
-	 * that has registered with this parent, call ZEND_DO_INHERITANCE
-	 * to add the parent's methods with the child's function table. */
+	/* Resolve the inheritance relationships that have been delayed and
+	 * are waiting for this class to be created, i.e., every child of
+	 * this class that has already been compiled needs to be inherited
+	 * from this class. Call inherit() with this class as the base class
+	 * (first parameter) and as the current parent class (second parameter).
+	 * inherit will recursively resolve every inheritance relationships
+	 * in which this class is the base. */
 
 	inherit(zce, zce);
 }
@@ -1008,16 +1007,27 @@ void apc_deserialize_zend_op_array(zend_op_array* zoa)
 
 	if (zoa->last > 0) {
 		zoa->opcodes = (zend_op*) emalloc(zoa->last * sizeof(zend_op));
+
 		for (i = 0; i < zoa->last; i++) {
 			apc_deserialize_zend_op(&zoa->opcodes[i]);
+
 			if(zoa->opcodes[i].opcode == ZEND_DECLARE_FUNCTION_OR_CLASS) {
-				HashTable *table;
+				HashTable* table;
+				char* op2str;	/* op2str and op2len are for convenience */
+				int op2len;
+				
+				op2str = zoa->opcodes[i].op2.u.constant.value.str.val;
+				op2len = zoa->opcodes[i].op2.u.constant.value.str.len;
+
 				switch(zoa->opcodes[i].extended_value) {
-				case ZEND_DECLARE_FUNCTION: {
-					zend_function *function;
+				  /* a run-time function declaration */
+				  case ZEND_DECLARE_FUNCTION: {
+					zend_function* function;
+
 					table = CG(function_table);
-					if (zend_hash_find(table, zoa->opcodes[i].op2.u.constant.value.str.val,
-						zoa->opcodes[i].op2.u.constant.value.str.len + 1, (void **) &function) == SUCCESS) 
+
+					if (zend_hash_find(table, op2str, op2len + 1,
+						(void**) &function) == SUCCESS) 
 					{
 						zval_dtor(&zoa->opcodes[i].op1.u.constant);
 						zval_dtor(&zoa->opcodes[i].op2.u.constant);
@@ -1027,12 +1037,16 @@ void apc_deserialize_zend_op_array(zend_op_array* zoa)
 						zoa->opcodes[i].op1.op_type = IS_UNUSED;
 						zoa->opcodes[i].op2.op_type = IS_UNUSED;
 					}
-				} break;
-				case ZEND_DECLARE_CLASS: {
+				  } break;
+				  
+				  /* a run-time class declaration */
+				  case ZEND_DECLARE_CLASS: {
 					zend_class_entry *ce;
+
 					table = CG(class_table);
-					if(zend_hash_find(table, zoa->opcodes[i].op2.u.constant.value.str.val, 
-						zoa->opcodes[i].op2.u.constant.value.str.len + 1, (void **) &ce) == SUCCESS)
+
+					if (zend_hash_find(table, op2str, op2len + 1,
+						(void**) &ce) == SUCCESS)
 					{
 						zval_dtor(&zoa->opcodes[i].op1.u.constant);
 						zval_dtor(&zoa->opcodes[i].op2.u.constant);
@@ -1042,26 +1056,36 @@ void apc_deserialize_zend_op_array(zend_op_array* zoa)
 						zoa->opcodes[i].op1.op_type = IS_UNUSED;
 						zoa->opcodes[i].op2.op_type = IS_UNUSED;
 					}
-				} break;
-				case ZEND_DECLARE_INHERITED_CLASS: {
-					zend_class_entry *ce;
-					char *class_name;
+				  } break;
+				
+				  /* a run-time derived class declaration */
+				  case ZEND_DECLARE_INHERITED_CLASS: {
+					zend_class_entry* ce;
+					char* class_name;
 					char* parent_name;
 					int class_name_length;
 					namearray_t* children;
 
 					table = CG(class_table);
-					class_name = strchr(zoa->opcodes[i].op2.u.constant.value.str.val, ':');
-					if (!class_name) {
-						zend_error(E_CORE_ERROR, "Invalid runtime class entry");
-					}
-					class_name++;
 
-					/* extract the parent name */
-					parent_name = apc_estrdup(zoa->opcodes[i].op2.u.constant.value.str.val);
+					/* op2str is a class name of the form "base:derived",
+					 * where derived is the class being declared and base
+					 * is its parent in the class hierarchy. Extract the
+					 * two names into parent_name and class_name. */
+					
+					parent_name = apc_estrdup(op2str);
+					if ((class_name = strchr(parent_name, ':')) == 0) {
+						zend_error(E_CORE_ERROR,"Invalid runtime class entry");
+					}
 					*(strchr(parent_name, ':')) = '\0';
 
-					if(zend_hash_find(table, class_name, strlen(class_name) + 1, (void **) &ce) == SUCCESS) 
+					class_name++;	/* advance past ':' */
+
+					parent_name = apc_estrdup(op2str);
+					*(strchr(parent_name, ':')) = '\0';
+
+					if (zend_hash_find(table, class_name, strlen(class_name)+1,
+						(void**) &ce) == SUCCESS) 
 					{
 						zval_dtor(&zoa->opcodes[i].op1.u.constant);
 						zval_dtor(&zoa->opcodes[i].op2.u.constant);
@@ -1109,13 +1133,15 @@ void apc_deserialize_zend_op_array(zend_op_array* zoa)
 					memcpy(children->strings + children->length,
 						class_name, class_name_length + 1);
 					children->length += class_name_length + 1;
-				} break;
-				default:
+				  } break;
+
+				  default:
 					break;
 				}
 			}
 		}
 	}
+
 	DESERIALIZE_SCALAR(&zoa->T, zend_uint);
 	DESERIALIZE_SCALAR(&zoa->last_brk_cont, zend_uint);
 	DESERIALIZE_SCALAR(&zoa->current_brk_cont, zend_uint);
