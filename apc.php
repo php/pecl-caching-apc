@@ -22,11 +22,29 @@ if(isset($_GET['action'])) {
         apc_clear_cache('user');
 		redir("action=Switch+to+User+Cache");
           break;
-      case 'Show Top 25': $limit=25; break;
-      case 'Show Top 100': $limit=100; break;
-      case 'Show All Files': $limit=0; break;
-	  case 'Switch to User Cache': $limit=0; $mode='user'; $field = 'info'; break;
-	  case 'Switch to Opcode Cache': $limit=0; $mode='opcode'; $field = 'filename'; break;
+      case 'Show Top 25': 
+		$limit=25;
+		if(isset($_GET['last_mode']) && $_GET['last_mode']=='user') { $mode='user'; $field = 'info'; }
+		else { $mode='opcode'; $field = 'filename'; }
+		break;
+      case 'Show Top 100': 
+		$limit=100; 
+		if(isset($_GET['last_mode']) && $_GET['last_mode']=='user') { $mode='user'; $field = 'info'; }
+		else { $mode='opcode'; $field = 'filename'; }
+		break;
+      case 'Show All': 
+		$limit=0;
+		if(isset($_GET['last_mode']) && $_GET['last_mode']=='user') { $mode='user'; $field = 'info'; }
+		else { $mode='opcode'; $field = 'filename'; }
+		break;
+	  case 'Switch to User Cache': 
+		$limit=25; 
+		$mode='user'; $field = 'info';
+		break;
+	  case 'Switch to Opcode Cache':
+		$limit=25;
+		$mode='opcode'; $field = 'filename';
+		break;
     }
 } else {
     $limit = 25; 
@@ -54,14 +72,15 @@ global $mode;?>
 <form action="<?php echo getenv('SCRIPT_NAME')?>" method="GET">
 <input type="submit" name="action" value="Show Top 25" /> 
 <input type="submit" name="action" value="Show Top 100" /> 
+<input type="submit" name="action" value="Show All" /> 
 <?php if($mode=='user'):?>
-<input type="submit" name="action" value="Show All User Entries" /> 
 <input type="submit" name="action" value="Switch to Opcode Cache" /> 
 <input type="submit" name="action" value="Clear User Cache" /> 
+<input type="hidden" name="last_mode" value="user" />
 <?php else:?>
-<input type="submit" name="action" value="Show All Files" /> 
 <input type="submit" name="action" value="Switch to User Cache" /> 
 <input type="submit" name="action" value="Clear Opcode Cache" /> 
+<input type="hidden" name="last_mode" value="opcode" />
 <?php endif;?>
 <?php if(isset($_GET['sort'])) { ?>
 <input type="hidden" name="sort" value="<?php echo $_GET['sort']?>" />
