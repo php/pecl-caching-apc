@@ -234,8 +234,8 @@ static void rewrite_inc(zend_op* ops, Pair* p)
 
 static void add_string_to_char(zval *result, zval *op1, zval *op2)       
 {  
-        result->value.str.len = op1->value.str.len + 1;
-        result->value.str.val = (char *) emalloc(result->value.str.len+1);
+        result->value.str.len = op2->value.str.len + 1;
+        result->value.str.val = (char *) emalloc(result->value.str.len);
         result->value.str.val[0] = (char) op1->value.lval;
         memcpy(result->value.str.val + 1, op2->value.str.val, op2->value.str.len);
         result->type = IS_STRING;
@@ -263,7 +263,7 @@ static void rewrite_add_string(zend_op* ops, Pair* p)
                                    &ops[car(p)].op2.u.constant,
                                    &ops[curr].op2.u.constant);
             } else if (ops[curr].opcode == ZEND_ADD_STRING) {
-                add_string_to_char(&ops[car(p)].op2.u.constant,
+                add_string_to_string(&ops[car(p)].op2.u.constant,
                                    &ops[car(p)].op2.u.constant,
                                    &ops[curr].op2.u.constant);
             }
@@ -731,7 +731,7 @@ zend_op_array* apc_optimize_op_array(zend_op_array* op_array)
             RESTART_PEEPHOLE_LOOP;
         }
     }
-  //  op_array->last = compress_ops(op_array, jumps);
+    op_array->last = compress_ops(op_array, jumps);
     destroy_jump_array(jumps, jump_array_size);
 
     return op_array;
