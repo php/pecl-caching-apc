@@ -1,3 +1,6 @@
+#ifndef APC_LIST_H
+#define APC_LIST_H
+
 typedef struct _apc_list_element {
 	struct _apc_list_element *next;
 	struct _apc_list_element *prev;
@@ -19,3 +22,4 @@ extern void apc_list_apply(apc_list *list, void (*apply_func)(void *));
 extern void apc_list_destroy(apc_list *list);
 extern void apc_list_clean(apc_list *list);
 
+#endif
