@@ -110,19 +110,28 @@ extern int apc_cache_info_mmap(zval **hash);
 /* generate_key: generate the cache key based on the actual filename. If
  * we support relative includes, we must generate a unique key for the
  * file; otherwise, we simply return the filename to the caller */
-static const char* generate_key(const char* filename)
+static const char* generate_key(const char* filename, struct stat *buf)
 {
 	static char resolved_path[PATH_MAX];	/* storage for realpath */
 	struct stat st;
+	struct stat *st_ptr;
 
+	if (buf == 0) {
+		st_ptr= &st;
+	}
+	else {
+		st_ptr = buf;
+	}
 	if(APCG(relative_includes)) {
-		const char* realname = apc_rstat(filename, PG(include_path), &st);
+		const char* realname = apc_rstat(filename, PG(include_path), st_ptr);
 		if (!realname || realpath(realname, resolved_path)  == NULL) {
 			return 0; /* error */
 		}
 		return resolved_path;
 	}
-
+	else if( APCG(check_mtime) && buf != NULL) {
+		stat(filename, st_ptr);
+	}
 	return filename;
 }
 
@@ -247,7 +256,7 @@ int apc_rm(const char* filename)
     return apc_mmap_rm(filename);
 
   if (APC_SHM_MODE)
-    return apc_shm_rm(cache, generate_key(filename));
+    return apc_shm_rm(cache, generate_key(filename, NULL));
 
   return -1;
 }
@@ -261,7 +270,7 @@ void apc_reset_cache(void)
 void apc_set_object_ttl(const char* filename, int ttl)
 {
    if (APC_SHM_MODE)
-	apc_cache_set_object_ttl(cache, generate_key(filename), ttl);
+	apc_cache_set_object_ttl(cache, generate_key(filename, NULL), ttl);
 }
 
 int apc_dump_cache_object(const char* filename, apc_outputfn_t outputfn)
@@ -354,23 +363,18 @@ ZEND_API zend_op_array* apc_shm_compile_file(zend_file_handle *file_handle,
 	 * compare the current modification time of the every file against
 	 * its last known value, and if it has been modified, we recompile
 	 * it. Otherwise, we set mtime to zero, which disables the check */
-
+	struct stat st;
 	mtime = 0;	/* assume we do not check */
 
-	if (APCG(check_mtime)) {
-		struct stat st;
-	
-		/* don't fret if stat fails, this isn't mission-critical */
-		if (apc_rstat(file_handle->filename, PG(include_path), &st) != 0) {
-			mtime = st.st_mtime;
-		}
-	}
-
-	if (!(key = generate_key(file_handle->filename))) {
+	if (!(key = generate_key(file_handle->filename, &st))) {
 		/* We can't create a valid cache key for this file. The only/best
 		 * recourse is to compile the file and return immediately. */
 
 		return old_compile_file(file_handle, type CLS_CC);
+	}
+
+	if (APCG(check_mtime)) {
+		mtime = st.st_mtime;
 	}
 
 	/* Retrieve the private function and class tables for this file.
