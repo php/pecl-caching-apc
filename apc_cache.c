@@ -24,6 +24,7 @@
 #include "php_apc.h"
 #include "apc_fcntl.h"
 #include "apc_iface.h"
+#include "apc_lib.h"
 
 #include "zend.h"
 #include "zend_hash.h"
@@ -259,15 +260,19 @@ static unsigned int hashtwo(const char* v)
 apc_cache_t* apc_cache_create(const char* pname, int nbuckets,
 	int maxseg, int segsize, int ttl)
 {
-	char pathname[MAXPATHLEN];
+	char* pathname;
 	apc_cache_t* cache;
 	int cachesize;
 
 	#ifdef USE_FCNTL_LOCK
-		snprintf(pathname,15,"/tmp/.apc.lock");
+		pathname = strdup("/tmp/.apc.lock");
 	#else
-		snprintf(pathname,MAXPATHLEN, "%s", pname);
+		pathname = (char *) pname;
 	#endif
+	if (apc_create_lock(pathname) < 0 ) {
+	
+	}	
+	printf("DEBUG %s is the pathname %s is the pname", pathname, pname);
 	cache = (apc_cache_t*) apc_emalloc(sizeof(apc_cache_t));
 	cachesize = computecachesize(nbuckets, maxseg);
 

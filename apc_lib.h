@@ -67,4 +67,6 @@ extern const char* apc_get_zend_extopname(int opcode);
 extern int alignword(int x);
 extern int alignword_int(int x);
 
+/* creates a lock file for ftok and others */
+int apc_create_lock(char* pathname);
 #endif

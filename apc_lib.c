@@ -435,3 +435,13 @@ int alignword_int(int x)
     return sizeof(word_t) * (1 + ((x-1)/sizeof(word_t)));
 }
 
+/* apc_create_lock: creates a lock file */
+int apc_create_lock(char* pathname)
+{
+	int retval;
+	if((retval = open(pathname, O_CREAT)) < 0) {
+		return retval;
+	}
+	close(retval);
+	return 0;
+}
