@@ -1514,6 +1514,14 @@ zend_op_array* apc_copy_op_array(zend_op_array* noa, zend_op_array* zoa, apc_mal
 	for(i = 0; i < zoa->last; i++) {
 		apc_copy_zend_op(&noa->opcodes[i], &zoa->opcodes[i], ctor);
 	}
+	if(zoa->brk_cont_array) {
+		noa->brk_cont_array = apc_vmemcpy(zoa->brk_cont_array, zoa->last_brk_cont * sizeof(zend_brk_cont_element), ctor);
+	}
+	else {
+		noa->brk_cont_array = 0;
+	}
+	noa->static_variables = apc_copy_hashtable(NULL, zoa->static_variables, 
+		apc_copy_zval_ptr, sizeof(void*), ctor); 
 	noa->filename = apc_vstrdup(zoa->filename, ctor);
 	noa->reserved[0] = (void *) magic;
 	return noa;
