@@ -76,10 +76,10 @@ static void inherit(zend_class_entry* base, zend_class_entry* parent)
 		assert(result == SUCCESS);	/* FIXME: is this correct? */
 
 		/* child inherits from base */
-		ZEND_DO_INHERITANCE(child, base);
+		ZEND_DO_INHERITANCE(child, parent);
 
 		/* all children of child inherit from base */
-		inherit(base, child);
+		inherit(parent, child);
 	}
 }
 
