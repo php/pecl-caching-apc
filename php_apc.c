@@ -25,9 +25,10 @@ PHP_FUNCTION(apc_set_my_ttl);
 PHP_FUNCTION(apc_dump_cache_object);
 PHP_FUNCTION(apc_cache_index);
 PHP_FUNCTION(apc_cache_info);
+PHP_FUNCTION(apc_object_info);
 
 /* list of exported functions */
-static unsigned char a1_arg_force_ref[] = { 2, BYREF_NONE, BYREF_FORCE };
+static unsigned char a2_arg_force_ref[] = { 2, BYREF_NONE, BYREF_FORCE };
 
 function_entry apc_functions[] = {
 	PHP_FE(apcinfo, NULL)
@@ -35,8 +36,9 @@ function_entry apc_functions[] = {
 	PHP_FE(apc_reset_cache, NULL)
 	PHP_FE(apc_set_my_ttl, NULL)
 	PHP_FE(apc_dump_cache_object, NULL)
-	PHP_FE(apc_cache_index, a1_arg_force_ref)
-	PHP_FE(apc_cache_info, a1_arg_force_ref)
+	PHP_FE(apc_cache_index, first_arg_force_ref)
+	PHP_FE(apc_cache_info, first_arg_force_ref)
+	PHP_FE(apc_object_info, a2_arg_force_ref)
 	{NULL, NULL, NULL}
 };
 
@@ -190,7 +192,7 @@ PHP_MINIT_FUNCTION(apc)
 	REGISTER_INI_ENTRIES();
 	apc_module_init();
     snprintf(log_buffer, 1024, "PHP: Startup: %s", apc_version());
-    php_log_err(log_buffer);
+//    php_log_err(log_buffer);
 	apc_setoutputfn(printlog);
 	return SUCCESS;
 }
@@ -398,7 +400,33 @@ PHP_FUNCTION(apc_cache_info)
 }	
 /* }}} */
 
+/* {{{ proto int apc_object_info(string object, array &output)
+    Generate detailed information about functions in a object
+    */
+PHP_FUNCTION(apc_object_info)
+{
+        char *filename;
+        zval **hash;
+        zval **filenameParam;
+        int ac = ZEND_NUM_ARGS();
 
+        if(ac != 2 || zend_get_parameters_ex(ac, &filenameParam, &hash) == FAILURE) {
+          WRONG_PARAM_COUNT;
+        }
+        convert_to_string_ex(filenameParam);
+        filename = (*filenameParam)->value.str.val;
+        if( array_init(*hash) == FAILURE) {
+          zend_error(E_WARNING, "Couldn't convert arg1 to array");
+          RETURN_FALSE;
+        }
+
+        if(apc_object_info(filename, hash)) {
+                RETURN_FALSE;
+        }
+        else {
+                RETURN_TRUE;
+        }
+}
 /* zend extension support */
 
 ZEND_DLEXPORT int apc_zend_startup(zend_extension *extension)

@@ -1009,3 +1009,198 @@ int apc_cache_info_shm(apc_cache_t* cache, zval **hash) {
         UNLOCK(cache->lock);
         return 0;
 }
+
+int apc_object_info_shm(apc_cache_t* cache, char const*filename, zval **arr) {
+  unsigned slot;          /* initial hash value */
+  unsigned k;             /* second hash value, for open-addressing */
+  int nprobe;             /* running count of cache probes */
+  bucket_t* bp;           /* pointer to matching bucket */
+  bucket_t* buckets;
+  int nbuckets;
+  char buf[20];
+
+  HashTable function_table;
+  HashTable class_table;
+  apc_nametable_t* dummy;
+  zend_op_array* op_array;
+  Bucket* p;
+  Bucket* q;
+  int i;
+
+  zval *functions_array = NULL;
+  zval *classes_array   = NULL;
+  zval *bucket_array    = NULL;
+  zval *opcode_array    = NULL;
+
+  printf("apc_object_info_shm(.., %s, ..)\n", filename);
+  
+  if (!filename) {
+          return 0;
+  }
+
+  READLOCK(cache->lock);
+
+  if (array_init(*arr) == FAILURE) {
+    UNLOCK(cache->lock);
+    return 0;
+  }
+
+  ALLOC_ZVAL(functions_array);
+  INIT_PZVAL(functions_array);
+  if(array_init(functions_array) == FAILURE) {
+     UNLOCK(cache->lock);
+     return 0;
+  }
+
+  ALLOC_ZVAL(classes_array);
+  INIT_PZVAL(classes_array);
+  if(array_init(classes_array) == FAILURE) {
+     UNLOCK(cache->lock);
+     return 0;
+  }
+
+  ALLOC_ZVAL(bucket_array);
+  INIT_PZVAL(bucket_array);
+  if(array_init(bucket_array) == FAILURE) {
+     UNLOCK(cache->lock);
+     return 0;
+  }
+
+  ALLOC_ZVAL(opcode_array);
+  INIT_PZVAL(opcode_array);
+  if(array_init(opcode_array) == FAILURE) {
+     UNLOCK(cache->lock);
+     return 0;
+  }
+
+  buckets  = cache->buckets;
+  nbuckets = cache->header->nbuckets;
+
+  slot = hash(filename) % nbuckets;
+  k = hashtwo(filename) % nbuckets;
+
+  nprobe = 0;
+  bp = 0;
+  while (buckets[slot].shmid != EMPTY && nprobe++ < nbuckets) {
+          if (buckets[slot].shmid == UNUSED) {
+                  continue;
+          }
+          if (strcmp(buckets[slot].key, filename) == 0) {
+                  if (isexpired(&buckets[slot], 0)) {
+                    break; /* the entry has expired */
+                  }
+                  bp = &buckets[slot];
+                  break;
+          }
+          slot = (slot+k) % nbuckets;
+  }
+
+  if (!bp) {
+          UNLOCK(cache->lock);
+          return -1;
+  }
+
+  op_array = (zend_op_array*) malloc(sizeof(zend_op_array));
+  zend_hash_init(&function_table, 13, NULL, NULL, 1);
+  zend_hash_init(&class_table, 13, NULL, NULL, 1);
+  dummy = apc_nametable_create(97);
+
+  /* deserialize bucket and see what's inside */
+  apc_init_deserializer(apc_smm_attach(bp->shmid) + bp->offset, bp->length);
+  apc_deserialize_magic();
+  apc_deserialize_zend_function_table(&function_table, dummy, dummy);
+  apc_deserialize_zend_class_table(&class_table, dummy, dummy);
+
+  apc_deserialize_zend_op_array(op_array);
+
+
+  add_assoc_string(bucket_array, "key", bp->key, 1);
+  add_assoc_long(bucket_array, "offset", bp->offset);
+  add_assoc_long(bucket_array, "length", bp->length);
+  add_assoc_long(bucket_array, "lastaccess", bp->lastaccess);
+  add_assoc_long(bucket_array, "hitcount", bp->hitcount);
+  add_assoc_long(bucket_array, "ttl",  bp->ttl);
+  add_assoc_long(bucket_array, "mtime",    bp->mtime);
+  add_assoc_long(bucket_array, "checksum", bp->checksum);
+
+  zend_hash_update((*arr)->value.ht, "info", strlen("info") + 1, (void *) &bucket_array, sizeof(zval *), NULL);
+
+  p = function_table.pListHead;
+  while (p) {
+     zend_function* zf = (zend_function*) p->pData;
+     add_next_index_string(functions_array, zf->common.function_name, 1);
+     p = p->pListNext;
+  }
+  zend_hash_update((*arr)->value.ht, "functions", strlen("functions") + 1, (void *) &functions_array, sizeof(zval *), NULL);
+
+  p = class_table.pListHead;
+  while (p) {
+    zval *class_functions = NULL;
+    zend_class_entry* zc = (zend_class_entry*) p->pData;
+
+    ALLOC_ZVAL(class_functions);
+    INIT_PZVAL(class_functions);
+    if(array_init(class_functions) == FAILURE) {
+       UNLOCK(cache->lock);
+       return 0;
+    }
+
+    q = zc->function_table.pListHead;
+    while(q) {
+      zend_function* zf = (zend_function*) q->pData;
+      add_next_index_string(class_functions, zf->common.function_name, 1);
+      q = q->pListNext;
+    }
+
+    zend_hash_update(classes_array->value.ht, zc->name, strlen(zc->name) + 1, (void *) &class_functions, sizeof(zval *), NULL);
+    p = p->pListNext;
+  }
+
+
+  zend_hash_update((*arr)->value.ht, "classes", strlen("classes") + 1, (void *) &classes_array, sizeof(zval *), NULL);
+
+  for (i = 0; i < op_array->last; i++) {
+     zval *opcode_arr = NULL;
+     char const * name;
+
+     snprintf(buf, sizeof(buf)-1, "%d", i);
+
+     ALLOC_ZVAL(opcode_arr);
+     INIT_PZVAL(opcode_arr);
+     if(array_init(opcode_arr) == FAILURE) {
+        UNLOCK(cache->lock);
+        return 0;
+     }
+
+     
+     /* print the regular opcode, or '&nbsp;' if empty */
+     name = apc_get_zend_opname(op_array->opcodes[i].opcode);
+     add_next_index_string(opcode_arr, (char *)name, 1);
+
+     if (op_array->opcodes[i].opcode != ZEND_NOP &&
+       op_array->opcodes[i].opcode != ZEND_DECLARE_FUNCTION_OR_CLASS)
+     {
+       /* this opcode does not have an extended value */
+       add_next_index_string(opcode_arr, "", 1);
+     }
+     else {
+       name = apc_get_zend_extopname(op_array->opcodes[i].extended_value);
+       add_next_index_string(opcode_arr, (char *)name, 1);
+     }
+     /* print the line number of the opcode */
+     add_next_index_long(opcode_arr, op_array->opcodes[i].lineno);
+     zend_hash_update(opcode_array->value.ht, buf, strlen(buf) + 1, (void *) &opcode_arr, sizeof(zval *), NULL);
+  }
+  zend_hash_update((*arr)->value.ht, "opcodes", strlen("opcodes") + 1, (void *) &opcode_array, sizeof(zval *), NULL);
+
+
+
+  zend_hash_clean(&class_table);
+  zend_hash_clean(&function_table);
+  destroy_op_array(op_array);
+  free(op_array);
+
+  UNLOCK(cache->lock);
+  return 0;
+}
+

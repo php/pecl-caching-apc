@@ -111,5 +111,12 @@ extern int apc_cache_index_shm(apc_cache_t* cache, zval **hash);
  */
 extern int apc_cache_info_shm(apc_cache_t* cache, zval **hash);
 
+
+/*
+ * apc_object_info_shm: creates a hash keyed with information about the 
+ * functions stored in object named by filename
+ */
+extern int apc_object_info_shm(apc_cache_t* cache, char const*filename, zval **hash);
+
 #undef T
 #endif

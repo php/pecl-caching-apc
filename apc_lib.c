@@ -14,7 +14,6 @@
 
 
 #include "apc_lib.h"
-#include "apc_version.h"
 #include "php_apc.h"
 #include "zend.h"
 #include <sys/time.h>
@@ -28,6 +27,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <fcntl.h>
+#include <apc_version.h>
 
 #undef DEBUG
 
@@ -182,18 +182,14 @@ int apc_ropen(const char* pathname, int flags, int mode)
 
 int apc_regexec(char *filename) {
 	int i;
-	printf("DEBUG APCG(nmatches) = %d\n", APCG(nmatches)); 
 	if(!APCG(nmatches)) {
-		printf("DEBUG APCG(nmatches) = 0\n"); 
 		return 1;
 	}
 	for(i = 0; i < APCG(nmatches); i++) {
 		int n;
 		if(n = (regexec(&APCG(regex)[i], filename, 0, NULL, 0)) == 0) {
-			printf("DEBUG %s matched %s", filename, APCG(regex_text)[i]);
 			return 0;
 		}
-			printf("DEBUG %s didnt matched %s", filename, APCG(regex_text)[i]);
 	}
 	return 1;
 }

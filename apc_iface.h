@@ -93,4 +93,9 @@ extern int apc_cache_index(zval** hash);
  * apc_cache_index: fills out a hash with cache info data
  */
 extern int apc_cache_info(zval** hash);
+
+/*
+ * apc_cache_index: fills out a hash with cache info data
+ */
+extern int apc_object_info(char const *filename, zval** hash);
 #endif
