@@ -20,6 +20,7 @@
 #include "apc_cache.h"
 #include "apc_lock.h"
 #include "apc_sma.h"
+#include "apc_globals.h"
 #include "SAPI.h"
 
 /* TODO: rehash when load factor exceeds threshold */
@@ -514,7 +515,8 @@ void apc_cache_release(apc_cache_t* cache, apc_cache_entry_t* entry)
 /* {{{ apc_cache_make_file_key */
 int apc_cache_make_file_key(apc_cache_key_t* key,
                        const char* filename,
-                       const char* include_path
+                       const char* include_path,
+                       time_t t
 					   TSRMLS_DC)
 {
     struct stat buf, *tmp_buf=NULL;
@@ -533,6 +535,34 @@ int apc_cache_make_file_key(apc_cache_key_t* key,
     {
         return 0;
     }
+
+    /*
+     * This is a bit of a hack.
+     *
+     * Here I am checking to see if the file is at least 2 seconds old.  
+     * The idea is that if the file is currently being written to then its
+     * mtime is going to match or at most be 1 second off of the current
+     * request time and we want to avoid caching files that have not been
+     * completely written.  Of course, people should be using atomic 
+     * mechanisms to push files onto live web servers, but adding this
+     * tiny safety is easier than educating the world.
+     */
+    if(t - buf.st_mtime < 2) return 0;
+
+    /*
+     * This is an even bigger hack than the above.
+     *
+     * Basically this will cause a file only to be cached on a percentage
+     * of the attempts.  This is to avoid cache slams when starting up a
+     * very busy server or when modifying files on a very busy live server.
+     * There is no point having many processes all trying to cache the same
+     * file at the same time.  By introducing a chance of being cached
+     * we theoretically cut the cache slam problem by the given percentage.
+     * For example if apc.slam_defense is set to 66 then 2/3 of the attempts
+     * to cache an uncached file will be ignored.
+     */
+    if(APCG(slam_defense) && (int)(100.0*rand()/(RAND_MAX+1.0)) < APCG(slam_defense)) 
+        return 0;
 
     key->data.file.device = buf.st_dev;
     key->data.file.inode  = buf.st_ino;

@@ -280,3 +280,17 @@ users should consider tuning the following parameters:
                             kernel's /dev/zero interface to anonymous mmap'ed 
                             memory.  Leaving it undefined will force an 
                             anonymous mmap.
+							(Default: "")
+
+    apc.slam_defense        On very busy servers whenever you start the server or
+                            modify files you can create a race of many processes
+                            all trying to cache the same file at the same time.
+                            This option sets the percentage of processes that will
+                            skip trying to cache an uncached file.  Or think of it
+                            as the probability of a single process to skip caching.
+                            For example, setting this to 75 would mean that there is
+                            a 75% chance that the process will not cache an uncached
+                            file.  So the higher the setting the greater the defense
+                            against cache slams.  Setting this to 0 disables this
+                            feature.
+                            (Default: 0)

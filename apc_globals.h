@@ -48,6 +48,7 @@ ZEND_BEGIN_MODULE_GLOBALS(apc)
     void* compiled_filters; /* compiled filters */
     int cache_by_default;   /* true if files should be cached unless filtered out */
                             /* false if files should only be cached if filtered in */
+    int slam_defense;       /* Probability of a process not caching an uncached file */
 ZEND_END_MODULE_GLOBALS(apc)
 
 /* (the following declaration is defined in php_apc.c) */

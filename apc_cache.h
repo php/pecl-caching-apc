@@ -167,10 +167,15 @@ extern void apc_cache_release(T cache, apc_cache_entry_t* entry);
  * filename is the path to the source file.
  *
  * include_path is a colon-separated list of directories to search.
+ *
+ * and finally we pass in the current request time so we can avoid
+ * caching files with a current mtime which tends to indicate that
+ * they are still being written to.
  */
 extern int apc_cache_make_file_key(apc_cache_key_t* key,
                                    const char* filename,
-                                   const char* include_path
+                                   const char* include_path,
+                                   time_t t
 							       TSRMLS_DC);
 
 /*
