@@ -23,6 +23,10 @@ typedef struct bucket_t bucket_t;
 typedef struct header_t header_t;
 typedef struct block_t block_t;
 
+/* So that all processes can find objects in the cache, we use a fixed
+ * size hash table which contains a pointer to all objects in the cache
+ */
+
 struct bucket_t {
 	int shmid;		/* shared memory segment id */
 	void* shmaddr;	/* starting address of segment (for this process) */
@@ -191,7 +195,9 @@ int apc_smm_alloc(void* shmaddr, int size)
 	realsize = alignword(max(size + sizeof(int), sizeof(block_t)));
 	
 	/* make realsize the smallest power of 2 greater than or
-	 * equal to realsize */
+	 * equal to realsize.  We do this to minimize fagmentation by
+   * helping to guarantee that neighboring blocks can be coalesced */
+
 	realsize = pow2(realsize);
 
 	/* first insure that the segment contains at least realsize free
@@ -298,7 +304,8 @@ void apc_smm_free(void* shmaddr, int offset)
 	}
 }
 
-/* apc_smm_dump: print segment information to file stream */
+/* apc_smm_dump: print segment information to file stream.  We call this
+ * from apcinfo() to generate the cache information page. */
 void apc_smm_dump(void* shmaddr, apc_outputfn_t outputfn)
 {
 	header_t* header;	/* header of shared memory segment */
