@@ -18,6 +18,7 @@
 
 #include "apc_sem.h"
 #include "apc.h"
+#include "php.h"
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/sem.h>
@@ -35,6 +36,7 @@ union semun {
     struct seminfo *__buf;    /* buffer for IPC_INFO */
 };
 #endif
+#define HAVE_SEMUN 1
 
 #ifndef SEM_R
 # define SEM_R 0444
