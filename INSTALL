@@ -14,7 +14,7 @@ apc.mode - See "Runtime configuration"
 #################################################################
 
 0) Untar these sources and cd apc/
-1) Run phpize (this is installed with php)
+1) Run phpize (this shouldn't be necessary after 1.0.10)
 2) Run ./configure --enable-apc --with-php-config=<path to php-config>
 3) Run make
 4) copy modules/php_apc.so to /path/to/where/you/keep/extensions/
