@@ -222,6 +222,7 @@ void apc_sma_init(int numseg, int segsize, char *mmap_file_mask)
     }
     sma_initialized = 1;
 
+#if APC_MMAP
     /*
      * I don't think multiple anonymous mmaps makes any sense
      * so force sma_numseg to 1 in this case
@@ -233,6 +234,10 @@ void apc_sma_init(int numseg, int segsize, char *mmap_file_mask)
     } else {
         sma_numseg = numseg > 0 ? numseg : DEFAULT_NUMSEG;
     }
+#else
+    sma_numseg = numseg > 0 ? numseg : DEFAULT_NUMSEG;
+#endif
+
     sma_segsize = segsize > 0 ? segsize : DEFAULT_SEGSIZE;
 
     sma_segments = (int*) apc_emalloc(sma_numseg*sizeof(int));
