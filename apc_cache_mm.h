@@ -25,6 +25,7 @@ struct mm_fl_element {
 	int inputlen;			/* length of the file */
 	long inode;				/* inode of the file */
 	time_t mtime;			/* time of last update to file */
+	time_t srcmtime;		/* time of last update to src file */
 	int hitcounter;			/* number of accesses by THIS child */
 	char *input;			/* mmap'd address of the file */
 };
