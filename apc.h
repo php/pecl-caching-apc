@@ -41,6 +41,8 @@
 #include "config.h"
 #endif
 
+#include "php.h"
+
 /* log levels constants (see apc_log) */
 enum { APC_DEBUG, APC_NOTICE, APC_WARNING, APC_ERROR };
 
