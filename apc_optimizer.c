@@ -274,8 +274,6 @@ static void rewrite_add_string(zend_op* ops, Pair* p)
 {
     zend_op* first;
     zend_op* second;
-    char*    newstr;
-    int      newlen;
     
     first = &ops[car(p)];
     second = &ops[cadr(p)];
