@@ -27,10 +27,7 @@
 #include <stdarg.h>
 #include <errno.h>
 
-#if defined(__GNU_LIBRARY__) && !defined(_SEM_SEMUN_UNDEFINED)
-/* union semun is defined by including <sys/sem.h> */
-#else
-/* according to X/OPEN we have to define it ourselves */
+#if defined(NEED_SEM_UNDO)  // Not sure where this isn't defined...
 union semun {
 	int val;                    /* value for SETVAL */
 	struct semid_ds *buf;       /* buffer for IPC_STAT, IPC_SET */

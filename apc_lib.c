@@ -140,7 +140,7 @@ double apc_timerreport()
 
 /* recursive open */
 
-apc_ropen(const char *pathname, int flags, mode_t mode)
+apc_ropen(const char *pathname, int flags, int mode)
 {
 	int fd;
 

@@ -43,6 +43,6 @@ extern void apc_timerstart(void);
 extern void apc_timerstop(void);
 extern double apc_timerreport(void);
 
-extern apc_ropen(const char *pathname, int flags, mode_t mode);
+extern apc_ropen(const char *pathname, int flags, int mode);
 
 #endif
