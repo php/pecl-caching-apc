@@ -277,6 +277,7 @@ int apc_request_init()
 
 int apc_request_shutdown()
 {
+    apc_deactivate();
     return 0;
 }
 
