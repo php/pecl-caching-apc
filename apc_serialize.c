@@ -1,4 +1,5 @@
 #include "apc_serialize.h"
+#include "apc_nametable.h"
 #include <stdlib.h>
 #include <assert.h>
 
@@ -161,9 +162,9 @@ void apc_deserialize_zend_function(zend_function* zf);
 void apc_create_zend_function(zend_function** zf);
 
 /* special purpose */
-void apc_serialize_zend_function_table(HashTable* gft, HashTable* acc);
+void apc_serialize_zend_function_table(HashTable* gft, apc_nametable_t* acc);
 void apc_deserialize_zend_function_table(HashTable* gft);
-void apc_serialize_zend_class_table(HashTable* gct, HashTable* acc);
+void apc_serialize_zend_class_table(HashTable* gct, apc_nametable_t* acc);
 void apc_deserialize_zend_class_table(HashTable* gct);
 
 
@@ -924,10 +925,10 @@ void apc_create_zend_function(zend_function** zf)
 static int store_function_table(void* data, void* argument)
 {
 	zend_function* zf;
-	HashTable* acc;
+	apc_nametable_t* acc;
 
 	zf = (zend_function*) data;
-	acc = (HashTable*) argument;
+	acc = (apc_nametable_t*) argument;
 
 	/* do not serialize internal functions */
 	if (zf->type == ZEND_INTERNAL_FUNCTION) {
@@ -935,10 +936,7 @@ static int store_function_table(void* data, void* argument)
 	}
 
 	/* serialize differences */
-	if (zend_hash_add(acc, zf->common.function_name,
-		strlen(zf->common.function_name)+1, zf, sizeof(zend_function),
-		NULL) != FAILURE)
-	{
+	if (apc_nametable_insert(acc, zf->common.function_name) != 0) {
 		SERIALIZE_SCALAR(1, char);
 		apc_serialize_zend_function(zf);
 	}
@@ -946,7 +944,7 @@ static int store_function_table(void* data, void* argument)
 	return 0;
 }
 
-void apc_serialize_zend_function_table(HashTable* gft, HashTable* acc)
+void apc_serialize_zend_function_table(HashTable* gft, apc_nametable_t* acc)
 {
 	zend_hash_apply_with_argument(gft, store_function_table, acc);
 	SERIALIZE_SCALAR(0, char);
@@ -971,13 +969,13 @@ void apc_deserialize_zend_function_table(HashTable* gft)
 	}
 }
 
-static int store_class_table(void* data, void *arg)
+static int store_class_table(void* data, void *argument)
 {
 	zend_class_entry* zc;
-	HashTable* acc;
+	apc_nametable_t* acc;
 	
 	zc = (zend_class_entry*) data;
-	acc = (HashTable*) arg;
+	acc = (apc_nametable_t*) argument;
 
 	/* do not serialize internal classes */
 	if (zc->type == ZEND_INTERNAL_CLASS) {
@@ -985,9 +983,7 @@ static int store_class_table(void* data, void *arg)
 	}
 
 	/* serialize differences */
-	if (zend_hash_add(acc, zc->name, zc->name_length, zc,
-		sizeof(zend_class_entry), NULL) != FAILURE)
-	{
+	if (apc_nametable_insert(acc, zc->name) != 0) {
 		SERIALIZE_SCALAR(1, char);
 		apc_serialize_zend_class_entry(zc);
 	}
@@ -995,7 +991,7 @@ static int store_class_table(void* data, void *arg)
 	return 0;
 }
 
-void apc_serialize_zend_class_table(HashTable* gct, HashTable* acc)
+void apc_serialize_zend_class_table(HashTable* gct, apc_nametable_t* acc)
 {
 	zend_class_entry* zc;
 
