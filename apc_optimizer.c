@@ -239,9 +239,18 @@ static void rewrite_add_string(zend_op* ops, Pair* p)
     assert(pair_length(p) >= 2);
 
     for (p = cdr(p); p; p = cdr(p)) {
-        concat_function(&ops[car(p)].op2.u.constant,
-                        &ops[car(p)].op2.u.constant,
-                        &ops[curr].op2.u.constant);
+        switch (ops[curr].opcode) {
+          case ZEND_ADD_STRING:
+            add_string_to_string(&ops[car(p)].op2.u.constant,
+                                 &ops[car(p)].op2.u.constant,
+                                 &ops[curr].op2.u.constant);
+            break;
+          case ZEND_ADD_CHAR:
+            add_char_to_string(&ops[car(p)].op2.u.constant,
+                                 &ops[car(p)].op2.u.constant,
+                                 &ops[curr].op2.u.constant);
+            break;
+        }
         clear_zend_op(ops + curr);
         curr = car(p);
     }
@@ -519,7 +528,7 @@ static Pair* peephole_add_string(zend_op* ops, int i, int num_ops)
     tmp_var_op1 = ops[i].op1.u.var;
 
     for (j = next_op(ops, i, num_ops); j < num_ops; j = next_op(ops, j, num_ops)) {
-        if (ops[j].opcode != ZEND_ADD_STRING) {
+        if (ops[j].opcode != ZEND_ADD_STRING && ops[j].opcode != ZEND_ADD_CHAR) {
             return p;
         } 
 
