@@ -789,6 +789,7 @@ ZEND_API zend_op_array* apc_mmap_compile_file(zend_file_handle *file_handle,
 				free(my_cache_filename);
     			return op_array;
 		}
+		zend_error(E_NOTICE, "failed to open %s for writing.  Another process may be writing to the file or their may be a permision problem.\n", my_cache_filename);
 		free(my_cache_filename);
 	}
 	if( (fd = open(cache_filename, O_RDONLY)) < 0)
