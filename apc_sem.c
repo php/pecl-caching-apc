@@ -46,6 +46,9 @@ union semun {
 # define SEM_A 0222	/* write permission */
 #endif
 
+/* always use SEM_UNDO! */
+#define USE_SEM_UNDO
+
 #ifdef USE_SEM_UNDO
 # define UNDO SEM_UNDO
 #else
