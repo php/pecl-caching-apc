@@ -81,6 +81,34 @@ char* apc_estrdup(const char* s)
 	return dup;
 }
 
+char* apc_vstrdup(const char* s, apc_malloc_t ctor)
+{
+  int   n;
+  char* t;
+
+  if (s == NULL) {
+    return NULL;
+  }
+  n = strlen(s) + 1;
+  fprintf(stderr, "apc_vstrdup\n");
+  t = (char*) ctor(n);
+  memcpy(t, s, n);
+  return t;
+}
+
+void* apc_vmemcpy(void* p, int n, apc_malloc_t ctor)
+{
+  void* q;
+
+  if (p == NULL) {
+    return NULL;
+  }
+  fprintf(stderr, "apc_vmemcpy\n");
+  q = ctor(n);
+  memcpy(q, p, n);
+  return q;
+}
+
 /* apc_eprint: print error message and exit */
 void apc_eprint(char *fmt, ...)
 {

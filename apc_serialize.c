@@ -923,7 +923,7 @@ zvalue_value* apc_copy_zvalue_value(zvalue_value* nv, zvalue_value* zv, int type
     case IS_CONSTANT:
     case IS_STRING:
     case FLAG_IS_BC:
-		nv->str.val = apc_vmemcpy(zv->str.val, zv->str.len, ctor);
+		nv->str.val = apc_vmemcpy(zv->str.val, zv->str.len + 1, ctor);
 		nv->str.len = zv->str.len;
     break;
     case IS_ARRAY:
@@ -1091,7 +1091,7 @@ zend_function_entry* apc_copy_zend_function_entry(zend_function_entry* nfe, zend
 	nfe->handler = zfe->handler;
 	
 	if (zfe->func_arg_types) {
-		nfe->func_arg_types = apc_vmemcpy(zfe->func_arg_types, zfe->func_arg_types[0], ctor);
+		nfe->func_arg_types = apc_vmemcpy(zfe->func_arg_types, zfe->func_arg_types[0] + 1, ctor);
 	}
 	else {
 		nfe->func_arg_types = 0;
@@ -1508,7 +1508,7 @@ zend_op_array* apc_copy_op_array(zend_op_array* noa, zend_op_array* zoa, apc_mal
 	memcpy(noa, zoa, sizeof(zend_op_array));
 
 	if (zoa->arg_types) {
-		noa->arg_types = apc_vmemcpy(zoa->arg_types, zoa->arg_types[0], ctor);
+		noa->arg_types = apc_vmemcpy(zoa->arg_types, zoa->arg_types[0] + 1, ctor);
 	}
 	else {
 		noa->arg_types = 0;
@@ -1522,6 +1522,7 @@ zend_op_array* apc_copy_op_array(zend_op_array* noa, zend_op_array* zoa, apc_mal
 		apc_copy_zend_op(&noa->opcodes[i], &zoa->opcodes[i], ctor);
 	}
 	noa->filename = apc_vstrdup(zoa->filename, ctor);
+	noa->reserved[0] = (void *) 1;
 	return noa;
 }
 
@@ -1775,7 +1776,7 @@ zend_internal_function* apc_copy_zend_internal_function(zend_internal_function* 
 	}
 	nif->type = zif->type;
 	if( zif->arg_types ) {
-		nif->arg_types = apc_vstrdup(zif->arg_types, ctor);
+		nif->arg_types = apc_vmemcpy(zif->arg_types, zif->arg_types[0] + 1, ctor);
 	}
 	else {
 		nif->arg_types = 0;
@@ -1814,7 +1815,7 @@ zend_overloaded_function* apc_copy_zend_overloaded_function(zend_overloaded_func
 	nof->type = zof->type;
 
 	if (zof->arg_types) {
-		nof->arg_types = apc_vmemcpy(zof->arg_types, zof->arg_types[0], ctor);
+		nof->arg_types = apc_vmemcpy(zof->arg_types, zof->arg_types[0] + 1, ctor);
 	}
 	else {
 		nof->arg_types = 0;

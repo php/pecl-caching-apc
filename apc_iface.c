@@ -348,15 +348,13 @@ static void increment_refcount(void *d)
 static ZEND_API void apc_execute(zend_op_array* op_array ELS_DC)
 {
 	old_execute(op_array ELS_DC);
-//	if(op_array->reserved[0] == 1) {
-//		apc_list_apply((apc_list*)op_array->reserved[1], increment_refcount);
-//	}
-
-	memset(op_array, 0, sizeof(op_array));
-
-	op_array->refcount = (int*) emalloc(sizeof(int));
-	op_array->refcount[0] = 1;
-	op_array->opcodes = (zend_op*) emalloc(sizeof(zend_op));
+	if(op_array->reserved[0] == (void *) 1) {
+		apc_efree(op_array->opcodes);
+		memset(op_array, 0, sizeof(zend_op_array));
+		op_array->refcount = (int*) emalloc(sizeof(int));
+		op_array->refcount[0] = 1;
+		op_array->opcodes = (zend_op*) emalloc(sizeof(zend_op));
+	}
 }
 
 /* apc_compile_file: replacement for zend_compile_file */
@@ -439,6 +437,7 @@ ZEND_API zend_op_array* apc_shm_compile_file(zend_file_handle *file_handle,
 		zend_op_array** new_op_array;
 		int length;
 		int size;
+		zend_op *opcodes;
 
 		zend_llist_add_element(&CG(open_files), file_handle); /*  FIXME */
 		apc_init_deserializer(inputbuf, inputlen);
@@ -471,6 +470,12 @@ ZEND_API zend_op_array* apc_shm_compile_file(zend_file_handle *file_handle,
 		assert(length == sizeof(zend_op_array*));
 
 		memcpy(op_array, *new_op_array, sizeof(zend_op_array));
+      	opcodes = (zend_op*) apc_emalloc(sizeof(zend_op)*op_array->last);
+      /* re-allocate opcodes in process memory */
+          memcpy(opcodes, op_array->opcodes,
+          sizeof(zend_op)*op_array->last);
+      	op_array->opcodes = opcodes;
+
 		apc_efree(new_op_array);
 		return op_array;
 	}
@@ -529,6 +534,7 @@ ZEND_API zend_op_array* apc_shm_compile_file(zend_file_handle *file_handle,
 		char* opkey;
 		int len, *refcount;	/* will be length of serialization buffer */
 		zend_op_array *new_op_array;
+		zend_op* opcodes;
 
 		apc_init_serializer();
 
@@ -542,8 +548,6 @@ ZEND_API zend_op_array* apc_shm_compile_file(zend_file_handle *file_handle,
 		apc_serialize_zend_class_table(CG(class_table),
 			acc_classtable, tables[1]);
 		new_op_array = apc_copy_op_array(NULL, op_array, apc_sma_malloc);
-//		refcount = (int *) apc_emalloc(sizeof(int));
-//		refcount[0] = op_array->refcount[0];
 		destroy_op_array(op_array);
 		opkey = apc_emalloc(strlen(key) + 4);
 		snprintf(opkey, strlen(key) + 4, "op:%s", key);
@@ -556,7 +560,11 @@ ZEND_API zend_op_array* apc_shm_compile_file(zend_file_handle *file_handle,
 
 		apc_efree(opkey);
 		memcpy(op_array, new_op_array, sizeof(zend_op_array));
-//		op_array->refcount = refcount;
+		/* re-allocate opcodes in process memory */
+		opcodes = (zend_op*) apc_emalloc(sizeof(zend_op)*new_op_array->last);
+   	    memcpy(opcodes, new_op_array->opcodes, 
+			sizeof(zend_op)*new_op_array->last);
+		op_array->opcodes = opcodes;
 		
 	}
 	

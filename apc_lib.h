@@ -26,7 +26,8 @@
 /* generic printf-like function ptr type */
 
 typedef int (*apc_outputfn_t)(const char*, ...);
-
+typedef void* (*apc_malloc_t)(int);
+typedef void (*apc_free_t)(void *);
 
 /* wrappers for memory allocation routines */
 
@@ -34,7 +35,8 @@ extern void* apc_emalloc (size_t n);
 extern void* apc_erealloc(void* p, size_t n);
 extern void  apc_efree   (void* p);
 extern char* apc_estrdup (const char* s);
-
+extern char* apc_vstrdup(const char* s, apc_malloc_t ctor);
+extern void* apc_vmemcpy(void* p, int n, apc_malloc_t ctor);
 
 /* simple display facility */
 
