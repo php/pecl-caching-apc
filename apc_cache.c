@@ -64,7 +64,7 @@ struct apc_cache_t {
     slot_t** slots;             /* array of cache slots (stored in SHM) */
     int num_slots;              /* number of slots in cache */
     int gc_ttl;                 /* maximum time on GC list for a slot */
-    int ttl;                    /* if slot is needed and entry's mtime is older than this ttl, remove it */
+    int ttl;                    /* if slot is needed and entry's access time is older than this ttl, remove it */
     int lock;                   /* global semaphore lock */
 };
 /* }}} */
