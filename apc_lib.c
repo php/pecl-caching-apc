@@ -183,10 +183,6 @@ const char* apc_rstat(const char* filename, const char* searchpath, struct stat 
 	char* p;				/* start of current path string */
 	char* q;				/* pointer to next SEPARATOR in path */
 
-	if (!searchpath) {
-		return filename;
-	}
-
 	if(!filename) {
 		return filename;
 	}
@@ -196,7 +192,15 @@ const char* apc_rstat(const char* filename, const char* searchpath, struct stat 
 			return filename;
 		}
 	}
-	
+	if (!searchpath) {
+			if(stat(filename, buf) == 0) {
+	        	return filename;
+			}	
+			else {
+				return NULL;
+			}
+    }
+
 	p = path = apc_estrdup(searchpath);
 
 	do {
@@ -217,6 +221,42 @@ const char* apc_rstat(const char* filename, const char* searchpath, struct stat 
 	return NULL;
 }
 
+int apc_check_compiled_file(const char *filename, char **dataptr, int *length)
+{
+	struct stat statbuf;
+	int fd;
+	char *realname;
+	char *buffer;
+	char FIXME[1024];
+	char temp[32];
+	if((realname = apc_rstat(filename, PG(include_path), &statbuf)) == NULL) {
+		return -1;
+	}
+	if((fd = open(realname, O_RDONLY)) < 0) {
+		return -1;
+	}
+	if((buffer = (char*) mmap(0, statbuf.st_size, PROT_READ, MAP_SHARED, 
+		fd, 0)) == (caddr_t) -1)
+	{
+		return -1;
+	}
+	else {
+		snprintf(temp, strlen(APC_MAGIC_HEADER)+1, "%s", APC_MAGIC_HEADER);
+		if(strncmp(buffer + sizeof(int) , temp, strlen(APC_MAGIC_HEADER))) {
+			return -1;
+		}
+		else {
+			*dataptr = (char *) realloc(*dataptr, 
+				statbuf.st_size);
+			memcpy(*dataptr, buffer, 
+				statbuf.st_size);
+			*length = statbuf.st_size;
+		}
+		munmap(buffer, statbuf.st_size);
+	}
+	close(fd);
+	return 0;
+}
 
 /* zend stuff */
 

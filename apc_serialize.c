@@ -220,6 +220,10 @@ void apc_create_string(char** string);
 void apc_serialize_arg_types(zend_uchar* arg_types);
 void apc_create_arg_types(zend_uchar** arg_types);
 
+/* pre-compiler routines */
+void apc_serialize_magic(void);
+int apc_deserialize_magic(void);
+
 /* routines for handling structures from zend_llist.h */
 void apc_serialize_zend_llist(zend_llist* list);
 void apc_deserialize_zend_llist(zend_llist* list);
@@ -375,7 +379,22 @@ void apc_create_arg_types(zend_uchar** arg_types)
 	LOAD_BYTES((*arg_types) + 1, count*sizeof(zend_uchar));
 }
 
+/* precompiler routines */
+void apc_serialize_magic(void)
+{
+	apc_serialize_string(APC_MAGIC_HEADER);
+}
 
+int apc_deserialize_magic(void)
+{
+	char *tmp;
+	int retval;
+
+	apc_create_string(&tmp);
+	retval = strcmp(tmp,APC_MAGIC_HEADER);
+	free(tmp);
+	return retval;
+}
 /* type: zend_llist */
 
 static void store_zend_llist_element(void* arg, void* data)

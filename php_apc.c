@@ -125,7 +125,7 @@ PHP_INI_BEGIN()
 		OnUpdateInt, check_mtime, zend_apc_globals, apc_globals)
 
 	/* file to provide generic support for relative includes */
-	STD_PHP_INI_ENTRY("apc.relative_includes", "0", PHP_INI_ALL,     
+	STD_PHP_INI_ENTRY("apc.relative_includes", "1", PHP_INI_ALL,     
     OnUpdateInt, relative_includes, zend_apc_globals, apc_globals)
 	
 	/* Set no. of buckets in the shared cache index. Ignored under mmap. */
@@ -139,6 +139,10 @@ PHP_INI_BEGIN()
 	/* Set maximum no. of shared memory segments. Ignored under mmap. */
 	STD_PHP_INI_ENTRY("apc.shm_segments", "10", PHP_INI_ALL, 
 		OnUpdateInt, shm_segments, zend_apc_globals, apc_globals)
+
+	/* Allow for compiled mmap-style files to be used as 'source' files */
+	STD_PHP_INI_ENTRY("apc.check_compiled_source", "0", PHP_INI_ALL, 
+		OnUpdateInt, check_compiled_source, zend_apc_globals, apc_globals)
 PHP_INI_END()
 
 /* printf style interface to zend_error */

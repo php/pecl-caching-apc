@@ -1,5 +1,9 @@
 APC Change Log
 -------------------------------
+1.0.8:
++ added ability to detect and decompile compiled files placed as 'aource' [gws,dw 01.30.2001]
++ fixed apc_rstat bug [gws 01.29.2001]
++ added hack to support included urls [gws 01.30.2001]
 
 1.0.7:
 + partially fixed for Solaris [gws 01.29.2001]

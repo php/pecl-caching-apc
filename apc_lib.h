@@ -18,6 +18,10 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <sys/mman.h>
+#include "zend.h"
+#include "php_globals.h"
+#include "apc_phpdeps.h"
 
 /* generic printf-like function ptr type */
 
@@ -50,7 +54,8 @@ extern double apc_timerreport(void);
 extern int apc_ropen(const char *pathname, int flags, int mode);
 extern const char* apc_rstat(const char* filename, const char* searchpath, 
 	struct stat *buf);
-
+extern int apc_check_compiled_file(const char *filename, char **dataptr, int *length)
+;
 
 /* zend-related */
 

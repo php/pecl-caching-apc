@@ -815,6 +815,7 @@ int apc_cache_dump_entry(apc_cache_t* cache, const char* key,
 
 	/* deserialize bucket and see what's inside */
 	apc_init_deserializer(apc_smm_attach(bp->shmid) + bp->offset, bp->length);
+	apc_deserialize_magic();
 	apc_deserialize_zend_function_table(&function_table, dummy, dummy);
 	apc_deserialize_zend_class_table(&class_table, dummy, dummy);
 	apc_deserialize_zend_op_array(op_array);

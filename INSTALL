@@ -120,6 +120,14 @@ apc.relative_includes
 	This may result in a slight loss of efficiency. Note: this option
 	must be enabled for the PHP include path to function correctly!
 
+apc.check_compiled_source
+	supported: (M,S)
+	default: 0
+	specifies whether or not to check to see if the php source file you
+	are reading is actually a compiled file.  This is the so-called
+	encoder functionality.  As there does not exist a standalone compiler,
+	current version mmap files should be used.
+
 #################################################################
 # Exported functions
 #################################################################

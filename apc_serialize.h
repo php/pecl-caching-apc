@@ -50,6 +50,10 @@ extern void apc_create_string(char** string);
 extern void apc_serialize_arg_types(zend_uchar* arg_types);
 extern void apc_create_arg_types(zend_uchar** arg_types);
 
+/* pre-compiler functions */
+extern void apc_serialize_magic(void);
+extern int apc_deserialize_magic(void);
+
 /* zend_llist.h */
 extern void apc_serialize_zend_llist(zend_llist* list);
 extern void apc_deserialize_zend_llist(zend_llist* list);
