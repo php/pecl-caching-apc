@@ -738,17 +738,14 @@ void apc_serialize_zvalue_value(zvalue_value* zv, int type)
 	/* A zvalue_value is a union, and as such we first need to
 	 * determine exactly what it's type is, then serialize the
 	 * appropriate structure. */
-fprintf(stderr, "Serializing zvalue_value ");
 	switch (type) {
 	  case IS_RESOURCE:
 	  case IS_BOOL:
 	  case IS_LONG:
 		SERIALIZE_SCALAR(zv->lval, long);
-		fprintf(stderr, "Digit (%d)\n", zv->lval);
 		break;	
 	  case IS_DOUBLE:
 		SERIALIZE_SCALAR(zv->dval, double);
-		fprintf(stderr, "Digit (%d)\n", zv->dval);
 		break;
 	  case IS_NULL:
 		/* null value, do nothing */
@@ -758,20 +755,16 @@ fprintf(stderr, "Serializing zvalue_value ");
 	  case FLAG_IS_BC:
 		apc_serialize_string(zv->str.val);
 		SERIALIZE_SCALAR(zv->str.len, int);
-		fprintf(stderr, "String (%s)\n", zv->str.val);
 		break;
 	  case IS_ARRAY:
 		apc_serialize_hashtable(zv->ht, apc_serialize_zval_ptr);
-		fprintf(stderr, "Array\n");
 		break;
 	  case IS_CONSTANT_ARRAY:
 		apc_serialize_hashtable(zv->ht, apc_serialize_zval_ptr);
-		fprintf(stderr, "Array\n");
 		break;
 	  case IS_OBJECT:
 		apc_serialize_zend_class_entry(zv->obj.ce);
 		apc_serialize_hashtable(zv->obj.properties, apc_serialize_zval_ptr);
-		fprintf(stderr, "Object\n");
 		break;
 	  default:
 		/* The above list enumerates all types.  If we get here,
@@ -785,27 +778,23 @@ void apc_deserialize_zvalue_value(zvalue_value* zv, int type)
 	/* We peeked ahead in the calling routine to deserialize the
 	 * type. Now we just deserialize. */
 
-fprintf(stderr, "Deerializing zvalue_value ");
 	switch(type) {
 	  case IS_RESOURCE:
 	  case IS_BOOL:
 	  case IS_LONG:
 		DESERIALIZE_SCALAR(&zv->lval, int);
-		fprintf(stderr, "Digit (%d)\n", zv->lval);
 		break;
 	  case IS_NULL:
 		/* null value, do nothing */
 		break;
 	  case IS_DOUBLE:
 		DESERIALIZE_SCALAR(&zv->dval, double);
-		fprintf(stderr, "Digit (%d)\n", zv->dval);
 		break;
 	  case IS_CONSTANT:
 	  case IS_STRING:
 	  case FLAG_IS_BC:
 		apc_create_string(&zv->str.val);
 		DESERIALIZE_SCALAR(&zv->str.len, int);
-		fprintf(stderr, "String (%s)\n", zv->str.val);
 		break;
 	  case IS_ARRAY:
 		apc_create_hashtable(&zv->ht, apc_create_zval, sizeof(void*));
@@ -1184,7 +1173,6 @@ void apc_serialize_zend_op_array(zend_op_array* zoa)
 	 
 	for (i = 0; i < zoa->last; i++) {
 		apc_serialize_zend_op(&zoa->opcodes[i]);
-		fprintf(stderr, "Serializing %s\n", getOpcodeName(zoa->opcodes[i].opcode));
 	}
 
 	SERIALIZE_SCALAR(zoa->T, zend_uint);
@@ -1228,7 +1216,6 @@ void apc_deserialize_zend_op_array(zend_op_array* zoa, int master)
 
 		for (i = 0; i < zoa->last; i++) {
 			apc_deserialize_zend_op(&zoa->opcodes[i]);
-fprintf(stderr, "Deserializing %s\n", getOpcodeName(zoa->opcodes[i].opcode));
 			if(zoa->opcodes[i].opcode == ZEND_DECLARE_FUNCTION_OR_CLASS) {
 				HashTable* table;
 				char* op2str;	/* op2str and op2len are for convenience */
