@@ -26,3 +26,20 @@ if test "$PHP_APC" != "no"; then
   dnl Write more examples of tests here...
   PHP_EXTENSION(apc, $ext_shared)
 fi
+AC_DEFUN(AC_SYSTEM,[
+	AC_MSG_CHECKING([system type])
+	SYSTEM="`uname -s | tr a-z A-Z`"
+  AC_MSG_RESULT($SYSTEM)
+])                                              
+AC_SYSTEM()
+case $SYSTEM in
+	*LINUX*)
+		AC_DEFINE(__LINUX__, 1, [ ])
+		;;
+	*BSD*)
+		AC_DEFINE(__BSD__, 1, [ ])
+		;;
+	*SUNOS*)
+		AC_DEFINE(__SUNOS__, 1, [ ])
+		;;
+esac
