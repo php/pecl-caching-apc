@@ -21,6 +21,8 @@
 #include "apc_serialize.h"
 #include "apc_sma.h"
 #include "apc_lib.h"
+#include "apc_list.h"
+#include "apc_sma.h"
 #include "apc_crc32.h"
 #include "apc_nametable.h"
 #include "apc_version.h"
@@ -334,11 +336,19 @@ int apc_object_info(char const *filename, zval** hash)
    return 0;
 }
 
+/* dummy function to reset ref counts */
+static void increment_refcount(void *d) 
+{
+	uint *refcount;
+	refcount = (uint *)d;
+	refcount[0] = 2;
+}
+
 /* apc_execute: replacement for zend_compile_file to allow for refcount reset*/
 static ZEND_API void apc_execute(zend_op_array* op_array ELS_DC)
 {
 	old_execute(op_array ELS_DC);
-	op_array->refcount[0] = 2;
+	apc_list_apply((apc_list*)op_array->reserved[0], increment_refcount);
 }
 
 /* apc_compile_file: replacement for zend_compile_file */
@@ -373,6 +383,7 @@ ZEND_API zend_op_array* apc_shm_compile_file(zend_file_handle *file_handle,
 	int seen;					/* seen this file before, this request? */
 	int mtime;					/* modification time of the file */
 	int numclasses;
+
 
 	/* If the user has set the check_mtime ini entry to true, we must
 	 * compare the current modification time of the every file against
@@ -416,6 +427,9 @@ ZEND_API zend_op_array* apc_shm_compile_file(zend_file_handle *file_handle,
 	if (apc_cache_retrieve(cache, key, &inputbuf, &inputlen,
 		&inputsize, mtime) == 1)
 	{
+		char *opkey;
+		int dummy, dummy2;
+		zend_op_array *new_op_array;
 		zend_llist_add_element(&CG(open_files), file_handle); /*  FIXME */
 		apc_init_deserializer(inputbuf, inputlen);
 		op_array = (zend_op_array*) emalloc(sizeof(zend_op_array));
@@ -429,10 +443,16 @@ ZEND_API zend_op_array* apc_shm_compile_file(zend_file_handle *file_handle,
 		}
 		apc_deserialize_zend_function_table(CG(function_table),
 			acc_functiontable, tables[0]);
-		numclasses = apc_deserialize_zend_class_table(CG(class_table), acc_classtable,
-			tables[1]);
-		apc_deserialize_zend_op_array(op_array, numclasses);
-
+		numclasses = apc_deserialize_zend_class_table(CG(class_table), 
+			acc_classtable, tables[1]);
+		opkey = (char *)apc_emalloc(strlen(key) + 4);
+		snprintf(opkey, strlen(key) + 4, "op:%s", key);
+		if(apc_cache_retrieve(cache, opkey, (char **) &new_op_array, &dummy,
+			&dummy2, mtime) != 1) 
+		{
+			assert(0);
+		}
+		memcpy(op_array, new_op_array, sizeof(zend_op_array));
 		return op_array;
 	}
 
@@ -440,6 +460,7 @@ ZEND_API zend_op_array* apc_shm_compile_file(zend_file_handle *file_handle,
 	if( APCG(check_compiled_source) && !apc_check_compiled_file(file_handle->filename, 
 		&inputbuf, &inputlen)) 
 	{
+		assert(0);
 		apc_init_deserializer(inputbuf, inputlen);
 		op_array = (zend_op_array*) emalloc(sizeof(zend_op_array));
         if(apc_deserialize_magic()) {
@@ -486,7 +507,9 @@ ZEND_API zend_op_array* apc_shm_compile_file(zend_file_handle *file_handle,
 	if (apc_regexec(key))
 	{
 		char* buf;	/* will point to serialization buffer */
+		char* opkey;
 		int len;	/* will be length of serialization buffer */
+		zend_op_array *new_op_array;
 
 		apc_init_serializer();
 
@@ -499,11 +522,13 @@ ZEND_API zend_op_array* apc_shm_compile_file(zend_file_handle *file_handle,
 			acc_functiontable, tables[0]);
 		apc_serialize_zend_class_table(CG(class_table),
 			acc_classtable, tables[1]);
-		apc_serialize_zend_op_array(op_array);
-
-		apc_get_serialized_data(&buf, &len);
-
+		new_op_array = apc_copy_op_array(NULL, op_array);
+		opkey = apc_emalloc(strlen(key) + 4);
+		snprintf(opkey, strlen(key) + 4, "op:%s", key);
+		apc_cache_insert(cache, opkey, (const char *) new_op_array, sizeof(zend_op_array), mtime);
 		apc_cache_insert(cache, key, buf, len, mtime);
+		apc_efree(opkey);
+		memcpy(op_array, new_op_array, sizeof(zend_op_array));
 	}
 	
 	return op_array;

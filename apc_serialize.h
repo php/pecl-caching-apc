@@ -17,6 +17,7 @@
 #define APC_SERIALIZE_H
 
 #include "apc_nametable.h"
+#include "apc_list.h"
 #include "zend.h"
 #include "zend_compile.h"
 #include "zend_llist.h"

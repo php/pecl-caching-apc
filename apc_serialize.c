@@ -18,8 +18,10 @@
 #include "apc_phpdeps.h"
 #include "apc_sma.h"
 #include "apc_version.h"
+#include "apc_list.h"
 #include <stdlib.h>
 #include <assert.h>
+
 
 #include "zend_variables.h"	/*  for zval_dtor() */
 
@@ -1483,6 +1485,7 @@ zend_op_array* apc_copy_op_array(zend_op_array* noa, zend_op_array* zoa)
 		apc_copy_zend_op(&noa->opcodes[i], &zoa->opcodes[i]);
 	}
 	noa->filename = shm_strdup(zoa->filename);
+	apc_list_create(&aux_list, apc_sma_alloc, NULL);
 	return noa;
 }
 
@@ -1805,7 +1808,7 @@ zend_function *apc_copy_zend_function(zend_function* nf, zend_function* zf)
     break;
     case ZEND_USER_FUNCTION:
     case ZEND_EVAL_CODE:
-    apc_copy_zend_op_array(&nf->op_array, &zf->op_array);
+    apc_copy_op_array(&nf->op_array, &zf->op_array);
     break;
     default:
     /* the above are all valid zend_function types.  If we hit this
