@@ -17,6 +17,7 @@ LTLIBRARY_SOURCES =     apc.c \
 			apc_mmap.c \
 			apc_optimizer.c \
 			apc_pair.c \
+			apc_debug.c \
 			php_apc.c
 
 LTLIBRARY_SHARED_NAME = apc.la
