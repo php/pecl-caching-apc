@@ -517,7 +517,7 @@ int apc_cache_insert(apc_cache_t* cache, const char* key,
 	buckets[slot].createtime = time(0);
 	
 /*	
-	if (cache->header->ttl == 0) { /* if ttl is zero, disable expiration */
+	if (cache->header->ttl == 0) {
 		buckets[slot].ttl = NEVER_EXPIRE;
 	}
 */
