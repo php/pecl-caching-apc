@@ -1065,6 +1065,7 @@ void apc_deserialize_zend_op_array(zend_op_array* zoa)
 					char* parent_name;
 					int class_name_length;
 					namearray_t* children;
+					int minSize;
 
 					table = CG(class_table);
 
@@ -1122,13 +1123,19 @@ void apc_deserialize_zend_op_array(zend_op_array* zoa)
 					}
 		
 					/* Add this class's name to the namearray_t 'children' */
+
+					minSize = children->length + class_name_length + 1;
 		
-					if (children->length + class_name_length >= children->size)
-					{
-						children->size *= 2;
-						children->strings = realloc(children->strings,
-						                            children->size);
-						assert(children->strings);
+					if (minSize > children->size) {
+						/* The strings array (children->strings) is not big
+						 * enough to store this class name. Expand the array
+						 * using an exponential resize. */
+
+						while (minSize > children->size) {
+							children->size *= 2;
+						}
+						children->strings = apc_erealloc(children->strings,
+						                                 children->size);
 					}
 					memcpy(children->strings + children->length,
 						class_name, class_name_length + 1);
