@@ -8,6 +8,7 @@
 #include <string.h>
 
 #define DEBUG 1
+#undef DEBUG
 
 /* apc_emalloc: malloc that dies on failure */
 void* apc_emalloc(size_t n)
