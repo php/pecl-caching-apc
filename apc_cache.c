@@ -22,6 +22,8 @@
 #include "apc_shm.h"
 #include "apc_smm.h"
 #include "php_apc.h"
+#include "apc_iface.h"
+
 #include "zend.h"
 #include "zend_hash.h"
 #include <string.h>
@@ -972,6 +974,7 @@ int apc_cache_info_shm(apc_cache_t* cache, zval **hash) {
         snprintf(buf, sizeof(buf)-1, "0x%x", cache->header->magic);
         add_assoc_string(*hash, "magic", buf, 1);
 
+        add_assoc_string(*hash, "version", (char *)apc_version(), 1);
         add_assoc_long(*hash, "total buckets", cache->header->nbuckets);
         add_assoc_long(*hash, "maximum shared memory segments", cache->header->maxseg);
         add_assoc_long(*hash, "shared memory segment size", cache->header->segsize);
