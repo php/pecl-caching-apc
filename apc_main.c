@@ -88,12 +88,6 @@ static int install_class(apc_class_t cl TSRMLS_DC)
                            class_entry,
                            sizeof(zend_class_entry),
                            NULL);
-
-    if (status == FAILURE) {
-        zend_error(E_ERROR, "Cannot redeclare class %s",
-                   cl.class_entry->name);
-    }
-
     return status;
 }
 /* }}} */
