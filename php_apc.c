@@ -102,17 +102,35 @@ static PHP_INI_MH(set_cachedir)
 /* set a POSIX extended regex to match for NOT serializing objects */
 static PHP_INI_MH(set_regex)
 {
+	char *p;
+	char *q;
+	int i;
+
 	if (new_value == 0) {
 		return SUCCESS;
 	}
-
-	if (regcomp(&APCG(regex), new_value, REG_EXTENDED | REG_ICASE) == 0) {
-		APCG(regex_text) = new_value;
-		APCG(nmatches) = 1;
-		return SUCCESS;
+	p = new_value;
+	i = 0;
+	while(((q = strchr(p, ':')) != NULL) && i < 10)
+	{
+		*q = '\0';
+		if(regcomp(&APCG(regex)[i], p, REG_EXTENDED | REG_ICASE) == 0) {
+			APCG(regex_text)[i] = p;
+			i++;
+		}
+		if(*(q+1) != '\0') {
+			p = q + 1;
+		}
+		else {
+			return SUCCESS;
+		}
 	}
-
-	return FAILURE;
+	if(regcomp(&APCG(regex)[i], p, REG_EXTENDED | REG_ICASE) == 0) {
+		APCG(regex_text)[i] = p;
+		i++;
+	}
+	APCG(nmatches) = i;
+	return SUCCESS;
 }
 
 /* set the check_mtime flag in apc_globals (used in the shm impl.) */

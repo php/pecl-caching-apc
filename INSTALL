@@ -85,7 +85,7 @@ apc.hash_buckets
 apc.regex 
 	supported: (M,S)
 	default: NULL
-	regex is a POSIX extended regex of files NOT to cache.
+	regex is a colon delimited list of POSIX extended regex of files NOT to cache.
 
 apc.shm_segments 
 	supported: (S)
@@ -206,3 +206,12 @@ int apc_cache_info(array &output)
 				"check file modification times"
 				"support relative includes"
 				"check for compiled source"
+		MMAP:
+				"time-to-live"
+				"cache directory"
+				"cache filter"
+		MMAP Toggles:
+				"check file modification times"
+				"support relative includes"
+				"check for compiled source"
+

@@ -14,10 +14,12 @@
 
 
 #include "apc_lib.h"
+#include "php_apc.h"
 #include "zend.h"
 #include <sys/time.h>
 #include <unistd.h>
 #include <errno.h>
+#include <regex.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -27,6 +29,8 @@
 #include <fcntl.h>
 
 #undef DEBUG
+
+extern zend_apc_globals apc_globals;
 
 /* apc_emalloc: malloc that dies on failure */
 void* apc_emalloc(size_t n)
@@ -173,6 +177,24 @@ int apc_ropen(const char* pathname, int flags, int mode)
 	}
 
 	return open(pathname, flags, mode);
+}
+
+int apc_regexec(char *filename) {
+	int i;
+	printf("DEBUG APCG(nmatches) = %d\n", APCG(nmatches)); 
+	if(!APCG(nmatches)) {
+		printf("DEBUG APCG(nmatches) = 0\n"); 
+		return 1;
+	}
+	for(i = 0; i < APCG(nmatches); i++) {
+		int n;
+		if(n = (regexec(&APCG(regex)[i], filename, 0, NULL, 0)) == 0) {
+			printf("DEBUG %s matched %s", filename, APCG(regex_text)[i]);
+			return 0;
+		}
+			printf("DEBUG %s didnt matched %s", filename, APCG(regex_text)[i]);
+	}
+	return 1;
 }
 
 const char* apc_rstat(const char* filename, const char* searchpath, struct stat *buf)

@@ -53,6 +53,7 @@ char *apc_generate_cache_filename(const char *filename)
 void apc_mmap_dump(HashTable* cache, const char *linkurl, apc_outputfn_t outputfn)
 {
 	Bucket *p;
+	int j;
  /* display HEAD */
 	outputfn("<head>\n");
 	outputfn("<title>APC-MMAP Cache Info</title>\n");
@@ -72,9 +73,12 @@ void apc_mmap_dump(HashTable* cache, const char *linkurl, apc_outputfn_t outputf
 	outputfn("<tr>\n");
 	outputfn("<td bgcolor=#eeeeee>Root Cache Dir</td>\n");
 	outputfn("<td bgcolor=#eeeeee>%s</td>\n", APCG(cachedir) ? APCG(cachedir) : "(none)");
+	for(j = 0; j < APCG(nmatches); j++) {
 	outputfn("<tr>\n");
-	outputfn("<td bgcolor=#eeeeee>Regex Exclude Text</td>\n");
-    	outputfn("<td bgcolor=#eeeeee>%s</td>\n", APCG(regex_text) ? APCG(regex_text) : "(none)");
+		outputfn("<td bgcolor=#eeeeee>Regex Exclude Text (%d)</td>\n", j);
+    	outputfn("<td bgcolor=#eeeeee>%s</td>\n", 
+			APCG(regex_text)[j]?APCG(regex_text)[j] : "(none)");
+	}
 	outputfn("</table>\n");
 	outputfn("<br>\n");
 	outputfn("<br>\n");
@@ -320,10 +324,17 @@ int apc_cache_index_mmap(HashTable* cache, zval **hash) {
 }
 
 int apc_cache_info_mmap(zval **hash) {
+	int j;
+	char buf[20];
+
 	array_init(*hash);
 	add_assoc_long(*hash, "time-to-live", APCG(ttl));
-	add_assoc_string(*hash, "cache filter", APCG(regex_text)? APCG(regex_text): "(none)", 1);
-	add_assoc_string(*hash, "cache directory", APCG(cachedir)?APCG(regex_text):"/tmp", 1 );
+	for(j = 0; j < APCG(nmatches); j++) {
+		snprintf(buf, sizeof(buf)-1, "cache filter (%d)", j);
+		add_assoc_string(*hash, buf,
+			APCG(regex_text)[j]?APCG(regex_text)[j]:"(none)", 1);
+	}
+	add_assoc_string(*hash, "cache directory", APCG(cachedir)?APCG(cachedir):"/tmp", 1 );
 	add_assoc_long(*hash, "check file modification times", APCG(check_mtime));
 	add_assoc_long(*hash, "support relative includes", APCG(relative_includes));
 	add_assoc_long(*hash, "check for compiled source", APCG(check_compiled_source));

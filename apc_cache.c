@@ -575,7 +575,7 @@ int apc_cache_set_object_ttl(apc_cache_t* cache, const char* key, int ttl)
 void apc_cache_dump(apc_cache_t* cache, const char* linkurl,
 	apc_outputfn_t outputfn)
 {
-	int i;
+	int i,j;
 	double hitrate;
 
 	READLOCK(cache->lock);
@@ -622,9 +622,11 @@ void apc_cache_dump(apc_cache_t* cache, const char* linkurl,
 	outputfn("<td bgcolor=#eeeeee>hit rate</td>\n");
 	outputfn("<td bgcolor=#eeeeee>%.2f</td>\n", hitrate);
 	outputfn("<tr>\n");
-	outputfn("<td bgcolor=#eeeeee>cache filter</td>\n");
-	outputfn("<td bgcolor=#eeeeee>%s</td>\n", APCG(regex_text)? APCG(regex_text): "(none)");
+	for(j = 0; j < APCG(nmatches); j++) {
+		outputfn("<td bgcolor=#eeeeee>cache filter (%d)</td>\n", j);
+		outputfn("<td bgcolor=#eeeeee>%s</td>\n", APCG(regex_text)[j]? APCG(regex_text)[j]: "(none)");
 	outputfn("<tr>\n");
+	}
 	outputfn("<td colspan=2 bgcolor=#ffffff>local information</td>\n");
 	outputfn("<tr>\n");
 	outputfn("<td bgcolor=#eeeeee>shared memory ID</td>\n");
@@ -951,7 +953,7 @@ int apc_cache_index_shm(apc_cache_t* cache, zval **hash) {
 }
 
 int apc_cache_info_shm(apc_cache_t* cache, zval **hash) {
-        int i;
+        int i,j;
         double hitrate;
         long total_mem;
         long free_mem;
@@ -977,7 +979,11 @@ int apc_cache_info_shm(apc_cache_t* cache, zval **hash) {
         add_assoc_long(*hash, "hits", cache->header->hits);
         add_assoc_long(*hash, "misses", cache->header->misses);
         add_assoc_double(*hash, "hit rate", hitrate);
-        add_assoc_string(*hash, "cache filter", APCG(regex_text)? APCG(regex_text): "(none)", 1);
+		for(j = 0; j < APCG(nmatches); j++) {
+			snprintf(buf, sizeof(buf)-1, "cache filter (%d)", j);
+        	add_assoc_string(*hash, buf, 
+				APCG(regex_text)[j]?APCG(regex_text)[j]:"(none)", 1);
+		}
         add_assoc_long(*hash, "shared memory ID", cache->shmid);
 
         snprintf(buf, sizeof(buf)-1, "0x%x", cache->shmaddr);
