@@ -10,8 +10,8 @@
 #define MAX_KEY_LEN	128		/* must be >= maximum path length */
 
 enum { EMPTY = -1, UNUSED = -2 };
-
-enum { DO_CHECKSUM = 0 };
+enum { DO_CHECKSUM = 0 };			/* if this is true, perform checksums */
+enum { NEVER_EXPIRE = 1 << 31 };	/* 2^31 is almost never */
 
 typedef struct segment_t segment_t;
 struct segment_t {
@@ -56,7 +56,7 @@ struct apc_cache_t {
 	bucket_t* buckets;	/* start of bucket_t array */
 };
 
-#define MAGIC_INIT 0xD1A5B8E2
+enum { MAGIC_INIT = 0xD1A5B8E2 };	/* magic initialization value */
 
 /* computecachesize: compute size of cache, given nbuckets and maxseg */
 static int computecachesize(int nbuckets, int maxseg)
@@ -124,6 +124,14 @@ static void resetcache(apc_cache_t* cache)
 		}
 		apc_smm_initsegment(cache->segments[i].shmid, segsize);
 	}
+}
+
+/* emptybucket: clean out a bucket and free associated memory */
+static void emptybucket(bucket_t* bucket)
+{
+	char* shmaddr = (char*) apc_smm_attach(bucket->shmid);
+	apc_smm_free(shmaddr, bucket->offset);
+	bucket->shmid = UNUSED;
 }
 
 /* hash: compute hash value of a string */
@@ -225,8 +233,7 @@ int apc_cache_search(apc_cache_t* cache, const char* key)
 	bucket_t* buckets;
 	int nbuckets;
 
-	//apc_rwl_writelock(cache->lock);
-	apc_rwl_readlock(cache->lock);
+	apc_rwl_writelock(cache->lock);
 
 	buckets  = cache->buckets;
 	nbuckets = cache->header->nbuckets;
@@ -241,6 +248,7 @@ int apc_cache_search(apc_cache_t* cache, const char* key)
 		}
 		if (strcmp(buckets[slot].key, key) == 0) {
 			if (time(0) > buckets[slot].expiretime) {
+				emptybucket(&buckets[slot]);
 				break; /* the entry has expired */
 			}
 			apc_rwl_unlock(cache->lock);
@@ -263,10 +271,9 @@ int apc_cache_retrieve(apc_cache_t* cache, const char* key, char** dataptr,
 	bucket_t* buckets;
 	int nbuckets;
 	unsigned int checksum;
-	int curtime;
+	time_t curtime;
 
-	//apc_rwl_writelock(cache->lock);
-	apc_rwl_readlock(cache->lock);
+	apc_rwl_writelock(cache->lock);
 
 	buckets  = cache->buckets;
 	nbuckets = cache->header->nbuckets;
@@ -281,6 +288,7 @@ int apc_cache_retrieve(apc_cache_t* cache, const char* key, char** dataptr,
 		}
 		if (strcmp(buckets[slot].key, key) == 0) {
 			if ((curtime = time(0)) > buckets[slot].expiretime) {
+				emptybucket(&buckets[slot]);
 				break; /* the entry has expired */
 			}
 			shmaddr = (char*) apc_smm_attach(buckets[slot].shmid);
@@ -326,7 +334,7 @@ int apc_cache_retrieve_nl(apc_cache_t* cache, const char* key,
 	bucket_t* buckets;
 	int nbuckets;
 	unsigned int checksum;
-	int curtime;
+	time_t curtime;
 
 	buckets  = cache->buckets;
 	nbuckets = cache->header->nbuckets;
@@ -341,6 +349,7 @@ int apc_cache_retrieve_nl(apc_cache_t* cache, const char* key,
 		}
 		if (strcmp(buckets[slot].key, key) == 0) {
 			if ((curtime = time(0)) > buckets[slot].expiretime) {
+				emptybucket(&buckets[slot]);
 				break; /* the entry has expired */
 			}
 			shmaddr = (char*) apc_smm_attach(buckets[slot].shmid);
@@ -384,9 +393,13 @@ int apc_cache_insert(apc_cache_t* cache, const char* key,
 	int segsize;
 	int offset;
 	unsigned int checksum;
+	time_t curtime;
 
 	/* compute checksum of data (before locking) */
 	checksum = DO_CHECKSUM ? apc_crc32(data, size) : 0;
+
+	/* get current time, for checking expiration dates */
+	curtime = time(0);
 
 	apc_rwl_writelock(cache->lock);
 	
@@ -403,7 +416,12 @@ int apc_cache_insert(apc_cache_t* cache, const char* key,
 	nprobe = 0;
 	while (buckets[slot].shmid >= 0 && nprobe++ < nbuckets) {
 		if (strcmp(buckets[slot].key, key) == 0) {
+			emptybucket(&buckets[slot]);
 			break;	/* overwrite existing entry */
+		}
+		if (curtime > buckets[slot].expiretime) {
+			emptybucket(&buckets[slot]);
+			break;	/* this entry has expired, overwrite it */
 		}
 		slot = (slot+k) % nbuckets;
 	}
@@ -436,10 +454,14 @@ int apc_cache_insert(apc_cache_t* cache, const char* key,
 	buckets[slot].shmid      = segments[i].shmid;
 	buckets[slot].offset     = offset;
 	buckets[slot].length     = size;
-	buckets[slot].lastaccess = time(0);
+	buckets[slot].lastaccess = curtime;
 	buckets[slot].hitcount   = 0;
-	buckets[slot].expiretime = buckets[slot].lastaccess + cache->header->ttl;
 	buckets[slot].checksum   = checksum;
+	buckets[slot].expiretime = buckets[slot].lastaccess + cache->header->ttl;
+	
+	if (cache->header->ttl == 0) { /* if ttl is zero, disable expiration */
+		buckets[slot].expiretime = NEVER_EXPIRE;
+	}
 
 	/* store data in segment and update its record */
 	memcpy(shmaddr + offset, data, size);
@@ -473,9 +495,7 @@ int apc_cache_remove(apc_cache_t* cache, const char* key)
 		}
 		if (strcmp(buckets[slot].key, key) == 0) {
 			/* found the key */
-			shmaddr = (char*) apc_smm_attach(buckets[slot].shmid);
-			apc_smm_free(shmaddr, buckets[slot].offset);
-			buckets[slot].shmid = UNUSED;
+			emptybucket(&buckets[slot]);
 			apc_rwl_unlock(cache->lock);
 			return 1;
 		}
