@@ -75,6 +75,16 @@ static int alignword(int x)
 	return sizeof(word_t) * (1 + ((x-1)/sizeof(word_t)));
 }
 
+static int pow2(int x)
+{
+      int p = 1;
+
+      while (p < x) {
+              p <<= 1;
+      }
+      return p;
+}
+
 /* apc_smm_init: initialize the management system */
 void apc_smm_init()
 {
@@ -179,6 +189,10 @@ int apc_smm_alloc(void* shmaddr, int size)
 
 	/* realsize must be aligned to a word boundary on some architectures */
 	realsize = alignword(max(size + sizeof(int), sizeof(block_t)));
+	
+	/* make realsize the smallest power of 2 greater than or
+	 * equal to realsize */
+	realsize = pow2(realsize);
 
 	/* first insure that the segment contains at least realsize free
 	 * bytes, even if they are not contiguous */
