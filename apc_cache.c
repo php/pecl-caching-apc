@@ -19,6 +19,7 @@
 #include "apc_cache.h"
 #include "apc_sem.h"
 #include "apc_sma.h"
+#include "SAPI.h"
 
 /* TODO: rehash when load factor exceeds threshold */
 
@@ -332,7 +333,10 @@ int apc_cache_make_key(apc_cache_key_t* key,
     if (!filename)
         return 0;
 
-    if (stat(filename, &buf) != 0 &&
+    if(!strcmp(SG(request_info).path_translated, filename)) {
+        buf = *sapi_get_stat();  /* Apache has already done this stat() for us */
+    }
+    else if (stat(filename, &buf) != 0 &&
         apc_stat_paths(filename, include_path, &buf) != 0)
     {
         return 0;
