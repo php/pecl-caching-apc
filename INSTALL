@@ -129,6 +129,11 @@ These instructions assume your PHP installation is located in /usr/local/php.
     add --enable-mmap to your configure line.  If you don't understand the 
     difference between the two, stick with the default.
 
+	If you prefer to use fcntl() locks over sysv IPC semaphores, add
+	--enable-fcntl to your configure line.  If you don't have a problem
+	with your server segaulting, or any other unnatural accumulation of
+	semaphores on your system, stick with the default.
+
 4.  Compile and install the files. Simply type: make install
 
     (You may need to be root in order to install)
