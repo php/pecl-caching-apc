@@ -15,6 +15,7 @@
 
 #include "apc_sem.h"
 #include "apc_lib.h"
+#include "php_config.h"
 #include <unistd.h>
 #include <semaphore.h>
 #include <sys/types.h>
@@ -26,12 +27,10 @@
 #include <string.h>
 #include <stdarg.h>
 #include <errno.h>
-#include "php_config.h"
 
 /* If host type is linux, or any other that doesn't define semun,
  * define it ourselves. */
-
-#if defined(__LINUX__)  
+#ifdef APC_HOST_LINUX
 union semun {
 	int val;                    /* value for SETVAL */
 	struct semid_ds *buf;       /* buffer for IPC_STAT, IPC_SET */
@@ -47,7 +46,7 @@ union semun {
 # define SEM_A 0222	/* write permission */
 #endif
 
-/* always use SEM_UNDO, otherwise we will hemorage semaphores */
+/* always use SEM_UNDO, otherwise we risk deadlock */
 #define USE_SEM_UNDO
 
 #ifdef USE_SEM_UNDO

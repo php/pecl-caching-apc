@@ -36,13 +36,13 @@ AC_DEFUN(AC_SYSTEM,[
 AC_SYSTEM()
 case $SYSTEM in
 	*LINUX*)
-		AC_DEFINE(__LINUX__, 1, [ ])
+		AC_DEFINE(APC_HOST_LINUX, 1, [ ])
 		;;
 	*BSD*)
-		AC_DEFINE(__BSD__, 1, [ ])
+		AC_DEFINE(APC_HOST_BSD, 1, [ ])
 		;;
 	*SUNOS*)
-		AC_DEFINE(__SUNOS__, 1, [ ])
+		AC_DEFINE(APC_HOST_SUNOS, 1, [ ])
 		;;
 	dnl else define nothing
 esac
