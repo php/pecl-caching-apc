@@ -270,7 +270,7 @@ void apc_smm_free(void* shmaddr, int offset)
 }
 
 /* apc_smm_dump: print segment information to file stream */
-void apc_smm_dump(apc_outputfn_t outputfn, void* shmaddr)
+void apc_smm_dump(void* shmaddr, apc_outputfn_t outputfn)
 {
 	header_t* header;	/* header of shared memory segment */
 	block_t* cur;		/* working block in list */
@@ -279,21 +279,40 @@ void apc_smm_dump(apc_outputfn_t outputfn, void* shmaddr)
 
 	/* display header data */
 	header = (header_t*) shmaddr;
-	outputfn("*** segment information (local addr %p) ***<br>\n", shmaddr);
-	outputfn("total size:      %d<br>\n", header->segsize);
-	outputfn("total available: %d<br>\n", header->avail);
-	outputfn("***<br>\n");
+	outputfn("<table border=1 cellpadding=2 cellspacing=1>\n");
+	outputfn("<tr>\n");
+	outputfn("<td colspan=4 bgcolor=#dde4ff>Segment Info</td>\n");
+	outputfn("<tr>\n");
+	outputfn("<td colspan=2 bgcolor=#eeeeee>Local Address</td>\n");
+	outputfn("<td colspan=2 bgcolor=#eeeeee>%p</td>\n", shmaddr);
+	outputfn("<tr>\n");
+	outputfn("<td colspan=2 bgcolor=#eeeeee>Total Size (B)</td>\n");
+	outputfn("<td colspan=2 bgcolor=#eeeeee>%d</td>\n", header->segsize);
+	outputfn("<tr>\n");
+	outputfn("<td colspan=2 bgcolor=#eeeeee>Total Available (B)</td>\n");
+	outputfn("<td colspan=2 bgcolor=#eeeeee>%d</td>\n", header->avail);
 
 	/* display information about each block */
+	outputfn("<tr>\n");
+	outputfn("<td colspan=4 bgcolor=#dde4ff>Blocks</td>\n");
+	outputfn("<tr>\n");
+	outputfn("<td bgcolor=#ffffff>Index</td>\n");
+	outputfn("<td bgcolor=#ffffff>Offset</td>\n");
+	outputfn("<td bgcolor=#ffffff>Size (B)</td>\n");
+	outputfn("<td bgcolor=#ffffff>Next Offset</td>\n");
+
 	offset = sizeof(header_t);
 	n      = 0;
 	cur    = BLOCKAT(offset);
 	do {
-		outputfn("block %d: offset=%d, size=%d, next=%d<br>\n",
-			n++, offset, cur->size, cur->next);
+		outputfn("<tr>\n");
+		outputfn("<td bgcolor=#eeeeee>%d</td>\n", n++);
+		outputfn("<td bgcolor=#eeeeee>%d</td>\n", offset);
+		outputfn("<td bgcolor=#eeeeee>%d</td>\n", cur->size);
+		outputfn("<td bgcolor=#eeeeee>%d</td>\n", cur->next);
 		offset = cur->next;
 		cur = BLOCKAT(cur->next);
 	} while (offset != 0);
 
-	outputfn("*** end ***<br>\n");
+	outputfn("</table>\n");
 }
