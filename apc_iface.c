@@ -67,6 +67,12 @@ static ZEND_API zend_op_array* apc_compile_file(zend_file_handle*, int CLS_DC);
 static ZEND_API zend_op_array* apc_shm_compile_file(zend_file_handle*, int CLS_DC);
 static ZEND_API zend_op_array* apc_mmap_compile_file(zend_file_handle*, int CLS_DC);
 
+/* pointer to the previous execute function */
+static ZEND_API void (*old_execute)(zend_op_array* op_array ELS_DC);
+
+/* our execute function */
+static ZEND_API void apc_execute(zend_op_array* op_array ELS_DC);
+
 enum {
 	FILE_TABLE_SIZE          = 97,	/* buckets in file table */
 	ACC_FUNCTION_TABLE_SIZE  = 97,	/* buckets in accumulator function table */
@@ -164,6 +170,8 @@ void apc_module_init()
 	/* replace zend_compile_file with our function */
 	old_compile_file = zend_compile_file;
 	zend_compile_file = apc_compile_file;
+ 	old_execute = zend_execute;
+	zend_execute = apc_execute;
 
 	/* initialize the accumulator tables */
         if (APC_MMAP_MODE)
@@ -325,6 +333,12 @@ int apc_object_info(char const *filename, zval** hash)
    return 0;
 }
 
+/* apc_execute: replacement for zend_compile_file to allow for refcount reset*/
+static ZEND_API void apc_execute(zend_op_array* op_array ELS_DC)
+{
+	old_execute(op_array ELS_DC);
+	op_array->refcount[0] = 2;
+}
 
 /* apc_compile_file: replacement for zend_compile_file */
 ZEND_API zend_op_array* apc_compile_file(zend_file_handle *file_handle,
