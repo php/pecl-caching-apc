@@ -1,7 +1,7 @@
 (This FAQ is a plain text version of that available at 
 http://apc.communityconnect.com/FAQ.html)
 
-Frequently Asked Questions
+Top Ten Frequently Asked Questions
 
 ----------
 Contents.
@@ -17,8 +17,7 @@ Contents.
  7. Why do I keep running out of open files when I use the mmap version?
  8. What use are per object TTLs?
  9. Hey, I changed some of my PHP code, but the age looks the same - what gives?
- 10. How do I remove all the cache entries under the mmap version.
- 11. Why can't I specify multiple exclusion filters in php.ini?
+10. How do I remove all the cache entries under the mmap version.
 
 1. How does all this stuff work?
 
@@ -73,9 +72,12 @@ environment. As always, your mileage may vary.
 
 4. When I make changes to my files, the changes do not appear. Why not?
 
-APC does not know when you have updated a file, and it will continue to use
-the older, cached version of the page, unless you call the PHP function
-apc_reset_cache() or restart the webserver.
+The old image of the page is cached and won't expire until it is expired or
+remved.  If you know all your content changes at pretty much regular intervals,
+you can set the global apc.ttl in your php.ini file.  Alternatively, you can
+call apc_rm() on the object that you just updated, or if you are running the
+shm implementation and want to remove all entries from the cache you can
+call apc_reset_cache().
 
 
 5. I'm running the shm implementation and it leaks semaphores. How can I fix
@@ -141,25 +143,15 @@ the text of the page from the query.  Instead of not caching that page at all
 or setting the global ttl to five minutes, you call apc_set_my_ttl() within
 the page.  That way, just that page will be expired every five minutes. 
 
-9. Hey, I changed some of my PHP code, but the age looks the same - what gives?
-
-The old image of the page is cached and won't expire until it is expired or 
-remved.  If you know all your content changes at pretty much regular intervals,
-you can set the global apc.ttl in your php.ini file.  Alternatively, you can
-call apc_rm() on the object that you just updated, or if you are running the
-shm implementation and want to remove all entries from the cache you can
-call apc_reset_cache().
-
-10. How do I remove all the cache entries under the mmap version.
-
-find /your/cache/dir -name '\*_apc' -exec rm {} \;
-
-For what should be obvious reasons we felt uncomfortable adding that functionality to apc_reset_cache.
-
-11. Why can't I specify multiple exclusion filters in php.ini?
+9. Why can't I specify multiple exclusion filters in php.ini?
 
 Because PHP does not support multiple values for a single ini entry and we
 were too lazy to provide a workaround. If there is a great need for this
 feature from the public, we may implement it in the future. Of course, you
 are encouraged to implement and contribute the feature yourself!
 
+10. How do I remove all the cache entries under the mmap version.
+
+find /your/cache/dir -name '\*_apc' -exec rm {} \;
+
+For what should be obvious reasons we felt uncomfortable adding that functionality to apc_reset_cache.
