@@ -342,8 +342,9 @@ int apc_cache_insert(apc_cache_t* cache,
 
     while (*slot) {
         if (key_equals((*slot)->key.data.file, key.data.file)) {
-            /* If existing slot for the same device+inode is older, remove it and insert the new version */
-            if ((*slot)->key.mtime < key.mtime) {
+            /* If existing slot for the same device+inode has a different
+               mtime, remove it and insert the new version */
+            if ((*slot)->key.mtime != key.mtime) {
                 remove_slot(cache, slot);
                 break;
             }
