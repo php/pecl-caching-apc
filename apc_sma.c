@@ -208,11 +208,7 @@ static int sma_deallocate(void* shmaddr, int offset)
 
 /* {{{ apc_sma_init */
 
-#if APC_MMAP
 void apc_sma_init(int numseg, int segsize, char *mmap_file_mask)
-#else
-void apc_sma_init(int numseg, int segsize)
-#endif
 {
     int i;
 

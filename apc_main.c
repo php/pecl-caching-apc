@@ -235,7 +235,7 @@ int apc_module_init()
 #if APC_MMAP
     apc_sma_init(APCG(shm_segments), APCG(shm_size)*1024*1024, APCG(mmap_file_mask));
 #else
-    apc_sma_init(APCG(shm_segments), APCG(shm_size)*1024*1024);
+    apc_sma_init(APCG(shm_segments), APCG(shm_size)*1024*1024, NULL);
 #endif
     APCG(cache) = apc_cache_create(APCG(num_files_hint), APCG(gc_ttl), APCG(ttl));
     APCG(cache_stack) = apc_stack_create(0);
