@@ -256,6 +256,35 @@ static void rewrite_add_string(zend_op* ops, Pair* p)
     }
 }
 
+static void rewrite_constant_fold(zend_op* ops, Pair *p)
+{
+    zval *result;
+    zend_op *const_op = &ops[car(p)];
+    zend_op *fetch_op = &ops[cadr(p)];
+    result = compute_result_of_constant_op(const_op);
+    if(const_op->result.u.var == fetch_op->op1.u.var) {
+        fetch_op->op1.op_type = IS_CONST;
+        fetch_op->op1.u.constant = *result;
+        zval_copy_ctor(&fetch_op->op1.u.constant);
+    }
+    else if(const_op->result.u.var == fetch_op->op2.u.var) {
+        fetch_op->op2.op_type = IS_CONST;
+        fetch_op->op2.u.constant = *result;
+        zval_copy_ctor(&fetch_op->op2.u.constant);
+    }
+    clear_zend_op(ops + car(p));
+
+}
+
+static void rewrite_print(zend_op* ops, Pair* p)
+{
+    assert(pair_length(p) == 2);
+    ops[car(p)].opcode = ZEND_ECHO;
+    clear_zend_op(&ops[cadr(p)]);  // don't need this anymore
+}
+
+
+
 /* }}} */
 
 /* {{{ peephole helper functions */
@@ -509,6 +538,47 @@ static Pair* peephole_inc(zend_op* ops, int i, int num_ops)
     return 0;
 }
 
+static Pair* peephole_print(zend_op* ops, int i, int num_ops)
+{
+    int j;      /* next op after i */
+
+    j = next_op(ops, i, num_ops);
+
+    if (j == num_ops) {
+        return 0;   /* not enough ops left to match */
+    }
+
+    /* Try to match a (PRINT, FREE) tuple. */
+
+    if (ops[i].opcode == ZEND_PRINT  &&
+        ops[j].opcode == ZEND_FREE)
+    {
+        return cons(i, cons(j, 0));
+    }
+    return 0;
+}
+
+static Pair* peephole_constant_fold(zend_op* ops, int i, int num_ops)
+{
+    int j;  /* next op using the result of the ocnstant op */
+    int tmp_var_result;
+
+    if(!is_constant_op(ops + i)) {
+        return 0;
+    } 
+    tmp_var_result = ops[i].result.u.var;
+    for( j = i+1; j < num_ops; j++) {
+        if (ops[j].op1.op_type == IS_TMP_VAR && 
+            ops[j].op1.u.var == tmp_var_result) {
+            return cons(i, cons(j, 0));
+        }
+        if (ops[j].op2.op_type == IS_TMP_VAR && 
+            ops[j].op2.u.var == tmp_var_result) {
+            return cons(i, cons(j, 0));
+        }
+    }
+}
+
 static Pair* peephole_add_string(zend_op* ops, int i, int num_ops)
 {
     int j;      /* next op after i */
@@ -573,6 +643,18 @@ zend_op_array *apc_optimize_op_array(zend_op_array* op_array)
         if ((p = peephole_inc(op_array->opcodes, i, op_array->last))) {
             if (!are_branch_targets(cdr(p), jumps)) {
                 rewrite_inc(op_array->opcodes, p);
+            }
+            RESTART_PEEPHOLE_LOOP;
+        }
+        if ((p = peephole_print(op_array->opcodes, i, op_array->last))) {
+            if (!are_branch_targets(cdr(p), jumps)) {
+                rewrite_print(op_array->opcodes, p);
+            }
+            RESTART_PEEPHOLE_LOOP;
+        }
+        if ((p = peephole_constant_fold(op_array->opcodes, i, op_array->last))) {
+            if (!are_branch_targets(cdr(p), jumps)) {
+                rewrite_constant_fold(op_array->opcodes, p);
             }
             RESTART_PEEPHOLE_LOOP;
         }
