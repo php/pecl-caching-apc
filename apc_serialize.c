@@ -19,12 +19,15 @@
 #include "apc_sma.h"
 #include "apc_version.h"
 #include "apc_list.h"
+#include "php_apc.h"
 #include "zend_no_zend.h"
+
 #include <stdlib.h>
 #include <assert.h>
 
-
 #include "zend_variables.h"	/*  for zval_dtor() */
+
+extern zend_apc_globals apc_globals;
 
 /* namearray_t is used to record deferred inheritance relationships */
 typedef struct namearray_t namearray_t;
@@ -477,7 +480,9 @@ void apc_create_zend_function(zend_function** zf);
 void apc_serialize_zend_function_table(HashTable* gft, apc_nametable_t* acc, apc_nametable_t*);
 void apc_deserialize_zend_function_table(HashTable* gft, apc_nametable_t* acc, apc_nametable_t*);
 void apc_serialize_zend_class_table(HashTable* gct, apc_nametable_t* acc, apc_nametable_t*);
+void apc_serialize_shmdirect_class_table(HashTable* gct);
 int apc_deserialize_zend_class_table(HashTable* gct, apc_nametable_t* acc, apc_nametable_t*);
+int apc_deserialize_shmdirect_class_table(HashTable* gct);
 void apc_fixup_opcodes(zend_op* opcodes, int num_ops, apc_malloc_t ctor);
 void apc_fixup_class_table(HashTable* ht, apc_malloc_t ctor);
 
@@ -1267,8 +1272,8 @@ void apc_deserialize_zend_class_entry(zend_class_entry* zce)
 		char* parent_name;	/* name of parent class */
 
 		apc_create_string(&parent_name);
-		if (zend_hash_find(CG(class_table), parent_name,
-			strlen(parent_name) + 1, (void**) &zce->parent) == FAILURE)
+		if ((zend_hash_find(CG(class_table), parent_name,
+			strlen(parent_name) + 1, (void**) &zce->parent) == FAILURE) && (APCG(mode) != SHMDIRECT_MODE))
 		{
 		namearray_t *children;
 		int minSize;
@@ -2033,11 +2038,38 @@ static int store_class_table(void *element, int num_args,
 	return 0;
 }
 
+static int store_class_table_ex(void *element, int num_args,
+        va_list args, zend_hash_key *hash_key)
+{
+	zend_class_entry* zc;
+	zc = (zend_class_entry*) element;
+
+	/* do not serialize internal classes */
+	if (zc->type == ZEND_INTERNAL_CLASS) {
+		return 0;
+	}
+
+	/* serialize differences */
+	SERIALIZE_SCALAR(1, char);
+        apc_serialize_zstring(hash_key->arKey, hash_key->nKeyLength);
+	apc_serialize_zend_class_entry(zc);
+        // Think about tracking same-file inheritance
+	return 0;
+}
+
 void apc_serialize_zend_class_table(HashTable* gct,
 	apc_nametable_t* acc, apc_nametable_t* priv)
 {
 	zend_hash_apply_with_arguments(gct, store_class_table, 2, acc, priv);
 	SERIALIZE_SCALAR(0, char);
+}
+
+void apc_serialize_shmdirect_class_table(HashTable* gct)
+{
+    char* a;
+    char* b;
+    zend_hash_apply_with_arguments(gct, store_class_table_ex, 0, NULL);
+    SERIALIZE_SCALAR(0, char);
 }
 
 int apc_deserialize_zend_class_table(HashTable* gct, apc_nametable_t* acc, apc_nametable_t* priv)
@@ -2060,6 +2092,33 @@ int apc_deserialize_zend_class_table(HashTable* gct, apc_nametable_t* acc, apc_n
 		apc_nametable_insert(parental_inheritors, zc->name, NULL);
 		apc_nametable_insert(acc, zc->name, 0);
 		apc_nametable_insert(priv, zc->name, 0);
+		DESERIALIZE_SCALAR(&exists, char);
+		i++;
+	}
+	return i;
+}
+
+int apc_deserialize_shmdirect_class_table(HashTable* gct)
+{
+	char exists;
+	int i;
+	zend_class_entry* zc;
+
+	i = 0;
+
+	DESERIALIZE_SCALAR(&exists, char);
+	while (exists) {
+                char *key;
+                int keylen;
+                PEEK_SCALAR(&keylen, int);
+                apc_create_string(&key);
+		apc_create_zend_class_entry(&zc);
+		if (zend_hash_add(gct, key, keylen,
+			zc, sizeof(zend_class_entry), NULL) == FAILURE)
+		{
+		/*  This can validly happen. */
+		}
+		/* We may only want to do this insert if zc->parent is NULL */
 		DESERIALIZE_SCALAR(&exists, char);
 		i++;
 	}

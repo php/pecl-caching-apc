@@ -207,7 +207,7 @@ void apc_module_init()
 	/* install our own apc-aware function dtors */
 	if (APC_SHMDIRECT_MODE) {
 		CG(function_table)->pDestructor = (dtor_func_t) apc_destroy_zend_function;
-		CG(class_table)->pDestructor = apc_dont_destroy;
+//		CG(class_table)->pDestructor = apc_dont_destroy;
 	}
 }
 
@@ -374,11 +374,12 @@ static void *apc_zmalloc(int size)
 	return emalloc(size);
 }
 
-	
+
 struct o_f_c {
 	zend_op_array* op_array;
 	HashTable* function_table;
-	HashTable* class_table;
+	char* class_table_buf;
+        int class_table_len;
 };
 
 /* apc_retrieve_op_array:  retrieves a op_array from shm and does fixup */
@@ -395,7 +396,7 @@ static zend_op_array* apc_retrieve_op_array(apc_cache_t *cache, const char* key,
     op_array = (zend_op_array*) emalloc(sizeof(zend_op_array));
     new_op_array = (zend_op_array**) apc_emalloc(sizeof(zend_op_array*));
     new_function_table = (HashTable**) apc_emalloc(sizeof(HashTable*));
-    new_class_table = (HashTable**) apc_emalloc(sizeof(HashTable*));
+   // new_class_table = () apc_emalloc(sizeof(HashTable*));
 	cache_entry = (struct o_f_c**) apc_emalloc(sizeof(struct o_f_c*));
 
     length = 0;
@@ -424,8 +425,14 @@ static zend_op_array* apc_retrieve_op_array(apc_cache_t *cache, const char* key,
 // Don't need to do fixup, I think
 //	apc_fixup_class_table(*new_class_table, apc_emalloc);
 //	zend_hash_display(*new_class_table);
-    zend_hash_copy(EG(class_table), (*cache_entry)->class_table, NULL,
-       NULL, sizeof(zend_class_entry));
+
+    inputbuf = (*cache_entry)->class_table_buf;
+    inputlen = (*cache_entry)->class_table_len;
+    apc_init_deserializer(inputbuf, inputlen);
+    apc_deserialize_shmdirect_class_table(CG(class_table));
+    
+//    zend_hash_copy(EG(class_table), (*cache_entry)->class_table, NULL,
+//      NULL, sizeof(zend_class_entry));
 
 	return op_array;
 }
@@ -435,13 +442,16 @@ static void apc_store_all(apc_cache_t *cache, const char* key,
 						zend_op_array* op_array, HashTable *funcs, 
 						HashTable *classes, int mtime)
 {
+    char *buf;
+    int len;
     char* opkey;
     zend_op* opcodes;
 	zend_op_array *new_op_array;
     HashTable* new_function_table;
     char *funckey;
-    HashTable* new_class_table;
+//    HashTable* new_class_table;
     char *classkey;
+    char *shmbuf;
 	struct o_f_c* cache_entry;
 
 	cache_entry = (struct o_f_c*) apc_sma_malloc(sizeof(struct o_f_c));
@@ -458,12 +468,18 @@ static void apc_store_all(apc_cache_t *cache, const char* key,
     new_function_table = apc_copy_hashtable(NULL, funcs,
         apc_copy_zend_function, sizeof(zend_function),
         apc_sma_malloc);
-    new_class_table = apc_copy_hashtable(NULL, classes,
-        apc_copy_zend_class_entry, sizeof(zend_class_entry),
-        apc_sma_malloc);
+//    new_class_table = apc_copy_hashtable(NULL, classes,
+//        apc_copy_zend_class_entry, sizeof(zend_class_entry),
+//       apc_sma_malloc);
+    apc_init_serializer();
+    apc_serialize_shmdirect_class_table(classes);
+    apc_get_serialized_data(&buf, &len);
+    shmbuf = (char *) apc_sma_malloc(len);
+    memcpy(shmbuf, buf, len);
 	cache_entry->op_array = new_op_array;
 	cache_entry->function_table = new_function_table;
-	cache_entry->class_table = new_class_table;
+	cache_entry->class_table_buf = shmbuf;
+    cache_entry->class_table_len = len;
 	apc_cache_insert(cache, key, (const char*) &cache_entry, sizeof(struct o_f_c*), mtime);
 }
 
