@@ -19,15 +19,18 @@
 #include "zend.h"
 #include "zend_hash.h"
 
+/* The mm_fl_element struct is the bucket element for each child's cache of
+ * mmap'd files. */
 struct mm_fl_element {
-        char *cache_filename;
-        int inputlen;
-        long inode;
-        time_t mtime;
-	int hitcounter;
-        char *input;
+        char *cache_filename; 	/* Where the cached file exists */
+        int inputlen;			/* How long is the file */
+        long inode;				/* What is the file's inode */
+        time_t mtime;			/* When was the file last updated */
+		int hitcounter;			/* How many times has THIS child accessed the file */
+        char *input;			/* What's the address of the file in memory */
 };
 
+/* apc_mmap_dump generates output for apcinfo() */
 void apc_mmap_dump(apc_outputfn_t outputfn, HashTable* cache);
 #endif
 	
