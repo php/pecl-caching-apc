@@ -1,8 +1,6 @@
 /* 
    +----------------------------------------------------------------------+
-   | APC
-   +----------------------------------------------------------------------+
-   | Copyright (c) 2000-2002 Community Connect Inc.
+   | Copyright (c) 2002 by Community Connect Inc. All rights reserved.    |
    +----------------------------------------------------------------------+
    | This source file is subject to version 2.02 of the PHP license,      |
    | that is bundled with this package in the file LICENSE, and is        |
@@ -13,32 +11,33 @@
    | license@php.net so we can mail you a copy immediately.               |
    +----------------------------------------------------------------------+
    | Authors: Daniel Cowgill <dcowgill@communityconnect.com>              |
-   |          George Schlossnagle <george@lethargy.org>                   |
    +----------------------------------------------------------------------+
 */
 
-#ifndef APC_LIST_H
-#define APC_LIST_H
+/* $Id$ */
 
-typedef struct _apc_list_element {
-	struct _apc_list_element *next;
-	struct _apc_list_element *prev;
-	void *data;
-} apc_list_element;
-	
+#ifndef APC_PHP_H
+#define APC_PHP_H
 
-typedef struct _apc_list {
-	apc_list_element *head;
-	apc_list_element *tail;
-	void* (*list_ctor)(int);
-	void (*list_dtor)(void *);
-} apc_list;
+/*
+ * The purpose of this header file is to include all PHP and Zend headers that
+ * are typically needed elsewhere in APC. This makes it easy to insure that
+ * all required headers are available.
+ */
 
-extern void apc_list_create(apc_list **list, void* (*apc_list_ctor)(int), void (*apc_list_dtor)(void *));
-extern void apc_list_prepend(apc_list *list, void *data);
-extern void apc_list_append(apc_list *list, void *data);
-extern void apc_list_apply(apc_list *list, void (*apply_func)(void *));
-extern void apc_list_destroy(apc_list *list);
-extern void apc_list_clean(apc_list *list);
+#include "php.h"
+#include "zend.h"
+#include "zend_API.h"
+#include "zend_compile.h"
+#include "zend_hash.h"
 
 #endif
+
+/*
+ * Local variables:
+ * tab-width: 4
+ * c-basic-offset: 4
+ * End:
+ * vim600: expandtab sw=4 ts=4 sts=4 fdm=marker
+ * vim<600: expandtab sw=4 ts=4 sts=4
+ */

@@ -1,4 +1,0 @@
-This is the BUGS file for apc cache.
-
-- Memory may not be freed if the maximum number of shm segments are
-filled.

@@ -1,249 +1,231 @@
-This is the INSTALL file for apc php cache.
+Installation Instructions for APC
+---------------------------------
 
-For a deeper explanation of the components involved, please visit 
-http://apc.communityconnect.com/.
+APC has been successfully compiled on the following platforms:
 
-#################################################################
-# URGENT: To users with APC version prior to version 1.0.10
-#################################################################
-You will have to make a new php.ini entry in you file for
-apc.mode - See "Runtime configuration"
+    o Linux (RH 6.2/7.2/7.3/8)
+    o FreeBSD
+    o OpenBSD
+    o MacOS 10.2 (statically compiled)
 
-#################################################################
-# Compiling and installing as a Zend extension (post-PHP install)
-#################################################################
+...and has been tested with the following PHP versions:
 
-1) Run phpize (this shouldn't be necessary after 1.0.10)
-2) Run ./configure --enable-apc --with-php-config=<path to php-config>
-3) Run make
-4) copy modules/php_apc.so to /path/to/where/you/keep/extensions/
-5) in your php.ini file add the line
-	zend_extension="/path/to/where/you/keep/extensions/php_apc.so"
-  If you are running php-4.1.0+ and have --enable-zts or --enable-debug
-  compiled in, you will need instead to specify
-    zend_extension_debug="/path/to/where/you/keep/extensions/php_apc.so"
+    o 4.2.2
+    o 4.2.3
+    o 4.3.0
 
-6) in your php.ini file add the line
-	# for switching off the APC
-	apc.mode = off 
-  # for using SHM support
-  apc.mode = shm
-  # for using MMAP support 
-  apc.mode = mmap
+Versions prior to 4.2.2 have been officially deprecated by the PHP group, and
+therefore aren't supported by APC either.
 
-   don't forget that you can't put comments on the same line as your ini options
-   See FAQ for pros and contras of SHM / MMAP support
-7) You're all set!
++---------------------+
+| QUICK INSTALL (DSO) |
++---------------------+
 
-#################################################################
-# Compiling and installing as php built-in (during php compile)
-#################################################################
+These instructions assume your PHP installation is located in /usr/local/php.
 
-0) Untar these sources into PHP_SRC_DIR/ext/apc/
-1) In the top-level directory of the php source tree, run autoconf
-2) Run ./configure --enable-apc <whatever other compile flags you want>
-3) make;  make install
-4) in your php.ini file add the line
-        apc.mode = off # for switching off the APC
-        apc.mode = shm # for using SHM support
-        apc.mode = mmap # for using MMAP support
-   See FAQ for pros and contras of SHM / MMAP support
-5) You're all set!
+$ gunzip -c apc_x.y.tar.gz | tar xf -
+$ cd apc_x.y
+$ /usr/local/php/bin/phpize
+$ ./configure --with-php-config=/usr/local/bin/php-config
+$ make
+$ make install
 
+You will probably need to run the final command (make install) as root.
 
-#################################################################
-# Runtime configuration
-#################################################################
+The above sequence of commands will install a .so file in your PHP
+installation extension directory. The output of make install should display
+that path to the screen.
 
-The following php.ini runtime settings are supported.  (M) means the command
-is supported in the mmap implemntation, (S) for sysv shared memory 
-implementation.
+Next you must edit your php.ini file, which is normally located in
+/usr/local/php/lib/php.ini, and add the following line:
 
-apc.mode
-	supported: (M/S)
-	default: off
-	Sets the operating mode of the APC cache.
-	Valid values are: off, shm or mmap
-	If set to shm, then apc is operating in shared memory mode
-	if set to mmap, then apc is operating in memory mapped files mode
-	Please see FAQ for pro and contra of those modes
+    zend_extension="/path/to/php/extensions/apc.so"
 
-apc.cache_rt
-	supported: (SHM)
-  default: safe
-	cache_rt defines the cache retrieval policy.  safe is the default
-	behaviour - global locks are taken around all cache retrievals.
-	fast uses an optimistic cache address cacheing to avoid global
-	locks for faster object retrieval.  A timestamped magic value at the 
-	end of all objects tries to ensure that no corruption can occur.
-  This is an experimental feature.
+Replace "/path/to/php/extensions" with whatever path was displayed when you
+ran make install above.
 
-apc.cachedir
-	supported: (M)
-	default: NULL
-	cachedir sets the top-level dir under which to write compiled php
-	files.  If this is not set, cache files will be created along side 
-	their corresponding php files, with the same name and a _apc 
-	extension.  The webserver user must have permision to create files
-	in this directory.
+Then restart your web server and consult the output of phpinfo(). If there is
+an informational section for APC, the installation was successful.
 
-apc.hash_buckets 
-	supported: (S)
-	default: 1024
-	hash_buckets sets the number of hash_buckets in the master index.  
-	Since for technical reasons, the master index is statically allocated,
-	it is important that this number be larger than the number of php 
-	files to be cached (don't forget includes!)  Each bucket takes 264 
-	bytes of memory, so setting this to a large (but reasonable) value
-	does no harm. As a rule of thumb, the number of buckets should be
-	at least one third greater than the total number of files you are
-	going to cache.
++------------------------+
+| QUICK INSTALL (Static) |
++------------------------+
 
-apc.regex 
-	supported: (M,S)
-	default: NULL
-	example: apc.regex="no_cache.inc:bad_file.inc"
-	regex is a colon delimited list of POSIX extended regex of files 
-	NOT to cache.
+APC will not successfully compile on all systems as a DSO. If you run into
+problems using the DSO quick install, you can try to compile it statically
+into PHP. (The DSO install is recommended, though.)
 
-apc.shm_segments 
-	supported: (S)
-	default: 10
-	shm_segements sets the maximum number of sysv shared memory segments 
-	to be used.
+These instructions assume the current directory is the root of the PHP source
+tree, and that you have already configured PHP by running its bundled
+configure script.
 
-apc.shm_segment_size 
-	supported: (S)
-	default: 33554431
-	shm_segment_size sets the size of sysv shared memory segments to use,
-	in bytes.
+$ cd ext
+$ gunzip -c apc_x.y.tar.gz | tar xf -
+$ cd ..
+$ ./buildconf
+$ ./config.nice
+$ make
+$ make install
 
-apc.ttl 
-	supported: (M,S)
-	default: 0
-	values: {0,1}
-	ttl sets a global ttl on all cache objects.  Objects not updated in
-	ttl seconds will be expired and delted.
+Once this is complete, simply restart your web server. You do not need to
+modify your php.ini file to enable APC.
 
-apc.check_mtime
-	supported: (S)
-	default: 0
-	values: {0,1}
-	specifies whether a source file should be re-compiled if it has been
-	modified since it was last compiled. This may result in a slight loss
-	of efficiency.
++-----------------+
+| VERBOSE INSTALL |
++-----------------+
 
-apc.relative_includes
-	supported: (M,S)
-	default: 1
-	values: {0,1}
-	specifies whether a relative paths may be passed to the PHP file
-	inclusion functions (include(), require(), include_once(), etc.).
-	This may result in a slight loss of efficiency. Note: this option
-	must be enabled for the PHP include path to function correctly!
+These instructions assume your PHP installation is located in /usr/local/php.
 
-apc.check_compiled_source
-	supported: (M,S)
-	default: 0
-	values: {0,1}
-	specifies whether or not to check to see if the php source file you
-	are reading is actually a compiled file.  This is the so-called
-	encoder functionality.  As there does not exist a standalone compiler,
-	current version mmap files should be used.
+1.  Unpack your distribution file.
 
-#################################################################
-# Exported functions
-#################################################################
+    You will have downloaded a file named something like apc_x.y.tar.gz.
+    Unzip this file with a command like
+    
+        gunzip apc_x.y.tar.gz
+    
+    Next you have to untar it with
+    
+        tar xvf apc_x.y.tar
 
-The following new php functions are exported.  As above (M) indicates
-functions that exist under the mmap implementation, (S) for sysv 
-shared memory implementation.
+    This will create an apc_x.y directory. cd into this new directory:
 
-void apcinfo([string /path/to/apcinfo/page])	
-	supported: (M,S)
-	Outputs detailed information regarding the configuration and content
-	of the cache.  The sysv implementation displays global cache 
-	information, the mmap implementation displays only cache statistics
-	for the particular child being queried.  If a uri is to apcinfo()
-  the genrated page will have links to apc_rm and apc_dump_cache_object()
-	see extras/apcinfo.php for an example implementation.
+        cd apc_x.y
 
-int apc_dump_cache_object(string /path/to/apcinfo/page)
-	supported: (M,S)
-	Dumps extremely detailed information about the specified cache object
-	as html.  Information dumped includes the complete op-tree for the 
-	page and all the functions and classes serialized from the page.
+2.  Run phpize.
 
-int apc_rm(string pathname)  
-	supported: (M,S)
-	Takes the full path of a php file (NOT cache file), and expires that 
-	item's associated cache object. Returns 1 on success, 0 on failure
-	(failure usually indicates the object was not present in the cache.)
+    phpize is a script that should have been installed with PHP, and is
+    normally located in /usr/local/php/bin assuming you installed PHP in
+    /usr/local/php. (If you do not have the phpize script, you must reinstall
+    PHP and be sure not to disable PEAR.)
 
-int apc_reset_cache()
-	supported: (S)
-	Clears all entries from the cache.  Returns 1 on success.
+    Run the phpize command:
+    
+        /usr/local/php/bin/phpize
 
-int apc_set_my_ttl(int seconds)
-	supported: (S)
-	Sets the ttl of the calling file to ttl seconds.
+    Its output should resemble this:
 
-int apc_cache_index(array &output)
-	supported: (S,M)
-	Fetches an associative array keyed with cache object names and
-	with data bucket an array consisting of:
-	SHM:
-		element0 -> cache offset
-		element1 -> object length
-		element2 -> last access time
-		element3 -> hit counter
-		element4 -> ttl 
-		element5 -> last modification time
-	MMAP:
-		element0 -> object length
-		element2 -> creation time
-		element3 -> hit counter
-		element4 -> inode
-	As with all other functions, the shm return global cache information
-	the mmap version returns that particular child's view of the cache.
+        autoheader: `config.h.in' is created
+        You should update your `aclocal.m4' by running aclocal.
+        Configuring for:
+          PHP Api Version:   20020918
+          Zend Module Api No:   20020429
+          Zend Extension Api No:   20021010
+ 
+    phpize should create a configure script in the current directory. If you
+    get errors instead, you might be missing some required development tools,
+    such as autoconf or libtool. You can try downloading the latest versions
+    of those tools and running phpize again.
+ 
+3.  Run the configure script.
+ 
+    phpize creates a configure script. The only option you need to specify is
+    the location of your php-config script:
 
-int apc_cache_info(array &output)
-        supported: (S,M)
-        Fetches an associative array keyed with cache header names and values
-        SHM:
-                "total buckets"
-                "maximum shared memory segments"
-                "shared memory segment size"
-                "time-to-live"
-                "hits"
-                "misses"
-                "hit rate"
-                "cache filter"
-                "shared memory ID"
-                "local shared memory address"
-                "creation pathname"
-        SHM Info:
-                "Total Size"
-                "Total Available"
-		SHM Toggles:
-				"check file modification times"
-				"support relative includes"
-				"check for compiled source"
-		MMAP:
-				"time-to-live"
-				"cache directory"
-				"cache filter"
-		MMAP Toggles:
-				"check file modification times"
-				"support relative includes"
-				"check for compiled source"
+        ./configure --with-php-config=/usr/local/bin/php-config
 
+    php-config should be located in the same directory as phpize.
 
-#####################################################################
-# Add ons
-#####################################################################
+4.  Compile and install the files. Simply type: make install
 
-Mike Bretz and his team have developed a beauty of a web interface for
-managing and analyzing your APC installs.  A (very possibly out of date
-when you read this) is in the extras dir, and the latest version is
-available off http://apc.neuropeans.com/.  
+    (You may need to be root in order to install)
+
+    If you encounter errors from libtool or gcc during this step, please
+    contact the project maintainer (dcowgill@php.net).
+
+5.  Edit your php.ini
+
+    make install should have printed a line resembling the following:
+
+        Installing shared extensions: /path/to/extension/
+
+    Copy the path /path/to/extension/ and add the following line to your
+    php.ini file (normally located in /usr/local/php/lib/php.ini):
+
+        zend_extension="/path/to/extension/apc.so"
+
+    If you don't have a php.ini file in that location, you can create it now.
+
+6.  Restart the web server and test the installation.
+
+    Restart your web server now (for apache, it's apachectl restart) and
+    create a small test PHP file in your document root. The file should
+    contain just the following line:
+
+        <?php phpinfo() ?>
+
+    Request that file in a web browser. If there is an entry for APC in the
+    list of installed modules, the installation was successful.
+
+    If APC is not listed, consult your web server error log. If it contains an
+    error message saying that it can't load the APC extension, your system
+    might not be able to load shared libraries created with PHP's build
+    system. One alternative would be to compile APC statically into PHP. See
+    the Quick Install (Static) instructions above.
+
+    You should consult your error log anyway to see if APC generated any
+    errors. On BSD-based platforms, it is typical for APC to be unable to
+    allocate the default-sized shared memory segment. See below for hints on
+    raising your system's shared memory limitations.
+
+If all else fails, ask for help on the APC mailing list. Visit
+http://apc.communityconnect.com/ for more information.
+
++-----------------+
+| CONFIGURING APC |
++-----------------+
+
+Although the default APC settings are fine for many installations, serious
+users should consider tuning the following parameters:
+
+    OPTION                  DESCRIPTION
+    ------------------      --------------------------------------------------
+    apc.enabled             This can be set to 0 to disable APC. This is
+                            primarily useful when APC is statically compiled
+                            into PHP, since there is no other way to disable
+                            it (when compiled as a DSO, the zend_extension
+                            line can just be commented-out).
+                            (Default: 1)
+                            
+    apc.shm_segments        The number of shared memory segments to allocate
+                            for the compiler cache. If APC is running out of
+                            shared memory but you have already set
+                            apc.shm_size as high as your system allows, you
+                            can try raising this value.
+                            (Default: 1)
+                            
+    apc.shm_size            The size of each shared memory segment in MB.
+                            By default, some systems (including most BSD
+                            variants) have very low limits on the size of a
+                            shared memory segment.
+                            (Default: 30)
+                            
+    apc.optimization        The optimization level. Zero disables the
+                            optimizer, and higher values use more aggressive
+                            optimizations. Expect very modest speed
+                            improvements. Note: not implemented yet!!
+                            (Default: 0)
+    
+    apc.num_files_hint      A "hint" about the number of distinct source files
+                            that will be included or requested on your web
+                            server. Set to zero or omit if you're not sure;
+                            this setting is mainly useful for sites that have
+                            many thousands of source files.
+                            (Default: 1000)
+
+    apc.gc_ttl              The number of seconds that a cache entry may
+                            remain on the garbage-collection list. This value
+                            provides a failsafe in the event that a server
+                            process dies while executing a cached source file;
+                            if that source file is modified, the memory
+                            allocated for the old version will not be
+                            reclaimed until this TTL reached. Set to zero to
+                            disable this feature.
+                            (Default: 3600)
+
+    apc.filters             A comma-separated list of POSIX extended regular
+                            expressions. If any pattern matches the source
+                            filename, the file will not be cached. Note that
+                            the filename used for matching is the one passed
+                            to include/require, not the absolute path.
+                            (Default: "")
+

@@ -1,36 +1,35 @@
 This is the NOTICE file that holds acknowledgements and stuff.
 
-APC is the Alternative PHP Cache.  It was conceived of to provide a free,
-open, and robust framework for compiling and caching php scripts. This
-extension is being released under the QPL for complete compliance with PHP
-and to facilitate wide-spread use.  It is our intention that this project be
-kept open source and that all commercial spin-offs contribute their
+The Alternative PHP Cache (APC) is a free and open compiler cache for PHP.
+This extension is being released under the PHP License for complete compliance
+with PHP and to encourage wide-spread use. It is our intention that this
+project be kept open source and that all commercial spin-offs contribute their
 modifications back into the public source-tree.
 
 Creators:
- Daniel Cowgill
- George Schlossnagle
+    Daniel Cowgill
+    George Schlossnagle
 
-We would like to thank Community Connect, Inc. for supporting this project
-and providing a challenging and stimulating environment in which exciting
-projects can happen.
+We would like to thank Community Connect Inc. for supporting this project and
+providing a challenging and stimulating environment in which exciting projects
+can happen.
 
 We would also like to thank Rasmus Lerdorf for encouraging us to take on this
 project.
 
 Major Contributors:
- Mike Bretz (bug fixes, feature adds, apc gui, and lots and lots of work)
- Ricardo Galli <gallir@uib.es> (enhanced rwls)
+    Mike Bretz          bug fixes, GUI, and lots of work
+    Ricardo Galli       changed read-write locks to prefer readers
 
 Contributors:
- Yann Grossel (bug fixes)
- Thies Arntzen (bug fixes)
+    Yann Grossel        bug fixes
+    Thies Arntzen       bug fixes
 
 Special Thanks:
- Florian Baumert - help debugging phplib problems
- Thomas Duffey - invaluable help debugging inheritance issues
- Vibol Hou -	- help debugging phplib problems
- Angel Li	-	diffs for ANSI comment compliance
- Christian Rishøj - help debugging phplib problems
- Sascha Schumann - memory error bug fix
+    Florian Baumert     help debugging phplib problems
+    Thomas Duffey       help debugging inheritance issues
+    Vibol Hou           help debugging phplib problems
+    Angel Li            diffs for ANSI comment compliance
+    Christian Rishøj    help debugging phplib problems
+    Sascha Schumann     memory error bug fix
 

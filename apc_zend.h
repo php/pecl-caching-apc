@@ -1,8 +1,6 @@
 /* 
    +----------------------------------------------------------------------+
-   | APC
-   +----------------------------------------------------------------------+
-   | Copyright (c) 2000-2002 Community Connect Inc.
+   | Copyright (c) 2002 by Community Connect Inc. All rights reserved.    |
    +----------------------------------------------------------------------+
    | This source file is subject to version 2.02 of the PHP license,      |
    | that is bundled with this package in the file LICENSE, and is        |
@@ -13,24 +11,29 @@
    | license@php.net so we can mail you a copy immediately.               |
    +----------------------------------------------------------------------+
    | Authors: Daniel Cowgill <dcowgill@communityconnect.com>              |
-   |          George Schlossnagle <george@lethargy.org>                   |
    +----------------------------------------------------------------------+
 */
 
-#ifndef INCLUDED_APC_RWLOCK
-#define INCLUDED_APC_RWLOCK
+/* $Id$ */
 
-/* readers-writer lock implementation; gives preference to waiting
- * writers over readers */
+#ifndef APC_ZEND_H
+#define APC_ZEND_H
 
-#define T apc_rwlock_t*
-typedef struct apc_rwlock_t apc_rwlock_t;
+/* Utilities for interfacing with the zend engine */
 
-extern T    apc_rwl_create(const char* pathname);
-extern void apc_rwl_destroy(T lock);
-extern void apc_rwl_readlock(T lock);
-extern void apc_rwl_writelock(T lock);
-extern void apc_rwl_unlock(T lock);
+#include "apc.h"
+#include "apc_php.h"
 
-#undef T
+extern void* apc_php_malloc(size_t n);
+extern void apc_php_free(void* p);
+
 #endif
+
+/*
+ * Local variables:
+ * tab-width: 4
+ * c-basic-offset: 4
+ * End:
+ * vim600: expandtab sw=4 ts=4 sts=4 fdm=marker
+ * vim<600: expandtab sw=4 ts=4 sts=4
+ */

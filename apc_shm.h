@@ -1,8 +1,6 @@
 /* 
    +----------------------------------------------------------------------+
-   | APC
-   +----------------------------------------------------------------------+
-   | Copyright (c) 2000-2002 Community Connect Inc.
+   | Copyright (c) 2002 by Community Connect Inc. All rights reserved.    |
    +----------------------------------------------------------------------+
    | This source file is subject to version 2.02 of the PHP license,      |
    | that is bundled with this package in the file LICENSE, and is        |
@@ -13,26 +11,28 @@
    | license@php.net so we can mail you a copy immediately.               |
    +----------------------------------------------------------------------+
    | Authors: Daniel Cowgill <dcowgill@communityconnect.com>              |
-   |          George Schlossnagle <george@lethargy.org>                   |
    +----------------------------------------------------------------------+
 */
 
-#ifndef INCLUDED_APC_SHM
-#define INCLUDED_APC_SHM
+/* $Id$ */
 
-/* shared memory wrapper. no surprises */
+#ifndef APC_SHM_H
+#define APC_SHM_H
 
-/* apc_shm_create: create a shared memory segment of given size */
-extern int   apc_shm_create(const char* pathname, int proj, int size);
+/* Wrapper functions for unix shared memory */
 
-/* apc_shm_destroy: remove a shared memory segment */
-extern void  apc_shm_destroy(int shmid);
-
-/* apc_shm_attach: get the address of the beginning of a shared
- * memory segment */
+extern int apc_shm_create(const char* name, int proj, int size);
+extern void apc_shm_destroy(int shmid);
 extern void* apc_shm_attach(int shmid);
-
-/* apc_shm_detach: detach from a shared memory segment */
-extern void  apc_shm_detach(void* shmaddr);
+extern void apc_shm_detach(void* shmaddr);
 
 #endif
+
+/*
+ * Local variables:
+ * tab-width: 4
+ * c-basic-offset: 4
+ * End:
+ * vim600: expandtab sw=4 ts=4 sts=4 fdm=marker
+ * vim<600: expandtab sw=4 ts=4 sts=4
+ */

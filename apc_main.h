@@ -1,8 +1,6 @@
 /* 
    +----------------------------------------------------------------------+
-   | APC
-   +----------------------------------------------------------------------+
-   | Copyright (c) 2000-2002 Community Connect Inc.
+   | Copyright (c) 2002 by Community Connect Inc. All rights reserved.    |
    +----------------------------------------------------------------------+
    | This source file is subject to version 2.02 of the PHP license,      |
    | that is bundled with this package in the file LICENSE, and is        |
@@ -13,16 +11,40 @@
    | license@php.net so we can mail you a copy immediately.               |
    +----------------------------------------------------------------------+
    | Authors: Daniel Cowgill <dcowgill@communityconnect.com>              |
-   |          George Schlossnagle <george@lethargy.org>                   |
    +----------------------------------------------------------------------+
 */
 
-#ifndef INCLUDED_APC_VERSION
-#define INCLUDED_APC_VERSION
+/* $Id$ */
 
-#define APC_MAGIC_HEADER "APCv1.0.07"
-#define APC_VERSION "1.1.0 CVS"
-extern char VERSION_STRING[100];
+#ifndef APC_MAIN_H
+#define APC_MAIN_H
 
+/*
+ * This module provides the primary interface between PHP and APC.
+ */
+
+extern int apc_module_init();
+extern int apc_module_shutdown();
+extern int apc_request_init();
+extern int apc_request_shutdown();
+
+/*
+ * apc_deactivate is called by the PHP interpreter when an "exception" is
+ * raised (e.g., a call to the exit function) that unwinds the execution
+ * stack.
+ */
+extern void apc_deactivate();
+
+
+extern const char* apc_version();
 
 #endif
+
+/*
+ * Local variables:
+ * tab-width: 4
+ * c-basic-offset: 4
+ * End:
+ * vim600: expandtab sw=4 ts=4 sts=4 fdm=marker
+ * vim<600: expandtab sw=4 ts=4 sts=4
+ */

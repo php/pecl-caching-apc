@@ -1,8 +1,6 @@
 /* 
    +----------------------------------------------------------------------+
-   | APC
-   +----------------------------------------------------------------------+
-   | Copyright (c) 2000-2002 Community Connect Inc.
+   | Copyright (c) 2002 by Community Connect Inc. All rights reserved.    |
    +----------------------------------------------------------------------+
    | This source file is subject to version 2.02 of the PHP license,      |
    | that is bundled with this package in the file LICENSE, and is        |
@@ -13,32 +11,30 @@
    | license@php.net so we can mail you a copy immediately.               |
    +----------------------------------------------------------------------+
    | Authors: Daniel Cowgill <dcowgill@communityconnect.com>              |
-   |          George Schlossnagle <george@lethargy.org>                   |
    +----------------------------------------------------------------------+
 */
 
-#ifndef INCLUDED_APC_SEM
-#define INCLUDED_APC_SEM
+/* $Id$ */
 
-/* semaphore wrappers */
+#ifndef APC_SEM_H
+#define APC_SEM_H
 
-/* apc_sem_create: create a semaphore. if it does not already exist, set its
- * value to initval */
-extern int  apc_sem_create(const char* pathname, int proj, int initval);
+/* Wrapper functions for SysV sempahores */
 
-/* apc_sem_destroy: destroy a semaphore */
+extern int apc_sem_create(const char* pathname, int proj, int initval);
 extern void apc_sem_destroy(int semid);
-
-/* apc_sem_lock: acquire lock on semaphore */
 extern void apc_sem_lock(int semid);
-
-/* apc_sem_unlock: release lock on semaphore */
 extern void apc_sem_unlock(int semid);
-
-/* apc_sem_waitforzero: wait for semaphore count to reach zero */
-extern void apc_sem_waitforzero(int semid);
-
-/* apc_sem_getvalue: return the value of a semaphore */
-extern int  apc_sem_getvalue(int semid);
+extern void apc_sem_wait_for_zero(int semid);
+extern int apc_sem_get_value(int semid);
 
 #endif
+
+/*
+ * Local variables:
+ * tab-width: 4
+ * c-basic-offset: 4
+ * End:
+ * vim600: expandtab sw=4 ts=4 sts=4 fdm=marker
+ * vim<600: expandtab sw=4 ts=4 sts=4
+ */

@@ -1,55 +1,56 @@
-APC Change Log
--------------------------------
+2.0:
+- ground-up rewrite sharing none of the original source code [djc 2003-02-10]
+
 1.0.10:
-+ merge mmap / shm code to be in one file, module supports both modes now [mpb 05.15.2001]
-+ added apc.mode config parameter [mpb 05.15.2001]
-  NOTE: You'll have to add this parameter to your php.ini file to activate
-        apc shm or mmap caching
-+ generic source cleanup (missing includes, PATH_MAX usage etc) [mpb 05.15.2001]
-+ fixed: realpath return result checking in generate_key [mpb 05.15.2001]
-+ updated: gui updated (extras/apc_gui-1.0.2.tar.gz)
-+ experminental 'fast' cache-retrieval [djc 05.20.2001]
-+ fixed regex support [gws 05.16.2001]
-+ enhanced reader-writer lock support [rg 05.07.2001]
+- merge mmap / shm code to be in one file, module supports both modes now [mpb 2001-05-15]
+- added apc.mode config parameter [mpb 2001-05-15] NOTE: You'll have to add
+  this parameter to your php.ini file to activate apc shm or mmap caching
+- generic source cleanup (missing includes, PATH_MAX usage etc) [mpb
+  2001-05-15]
+- fixed: realpath return result checking in generate_key [mpb 2001-05-15]
+- updated: gui updated (extras/apc_gui-1.0.2.tar.gz)
+- experminental 'fast' cache-retrieval [djc 2001-05-20]
+- fixed regex support [gws 2001-05-16]
+- enhanced reader-writer lock support [rg 2001-05-07]
 
 1.0.9:
-+ fixed (?) memory alignment bug on 64 bit archiecures 
-+ added many cache visibiliy functions 
-+ added opional fcntl locks under shm version 
-+ numerous bug fixes 
+- fixed (?) memory alignment bug on 64 bit archiecures 
+- added many cache visibiliy functions 
+- added opional fcntl locks under shm version 
+- numerous bug fixes 
 
 1.0.8:
-+ added ability to detect and decompile compiled files placed as 'aource' [gws,dw 01.30.2001]
-+ fixed apc_rstat bug [gws 01.29.2001]
-+ added hack to support included urls [gws 01.30.2001]
-+ fixed apc_cache_index [mb 01.31.2001]
-+ added multiple regex support [gs 02.03.2001]
-+ added apc_cache_info [mb,gs 02.03.2001]
+- added ability to detect and decompile compiled files placed as 'source'
+  [gws,dw 2001-01-30]
+- fixed apc_rstat bug [gws 2001-01-29]
+- added hack to support included urls [gws 2001-01-30]
+- fixed apc_cache_index [mb 2001-01-31]
+- added multiple regex support [gs 2001-02-03]
+- added apc_cache_info [mb,gs 2001-02-03]
 
 1.0.7:
-+ partially fixed for Solaris [gws 01.29.2001]
-+ fixed mtime support for relative includes [gws 01.29.2001]
-+ code cleanup [yg,ta,gws 01.29.2001]
+- partially fixed for Solaris [gws 2001-01-29]
+- fixed mtime support for relative includes [gws 2001-01-29]
+- code cleanup [yg,ta,gws 2001-01-29]
 
 1.0.6:
-+ support for mtime in mmap [yg,gws 01.27.2001]
-+ fixed indexed-array initialization bug [djc,gws 01.27.2001]
+- support for mtime in mmap [yg,gws 2001-01-27]
+- fixed indexed-array initialization bug [djc,gws 2001-01-27]
 
 1.0.5:
-+ support for relative include paths [djc,gws 01.19.2001]
-+ class member array support fixed [djc 01.18.2001]
-+ added apc_cache_index [gws 01.18.2001]
+- support for relative include paths [djc,gws 2001-01-19]
+- class member array support fixed [djc 2001-01-18]
+- added apc_cache_index [gws 2001-01-18]
 
 1.0.4:
-+ support for class hierarchies greater than two levels deep [djc 01.17.2001]
+- support for class hierarchies greater than two levels deep [djc 2001-01-17]
 
 1.0.3:
-+ fixed support for class inheritance [djc 01.16.2001]
+- fixed support for class inheritance [djc 2001-01-16]
 
 1.0.2:
-+ support for inherited classes [gws 01.15.2001]
-+ support for intialization of class variables and objects [gws 01.13.2001]
+- support for inherited classes [gws 2001-01-15]
+- support for intialization of class variables and objects [gws 2001-01-13]
 
 1.0.1:
-+ added optional file modification time check [djc 01.12.2001]
-
+- added optional file modification time check [djc 2001-01-12]

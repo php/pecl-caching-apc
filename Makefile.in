@@ -1,15 +1,23 @@
 #
-# To compile the utility programs:
+# $Id$
 #
-# This must point to the directory containing libphp4.la (typically
-# the top level of your PHP source tree). PHP must also be statically
-# compiled (specified "--enable-static" when configuring PHP).
-#
-PHP_SRC_DIR = /tmp/sw/php-4.0.3pl1
 
-LTLIBRARY_NAME			= libapc.la
-LTLIBRARY_SOURCES		= php_apc.c apc_iface.c apc_cache.c apc_serialize.c apc_rwlock.c apc_sma.c apc_shm.c apc_sem.c apc_lib.c apc_crc32.c apc_fcntl.c apc_cache_mm.c apc_nametable.c apc_util.c apc_list.c zend_no_zend.c
-LTLIBRARY_SHARED_NAME	= php_apc.la
-LTLIBRARY_SHARED_LIBADD	= $(APC_SHARED_LIBADD)
+LTLIBRARY_NAME = libapc.la
+
+LTLIBRARY_SOURCES =     apc.c \
+			apc_cache.c \
+			apc_compile.c \
+			apc_main.c \
+			apc_sem.c \
+			apc_shm.c \
+			apc_sma.c \
+			apc_stack.c \
+			apc_zend.c \
+			php_apc.c
+
+LTLIBRARY_SHARED_NAME = apc.la
+LTLIBRARY_SHARED_LIBADD = $(APC_LIBADD)
 
 include $(top_srcdir)/build/dynlib.mk
+
+EXTRA_CFLAGS += -Wall -g
