@@ -1,0 +1,8 @@
+This is the BUGS file for apc cache.
+
+Version 0.9:
+- When files are included multiple times in a single php file, after
+  an expirartion of the included file, it's defined functions can
+  be serialized in multiple places, causing fatal errors.  This happens
+  only occasionally and in both implementations.
+ 
