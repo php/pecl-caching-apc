@@ -1,6 +1,8 @@
 #ifndef INCLUDED_APC_LIB
 #define INCLUDED_APC_LIB
 
+#include <stdlib.h>
+
 /* generic printf-like function ptr type */
 
 typedef int (*apc_outputfn_t)(const char*, ...);

@@ -692,8 +692,13 @@ void apc_serialize_znode(znode* zn)
 {
 	SERIALIZE_SCALAR(zn->op_type, int);
 	switch(zn->op_type) {
+	  case IS_UNUSED:
+		break;
 	  case IS_CONST: 
 		apc_serialize_zval(&zn->u.constant);
+		break;
+	  case IS_VAR:
+		SERIALIZE_SCALAR(zn->u.var, zend_uint);
 		break;
 	  default:
 		STORE_BYTES(&zn->u, sizeof(zn->u));
@@ -705,8 +710,14 @@ void apc_deserialize_znode(znode* zn)
 {
 	DESERIALIZE_SCALAR(&zn->op_type, int);
 	switch(zn->op_type) {
+	  case IS_UNUSED:
+		break;
 	  case IS_CONST:
 		apc_deserialize_zval(&zn->u.constant);
+		break;
+	  case IS_VAR:
+		DESERIALIZE_SCALAR(&zn->u.var, zend_uint);
+		zn->u.EA.type = 0;
 		break;
 	  default:
 		LOAD_BYTES(&zn->u, sizeof(zn->u));

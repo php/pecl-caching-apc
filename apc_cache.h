@@ -11,34 +11,67 @@
 
 typedef struct apc_cache_t apc_cache_t;
 
-/* apc_cache_create: creates a new shared cache */
+/*
+ * apc_cache_create: creates a new shared cache
+ */
 extern apc_cache_t* apc_cache_create(const char* pathname, int nbuckets,
 	int maxseg, int segsize, int ttl);
 
-/* apc_cache_destroy: destroys an existing cache */
+/*
+ * apc_cache_destroy: destroys an existing cache
+ */
 extern void apc_cache_destroy(apc_cache_t* cache);
 
-/* apc_cache_clear: clears the cache */
+/*
+ * apc_cache_clear: clears the cache
+ */
 extern void apc_cache_clear(apc_cache_t* cache);
 
-/* apc_cache_search: */
+/*
+ * apc_cache_search:
+ */
 extern int apc_cache_search(apc_cache_t* cache, const char* key);
 
-/* apc_cache_retrieve: lookups key in cache. returns null if not found,
+/*
+ * apc_cache_retrieve: lookups key in cache. returns null if not found,
  * otherwise stores associated data in dataptr, expanding array as necessary.
- * length and maxsize are updated as appropriate */
+ * length and maxsize are updated as appropriate
+ */
 extern int apc_cache_retrieve(apc_cache_t* cache, const char* key,
 	char** dataptr, int* length, int* maxsize);
 
-/* apc_cache_insert: adds a new mapping to cache. if the key already has a
- * mapping, it is removed and replaced with the new one */
+/*
+ * apc_cache_retrieve_nl: searches for key in cache, and if found, sets
+ * *dataptr to point to the start of the cached data and *length to the
+ * number of bytes cached. note that this routine should be surrounded
+ * by external locking calls (see below)
+ */
+extern int apc_cache_retrieve_nl(apc_cache_t* cache, const char* key,
+	char** dataptr, int* length);
+
+/*
+ * apc_cache_insert: adds a new mapping to cache. if the key already has a
+ * mapping, it is removed and replaced with the new one
+ */
 extern int apc_cache_insert(apc_cache_t* cache, const char* key,
 	const char* data, int size);
 
-/* apc_cache_remove: removes a mapping from the cache */
+/*
+ * apc_cache_remove: removes a mapping from the cache
+ */
 extern int apc_cache_remove(apc_cache_t* cache, const char* key);
 
-/* apc_cache_dump: display information about a cache */
+/*
+ * apc_cache_dump: display information about a cache
+ */
 extern void apc_cache_dump(apc_outputfn_t outputfn, apc_cache_t* cache);
+
+/*
+ * routines to externally lock a cache
+ */
+extern void apc_cache_readlock(apc_cache_t* cache);
+extern void apc_cache_writelock(apc_cache_t* cache);
+extern void apc_cache_unlock(apc_cache_t* cache);
+
 
 #endif
