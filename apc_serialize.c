@@ -1506,7 +1506,7 @@ static int store_function_table(void *element, int num_args,
 		return 0;
 	}
 	/* do not serialize anonymous functions */
-	if (hash_key->nKeyLength == 0 || hash_key->arKey[0] == '\0') {
+	if (hash_key->nKeyLength == 0 || !strncmp(hash_key->arKey, "__lambda", 8) || (hash_key->arKey[0] == '\0' && !(strncmp(hash_key->arKey + 1, "lambda", 6)))) {
 		return 0;
 	}
 	/* serialize differences */
@@ -1534,7 +1534,6 @@ void apc_deserialize_zend_function_table(HashTable* gft, apc_nametable_t* acc, a
 {
 	zend_function* zf;
 	char exists;
-
 	DESERIALIZE_SCALAR(&exists, char);
 	while (exists) {
 		apc_create_zend_function(&zf);
