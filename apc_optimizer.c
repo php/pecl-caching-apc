@@ -666,32 +666,41 @@ zend_op_array* apc_optimize_op_array(zend_op_array* op_array)
     jumps = build_jump_array(op_array);
     for (i = 0; i < op_array->last; i++) {
         Pair* p;
+        /*  
+         * For some reason, this actually slows code down.
+         *
         if ((p = peephole_inc(op_array->opcodes, i, op_array->last))) {
             if (!are_branch_targets(cdr(p), jumps)) {
+                fprintf(stderr, "inc\n");
                 rewrite_inc(op_array->opcodes, p);
             }
             RESTART_PEEPHOLE_LOOP;
         }
+        */
         if ((p = peephole_print(op_array->opcodes, i, op_array->last))) {
             if (!are_branch_targets(cdr(p), jumps)) {
+                fprintf(stderr, "print\n");
                 rewrite_print(op_array->opcodes, p);
             }
             RESTART_PEEPHOLE_LOOP;
         }
         if ((p = peephole_constant_fold(op_array->opcodes, i, op_array->last))) {
             if (!are_branch_targets(cdr(p), jumps)) {
+                fprintf(stderr, "fold\n");
                 rewrite_constant_fold(op_array->opcodes, p);
             }
             RESTART_PEEPHOLE_LOOP;
         }
         if ((p = peephole_fcall(op_array->opcodes, i, op_array->last))) {
             if (!are_branch_targets(cdr(p), jumps)) {
+                fprintf(stderr, "fcall\n");
                 rewrite_fcall(op_array->opcodes, p);
             }
             RESTART_PEEPHOLE_LOOP;
         }
         if ((p = peephole_add_string(op_array->opcodes, i, op_array->last))) {
             if (!are_branch_targets(cdr(p), jumps)) {
+                fprintf(stderr, "interp\n");
                 rewrite_add_string(op_array->opcodes, p);
             }
             RESTART_PEEPHOLE_LOOP;
