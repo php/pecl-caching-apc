@@ -332,7 +332,7 @@ void* apc_sma_realloc(void *p, size_t n)
 /* }}} */
 
 /* {{{ apc_sma_strdup */
-void* apc_sma_strdup(const char* s)
+char* apc_sma_strdup(const char* s)
 {
     void* q;
     int len;

@@ -27,7 +27,7 @@ extern void apc_sma_init(int numseg, int segsize, char *mmap_file_mask);
 extern void apc_sma_cleanup();
 extern void* apc_sma_malloc(size_t size);
 extern void* apc_sma_realloc(void* p, size_t size);
-extern void* apc_sma_strdup(const char *s);
+extern char* apc_sma_strdup(const char *s);
 extern void apc_sma_free(void* p);
 
 /* {{{ struct definition: apc_sma_link_t */
