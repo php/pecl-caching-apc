@@ -1,8 +1,14 @@
 Why Cache?
 
-When PHP executes a file, it compiles the file's source code into a series of instructions, or "opcodes," and then executes those instructions. Because the process of converting source code into executable instructions is costly in time and memory, we can benefit by storing the instructions for later use. Ideally, a file is compiled only when it is accessed for the first time, or when it changes.
+PHP is an interpreted language.  A principle difference between compiled languages (like C) and interpreted languages is that when 
+an interpreted language is called upon to execute the source code contained in a file, it must parse and compile it prior to 
+execution.  When PHP executes a file, it compiles the file's source code into a series of instructions, or "opcodes," and then executes those instructions. Because the process of converting source code into executable instructions is costly in time and memory, we can benefit by storing the instructions for later use. Ideally, a file is compiled only when it is accessed for the first time, or when it changes.
 
-To explain simply, APC overrides PHP's compile routine, so that a cache is always consulted before compiling a file. If that file's instructions are already stored in the cache, the compilation step is skipped and the stored instructions are used. Otherwise, the compilation of the file proceeds and its instructions are inserted into the cache.
+APC provides such a caching mechanism by overriding PHP's compile routine, so that a cache is always consulted before compiling a file. If that file's instructions are already stored in the cache, the compilation step is skipped and the stored instructions are used. Otherwise, the compilation of the file proceeds and its instructions are inserted into the cache.  A shared memory implementation is
+used so that in a system where many interpreters are being run simultaneously (like a number of Apache children), they each have 
+access to the compilation results of the other interpreters.  This is a major difference between this caching implementation and 
+something like the Bware Cache, where each child is responsible for caching its own compile results and it is impossible for that
+information to be shared with other children or to persist past the death of the interpreter that generated them. 
 
 Interfacing with the Zend Engine
 
@@ -14,13 +20,13 @@ When the PHP compiler encounters an include statement ('include' or 'include_onc
 
 Compiler Results
 
-PHP compiles a file's top-level statements -- those that are outside of its functions and classes -- into a sequence of opcodes and stores them in a variable of type 'zend_op_array'. PHP also compiles functions into sequences of opcodes, but they are stored in a global table that maps the functions' names to their opcodes. Note that a compiled file's opcodes do not contain or reference its functions or their opcodes.
+PHP compiles a file's top-level statements -- those that are outside of its functions and classes -- into a sequence of opcodes and stores them in a variable of type 'zend_op_array'. PHP also compiles functions into sequences of opcodes, but they are stored in a global table that maps the functions' names to their opcodes. Note that a compiled file's opcodes do not contain or reference its functions or their opcodes except by name.
 
 PHP handles classes the same way it does functions, although classes are marginally more complex because they generally have functions defined within them (their member functions, or "methods"). In this way, classes are similar to PHP files themselves.
 
 The PHP compile function 'zend_compile_file' takes a file name as a parameter and returns a 'zend_op_array'. It also inserts the file's functions and classes into the appropriate global tables ('CG(function_table)' and 'CG(class_table)').
 
-Because functions and classes are inserted into the global tables during the compilation of the file in which they are defined, it is impossible to determine which functions and classes currently in the global tables are defined in a given file by examining that file's opcodes alone, or the opcodes of the functions and class in the global tables.
+Because functions and classes are often inserted into the global tables during the compilation of the file in which they are defined, it is impossible to determine which functions and classes currently in the global tables are defined in a given file by examining that file's opcodes alone, or the opcodes of the functions and class in the global tables.
 
 Gathering the Compiler Results
 
@@ -42,7 +48,7 @@ What happens if a file is included more than once during a single request? In ge
 
 If the file is deserialized when it is encountered for the first time and compiled and serialized when it is encountered the second time, however, there IS a problem. This can occur if a file expires in the middle of a request in which it is included multiple times. This time, when the file is compiled, its functions are already in the global tables (they were inserted during deserialization), causing us to erroneously believe that the file defines NO functions or classes.
 
-Our solution is to remember which files we have seen -- and compiled or deserialized -- during a particular request and remember exactly which functions and classes belonged to that file. Before we process a file we have seen before, we remove its functions and classes from the global tables and from the accumulator tables. This essentially returns the relevant parts of the compiler to the state they were in before we compiled the file for the first time.
+Our solution is to remember which files we have seen -- and compiled or deserialized -- during a particular request and remember exactly which functions and classes belonged to that file. Before we process a file we have seen before, we remove its functions and classes from the global tables and from the accumulator tables. This essentially returns the relevant parts of the compiler to the state they were in before we compiled the file for the first time.  
 
 Limitations
 
