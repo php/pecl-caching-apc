@@ -16,76 +16,75 @@
 
 #include "apc_lib.h"
 
+#define T apc_nametable_t*
 typedef struct apc_nametable_t apc_nametable_t;
-typedef void (*apc_nametable_destructor_t)(void*);
 
 /*
- * apc_nametable_create: creates a new name table with the specified
+ * apc_nametable_create: creates a new nametable with the specified
  * number of buckets
  */
-apc_nametable_t* apc_nametable_create(int nbuckets);
+T apc_nametable_create(int nbuckets);
 
 /*
  * apc_nametable_destroy: frees all memory associated with a name
- * table, includings its keys
+ * table, includings its keys. Does not destroy associated values
  */
-extern void apc_nametable_destroy(apc_nametable_t* table);
+extern void apc_nametable_destroy(T table);
 
 /*
  * apc_nametable_insert: adds a new key-value mapping to a name table.
- * returns 1 if the key was successfully added, or 0 if the key is a
+ * Returns 1 if the key was successfully added, or 0 if the key is a
  * duplicate
  */
-extern int apc_nametable_insert(apc_nametable_t* table,
-	const char* key, void* value);
+extern int apc_nametable_insert(T table, const char* key, void* value);
 
 /*
- * apc_nametable_search: returns true if the specified key exists in
- * the table
+ * apc_nametable_search: returns 1 if the specified key exists in
+ * the table, else 0
  */
-extern int apc_nametable_search(apc_nametable_t* table, const char* key);
+extern int apc_nametable_search(T table, const char* key);
 
 /*
  * apc_nametable_retrieve: returns the value associated with the
  * specified key, or null if the key does not exist
  */
-extern void* apc_nametable_retrieve(apc_nametable_t* table, const char* key);
+extern void* apc_nametable_retrieve(T table, const char* key);
 
 /*
  * apc_nametable_remove: removes the specified key from the table.
- * returns true if the key existed and was removed, 0 if it did not
+ * Returns the key's associated value if the key existed and was
+ * removed, or null if the key does not exist
  */
-extern int apc_nametable_remove(apc_nametable_t* table, const char* key);
+extern void* apc_nametable_remove(T table, const char* key);
 
 /*
  * apc_nametable_clear: removes all keys from the table and frees
- * their associated memory. optionally provide a destructor function
- * that will be called for every value in the table
+ * their associated memory. Optionally provide a destructor to be
+ * called for every value in the table (dtor may be null)
  */
-extern void apc_nametable_clear(apc_nametable_t* table,
-	apc_nametable_destructor_t destructor);
+extern void apc_nametable_clear(T table, void (*dtor)(void*));
 
 /*
  * apc_nametable_union: inserts all elements in table b into table
  * a, if and only if they do not already exist in table a
  */
-extern void apc_nametable_union(apc_nametable_t* a, apc_nametable_t* b);
+extern void apc_nametable_union(T a, T b);
 
 /*
  * apc_nametable_difference: removes all elements in table b from
  * table a
  */
-extern void apc_nametable_difference(apc_nametable_t* a, apc_nametable_t* b);
+extern void apc_nametable_difference(T a, T b);
 
 /*
  * apc_nametable_size: returns number of elements in table
  */
-extern int apc_nametable_size(apc_nametable_t* table);
+extern int apc_nametable_size(T table);
 
 /*
  * apc_nametable_dump: debugging display function
  */
-extern void apc_nametable_dump(apc_nametable_t* table,
-	apc_outputfn_t outputfn);
+extern void apc_nametable_dump(T table, apc_outputfn_t outputfn);
 
+#undef T
 #endif

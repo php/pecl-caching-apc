@@ -11,7 +11,6 @@
  * George Schlossnagle <george@lethargy.org>
  * ==================================================================
 */
-
 #include "apc_nametable.h"
 #include "apc_lib.h"
 #include <string.h>
@@ -100,7 +99,7 @@ int apc_nametable_search(apc_nametable_t* table, const char* key)
 	return (slot != 0); /* if (slot != 0), strcmp returned 0 */
 }
 
-/* apc_nametable_search: return true is a key exists in table */
+/* apc_nametable_retrieve: return value associated with key */
 void* apc_nametable_retrieve(apc_nametable_t* table, const char* key)
 {
 	link_t* slot = table->buckets[hash(key) % table->nbuckets];
@@ -112,8 +111,9 @@ void* apc_nametable_retrieve(apc_nametable_t* table, const char* key)
 }
 
 /* apc_nametable_remove: remove a key from the table */
-int apc_nametable_remove(apc_nametable_t* table, const char* key)
+void* apc_nametable_remove(apc_nametable_t* table, const char* key)
 {
+	void* value;
 	link_t* q;
 	link_t** slot = &table->buckets[hash(key) % table->nbuckets];
 
@@ -125,8 +125,9 @@ int apc_nametable_remove(apc_nametable_t* table, const char* key)
 	}
 	q = *slot;
 	*slot = (*slot)->next;
+	value = q->value;
 	deletelink(q);
-	return 1;
+	return value;
 }
 
 /* apc_nametable_clear: remove all keys from the table */
@@ -204,7 +205,7 @@ void apc_nametable_dump(apc_nametable_t* table, apc_outputfn_t outputfn)
 		while (p != 0) {
 			link_t* q = p;
 			p = p->next;
-			outputfn("nametable contains %s", q->key);
+			outputfn("%s => %p\n", q->key, q->value);
 		}
 	}
 }
