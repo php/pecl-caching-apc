@@ -41,3 +41,7 @@ AC_ARG_ENABLE(mmap,
   AC_MSG_RESULT(no)
 ])
 
+PHP_CHECK_LIBRARY(rt, shm_open, [
+  PHP_ADD_LIBRARY(rt,, APC_SHARED_LIBADD)
+],[ ],[ ])
+
