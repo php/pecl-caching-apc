@@ -136,7 +136,8 @@ slot_t* make_slot(apc_cache_key_t key, apc_cache_entry_t* value, slot_t* next, t
 /* {{{ free_slot */
 static void free_slot(slot_t* slot)
 {
-    apc_sma_free(slot->key.data.user.identifier);
+    if(slot->value->type == APC_CACHE_ENTRY_USER)
+        apc_sma_free(slot->key.data.user.identifier);
     apc_cache_free_entry(slot->value);
     apc_sma_free(slot);
 }
