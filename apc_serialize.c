@@ -651,7 +651,11 @@ void apc_serialize_zend_class_entry(zend_class_entry* zce)
 	SERIALIZE_SCALAR(zce->type, char);
 	apc_serialize_string(zce->name);
 	SERIALIZE_SCALAR(zce->name_length, uint);
-	/* ignore zce->parent - this should probably be fixed */
+	/* 	class inheritance.  We serialize the name of the parent class to
+		act a as pointer to the parent class.  We'll use zend_hash_find 
+		to pick up later.
+	*/
+	apc_serialize_string(zce->parent->name);
 	SERIALIZE_SCALAR(zce->refcount[0], int);
 	SERIALIZE_SCALAR(zce->constants_updated, zend_bool);
 	apc_serialize_hashtable(&zce->function_table, apc_serialize_zend_function);
@@ -681,11 +685,18 @@ void apc_serialize_zend_class_entry(zend_class_entry* zce)
 void apc_deserialize_zend_class_entry(zend_class_entry* zce)
 {
 	int count, i;
+	char *tmp;
 
 	DESERIALIZE_SCALAR(&zce->type, char);
 	apc_create_string(&zce->name);
 	DESERIALIZE_SCALAR(&zce->name_length, uint);
-	zce->parent = NULL; /* parent is not stored - this should be fixed*/
+	/* 	handle inherited classes by deserialing the name of the parent class
+		and looking it up in the class table.  Thinks this works?
+	*/
+	apc_create_string(&tmp);
+	zend_hash_find(CG(class_table), tmp, strlen(tmp) + 1, 
+		(void **) &zce->parent);
+	efree(tmp);
 	/* refcount is a pointer to a single int.  Don't ask me why, I
 	 * just work here. */
 	zce->refcount = (int*) emalloc(sizeof(int));
