@@ -14,6 +14,7 @@
 
 
 #include "apc_cache_mm.h"
+#include "apc_nametable.h"
 #include "php_apc.h"
 
 extern zend_apc_globals apc_globals;
@@ -98,7 +99,7 @@ void apc_mmap_dump_entry(const char* filename, apc_outputfn_t outputfn)
 //	}
 
 	if (!apc_load(filename)) {
-		outputfn("error: could not open '%s'\n", filename):
+		outputfn("error: could not open '%s'\n", filename);
 	}
 
 	apc_deserialize_zend_op_array(&op_array);
@@ -106,13 +107,13 @@ void apc_mmap_dump_entry(const char* filename, apc_outputfn_t outputfn)
 	apc_deserialize_zend_class_table(&class_table, dummy);
 
 	outputfn("!!! functions !!!\n");
-	p = cache->pListHead;
+	p = function_table.pListHead;
   	while(p !=NULL) {
 		zend_function* zf = (zend_function*) p->pData;
 		outputfn("%s\n", zf->common.function_name);
 	}
 	outputfn("!!! classes !!!\n");
-	p = cache->pListHead;
+	p = class_table.pListHead;
   	while(p !=NULL) {
 		zend_class_entry* zc = (zend_class_entry*) p->pData;
 		outputfn("%s\n", zc->name);

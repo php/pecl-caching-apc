@@ -19,6 +19,7 @@
 #include <assert.h>
 
 #include "zend.h" // FIXME
+#include "zend_variables.h"	// for zval_dtor()
 
 enum { START_SIZE = 1, GROW_FACTOR = 2 };
 
@@ -769,6 +770,30 @@ void apc_serialize_zend_op_array(zend_op_array* zoa)
 	SERIALIZE_SCALAR(zoa->last, zend_uint);
 	SERIALIZE_SCALAR(zoa->size, zend_uint);
 	for (i = 0; i < zoa->last; i++) {
+		if(zoa->opcodes[i].opcode == ZEND_DECLARE_FUNCTION_OR_CLASS)
+		{
+			HashTable *table;
+			switch(zoa->opcodes[i].extended_value) {
+		 case ZEND_DECLARE_FUNCTION:
+      table = CG(function_table);
+      break;
+    case ZEND_DECLARE_CLASS:
+      table = CG(class_table);
+      break;
+    default:
+      zend_error(E_COMPILE_ERROR, "Invalid binding type");
+      return;
+  	}
+		zend_hash_del(table, zoa->opcodes[i].op1.u.constant.value.str.val, zoa->opcodes[i].op1.u.constant.value.str.len);
+  	zval_dtor(&zoa->opcodes[i].op1.u.constant);
+  	zval_dtor(&zoa->opcodes[i].op2.u.constant);
+  	zoa->opcodes[i].opcode = ZEND_NOP;
+  	memset(&zoa->opcodes[i].op1, 0, sizeof(znode));
+  	memset(&zoa->opcodes[i].op2, 0, sizeof(znode));
+	zoa->opcodes[i].op1.op_type = IS_UNUSED;
+	zoa->opcodes[i].op2.op_type = IS_UNUSED;
+	}
+	
 		apc_serialize_zend_op(&zoa->opcodes[i]);
 	}
 	SERIALIZE_SCALAR(zoa->T, zend_uint);
@@ -970,7 +995,7 @@ void apc_deserialize_zend_function_table(HashTable* gft, apc_nametable_t* acc, a
 			strlen(zf->common.function_name)+1, zf,
 			sizeof(zend_function), NULL) == FAILURE)
 		{
-			zend_error(E_WARNING, "failed to add '%s' to ftable\n", zf->common.function_name);
+			//zend_error(E_WARNING, "failed to add '%s' to ftable\n", zf->common.function_name);
 		}
 		apc_nametable_insert(acc, zf->common.function_name, 0);
 		apc_nametable_insert(priv, zf->common.function_name, 0);
@@ -1025,7 +1050,7 @@ void apc_deserialize_zend_class_table(HashTable* gct, apc_nametable_t* acc, apc_
 		if (zend_hash_add(gct, zc->name, zc->name_length + 1,
 			zc, sizeof(zend_class_entry), NULL) == FAILURE)
 		{
-			zend_error(E_WARNING,"Failed to add %s to CG(class_table", zc->name);
+//			zend_error(E_WARNING,"Failed to add %s to CG(class_table", zc->name);
 			//assert(0); /* should never fail! */
 		}
 		apc_nametable_insert(acc, zc->name, 0);
