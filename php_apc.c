@@ -123,7 +123,7 @@ PHP_MINIT_FUNCTION(apc)
 	apc_init_globals();
 	REGISTER_INI_ENTRIES();
 	apc_module_init();
-	apc_seterrorfn(printlog);
+	apc_setoutputfn(printlog);
 	return SUCCESS;
 }
 
