@@ -11,8 +11,6 @@
  * George Schlossnagle <george@lethargy.org>
  * ==================================================================
 */
-
-
 #include "apc_cache.h"
 #include "apc_crc32.h"
 #include "apc_rwlock.h"
@@ -54,8 +52,8 @@ struct bucket_t {
 	int length;					/* length of stored data in bytes */
 	int lastaccess;				/* time of last access (unix timestamp) */
 	int hitcount;				/* number of hits to this bucket */
-	int createtime;			/* time of creation (Unix timestamp) */
-	int ttl;							/* private ttl */
+	int createtime;				/* time of creation (Unix timestamp) */
+	int ttl;					/* private ttl */
 	unsigned int checksum;		/* checksum of stored data */
 };
 
@@ -168,6 +166,9 @@ static void resetcache(apc_cache_t* cache)
 		}
 		apc_smm_initsegment(cache->segments[i].shmid, segsize);
 	}
+
+	/* reset header */
+	cache->header->hits = cache->header->misses = 0;
 }
 
 /* emptybucket: clean out a bucket and free associated memory */
@@ -273,8 +274,6 @@ void apc_cache_destroy(apc_cache_t* cache)
 void apc_cache_clear(apc_cache_t* cache)
 {
 	WRITELOCK(cache->lock);
-	cache->header->hits = 0;
-	cache->header->misses = 0;
 	resetcache(cache);
 	UNLOCK(cache->lock);
 }
@@ -302,8 +301,7 @@ int apc_cache_search(apc_cache_t* cache, const char* key)
 			continue;
 		}
 		if (strcmp(buckets[slot].key, key) == 0) {
-			if (time(0) > buckets[slot].createtime + buckets[slot].ttl) 
-			{
+			if (time(0) > buckets[slot].createtime + buckets[slot].ttl) {
 				emptybucket(&buckets[slot]); /* FIXME */
 				break; /* the entry has expired */
 			}
@@ -343,8 +341,8 @@ int apc_cache_retrieve(apc_cache_t* cache, const char* key, char** dataptr,
 			continue;
 		}
 		if (strcmp(buckets[slot].key, key) == 0) {
-			if ((curtime = time(0)) > buckets[slot].createtime + buckets[slot].ttl) 
-			{
+			curtime = time(0);
+			if (curtime > buckets[slot].createtime + buckets[slot].ttl) {
 				emptybucket(&buckets[slot]); /* FIXME */
 				break; /* the entry has expired */
 			}
@@ -405,8 +403,8 @@ int apc_cache_retrieve_nl(apc_cache_t* cache, const char* key,
 			continue;
 		}
 		if (strcmp(buckets[slot].key, key) == 0) {
-			if ((curtime = time(0)) > buckets[slot].createtime + buckets[slot].ttl) 
-			{
+			curtime = time(0);
+			if (curtime > buckets[slot].createtime + buckets[slot].ttl) {
 				emptybucket(&buckets[slot]); /* FIXME */
 				break; /* the entry has expired */
 			}
@@ -477,8 +475,7 @@ int apc_cache_insert(apc_cache_t* cache, const char* key,
 			emptybucket(&buckets[slot]);
 			break;	/* overwrite existing entry */
 		}
-		if (curtime > buckets[slot].createtime + buckets[slot].ttl) 
-		{
+		if (curtime > buckets[slot].createtime + buckets[slot].ttl) {
 			emptybucket(&buckets[slot]);
 			break;	/* this entry has expired, overwrite it */
 		}
@@ -516,7 +513,7 @@ int apc_cache_insert(apc_cache_t* cache, const char* key,
 	buckets[slot].lastaccess = curtime;
 	buckets[slot].hitcount   = 0;
 	buckets[slot].checksum   = checksum;
-	buckets[slot].ttl				 = cache->header->ttl;
+	buckets[slot].ttl		 = cache->header->ttl;
 	buckets[slot].createtime = time(0);
 	
 	if (cache->header->ttl == 0) { /* if ttl is zero, disable expiration */
@@ -565,39 +562,39 @@ int apc_cache_remove(apc_cache_t* cache, const char* key)
 	return 0;	/* not found */
 }
 
-int apc_shm_set_object_ttl(apc_cache_t* cache, const char* key, int ttl)
+int apc_cache_set_object_ttl(apc_cache_t* cache, const char* key, int ttl)
 {
-	  unsigned slot;    /* initial hash value */
-  unsigned k;     /* second hash value, for open-addressing */
-  int nprobe;     /* running count of cache probes */
-  char* shmaddr;    /* attached addr of data segment */
-  bucket_t* buckets;
-  int nbuckets;
+	unsigned slot;		/* initial hash value */
+	unsigned k;			/* second hash value, for open-addressing */
+	int nprobe;			/* running count of cache probes */
+	char* shmaddr;		/* attached addr of data segment */
+	bucket_t* buckets;
+	int nbuckets;
 
-  WRITELOCK(cache->lock);
+	WRITELOCK(cache->lock);
 
-  buckets  = cache->buckets;
-  nbuckets = cache->header->nbuckets;
+	buckets  = cache->buckets;
+	nbuckets = cache->header->nbuckets;
 
-  slot = hash(key) % nbuckets;
-  k = hashtwo(key) % nbuckets;
+	slot = hash(key) % nbuckets;
+	k = hashtwo(key) % nbuckets;
 
-  nprobe = 0;
-  while (buckets[slot].shmid != EMPTY && nprobe++ < nbuckets) {
-    if (buckets[slot].shmid == UNUSED) {
-      continue;
-    }
-    if (strcmp(buckets[slot].key, key) == 0) {
-      /* found the key */
+	nprobe = 0;
+	while (buckets[slot].shmid != EMPTY && nprobe++ < nbuckets) {
+		if (buckets[slot].shmid == UNUSED) {
+			continue;
+		}
+		if (strcmp(buckets[slot].key, key) == 0) {
+			/* found the key */
 			buckets[slot].ttl = ttl;
 			return 1;
 		}
 		slot = (slot+k) % nbuckets;
 	}
-  UNLOCK(cache->lock);
-  return 0; /* key doesn't exist */
-
+	UNLOCK(cache->lock);
+	return 0; /* key doesn't exist */
 }
+
 /* apc_cache_readlock: acquire a shared read-only lock on a cache */
 void apc_cache_readlock(apc_cache_t* cache)
 {
