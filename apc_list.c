@@ -1,24 +1,28 @@
 #include "apc_list.h"
+#include <stdlib.h>
+#include <stdio.h>	// FIXME
 
 void apc_list_create(apc_list **list, 
-	int (*apc_list_ctor)(size_t), 
+	void* (*apc_list_ctor)(int), 
 	void (*apc_list_dtor)(void *))
 {
+	fprintf(stderr, "apc_list_create\n");
 	*list = (apc_list *) apc_list_ctor(sizeof(apc_list));
-	list->head = NULL;
-	list->tail = NULL;
-	list->list_ctor = apc_list_ctor;
-	list->list_dtor = apc_list_dtor;
+	(*list)->head = NULL;
+	(*list)->tail = NULL;
+	(*list)->list_ctor = apc_list_ctor;
+	(*list)->list_dtor = apc_list_dtor;
 }
 
 void apc_list_prepend(apc_list *list, void *data)
 {
 	apc_list_element *element;
 
-	element = (apc_list_element *) list->apc_list_ctor(sizeof(element));
+	fprintf(stderr, "apc_list_prepend\n");
+	element = (apc_list_element *) list->list_ctor(sizeof(apc_list_element));
 	if(list->head) {
 		element->next = list->head;
-		elenent->prev = NULL;
+		element->prev = NULL;
 		list->head->prev = element;
 		list->head = element;
 	}
@@ -35,7 +39,8 @@ void apc_list_append(apc_list *list, void *data)
 {
 	apc_list_element *element;
 		
-	element = (apc_list_element *) list->apc_list_ctor(sizeof(element));
+	fprintf(stderr, "apc_list_append\n");
+	element = (apc_list_element *) list->list_ctor(sizeof(apc_list_element));
 	if(list->tail) {
 		element->prev = list->tail;
 		element->next = NULL;
