@@ -14,6 +14,7 @@
 
 
 #include "apc_lib.h"
+#include "zend.h"
 #include <sys/time.h>
 #include <unistd.h>
 #include <errno.h>
@@ -146,7 +147,7 @@ int apc_ropen(const char* pathname, int flags, int mode)
 {
 	int fd;
 	char* p;
-	
+
 	if ((fd = open(pathname, flags, mode)) >= 0) {
 		return fd;
 	}
@@ -154,8 +155,12 @@ int apc_ropen(const char* pathname, int flags, int mode)
 	/* under the assumption that the file could not be opened because
 	 * intermediate directories to it need to be created, move along
 	 * the pathname and create those directories */
-	
-	p = strchr(pathname, PATH_SEPARATOR);
+	if(*pathname == PATH_SEPARATOR) {
+		p = strchr(pathname +1, PATH_SEPARATOR);
+	}
+	else {
+		p = strchr(pathname, PATH_SEPARATOR);
+	}
 	while (p != 0) {
 		*p = '\0';
 		if (mkdir(pathname, 0755) < 0 && errno != EEXIST) {
