@@ -273,6 +273,8 @@ void apc_cache_destroy(apc_cache_t* cache)
 void apc_cache_clear(apc_cache_t* cache)
 {
 	WRITELOCK(cache->lock);
+	cache->header->hits = 0;
+	cache->header->misses = 0;
 	resetcache(cache);
 	UNLOCK(cache->lock);
 }
