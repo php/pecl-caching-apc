@@ -15,12 +15,7 @@
 
 #include "apc_sem.h"
 #include "apc_lib.h"
-#if ZEND_EXTENSION_API_NO < 20001224
-#include "php_config.h"
-#endif
-#if ZEND_EXTENSION_API_NO >= 20001224
-#include "config.h"
-#endif
+#include "apc_phpdeps.h"
 #include <unistd.h>
 #include <semaphore.h>
 #include <sys/types.h>
