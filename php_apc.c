@@ -1,6 +1,6 @@
 /* ==================================================================
  * APC Cache
- * Copyright (c) 2000 Community Connect, Inc.
+ * Copyright (c) 2000-2001 Community Connect, Inc.
  * All rights reserved.
  * ==================================================================
  * This source code is made available free and without charge subject
@@ -121,37 +121,21 @@ static PHP_INI_MH(set_check_mtime)
 	return SUCCESS;
 }
 
-/* set the allow_relative_includes flag in apc_globals (shm impl.) */
-static PHP_INI_MH(set_allow_relative_includes)
-{
-	if (new_value == NULL) {
-		APCG(allow_relative_includes) = 0;
-	}
-	else {
-		APCG(allow_relative_includes) = atoi(new_value);
-	}
-	return SUCCESS;
-}
-
 PHP_INI_BEGIN()
 	PHP_INI_ENTRY("apc.ttl",         NULL, PHP_INI_ALL, set_ttl)
 	PHP_INI_ENTRY("apc.cachedir",    NULL, PHP_INI_ALL, set_cachedir)
 	PHP_INI_ENTRY("apc.regex",       NULL, PHP_INI_ALL, set_regex)
 	PHP_INI_ENTRY("apc.check_mtime", NULL, PHP_INI_ALL, set_check_mtime)
 
-	/* set flag for support for relative include paths */
-	PHP_INI_ENTRY("apc.allow_relative_includes", NULL, PHP_INI_ALL,
-		set_allow_relative_includes)
-
-	/* set no. of buckets in the shared cache index. Ignored under mmap. */
+	/* Set no. of buckets in the shared cache index. Ignored under mmap. */
 	STD_PHP_INI_ENTRY("apc.hash_buckets", "1024", PHP_INI_ALL, 
 		OnUpdateInt, hash_buckets, zend_apc_globals, apc_globals)
 
-	/* set size of shared memory segments. Ignored under mmap. */
+	/* Set size of shared memory segments. Ignored under mmap. */
 	STD_PHP_INI_ENTRY("apc.shm_segment_size", "33554431", PHP_INI_ALL, 
 		OnUpdateInt, shm_segment_size, zend_apc_globals, apc_globals)
 
-	/* set maximum no. of shared memory segments. Ignored under mmap. */
+	/* Set maximum no. of shared memory segments. Ignored under mmap. */
 	STD_PHP_INI_ENTRY("apc.shm_segments", "10", PHP_INI_ALL, 
 		OnUpdateInt, shm_segments, zend_apc_globals, apc_globals)
 PHP_INI_END()
@@ -359,7 +343,7 @@ ZEND_DLEXPORT zend_extension zend_extension_entry = {
 	"0.1",
 	"Dan Cowgill and George Schlossnagle",
 	"http://apc.communityconnect.com",
-	"Copyright (c) 2000 Community Connect Inc.",
+	"Copyright (c) 2000-2001 Community Connect Inc.",
 	apc_zend_startup,
 	apc_zend_shutdown,
 	NULL, /* activate_func_t */

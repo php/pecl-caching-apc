@@ -69,7 +69,6 @@ apc.cachedir
 	their corresponding php files, with the same name and a _apc 
 	extension.  The webserver user must have permision to create files
 	in this directory.
-
 apc.hash_buckets 
 	supported: (S)
 	default: 1024
@@ -79,43 +78,31 @@ apc.hash_buckets
 	files to be cached (don't forget includes!)  Each bucket takes 264 
 	bytes of memory, so setting this to a large (but reasnable) value
 	does no harm.
-
 apc.regex 
 	supported: (M,S)
 	default: NULL
 	regex is a POSIX extended regex of files NOT to cache.
-
 apc.shm_segments 
 	supported: (S)
 	default: 10
 	shm_segements sets the maximum number of sysv shared memory segments 
 	to be used.
-
 apc.shm_segment_size 
 	supported: (S)
 	default: 33554431
 	shm_segment_size sets the size of sysv shared memory segments to use,
 	in bytes.
-
 apc.ttl 
 	supported: (M,S)
 	default: 0
 	ttl sets a global ttl on all cache objects.  Objects not updated in
 	ttl seconds will be expired and delted.
-
 apc.check_mtime
 	supported: (S)
 	default: 0
 	specifies whether a source file should be re-compiled if it has been
 	modified since it was compiled. This may result in a slight loss of
 	efficiency.
-	
-apc.allow_relative_includes
-	supported: (S)
-	default: 0
-	specifies whether relative include paths (passed to include(), require(),
-	include_once(), etc.) should be supported. Note that this option implies
-	apc.check_time = 1.
 
 #################################################################
 # Exported functions

@@ -1,6 +1,6 @@
 /* ==================================================================
  * APC Cache
- * Copyright (c) 2000 Community Connect, Inc.
+ * Copyright (c) 2000-2001 Community Connect, Inc.
  * All rights reserved.
  * ==================================================================
  * This source code is made available free and without charge subject
@@ -794,6 +794,7 @@ int apc_cache_dump_entry(apc_cache_t* cache, const char* key,
 	apc_deserialize_zend_function_table(&function_table, dummy, dummy);
 	apc_deserialize_zend_class_table(&class_table, dummy, dummy);
 	apc_deserialize_zend_op_array(op_array);
+
 	/* begin second row of outer table */
 	outputfn("<tr>\n");
 

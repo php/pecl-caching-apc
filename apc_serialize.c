@@ -1,6 +1,6 @@
 /* ==================================================================
  * APC Cache
- * Copyright (c) 2000 Community Connect, Inc.
+ * Copyright (c) 2000-2001 Community Connect, Inc.
  * All rights reserved.
  * ==================================================================
  * This source code is made available free and without charge subject
@@ -14,6 +14,7 @@
 
 
 #include "apc_serialize.h"
+#include "apc_phpdeps.h"
 #include <stdlib.h>
 #include <assert.h>
 
@@ -32,6 +33,38 @@ struct namearray_t {
  * derived from the parent class that were compiled before the
  * parent class definition was encountered... */ 
 static apc_nametable_t* deferred_inheritance = 0;
+
+/* FIXME comment */
+static void inherit(zend_class_entry* base, zend_class_entry* parent)
+{
+	namearray_t* children;	/* classes derived directly from parent */
+	
+	children = apc_nametable_retrieve(deferred_inheritance, parent->name);
+
+	if (children != 0) {
+		/* One or more classes are derived from this one and have
+		 * already been deserialized. We must now perform the
+		 * inheritance that would normally be done at run-time. */
+	
+		char* child_name;	/* name of the ith derived class */
+		int i;
+		
+		for (i = 0; i < children->length; i += strlen(child_name)+1) {
+			zend_class_entry* child;	/* the ith derived class entry */
+			int result;
+			
+			child_name = children->strings + i;
+
+			/* get the child class entry */
+			result = zend_hash_find(CG(class_table), child_name,
+				strlen(child_name) + 1, (void**) &child);
+			assert(result == SUCCESS);	/* FIXME */
+
+			ZEND_DO_INHERITANCE(child, base);
+			inherit(base, child);
+		}
+	}
+}
 
 
 enum { START_SIZE = 1, GROW_FACTOR = 2 };
@@ -785,39 +818,13 @@ void apc_deserialize_zend_class_entry(zend_class_entry* zce)
 	DESERIALIZE_SCALAR(&zce->handle_property_set, void*);
 
 
+	/* FIXME comment */
 	/* Consult the deferred_inheritance table for this class's entries
 	 * (i.e. where this class is the missing parent). For each child
-	 * that has registered with this parent, call zend_do_inheritance
+	 * that has registered with this parent, call ZEND_DO_INHERITANCE
 	 * to add the parent's methods with the child's function table. */
 
-	children = apc_nametable_retrieve(deferred_inheritance, zce->name);
-
-	if (children != 0) {
-		/* One or more classes are derived from this one and have
-		 * already been deserialized. We must now perform the
-		 * inheritance that would normally be done at run-time. */
-	
-		char* child_name;	/* name of the ith derived class */
-		
-		for (i = 0; i < children->length; i += strlen(child_name)+1) {
-			zend_class_entry* child;	/* the ith derived class entry */
-			int result;
-			
-			child_name = children->strings + i;
-
-			/* get the child class entry */
-			result = zend_hash_find(CG(class_table), child_name,
-				strlen(child_name) + 1, (void**) &child);
-			assert(result == SUCCESS);	/* FIXME */
-
-			zend_do_inheritance(child, zce);
-		}
-
-		/* clean up */
-		apc_nametable_remove(deferred_inheritance, zce->name);
-		free(children->strings);
-		free(children);
-	}
+	inherit(zce, zce);
 }
 
 void apc_create_zend_class_entry(zend_class_entry** zce)
@@ -1042,7 +1049,6 @@ void apc_deserialize_zend_op_array(zend_op_array* zoa)
 					char* parent_name;
 					int class_name_length;
 					namearray_t* children;
-
 
 					table = CG(class_table);
 					class_name = strchr(zoa->opcodes[i].op2.u.constant.value.str.val, ':');
