@@ -11,7 +11,7 @@
 #define apc_lck_lock(a)       apc_fcntl_lock(a)
 #define apc_lck_unlock(a)     apc_fcntl_unlock(a)
 #else
-#define apc_lck_create(a,b,c) apc_sem_create((a),(b),(c))
+#define apc_lck_create(a,b,c) apc_sem_create(NULL,(b),(c))
 #define apc_lck_destroy(a)    apc_sem_destroy(a)
 #define apc_lck_lock(a)       apc_sem_lock(a)
 #define apc_lck_unlock(a)     apc_sem_unlock(a)

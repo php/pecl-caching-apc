@@ -1,4 +1,4 @@
-/* 
+/*
    +----------------------------------------------------------------------+
    | Copyright (c) 2002 by Community Connect Inc. All rights reserved.    |
    +----------------------------------------------------------------------+
@@ -18,7 +18,7 @@
 
 #include "apc_sma.h"
 #include "apc.h"
-#include "apc_sem.h"
+#include "apc_lock.h"
 #include "apc_shm.h"
 #include <limits.h>
 #if APC_MMAP
@@ -207,6 +207,7 @@ static int sma_deallocate(void* shmaddr, int offset)
 /* }}} */
 
 /* {{{ apc_sma_init */
+
 #if APC_MMAP
 void apc_sma_init(int numseg, int segsize, char *mmap_file_mask)
 #else
@@ -214,6 +215,7 @@ void apc_sma_init(int numseg, int segsize)
 #endif
 {
     int i;
+    char *lock_path = NULL;
 
     if (sma_initialized) {
         return;
@@ -239,8 +241,11 @@ void apc_sma_init(int numseg, int segsize)
 
     sma_segments = (int*) apc_emalloc(sma_numseg*sizeof(int));
     sma_shmaddrs = (void**) apc_emalloc(sma_numseg*sizeof(void*));
-
-    sma_lock = apc_sem_create(NULL, 0, 1);
+    
+    lock_path = malloc(strlen("/tmp/.apc.") + 6);
+    snprintf(lock_path, strlen("/tmp/.apc.") + 6, "/tmp/.apc.%d", getpid());
+    sma_lock = apc_lck_create(lock_path, 0, 1);
+    free(lock_path);
 
     for (i = 0; i < sma_numseg; i++) {
         header_t*   header;
@@ -286,7 +291,7 @@ void apc_sma_cleanup()
         apc_shm_detach(sma_shmaddrs[i]);
 #endif
     }
-    apc_sem_destroy(sma_lock);
+    apc_lck_destroy(sma_lock);
     sma_initialized = 0;
 }
 /* }}} */
@@ -297,13 +302,13 @@ void* apc_sma_malloc(size_t n)
     int off;
     int i;
 
-    apc_sem_lock(sma_lock);
+    apc_lck_lock(sma_lock);
     assert(sma_initialized);
 
     off = sma_allocate(sma_shmaddrs[sma_lastseg], n);
     if (off != -1) {
         void* p = sma_shmaddrs[sma_lastseg] + off;
-        apc_sem_unlock(sma_lock);
+        apc_lck_unlock(sma_lock);
         return p;
     }
 
@@ -314,13 +319,13 @@ void* apc_sma_malloc(size_t n)
         off = sma_allocate(sma_shmaddrs[i], n);
         if (off != -1) {
             void* p = sma_shmaddrs[i] + off;
-            apc_sem_unlock(sma_lock);
+            apc_lck_unlock(sma_lock);
             sma_lastseg = i;
             return p;
         }
     }
 
-    apc_sem_unlock(sma_lock);
+    apc_lck_unlock(sma_lock);
     return NULL;
 }
 /* }}} */
@@ -334,19 +339,19 @@ void apc_sma_free(void* p)
         return;
     }
 
-    apc_sem_lock(sma_lock);
+    apc_lck_lock(sma_lock);
     assert(sma_initialized);
 
     for (i = 0; i < sma_numseg; i++) {
         if (p >= sma_shmaddrs[i] && (p - sma_shmaddrs[i]) < sma_segsize) {
             sma_deallocate(sma_shmaddrs[i], p - sma_shmaddrs[i]);
-            apc_sem_unlock(sma_lock);
+            apc_lck_unlock(sma_lock);
             return;
         }
     }
 
     apc_eprint("apc_sma_free: could not locate address %p", p);
-    apc_sem_unlock(sma_lock);
+    apc_lck_unlock(sma_lock);
 }
 /* }}} */
 
@@ -366,7 +371,7 @@ apc_sma_info_t* apc_sma_info()
         info->list[i] = NULL;
     }
 
-    apc_sem_lock(sma_lock);
+    apc_lck_lock(sma_lock);
 
     /* For each segment */
     for (i = 0; i < sma_numseg; i++) {
@@ -389,7 +394,7 @@ apc_sma_info_t* apc_sma_info()
         }
     }
 
-    apc_sem_unlock(sma_lock);
+    apc_lck_unlock(sma_lock);
     return info;
 }
 /* }}} */
