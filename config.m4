@@ -42,7 +42,7 @@ AC_ARG_ENABLE(mmap,
 ])
 
 AC_MSG_CHECKING(whether to prefer semaphore based locks)
-AC_ARG_ENABLE(fcntl,
+AC_ARG_ENABLE(sem,
 [  --enable-sem  Enable IPC semamphore based locks instead of standard locks],[
   if test "$enableval" = "yes" ; then
     AC_DEFINE(APC_SEM_LOCKS, 1, [ ])
