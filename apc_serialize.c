@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <assert.h>
 
+#include "zend.h" // FIXME
+
 enum { START_SIZE = 1, GROW_FACTOR = 2 };
 
 char* dst   = 0;		/* destination (serialization) buffer */
@@ -604,6 +606,7 @@ void apc_deserialize_zend_class_entry(zend_class_entry* zce)
 
 	DESERIALIZE_SCALAR(&zce->type, char);
 	apc_create_string(&zce->name);
+	printf("Deserializing class entry: %s\n", zce->name);
 	DESERIALIZE_SCALAR(&zce->name_length, uint);
 	zce->parent = NULL; /* parent is not stored */
 	zce->refcount = (int*) emalloc(sizeof(int));
@@ -961,7 +964,8 @@ void apc_deserialize_zend_function_table(HashTable* gft)
 			strlen(zf->common.function_name)+1, zf,
 			sizeof(zend_function), NULL) == FAILURE)
 		{
-			//assert(0); /* should never fail! */
+			zend_error(E_WARNING, "failed to add '%s' to ftable\n", zf->common.function_name);
+		//	assert(0); /* should never fail! */
 		}
 		DESERIALIZE_SCALAR(&exists, char);
 	}
