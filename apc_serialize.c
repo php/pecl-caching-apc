@@ -178,9 +178,9 @@ void apc_create_zend_function(zend_function** zf);
 
 /* special purpose */
 void apc_serialize_zend_function_table(HashTable* gft, apc_nametable_t* acc, apc_nametable_t*);
-void apc_deserialize_zend_function_table(HashTable* gft, apc_nametable_t* acc);
+void apc_deserialize_zend_function_table(HashTable* gft, apc_nametable_t* acc, apc_nametable_t*);
 void apc_serialize_zend_class_table(HashTable* gct, apc_nametable_t* acc, apc_nametable_t*);
-void apc_deserialize_zend_class_table(HashTable* gct, apc_nametable_t* acc);
+void apc_deserialize_zend_class_table(HashTable* gct, apc_nametable_t* acc, apc_nametable_t*);
 
 
 /* type: Fundamental operations */
@@ -959,7 +959,6 @@ static int store_function_table(void *element, int num_args,
 		apc_serialize_zend_function(zf);
 		apc_nametable_insert(priv, zf->common.function_name, 0);
 	}
-
 	return 0;
 }
 
@@ -970,7 +969,7 @@ void apc_serialize_zend_function_table(HashTable* gft,
 	SERIALIZE_SCALAR(0, char);
 }
 
-void apc_deserialize_zend_function_table(HashTable* gft, apc_nametable_t* acc)
+void apc_deserialize_zend_function_table(HashTable* gft, apc_nametable_t* acc, apc_nametable_t* priv)
 {
 	zend_function* zf;
 	char exists;
@@ -986,6 +985,7 @@ void apc_deserialize_zend_function_table(HashTable* gft, apc_nametable_t* acc)
 //			assert(0); /* should never fail! */
 		}
 		apc_nametable_insert(acc, zf->common.function_name, 0);
+		apc_nametable_insert(priv, zf->common.function_name, 0);
 		DESERIALIZE_SCALAR(&exists, char);
 	}
 }
@@ -1025,7 +1025,7 @@ void apc_serialize_zend_class_table(HashTable* gct,
 	SERIALIZE_SCALAR(0, char);
 }
 
-void apc_deserialize_zend_class_table(HashTable* gct, apc_nametable_t* acc)
+void apc_deserialize_zend_class_table(HashTable* gct, apc_nametable_t* acc, apc_nametable_t* priv)
 {
 	char exists;
 	zend_class_entry* zc;
@@ -1040,6 +1040,7 @@ void apc_deserialize_zend_class_table(HashTable* gct, apc_nametable_t* acc)
 			//assert(0); /* should never fail! */
 		}
 		apc_nametable_insert(acc, zc->name, 0);
+		apc_nametable_insert(priv, zc->name, 0);
 		DESERIALIZE_SCALAR(&exists, char);
 	}
 }
