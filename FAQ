@@ -1,52 +1,135 @@
-This FAQis a plain text version of that available at 
-http://apc.communityconnect.com/FAQ.html.
+(This FAQ is a plain text version of that available at 
+http://apc.communityconnect.com/FAQ.html)
 
-				Frequently Asked Questions
+Frequently Asked Questions
 
-Question:	How does all this stuff work?
-Answer:		The apc cache works by storing the op-tree for a php
-			script in shared memory (either sysv shared memory or
-			memory mapped files).  When a file is run, the extension
-			checks to see if it is cached.  If it is the op-tree is
-			read from memory and the compilation step is bypassed.  
-			Otherwise the file is compiled as usual and is inserted 
-			into the cache.
+----------
+Contents.
 
-Question:	Which implementation is right for me?
-Answer:		It depends.  :)  The mmap and shm implementations both
-			have their pros and cons.  The shm implementation allows
-			much finer control of the cache - particularly per-object
-			ttls.  
-
-			shm:
-				pros:
-				- per object ttls
-				- global cache statistics
-				cons:
-				- requires sysv semaphore and shared memory support
-				- as with all apps that use sysv semaphores, has
-				  the potential to 'leak' semaphores.
-			mmap:
-				pros:
-				- greater visibility into how the cache works
-				- can be used as a general compiler, since the
-				  compiled objects are stored as files.
-				- requires only mmap() and fcntl() support
-				cons:
-				- may require many open files 
-				- gives only per-child cache statistics
-				- cache management is somewhat more dificult.
-			
-			Surprisingly, our internal test have shown negligeable
-			speed differences between the two implementations.
-
-Question:	What sort of performance increase can I expect?
-Answer:		Ahh... the magic question.  This really depends on the
-			size and complexity of your php.  For a 'Hello World'
-			script a 50% performance increase was noted.  For
-			our own production code, there was roughly a 400% 
-			performance improvement.  As always, your mileage
-			may vary.
+ 1. How does all this stuff work?
+ 2. Why are there two implementations? Which one is right for me?
+ 3. What sort of performance benefit will I receive?
+ 4. When I make changes to my files, the changes do not appear. Why not?
+ 5. I'm running the shm implementation and it leaks semaphores. How can I fix
+    this?
+ 6. Why do I get "call to undefined function" PHP errors with APC but not
+    without it?
+ 7. Why do I keep running out of open files when I use the mmap version?
+ 8. What use are per object TTLs?
 
 
+1. How does all this stuff work?
+
+The apc cache works by storing the op-tree for a PHP script in shared memory
+(either SystemV shared memory or memory-mapped files). When a file is run, the
+extension checks to see if it is cached. If so, the op-tree is read from
+memory and the compilation step is bypassed. Otherwise the file is compiled as
+usual and is inserted into the cache.
+
+
+2. Why are there two implementations? Which one is right for me?
+
+We wrote two implementations, one using SystemV semaphores and shared memory
+and the other using memory-mapped files and file locking, for portability
+between Unix systems and for testing. Both support all of the basic cache
+operations, but they are not functionally identical. For example, the shared
+memory implementation (shm) is capable of much finer control cached objects
+than the memory-mapped file implementation (mmap).
+
+Here is a list of pros and cons for each:
+
+    shm
+        pros:
+            - support per object time-to-live values
+            - cache statistics available for entire webserver
+        cons:
+            - as with all programs that use SystemV semaphores, it has the
+			  potential to "leak" semaphores
+    
+    mmap
+        pros:
+            - greater visibility into the inner workings of the cache
+            - can be used as a general compiler, because the cached objects
+			  are stored as files
+        cons:
+            - may require many open files
+            - cache statistics are per process, not per host
+            - cache management is more difficult
+
+Our internal tests have shown little difference in speed between the two
+implementations.
+
+
+3. What sort of performance benefit will I receive?
+
+Ahh... the magic question. This really depends on the size and complexity of
+your PHP code. A 50% performance improvement is typical for a "Hello World"
+program, but the potential benefit is greater as the code increases in 
+omplexity. We saw a rougly 400% performance improvement in our production
+environment. As always, your mileage may vary.
+
+
+4. When I make changes to my files, the changes do not appear. Why not?
+
+APC does not know when you have updated a file, and it will continue to use
+the older, cached version of the page, unless you call the PHP function
+apc_reset_cache() or restart the webserver.
+
+
+5. I'm running the shm implementation and it leaks semaphores. How can I fix
+   this?
+
+The simple answer is you can't. If you are willing and able to make minor
+adjustments to your webserver startup or shutdown scripts, and if 'ipcs' and
+'ipcrm' are installed on your system (they should be), you can practically
+eliminate the problem. You simply need to remove all remaining semaphores from
+your system when your webservers starts or stops (one or the other). (Beware
+that this technique, if applied naively, will break other applications running
+on the webserver that also use semaphores.)
+
+
+6. Why do I get "call to undefined function" PHP errors with APC but not
+   without it?
+
+Your code creates a conflict in the global namespace, but PHP manages to deal
+with it. APC, however, will fail to correctly cache the conflicting modules if
+it finds a namespace conflict. Here is an example of how this can occur:
+
+	File A.php includes file B.php, which defines the function
+	'foobar' and sets some variable, say, '$B_INCLUDED', to indicate
+	that it has been included.
+
+	File A.php now includes file C.php, which also defines a function
+	named 'foobar'. Before it gets to the function definition, though,
+	C.php returns if $B_INCLUDED is true.
+
+PHP permits this kind of condition inclusion, but it will fail with APC
+because C.php is always included and compiled, even though it never reaches
+the statement that declares 'foobar' for the second time. We made the
+(possibly questionable) decision to designate this a programming error, so you
+must "correct" your code before you can use APC.
+
+
+7. Why do I keep running out of open files when I use the mmap version?
+
+The mmap implementation of APC requires a lot of open files. One per source
+file per webserver process, to be precise. On most Unix systems, it is easy to
+raise the maximum number of open files per process. Under Linux, for example,
+you can change the value in '/proc/sys/fs/file-max'.
+
+
+8. What use are per object TTLs?
+
+Specifying the time-to-live, i.e. lifetime, of a file by calling the PHP
+function 'apc_set_my_ttl', allows you cache files that are changed frequently.
+If, for example, you know that a page is updated every five minutes but you
+would still like to cache it for those five minutes, you can simply set that
+page's individual TTL to 600 seconds:
+
+    <?
+        // Set TTL for this page to 5 minutes.
+        apc_set_my_ttl(600);
+
+        // Your code here...
+    ?>
 
