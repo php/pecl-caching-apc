@@ -4,7 +4,7 @@ For a deeper explanation of the components involved, please visit
 http://apc.communityconnect.com/.
 
 #################################################################
-# URGEND: To users with APC version prior to version 1.0.10
+# URGENT: To users with APC version prior to version 1.0.10
 #################################################################
 You will have to make a new php.ini entry in you file for
 apc.mode - See "Runtime configuration"
