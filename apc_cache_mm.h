@@ -11,11 +11,9 @@
  * George Schlossnagle <george@lethargy.org>
  * ==================================================================
 */
-
-
 #ifndef INCLUDED_APC_CACHE_MM
 #define INCLUDED_APC_CACHE_MM
-#include "apc_iface.h"
+
 #include "apc_lib.h"
 #include "zend.h"
 #include "zend_hash.h"
@@ -23,19 +21,22 @@
 /* The mm_fl_element struct is the bucket element for each child's cache of
  * mmap'd files. */
 struct mm_fl_element {
-        char *cache_filename; 	/* Where the cached file exists */
-        int inputlen;			/* How long is the file */
-        long inode;				/* What is the file's inode */
-        time_t mtime;			/* When was the file last updated */
-		int hitcounter;			/* How many times has THIS child accessed the file */
-        char *input;			/* What's the address of the file in memory */
+	char *cache_filename; 	/* path to cached file */
+	int inputlen;			/* length of the file */
+	long inode;				/* inode of the file */
+	time_t mtime;			/* time of last update to file */
+	int hitcounter;			/* number of accesses by THIS child */
+	char *input;			/* mmap'd address of the file */
 };
 
-/* apc_mmap_dump generates output for apcinfo() */
-void apc_mmap_dump(apc_outputfn_t outputfn, HashTable* cache);
+/*
+ * apc_mmap_dump: generates output for apcinfo()
+ */
+extern void apc_mmap_dump(HashTable* cache, apc_outputfn_t outputfn);
 
 /*
- * apc_mmap_dump_entry: document me
+ * apc_mmap_dump_entry: prints information about a specified
+ * cache entry
  */
 extern void apc_mmap_dump_entry(const char* filename, apc_outputfn_t outputfn);
 

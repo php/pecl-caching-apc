@@ -19,10 +19,10 @@
 
 extern zend_apc_globals apc_globals;
 
-/* apc_mmap_dump recurses through the called child's cache table, displaying the
- * objects and their hit counts */
+/* apc_mmap_dump recurses through the called child's cache table,
+ * displaying the objects and their hit counts */
 
-void apc_mmap_dump(apc_outputfn_t outputfn, HashTable* cache)
+void apc_mmap_dump(HashTable* cache, apc_outputfn_t outputfn)
 {
 	Bucket *p;
  /* display HEAD */
