@@ -16,6 +16,6 @@
 #define INCLUDED_APC_VERSION
 
 #define APC_MAGIC_HEADER "APCv1.0.07"
-#define APC_VERSION "1.0.8"
+#define APC_VERSION "1.0.10"
 
 #endif
