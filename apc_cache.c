@@ -54,7 +54,8 @@ struct bucket_t {
 	int length;					/* length of stored data in bytes */
 	int lastaccess;				/* time of last access (unix timestamp) */
 	int hitcount;				/* number of hits to this bucket */
-	int expiretime;				/* time of expiration (Unix timestamp) */
+	int createtime;			/* time of creation (Unix timestamp) */
+	int ttl;							/* private ttl */
 	unsigned int checksum;		/* checksum of stored data */
 };
 
@@ -299,7 +300,8 @@ int apc_cache_search(apc_cache_t* cache, const char* key)
 			continue;
 		}
 		if (strcmp(buckets[slot].key, key) == 0) {
-			if (time(0) > buckets[slot].expiretime) {
+			if (time(0) > buckets[slot].createtime + buckets[slot].ttl) 
+			{
 				emptybucket(&buckets[slot]); /* FIXME */
 				break; /* the entry has expired */
 			}
@@ -339,7 +341,8 @@ int apc_cache_retrieve(apc_cache_t* cache, const char* key, char** dataptr,
 			continue;
 		}
 		if (strcmp(buckets[slot].key, key) == 0) {
-			if ((curtime = time(0)) > buckets[slot].expiretime) {
+			if ((curtime = time(0)) > buckets[slot].createtime + buckets[slot].ttl) 
+			{
 				emptybucket(&buckets[slot]); /* FIXME */
 				break; /* the entry has expired */
 			}
@@ -400,7 +403,8 @@ int apc_cache_retrieve_nl(apc_cache_t* cache, const char* key,
 			continue;
 		}
 		if (strcmp(buckets[slot].key, key) == 0) {
-			if ((curtime = time(0)) > buckets[slot].expiretime) {
+			if ((curtime = time(0)) > buckets[slot].createtime + buckets[slot].ttl) 
+			{
 				emptybucket(&buckets[slot]); /* FIXME */
 				break; /* the entry has expired */
 			}
@@ -471,7 +475,8 @@ int apc_cache_insert(apc_cache_t* cache, const char* key,
 			emptybucket(&buckets[slot]);
 			break;	/* overwrite existing entry */
 		}
-		if (curtime > buckets[slot].expiretime) {
+		if (curtime > buckets[slot].createtime + buckets[slot].ttl) 
+		{
 			emptybucket(&buckets[slot]);
 			break;	/* this entry has expired, overwrite it */
 		}
@@ -509,10 +514,11 @@ int apc_cache_insert(apc_cache_t* cache, const char* key,
 	buckets[slot].lastaccess = curtime;
 	buckets[slot].hitcount   = 0;
 	buckets[slot].checksum   = checksum;
-	buckets[slot].expiretime = buckets[slot].lastaccess + cache->header->ttl;
+	buckets[slot].ttl				 = cache->header->ttl;
+	buckets[slot].createtime = time(0);
 	
 	if (cache->header->ttl == 0) { /* if ttl is zero, disable expiration */
-		buckets[slot].expiretime = NEVER_EXPIRE;
+		buckets[slot].ttl = NEVER_EXPIRE;
 	}
 
 	/* store data in segment and update its record */
@@ -557,6 +563,39 @@ int apc_cache_remove(apc_cache_t* cache, const char* key)
 	return 0;	/* not found */
 }
 
+int apc_shm_set_object_ttl(apc_cache_t* cache, const char* key, int ttl)
+{
+	  unsigned slot;    /* initial hash value */
+  unsigned k;     /* second hash value, for open-addressing */
+  int nprobe;     /* running count of cache probes */
+  char* shmaddr;    /* attached addr of data segment */
+  bucket_t* buckets;
+  int nbuckets;
+
+  WRITELOCK(cache->lock);
+
+  buckets  = cache->buckets;
+  nbuckets = cache->header->nbuckets;
+
+  slot = hash(key) % nbuckets;
+  k = hashtwo(key) % nbuckets;
+
+  nprobe = 0;
+  while (buckets[slot].shmid != EMPTY && nprobe++ < nbuckets) {
+    if (buckets[slot].shmid == UNUSED) {
+      continue;
+    }
+    if (strcmp(buckets[slot].key, key) == 0) {
+      /* found the key */
+			buckets[slot].ttl = ttl;
+			return 1;
+		}
+		slot = (slot+k) % nbuckets;
+	}
+  UNLOCK(cache->lock);
+  return 0; /* key doesn't exist */
+
+}
 /* apc_cache_readlock: acquire a shared read-only lock on a cache */
 void apc_cache_readlock(apc_cache_t* cache)
 {
@@ -671,7 +710,7 @@ void apc_cache_dump(apc_cache_t* cache, apc_outputfn_t outputfn)
 		outputfn("<td bgcolor=#eeeeee>%d</td>\n", bucket->length);
 		outputfn("<td bgcolor=#eeeeee>%d</td>\n", bucket->lastaccess);
 		outputfn("<td bgcolor=#eeeeee>%d</td>\n", bucket->hitcount);
-		outputfn("<td bgcolor=#eeeeee>%d</td>\n", bucket->expiretime);
+		outputfn("<td bgcolor=#eeeeee>%d</td>\n", bucket->createtime + bucket->ttl);
 		outputfn("<td bgcolor=#eeeeee>%u</td>\n", bucket->checksum);
 	}
 	outputfn("</table>\n");

@@ -77,6 +77,12 @@ extern int apc_cache_insert(apc_cache_t* cache, const char* key,
 extern int apc_cache_remove(apc_cache_t* cache, const char* key);
 
 /*
+ * apc_shm_set_object_ttl: sets the ttl for an individual object
+ */
+
+extern int apc_shm_set_object_ttl(apc_cache_t* cache, const char* key, int ttl);
+
+/*
  * routines to externally lock a cache
  */
 extern void apc_cache_readlock(apc_cache_t* cache);
