@@ -12,7 +12,7 @@
  * ==================================================================
 */
 
-
+#include "zend.h"
 #include "apc_nametable.h"
 #include "apc_lib.h"
 #include <string.h>
@@ -133,3 +133,15 @@ void apc_nametable_clear(apc_nametable_t* table)
 	memset(table->buckets, 0, table->nbuckets * sizeof(link_t*));
 }
 
+void apc_nametable_dump(apc_nametable_t* table)
+{
+	int i;
+	for (i = 0; i < table->nbuckets; i++) {
+    link_t* p = table->buckets[i];
+    while (p != 0) {
+      link_t* q = p;
+      p = p->next;
+			zend_error(E_WARNING, "nametable contains %s", q->key);
+		}
+	}
+}
