@@ -457,7 +457,10 @@ static void apc_reinstantiate_g_c_t(apc_cache_t *cache, const char* key, int mti
     }
     assert(length == sizeof(HashTable*));  // FIXME
 	// fixup new_class_table
-	apc_fixup_class_table(*new_class_table, apc_emalloc);
+//	zend_hash_display(*new_class_table);
+// Don't need to do fixup, I think
+//	apc_fixup_class_table(*new_class_table, apc_emalloc);
+//	zend_hash_display(*new_class_table);
     zend_hash_copy(EG(class_table), *new_class_table, NULL,
        NULL, sizeof(zend_class_entry));
     apc_efree(classkey);
@@ -497,7 +500,14 @@ static void apc_store_g_c_t(apc_cache_t *cache, const char* key, HashTable* diff
 /* apc_execute: replacement for zend_compile_file to allow for refcount reset*/
 static ZEND_API void apc_execute(zend_op_array* op_array ELS_DC)
 {
+	int i;
+//	for(i = 0; i < op_array->last; i++) {
+//		dump_zend_op(&op_array->opcodes[i]);
+//	}
 	old_execute(op_array ELS_DC);
+//	for(i = 0; i < op_array->last; i++) {
+//		dump_zend_op(&op_array->opcodes[i]);
+//	}
 	if(op_array->reserved[0] == (void *) APC_ZEND_OP_ARRAY_OP) {
 		efree(op_array->opcodes);
 		memset(op_array, 0, sizeof(zend_op_array));

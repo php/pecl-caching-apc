@@ -144,7 +144,6 @@ int apc_un_lock_key(const char* key, apc_nametable_t* locktable,
 					apc_nametable_t* opentable)
 {
 	int fd;
-	fprintf(stderr, "DEBUG unlocking %s\n", key);
 	if( fd = (int) apc_nametable_retrieve(locktable, key) ){
 		un_lock(fd, 0, SEEK_SET, 0);
 		apc_nametable_remove(locktable, key);

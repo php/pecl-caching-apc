@@ -36,6 +36,7 @@
 */
 
 #include "zend_no_zend.h"
+#include "apc_serialize.h"
 
 static Bucket *zend_hash_apply_deleter_no_data(HashTable *ht, Bucket *p)
 {
@@ -123,4 +124,136 @@ ZEND_API void apc_dont_destroy(void *ptr)
 {
 }
 
+void dump_zend_op(zend_op* zo)
+{
+  fprintf(stderr, "Dumping %s\n", getOpcodeName(zo->opcode));
+  if(zo->result.op_type == IS_CONST) {
+    zval *zv = &zo->result.u.constant;
+    switch(zo->result.u.constant.type) {
+      case IS_RESOURCE:
+      case IS_BOOL:
+      case IS_LONG:
+      case IS_DOUBLE:
+        fprintf(stderr, "\tresult->op_type = IS_LONG|BOOL|RESOURCE\n");
+        fprintf(stderr, "\tresult->zval = %d\n", zv->value.lval);
+        break;
+      case IS_NULL:
+        fprintf(stderr, "\tresult->op_type = IS_NULL\n");
+        break;
+      case IS_CONSTANT:
+        fprintf(stderr, "\tresult->op_type = IS_CONSTANT\n");
+        fprintf(stderr, "\tresult->zval = %s\n", zv->value.str.val);
+        break;
+      case IS_STRING:
+        fprintf(stderr, "\tresult->op_type = IS_STRING\n");
+        fprintf(stderr, "\tresult->zval = %s\n", zv->value.str.val);
+        break;
+      case FLAG_IS_BC:
+        fprintf(stderr, "\tresult->op_type = FLAG_IS_BC\n");
+        fprintf(stderr, "\tresult->zval = %s\n", zv->value.str.val);
+        break;
+      case IS_ARRAY:
+        fprintf(stderr, "\tresult->op_type = IS_ARRAY\n");
+        break;
+      case IS_CONSTANT_ARRAY:
+        fprintf(stderr, "\tresult->op_type = IS_CONSTANT_ARRAY\n");
+        break;
+      case IS_OBJECT:
+        fprintf(stderr, "\tresult->op_type = IS_OBJECT\n");
+        break;
+      default:
+    }
+  } else {
+    fprintf(stderr, "\tresult->op_type != IS_CONST\n");
+  }
+  if(zo->op1.op_type == IS_CONST) {
+    zval *zv = &zo->op1.u.constant;
+    switch(zo->op1.u.constant.type) {
+      case IS_RESOURCE:
+      case IS_BOOL:
+      case IS_LONG:
+      case IS_DOUBLE:
+        fprintf(stderr, "\top1->op_type = IS_LONG|BOOL|RESOURCE\n");
+        fprintf(stderr, "\top1->zval = %d\n", zv->value.lval);
+        break;
+      case IS_NULL:
+        fprintf(stderr, "\top1->op_type = IS_NULL\n");
+        break;
+      case IS_CONSTANT:
+        fprintf(stderr, "\top1->op_type = IS_CONSTANT\n");
+        fprintf(stderr, "\top1->zval = %s\n", zv->value.str.val);
+        break;
+      case IS_STRING:
+        fprintf(stderr, "\top1->op_type = IS_STRING\n");
+        fprintf(stderr, "\top1->zval = %s\n", zv->value.str.val);
+        break;
+      case FLAG_IS_BC:
+        fprintf(stderr, "\top1->op_type = FLAG_IS_BC\n");
+        fprintf(stderr, "\top1->zval = %s\n", zv->value.str.val);
+        break;
+      case IS_ARRAY:
+        fprintf(stderr, "\top1->op_type = IS_ARRAY\n");
+        break;
+      case IS_CONSTANT_ARRAY:
+        fprintf(stderr, "\top1->op_type = IS_CONSTANT_ARRAY\n");
+        break;
+      case IS_OBJECT:
+        fprintf(stderr, "\top1->op_type = IS_OBJECT\n");
+        break;
+      default:
+    }
+  } else {
+    fprintf(stderr, "\top1->op_type != IS_CONST\n");
+  }
+  fprintf(stderr, "\tDumping op2\n");
+  if(zo->op2.op_type == IS_CONST) {
+    zval *zv = &zo->op2.u.constant;
+    switch(zo->op2.u.constant.type) {
+      case IS_RESOURCE:
+      case IS_BOOL:
+      case IS_LONG:
+      case IS_DOUBLE:
+        fprintf(stderr, "\top2->op_type = IS_LONG|BOOL|RESOURCE\n");
+        fprintf(stderr, "\top2->zval = %d\n", zv->value.lval);
+        break;
+      case IS_NULL:
+        fprintf(stderr, "\top2->op_type = IS_NULL\n");
+        break;
+      case IS_CONSTANT:
+        fprintf(stderr, "\top2->op_type = IS_CONSTANT\n");
+        fprintf(stderr, "\top2->zval = %s\n", zv->value.str.val);
+        break;
+      case IS_STRING:
+        fprintf(stderr, "\top2->op_type = IS_STRING\n");
+        fprintf(stderr, "\top2->zval = %s\n", zv->value.str.val);
+        break;
+      case FLAG_IS_BC:
+        fprintf(stderr, "\top2->op_type = FLAG_IS_BC\n");
+        fprintf(stderr, "\top2->zval = %s\n", zv->value.str.val);
+        break;
+      case IS_ARRAY:
+        fprintf(stderr, "\top2->op_type = IS_ARRAY\n");
+        break;
+      case IS_CONSTANT_ARRAY:
+        fprintf(stderr, "\top2->op_type = IS_CONSTANT_ARRAY\n");
+        break;
+      case IS_OBJECT:
+        fprintf(stderr, "\top2->op_type = IS_OBJECT\n");
+        break;
+      default:
+    }
+  } else {
+    fprintf(stderr, "\top2->op_type != IS_CONST\n");
+  }
+}    
 
+void zend_hash_display(HashTable *ht)
+{
+	Bucket *p;
+	p=ht->pListHead;
+	fprintf(stderr, "dumping hash (%p)\n", ht);
+	while(p != NULL) {
+		fprintf(stderr, "\t(%s) => (%p), (%p)\n", p->arKey, p->pData, p->pDataPtr);
+		p = p->pListNext;
+	}
+}

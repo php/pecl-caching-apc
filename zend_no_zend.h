@@ -12,5 +12,6 @@
 ZEND_API void apc_destroy_zend_function(zend_function *function);
 ZEND_API void apc_dont_destroy(void *ptr);
 extern void apc_zend_hash_diff(HashTable *outer, HashTable *inner);
-
+extern void dump_zend_op(zend_op* op);
+extern void zend_hash_display(HashTable *ht);
 #endif

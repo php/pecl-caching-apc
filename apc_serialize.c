@@ -765,9 +765,7 @@ HashTable* apc_copy_hashtable(HashTable* nt, HashTable* ht, void* funcptr, int d
 		np->nKeyLength = p->nKeyLength;
 		if( datasize == sizeof(void *)) {
 			np->pData = copy_bucket(NULL, p->pData, ctor);
-//			np->pDataPtr = &np->pData;  // FIXME
-			np->pDataPtr = NULL;
-
+			memcpy(&np->pDataPtr, np->pData, sizeof(void *));
 		}
 		else {
 			np->pData = copy_bucket(NULL, p->pData, ctor);
@@ -1045,8 +1043,9 @@ zval** apc_copy_zval_ptr(zval** nzvp, zval** zvp, apc_malloc_t ctor)
 {
 	if (nzvp == NULL) {
 		zval *tmpzvp;
+		nzvp = (zval **)ctor(sizeof(zval*));
 		tmpzvp = apc_copy_zval(NULL, *zvp, ctor);
-		nzvp =  &tmpzvp;
+		*nzvp =  tmpzvp;
 		return nzvp;
 	}
 	else {
@@ -1199,6 +1198,8 @@ zend_class_entry* apc_copy_zend_class_entry(zend_class_entry* nce, zend_class_en
 		apc_copy_zend_function_entry(&nce->builtin_functions[i], 
 			&zce->builtin_functions[i], ctor);
 	}
+	nce->function_table.pDestructor = apc_dont_destroy;
+	nce->default_properties.pDestructor = apc_dont_destroy;
 	return nce;
 }
 	
@@ -2072,20 +2073,20 @@ void apc_fixup_class_table(HashTable* ht, apc_malloc_t ctor)
 	char *name;
 	int i;
 
-	p = ht->pListHead;
-	while (p != NULL) {
-		i++;
-		zce = (zend_class_entry*) p->pData;
-		nce = (zend_class_entry*) ctor(sizeof(zend_class_entry));
-		memcpy(nce, zce, sizeof(zend_class_entry));
-		refcount = (int *) ctor(sizeof(int));
-		refcount[0] = zce->refcount[0];
-		nce->refcount = refcount;
-		name = apc_vstrdup(zce->name, ctor);
-		nce->name = name;
-		nce->function_table.pDestructor = apc_dont_destroy;
-		nce->default_properties.pDestructor = apc_dont_destroy;
-		p->pData = nce;
-		p = p->pNext;
-	}
+//	p = ht->pListHead;
+//	while (p != NULL) {
+//		i++;
+//		zce = (zend_class_entry*) p->pData;
+//		nce = (zend_class_entry*) ctor(sizeof(zend_class_entry));
+//		memcpy(nce, zce, sizeof(zend_class_entry));
+//		refcount = (int *) ctor(sizeof(int));
+//		refcount[0] = zce->refcount[0];
+//		nce->refcount = refcount;
+//		name = apc_vstrdup(zce->name, ctor);
+//		nce->name = name;
+//		nce->function_table.pDestructor = apc_dont_destroy;
+//		nce->default_properties.pDestructor = apc_dont_destroy;
+//		p->pData = nce;
+//		p = p->pNext;
+//	}
 }
