@@ -30,13 +30,10 @@ enum {	/* (see apc_cache_setretrievaltype below) */
 /*
  * apc_cache_create: creates a new shared cache. nbuckets is the number
  * of buckets used in the cache's hashtable and should be about 25% - 50%
- * greater than the number of files expected to be cached. maxseg is the
- * maximum number of shared memory segments to use for cached data, and
- * segsize is the size of each segment. ttl is the time-to-live for cache
- * entries. if ttl is zero, entries do not expire
+ * greater than the number of files expected to be cached. ttl is the
+ * time-to-live for cache entries. if ttl is zero, entries do not expire
  */
-extern T apc_cache_create(const char* pathname, int nbuckets,
-                          int maxseg, int segsize, int ttl);
+extern T apc_cache_create(const char* pathname, int nbuckets, int ttl);
 
 /*
  * apc_cache_destroy: destroys an existing cache. Does not modify shared
