@@ -19,6 +19,10 @@ apc.mode - See "Runtime configuration"
 4) copy modules/php_apc.so to /path/to/where/you/keep/extensions/
 5) in your php.ini file add the line
 	zend_extension="/path/to/where/you/keep/extensions/php_apc.so"
+  If you are running php-4.1.0+ and have --enable-zts or --enable-debug
+  compiled in, you will need instead to specify
+    zend_extension_debug="/path/to/where/you/keep/extensions/php_apc.so"
+
 6) in your php.ini file add the line
 	# for switching off the APC
 	apc.mode = off 
