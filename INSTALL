@@ -101,15 +101,15 @@ apc.check_mtime
 	supported: (S)
 	default: 0
 	specifies whether a source file should be re-compiled if it has been
-	modified since it was compiled. This may result in a slight loss of
-	efficiency.
+	modified since it was last compiled. This may result in a slight loss
+	of efficiency.
 apc.relative_includes
 	supported: (M,S)
 	default: 0
 	specifies whether a relative paths may be passed to the PHP file
 	inclusion functions (include(), require(), include_once(), etc.).
-	This may result in a slight loss of efficiency. Note: activating
-	this parameter also activates 'apc.check_mtime' (see above).
+	This may result in a slight loss of efficiency. Note: this option
+	must be enabled for the PHP include path to function correctly!
 
 #################################################################
 # Exported functions
