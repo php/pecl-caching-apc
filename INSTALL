@@ -106,20 +106,31 @@ The following new php functions are exported.  As above (M) indicates
 functions that exist under the mmap implementation, (S) for sysv 
 shared memory implementation.
 
-void apcinfo()	
+void apcinfo([string /path/to/apcinfo/page])	
 	supported: (M,S)
 	Outputs detailed information regarding the configuration and content
 	of the cache.  The sysv implementation displays global cache 
 	information, the mmap implementation displays only cache statistics
-	for the particular child being queried.
+	for the particular child being queried.  If a uri is to apcinfo()
+  the genrated page will have links to apc_rm and apc_dump_cache_object()
+	see extras/apcinfo.php for an example implementation.
+
+int apc_dump_cache_object(string /path/to/apcinfo/page)
+	supported: (M,S)
+	Dumps extremely detailed information about the specified cache object
+	as html.  Information dumped includes the complete op-tree for the 
+	page and all the functions and classes serialized from the page.
+
 int apc_rm(string pathname)  
 	supported: (M,S)
 	Takes the full path of a php file (NOT cache file), and expires that 
 	item's associated cache object. Returns 1 on success, 0 on failure
 	(failure usually indicates the object was not present in the cache.)
+
 int apc_reset_cache()
 	supported: (S)
 	Clears all entries from the cache.  Returns 1 on success.
+
 int apc_set_my_ttl(int seconds)
 	supported: (S)
 	Sets the ttl of the calling file to ttl seconds.
