@@ -129,5 +129,6 @@ extern void apc_serialize_zend_class_table(HashTable* gct,
 extern int apc_deserialize_zend_class_table(HashTable* gct,
 	apc_nametable_t* acc, apc_nametable_t* priv);
 extern void apc_fixup_opcodes(zend_op* opcodes, int num_ops, apc_malloc_t ctor);
+extern void apc_fixup_class_table(HashTable* ht, apc_malloc_t ctor);
 
 #endif

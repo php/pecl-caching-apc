@@ -340,7 +340,9 @@ int apc_object_info(char const *filename, zval** hash)
    return 0;
 }
 
-/* emalloc is a #define, so can't be used as a fn pointer */
+/* emalloc is a #define, and _emalloc has wrong prototype 
+ * so can't be used as a fn pointer 
+ */
 static void *apc_zmalloc(int size) 
 {
 	return emalloc(size);
@@ -407,7 +409,7 @@ static void apc_store_op_array(apc_cache_t *cache, const char* key,
     op_array->opcodes = opcodes;
 }
 
-static void apc_fixup_g_f_t(apc_cache_t *cache, const char* key, int mtime)
+static void apc_reinstantiate_g_f_t(apc_cache_t *cache, const char* key, int mtime)
 {
     HashTable** new_function_table;
     char *funckey;
@@ -430,7 +432,7 @@ static void apc_fixup_g_f_t(apc_cache_t *cache, const char* key, int mtime)
     apc_efree(new_function_table);
 }
 
-static void apc_fixup_g_c_t(apc_cache_t *cache, const char* key, int mtime)
+static void apc_reinstantiate_g_c_t(apc_cache_t *cache, const char* key, int mtime)
 {
     HashTable** new_class_table;
     char *classkey;
@@ -447,7 +449,8 @@ static void apc_fixup_g_c_t(apc_cache_t *cache, const char* key, int mtime)
         assert(0); //FIXME
     }
     assert(length == sizeof(HashTable*));  // FIXME
-	// fixup new_class_tableA
+	// fixup new_class_table
+	apc_fixup_class_table(*new_class_table, apc_zmalloc);
     zend_hash_copy(EG(class_table), *new_class_table, NULL,
         NULL, sizeof(zend_class_entry));
     apc_efree(classkey);
@@ -576,8 +579,8 @@ ZEND_API zend_op_array* apc_shm_compile_file(zend_file_handle *file_handle,
 		zend_llist_add_element(&CG(open_files), file_handle); /*  FIXME */
 
 		/* retrieve function_table */
-		apc_fixup_g_f_t(cache, key, mtime);
-		apc_fixup_g_c_t(cache, key, mtime);
+		apc_reinstantiate_g_f_t(cache, key, mtime);
+		apc_reinstantiate_g_c_t(cache, key, mtime);
 
 		return op_array;
 	}
