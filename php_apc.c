@@ -127,8 +127,8 @@ static PHP_MINFO_FUNCTION(apc)
 #endif
 	php_info_print_table_row(2, "Revision", "$Revision$");
 	php_info_print_table_row(2, "Build Date", __DATE__ " " __TIME__);
-    DISPLAY_INI_ENTRIES();
 	php_info_print_table_end();
+    DISPLAY_INI_ENTRIES();
 }
 /* }}} */
 
