@@ -15,6 +15,7 @@
 
 #include "apc_serialize.h"
 #include "apc_phpdeps.h"
+#include "apc_version.h"
 #include <stdlib.h>
 #include <assert.h>
 
