@@ -663,8 +663,8 @@ int apc_cache_insert(apc_cache_t* cache, const char* key,
 	return 0;
 }
 
-/* apc_cache_remove: remove entry from cache */
-int apc_cache_remove(apc_cache_t* cache, const char* key)
+/* apc_shm_rm: remove entry from cache */
+int apc_shm_rm(apc_cache_t* cache, const char* key)
 {
 	unsigned slot;		/* initial hash value */
 	unsigned k;			/* second hash value, for open-addressing */
@@ -1142,7 +1142,7 @@ int apc_cache_info_shm(apc_cache_t* cache, zval **hash) {
 
         snprintf(buf, sizeof(buf)-1, "0x%x", cache->header->magic);
         add_assoc_string(*hash, "magic", buf, 1);
-
+				add_assoc_string(*hash, "mode", "SHM", 1);
         add_assoc_string(*hash, "version", (char *)apc_version(), 1);
         add_assoc_long(*hash, "total buckets", cache->header->nbuckets);
         add_assoc_long(*hash, "maximum shared memory segments", cache->header->maxseg);
@@ -1158,7 +1158,7 @@ int apc_cache_info_shm(apc_cache_t* cache, zval **hash) {
 		}
         add_assoc_long(*hash, "shared memory ID", cache->shmid);
 
-        snprintf(buf, sizeof(buf)-1, "0x%x", cache->shmaddr);
+        snprintf(buf, sizeof(buf)-1, "0x%x", (int)(cache->shmaddr));
         add_assoc_string(*hash, "local shared memory address", buf, 1);
 
         add_assoc_string(*hash, "creation pathname", cache->pathname ?cache->pathname : "(null)", 1);

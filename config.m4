@@ -27,22 +27,19 @@ if test "$PHP_APC" != "no"; then
   PHP_EXTENSION(apc, $ext_shared)
 fi
 
-dnl Check for system type.
-AC_DEFUN(AC_SYSTEM,[
-	AC_MSG_CHECKING([system type])
-	SYSTEM="`uname -s | tr a-z A-Z`"
-  AC_MSG_RESULT($SYSTEM)
-])                                              
-AC_SYSTEM()
-case $SYSTEM in
-	*LINUX*)
-		AC_DEFINE(APC_HOST_LINUX, 1, [ ])
-		;;
-	*BSD*)
-		AC_DEFINE(APC_HOST_BSD, 1, [ ])
-		;;
-	*SUNOS*)
-		AC_DEFINE(APC_HOST_SUNOS, 1, [ ])
-		;;
-	dnl else define nothing
-esac
+AC_CACHE_CHECK(for union semun,php_cv_semun,
+   AC_TRY_COMPILE([
+#include <sys/types.h>
+#include <sys/ipc.h>
+#include <sys/sem.h>
+   ],
+   [union semun x;],
+   [
+     php_cv_semun=yes
+   ],[
+     php_cv_semun=no
+   ])
+ )
+if test "$php_cv_semun" = "no"; then
+   AC_DEFINE(DEFINE_SEMUN, 1, [whether we need to define union semun])
+fi

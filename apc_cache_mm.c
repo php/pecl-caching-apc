@@ -17,6 +17,7 @@
 #include "apc_nametable.h"
 #include "apc_fcntl.h"
 #include "php_apc.h"
+#include "apc_serialize.h"
 #include <sys/stat.h>
 #include <unistd.h>
 #include <sys/mman.h>
@@ -133,7 +134,6 @@ int apc_mmap_dump_entry(const char* filename, apc_outputfn_t outputfn)
 {
 
     static const char NBSP[] = "&nbsp;";
-    int nbuckets;
     int i, n, fd;
 		char* input;
 		char* cache_filename;
@@ -328,6 +328,8 @@ int apc_cache_info_mmap(zval **hash) {
 	char buf[20];
 
 	array_init(*hash);
+	add_assoc_string(*hash, "mode", "MMAP", 1);
+
 	add_assoc_long(*hash, "time-to-live", APCG(ttl));
 	for(j = 0; j < APCG(nmatches); j++) {
 		snprintf(buf, sizeof(buf)-1, "cache filter (%d)", j);

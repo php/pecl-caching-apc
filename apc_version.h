@@ -17,5 +17,7 @@
 
 #define APC_MAGIC_HEADER "APCv1.0.07"
 #define APC_VERSION "1.0.10"
+extern char VERSION_STRING[100];
+
 
 #endif

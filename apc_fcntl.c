@@ -32,19 +32,18 @@ int lock_reg(int fd, int cmd, int type, off_t offset, int whence, off_t len)
 
 int apc_flock_create(const char* filename)
 {
-	int fd;
-	int errno;
-
 	return open(filename, O_RDWR|O_CREAT, 0666);
 }
 
 int apc_unlink(char *filename)
 {
 	int fd;
+	int res;
 
 	fd = open(filename, O_RDONLY);
 	writew_lock(fd, 0, SEEK_SET, 0);  //we only need to lock 1 byte
-	unlink(filename);
+	res = unlink(filename);
 	close(fd);
 	un_lock(fd, 0, SEEK_SET, 0);
+	return res;
 }

@@ -180,14 +180,13 @@ int apc_ropen(const char* pathname, int flags, int mode)
 	return open(pathname, flags, mode);
 }
 
-int apc_regexec(char *filename) {
+int apc_regexec(char const *filename) {
 	int i;
 	if(!APCG(nmatches)) {
 		return 1;
 	}
 	for(i = 0; i < APCG(nmatches); i++) {
-		int n;
-		if(n = (regexec(&APCG(regex)[i], filename, 0, NULL, 0)) == 0) {
+		if(regexec(&APCG(regex)[i], filename, 0, NULL, 0) == 0) {
 			return 0;
 		}
 	}
@@ -197,7 +196,7 @@ int apc_regexec(char *filename) {
 const char* apc_rstat(const char* filename, const char* searchpath, struct stat *buf)
 {
 	static const char SEPARATOR = ':';
-	static char try[1024];	/* filename to try */
+	static char try[PATH_MAX];	/* filename to try */
 	char* path;				/* working copy of searchpath */
 	char* p;				/* start of current path string */
 	char* q;				/* pointer to next SEPARATOR in path */
@@ -430,7 +429,7 @@ int alignword(int x)
     return sizeof(word_t) * (1 + ((x-1)/sizeof(word_t)));
 }
 
-alignword_int(int x)
+int alignword_int(int x)
 {
     typedef union { void* p; int i; } word_t;
     return sizeof(word_t) * (1 + ((x-1)/sizeof(word_t)));

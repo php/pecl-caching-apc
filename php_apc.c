@@ -16,7 +16,14 @@
 #include "php_apc.h"
 #include "php_globals.h"
 #include "php.h"
-#include "apc_cache.h"	/* for APC_CACHE_RT enum */
+
+#include "apc_version.h"
+/* for function declarations */
+#include "apc_iface.h"
+#include "apc_cache.h"  /* for APC_CACHE_RT enum */
+
+/* This comes from php install tree */
+#include "ext/standard/info.h"
 
 /* declarations of functions to be exported */
 PHP_FUNCTION(apcinfo);
@@ -77,6 +84,50 @@ ZEND_GET_MODULE(apc)
 
 /* initialization file support */
 
+/* set mode of the cache - possible values:
+   off
+   shm
+   mmap
+ */
+static PHP_INI_MH(set_mode)
+{
+        if (new_value==NULL) {
+          APCG(mode) = OFF_MODE;
+        }
+        else if (strcasecmp(new_value, "shm") == 0) {
+          APCG(mode) = SHM_MODE;
+        }
+        else if (strcasecmp(new_value, "mmap") == 0) {
+          APCG(mode) = MMAP_MODE;
+        }
+        else {
+          // be nice to wrongly configured apc - just switch off
+          APCG(mode) = OFF_MODE;
+        }
+        
+        return SUCCESS;
+}
+
+/* set the cache-retrieval policy for shared memory cache (shm).
+ * has no effect if running mmap implementation. */
+static PHP_INI_MH(set_cache_rt)
+{
+  static const char SAFE[] = "safe";
+  static const char FAST[] = "fast";
+
+  if (new_value == NULL || strcmp(new_value, SAFE) == 0) {
+    APCG(cache_rt) = APC_CACHE_RT_SAFE;
+  }
+  else if (strcmp(new_value, FAST) == 0) {
+    APCG(cache_rt) = APC_CACHE_RT_FAST;
+  }
+  else {
+    APCG(cache_rt) = APC_CACHE_RT_SAFE; /* default to safe policy */
+  }
+  return SUCCESS;
+}
+
+
 /* set the global ttl for all cache objects */
 static PHP_INI_MH(set_ttl)
 {
@@ -98,25 +149,6 @@ static PHP_INI_MH(set_cachedir)
 	}
 	else {
 		APCG(cachedir) = new_value;
-	}
-	return SUCCESS;
-}
-
-/* set the cache-retrieval policy for shared memory cache (shm).
- * has no effect if running mmap implementation. */
-static PHP_INI_MH(set_cache_rt)
-{
-	static const char SAFE[] = "safe";
-	static const char FAST[] = "fast";
-
-	if (new_value == NULL || strcmp(new_value, SAFE) == 0) {
-		APCG(cache_rt) = APC_CACHE_RT_SAFE;
-	}
-	else if (strcmp(new_value, FAST) == 0) {
-		APCG(cache_rt) = APC_CACHE_RT_FAST;
-	}
-	else {
-		APCG(cache_rt) = APC_CACHE_RT_SAFE; /* default to safe policy */
 	}
 	return SUCCESS;
 }
@@ -158,9 +190,10 @@ static PHP_INI_MH(set_regex)
 /* set the check_mtime flag in apc_globals (used in the shm impl.) */
 
 PHP_INI_BEGIN()
+	PHP_INI_ENTRY("apc.mode",        NULL, PHP_INI_ALL, set_mode)
+	PHP_INI_ENTRY("apc.cache_rt",    NULL, PHP_INI_ALL, set_cache_rt)
 	PHP_INI_ENTRY("apc.ttl",         NULL, PHP_INI_ALL, set_ttl)
 	PHP_INI_ENTRY("apc.cachedir",    NULL, PHP_INI_ALL, set_cachedir)
-	PHP_INI_ENTRY("apc.cache_rt",    NULL, PHP_INI_ALL, set_cache_rt)
 	PHP_INI_ENTRY("apc.regex",       NULL, PHP_INI_ALL, set_regex)
 
 	/* Flag to always check file modification time */
@@ -466,7 +499,7 @@ ZEND_EXTENSION();
 
 ZEND_DLEXPORT zend_extension zend_extension_entry = {
 	"APC Caching",
-	"0.1",
+	APC_VERSION,
 	"Dan Cowgill and George Schlossnagle",
 	"http://apc.communityconnect.com",
 	"Copyright (c) 2000-2001 Community Connect Inc.",

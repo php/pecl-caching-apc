@@ -28,8 +28,7 @@
 #include <stdarg.h>
 #include <errno.h>
 
-/* If host type is not BSD, we must define semun ourselves. */
-#ifndef APC_HOST_BSD
+#ifdef DEFINE_SEMUN
 union semun {
 	int val;                    /* value for SETVAL */
 	struct semid_ds *buf;       /* buffer for IPC_STAT, IPC_SET */

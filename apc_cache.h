@@ -92,10 +92,10 @@ extern int apc_cache_insert(T cache, const char* key, const char* data,
                             int size, int mtime);
 
 /*
- * apc_cache_remove: removes a mapping from the cache. Returns true on
+ * apc_shm_rm: removes a mapping from the cache. Returns true on
  * success, else false
  */
-extern int apc_cache_remove(T cache, const char* key);
+extern int apc_shm_rm(T cache, const char* key);
 
 /*
  * apc_cache_set_object_ttl: sets the ttl for an individual object. Returns

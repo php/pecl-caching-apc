@@ -18,10 +18,13 @@ projects can happen.
 We would also like to thank Rasmus Lerdorf for encouraging us to take on this
 project.
 
+Major Contributors:
+ Mike Bretz (bug fixes, feature adds, apc gui, and lots and lots of work)
+ Ricardo Galli <gallir@uib.es> (enhanced rwls)
+
 Contributors:
  Yann Grossel (bug fixes)
  Thies Arntzen (bug fixes)
- Mike Bretz (bug fixes, feature adds, apc gui)
 
 Special Thanks:
  Florian Baumert - help debugging phplib problems

@@ -1,5 +1,23 @@
 APC Change Log
 -------------------------------
+1.0.10:
++ merge mmap / shm code to be in one file, module supports both modes now [mpb 05.15.2001]
++ added apc.mode config parameter [mpb 05.15.2001]
+  NOTE: You'll have to add this parameter to your php.ini file to activate
+        apc shm or mmap caching
++ generic source cleanup (missing includes, PATH_MAX usage etc) [mpb 05.15.2001]
++ fixed: realpath return result checking in generate_key [mpb 05.15.2001]
++ updated: gui updated (extras/apc_gui-1.0.2.tar.gz)
++ experminental 'fast' cache-retrieval [djc 05.20.2001]
++ fixed regex support [gws 05.16.2001]
++ enhanced reader-writer lock support [rg 05.07.2001]
+
+1.0.9:
++ fixed (?) memory alignment bug on 64 bit archiecures 
++ added many cache visibiliy functions 
++ added opional fcntl locks under shm version 
++ numerous bug fixes 
+
 1.0.8:
 + added ability to detect and decompile compiled files placed as 'aource' [gws,dw 01.30.2001]
 + fixed apc_rstat bug [gws 01.29.2001]
