@@ -27,6 +27,7 @@
 
 #include "zend.h"
 #include "zend_hash.h"
+#include <sys/types.h>
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
@@ -180,8 +181,10 @@ static void initcache(apc_cache_t* cache, const char* pathname,
 	}
 
 	/* create the first shared memory segment */
+/*
 	cache->segments[0].shmid  = apc_shm_create(pathname, 1, segsize);
 	apc_smm_initsegment(cache->segments[0].shmid, segsize);
+*/
 }
 
 
@@ -253,12 +256,18 @@ static unsigned int hashtwo(const char* v)
 }
 
 /* apc_cache_create: create a new cache */
-apc_cache_t* apc_cache_create(const char* pathname, int nbuckets,
+apc_cache_t* apc_cache_create(const char* pname, int nbuckets,
 	int maxseg, int segsize, int ttl)
 {
+	char pathname[MAXPATHLEN];
 	apc_cache_t* cache;
 	int cachesize;
 
+	#ifdef USE_FCNTL_LOCK
+		snprintf(pathname,15,"/tmp/.apc.lock");
+	#else
+		snprintf(pathname,MAXPATHLEN, "%s", pname);
+	#endif
 	cache = (apc_cache_t*) apc_emalloc(sizeof(apc_cache_t));
 	cachesize = computecachesize(nbuckets, maxseg);
 
@@ -267,7 +276,7 @@ apc_cache_t* apc_cache_create(const char* pathname, int nbuckets,
   #ifdef USE_RWLOCK
 	cache->lock     = apc_rwl_create(pathname);
   #elif defined(USE_FCNTL_LOCK)
-  	cache->lock		= apc_flock_create("/tmp/.apc.lock");
+  	cache->lock		= apc_flock_create(pathname);
   #else
 	cache->lock     = apc_sem_create(pathname, 1, 1);
   #endif
