@@ -21,9 +21,13 @@ apc.mode - See "Runtime configuration"
 5) in your php.ini file add the line
 	zend_extension="/path/to/where/you/keep/extensions/php_apc.so"
 6) in your php.ini file add the line
-	apc.mode = off # for switching off the APC
-        apc.mode = shm # for using SHM support
-        apc.mode = mmap # for using MMAP support 
+	# for switching off the APC
+	apc.mode = off 
+  # for using SHM support
+  apc.mode = shm
+  # for using MMAP support 
+  apc.mode = mmap
+	don't forget that you can't put comments on the same line as your ini options
    See FAQ for pros and contras of SHM / MMAP support
 7) You're all set!
 
