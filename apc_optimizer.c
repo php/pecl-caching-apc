@@ -131,6 +131,9 @@ static int compress_ops(zend_op_array* op_array, Pair** jumps)
                     if(op_array->brk_cont_array[k].brk == j) {
                         op_array->brk_cont_array[k].brk = i;
                     }
+                    if(op_array->brk_cont_array[k].cont == j) {
+                        op_array->brk_cont_array[k].cont = i;
+                    }
                 }
                 /* quit when we've found a non-noop instruction */
                 if (ops[j].opcode != ZEND_NOP) {
