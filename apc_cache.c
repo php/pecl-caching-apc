@@ -11,6 +11,8 @@
 
 enum { EMPTY = -1, UNUSED = -2 };
 
+enum { DO_CHECKSUM = 0 };
+
 typedef struct segment_t segment_t;
 struct segment_t {
 	int shmid;	/* shared memory id of the segment */
@@ -294,16 +296,16 @@ int apc_cache_retrieve(apc_cache_t* cache, const char* key, char** dataptr,
 			cache->header->hits++;
 			buckets[slot].lastaccess = curtime;
 			buckets[slot].hitcount++;
-			checksum = buckets[slot].checksum;
+
+			apc_rwl_unlock(cache->lock);
 
 			/* compare checksums */
-			if (checksum != apc_crc32(*dataptr, *length)) {
+			if (DO_CHECKSUM && checksum != apc_crc32(*dataptr, *length)) {
 				apc_eprint("checksum failed! data length is %d\n", *length);
 				return 0; /* return failure */
 			}
 
 			/* we're done */
-			apc_rwl_unlock(cache->lock);
 			return 1;
 		}
 		slot = (slot+k) % nbuckets;
@@ -352,7 +354,7 @@ int apc_cache_retrieve_nl(apc_cache_t* cache, const char* key,
 			checksum = buckets[slot].checksum;
 
 			/* compare checksums */
-			if (checksum != apc_crc32(*dataptr, *length)) {
+			if (DO_CHECKSUM && checksum != apc_crc32(*dataptr, *length)) {
 				apc_eprint("checksum failed! data length is %d\n", *length);
 				return 0; /* return failure */
 			}
@@ -384,7 +386,7 @@ int apc_cache_insert(apc_cache_t* cache, const char* key,
 	unsigned int checksum;
 
 	/* compute checksum of data (before locking) */
-	checksum = apc_crc32(data, size);
+	checksum = DO_CHECKSUM ? apc_crc32(data, size) : 0;
 
 	apc_rwl_writelock(cache->lock);
 	
