@@ -29,6 +29,7 @@
 ZEND_BEGIN_MODULE_GLOBALS(apc)
 	int	ttl;
 	char *cachedir;
+	char *regex_text;
 	regex_t regex;
 	int nmatches;
 	int hash_buckets;

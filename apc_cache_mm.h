@@ -24,6 +24,7 @@ struct mm_fl_element {
         int inputlen;
         long inode;
         time_t mtime;
+	int hitcounter;
         char *input;
 };
 

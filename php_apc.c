@@ -84,6 +84,7 @@ static PHP_INI_MH(set_regex)
 	{
 		if(regcomp(&APCG(regex), new_value, REG_EXTENDED|REG_ICASE) == 0)
 		{
+			APCG(regex_text) = new_value;
 			APCG(nmatches) = 1;
 			return SUCCESS;
 		}
