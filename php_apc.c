@@ -23,6 +23,7 @@ PHP_FUNCTION(apc_rm);
 PHP_FUNCTION(apc_reset_cache);
 PHP_FUNCTION(apc_set_my_ttl);
 PHP_FUNCTION(apc_dump_cache_object);
+PHP_FUNCTION(apc_cache_index);
 
 /* list of exported functions */
 function_entry apc_functions[] = {
@@ -31,6 +32,7 @@ function_entry apc_functions[] = {
 	PHP_FE(apc_reset_cache, NULL)
 	PHP_FE(apc_set_my_ttl, NULL)
 	PHP_FE(apc_dump_cache_object, NULL)
+	PHP_FE(apc_cache_index, NULL)
 	{NULL, NULL, NULL}
 };
 
@@ -321,6 +323,29 @@ PHP_FUNCTION(apc_dump_cache_object)
 	RETURN_TRUE;
 }
 /* }}} */
+
+
+PHP_FUNCTION(apc_cache_index)
+{
+	zval **hash;
+	int i;
+	int ac = ZEND_NUM_ARGS();
+
+	if(ac != 1 || zend_get_parameters_ex(ac, hash) == FAILURE) {
+  	WRONG_PARAM_COUNT;
+	}
+	if( array_init(*hash) == FAILURE) {
+  	zend_error(E_WARNING, "Couldn't convert arg1 to array");
+  	RETURN_FALSE;
+	}
+
+	if(apc_cache_index(hash)) {
+		RETURN_FALSE;
+	}
+	else {
+		RETURN_TRUE
+	}
+}	
 
 /* zend extension support */
 

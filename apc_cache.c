@@ -894,4 +894,33 @@ int apc_cache_dump_entry(apc_cache_t* cache, const char* key,
 	UNLOCK(cache->lock);
 	return 0;
 }
+int apc_cache_index_shm(apc_cache_t* cache, zval **hash) {
+	int i;
+	READLOCK(cache->lock);
 
+	for (i = 0; i < cache->header->nbuckets; i++) {
+  	bucket_t* bucket;
+  	zval *array;
+  	if (cache->buckets[i].shmid < 0) {
+    	continue;
+  	}
+  	zval_dtor(array);
+  	bucket = &(cache->buckets[i]);
+  	if(array_init(array) == FAILURE) {
+			UNLOCK(cache->lock);
+  	  return 1;
+  	}
+  	add_next_index_long(array, bucket->offset);
+  	add_next_index_long(array, bucket->length);
+  	add_next_index_long(array, bucket->lastaccess);
+  	add_next_index_long(array, bucket->hitcount);
+  	add_next_index_long(array, bucket->ttl);
+  	add_next_index_long(array, bucket->mtime);
+  	zend_hash_update((*hash)->value.ht, bucket->key, strlen(bucket->key) + 1, (void *) &array, sizeof(zval *), NULL);
+	}
+
+	UNLOCK(cache->lock);
+	return 0;
+}
+
+	
