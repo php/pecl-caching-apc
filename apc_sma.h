@@ -23,7 +23,11 @@
 
 /* Simple shared memory allocator */
 
+#if APC_MMAP
+extern void apc_sma_init(int numseg, int segsize, char *mmap_file_mask);
+#else
 extern void apc_sma_init(int numseg, int segsize);
+#endif
 extern void apc_sma_cleanup();
 extern void* apc_sma_malloc(size_t size);
 extern void apc_sma_free(void* p);

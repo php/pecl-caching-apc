@@ -21,6 +21,10 @@
 #include "apc_sem.h"
 #include "apc_shm.h"
 #include <limits.h>
+#if APC_MMAP
+void *apc_mmap(char *file_mask, int size);
+void apc_unmap(void* shmaddr, int size);
+#endif
 
 enum { POWER_OF_TWO_BLOCKSIZE=0 };  /* force allocated blocks to 2^n? */
 
@@ -203,7 +207,11 @@ static int sma_deallocate(void* shmaddr, int offset)
 /* }}} */
 
 /* {{{ apc_sma_init */
+#if APC_MMAP
+void apc_sma_init(int numseg, int segsize, char *mmap_file_mask)
+#else
 void apc_sma_init(int numseg, int segsize)
+#endif
 {
     int i;
 
@@ -212,8 +220,18 @@ void apc_sma_init(int numseg, int segsize)
     }
     sma_initialized = 1;
 
-#if APC_ANONYMOUS_MMAP
-    sma_numseg = 1;
+#if APC_MMAP
+    /*
+     * I don't think multiple anonymous mmaps makes any sense
+     * so force sma_numseg to 1 in this case
+     */
+    if(!mmap_file_mask || 
+       (mmap_file_mask && !strlen(mmap_file_mask)) ||
+       (mmap_file_mask && !strcmp(mmap_file_mask, "/dev/zero"))) {
+        sma_numseg = 1;
+    } else {
+        sma_numseg = numseg > 0 ? numseg : DEFAULT_NUMSEG;
+    }
 #else
     sma_numseg = numseg > 0 ? numseg : DEFAULT_NUMSEG;
 #endif
@@ -229,9 +247,9 @@ void apc_sma_init(int numseg, int segsize)
         block_t*    block;
         void*       shmaddr;
 
-#if APC_ANONYMOUS_MMAP
+#if APC_MMAP
         sma_segments[i] = sma_segsize;
-        sma_shmaddrs[i] = apc_mmap(sma_segsize);
+        sma_shmaddrs[i] = apc_mmap(mmap_file_mask, sma_segsize);
 #else
         sma_segments[i] = apc_shm_create(NULL, i, sma_segsize);
         sma_shmaddrs[i] = apc_shm_attach(sma_segments[i]);
@@ -262,7 +280,7 @@ void apc_sma_cleanup()
     assert(sma_initialized);
 
     for (i = 0; i < sma_numseg; i++) {
-#if APC_ANONYMOUS_MMAP
+#if APC_MMAP
         apc_unmap(sma_shmaddrs[i], sma_segments[i]);
 #else
         apc_shm_detach(sma_shmaddrs[i]);

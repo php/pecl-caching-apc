@@ -221,7 +221,11 @@ static ZEND_API void my_execute(zend_op_array* op_array TSRMLS_DC)
 int apc_module_init()
 {
     /* apc initialization */
+#if APC_MMAP
+    apc_sma_init(APCG(shm_segments), APCG(shm_size)*1024*1024, APCG(mmap_file_mask));
+#else
     apc_sma_init(APCG(shm_segments), APCG(shm_size)*1024*1024);
+#endif
     APCG(cache) = apc_cache_create(APCG(num_files_hint), APCG(gc_ttl));
     APCG(cache_stack) = apc_stack_create(0);
     APCG(compiled_filters) = apc_regex_compile_array(APCG(filters));

@@ -125,6 +125,10 @@ These instructions assume your PHP installation is located in /usr/local/php.
 
     php-config should be located in the same directory as phpize.
 
+    If you prefer to use mmap instead of the default IPC shared memory support,
+    add --enable-mmap to your configure line.  If you don't understand the 
+    difference between the two, stick with the default.
+
 4.  Compile and install the files. Simply type: make install
 
     (You may need to be root in order to install)
@@ -229,3 +233,12 @@ users should consider tuning the following parameters:
                             to include/require, not the absolute path.
                             (Default: "")
 
+    apc.mmap_file_mask      If compiled with MMAP support by using --enable-mmap
+                            this is the mktemp-style file_mask to pass to the
+			    mmap module for determing whether your mmap'ed memory
+			    region is going to be file-backed or shared memory
+			    backed.  To use POSIX-style shm_open/mmap put a ".shm"
+			    somewhere in your mask.  eg.  "/apc.shm.XXXXXX"
+			    You can also set it to "/dev/zero" to use your kernel's
+			    dev/zero interface to anonymous mmap'ed memory.  Leaving
+			    it undefined will force an anonymous mmap.

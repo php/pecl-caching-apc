@@ -31,6 +31,7 @@ ZEND_BEGIN_MODULE_GLOBALS(apc)
     int optimization;       /* optimizer level (higher = more aggressive) */
     int num_files_hint;     /* parameter to apc_cache_create */
     int gc_ttl;             /* parameter to apc_cache_create */
+    char *mmap_file_mask;   /* mktemp-style file-mask to pass to mmap */
     char** filters;         /* array of regex filters that prevent caching */
 
     /* module variables */

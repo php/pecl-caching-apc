@@ -76,6 +76,9 @@ STD_PHP_INI_ENTRY("apc.shm_size",       "30",   PHP_INI_SYSTEM, OnUpdateInt,    
 STD_PHP_INI_ENTRY("apc.optimization",   "0",    PHP_INI_SYSTEM, OnUpdateInt,            optimization,   zend_apc_globals, apc_globals)
 STD_PHP_INI_ENTRY("apc.num_files_hint", "1000", PHP_INI_SYSTEM, OnUpdateInt,            num_files_hint, zend_apc_globals, apc_globals)
 STD_PHP_INI_ENTRY("apc.gc_ttl",         "3600", PHP_INI_SYSTEM, OnUpdateInt,            gc_ttl,         zend_apc_globals, apc_globals)
+#if APC_MMAP
+STD_PHP_INI_ENTRY("apc.mmap_file_mask",  NULL,  PHP_INI_SYSTEM, OnUpdateString,         mmap_file_mask, zend_apc_globals, apc_globals)
+#endif
     PHP_INI_ENTRY("apc.filters",        "",     PHP_INI_SYSTEM, OnUpdate_filters)
 PHP_INI_END()
 
@@ -87,6 +90,12 @@ static PHP_MINFO_FUNCTION(apc)
 	php_info_print_table_start();
 	php_info_print_table_row(2, "APC Support", APCG(enabled) ? "enabled" : "disabled");
 	php_info_print_table_row(2, "Version", apc_version());
+#if APC_MMAP
+	php_info_print_table_row(2, "MMAP Support", "Enabled");
+	php_info_print_table_row(2, "MMAP File Mask", APCG(mmap_file_mask));
+#else
+	php_info_print_table_row(2, "MMAP Support", "Disabled");
+#endif
 	php_info_print_table_row(2, "Revision", "$Revision$");
 	php_info_print_table_row(2, "Build Date", __DATE__ " " __TIME__);
     DISPLAY_INI_ENTRIES();

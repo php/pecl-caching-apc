@@ -5,7 +5,6 @@ dnl
 PHP_ARG_ENABLE(apc, for APC support,
 [  --enable-apc           include APC support.])
 
-
 if test "$PHP_APC" != "no"; then
   PHP_EXTENSION(apc, $ext_shared)
   AC_DEFINE(HAVE_APC, 1, [ ])
@@ -27,12 +26,18 @@ if test "$PHP_APC" != "no"; then
  else
    AC_DEFINE(HAVE_SEMUN, 0, [ ])
  fi
-
-PHP_ARG_ENABLE(anon-mmap, for Anonymous MMAP support,
-[  --enable-anon-mmap           Use anonymous mmap instead of ipc shm])
-if test "$PHP_ANON_MMAP" != "no"; then
-   AC_DEFINE(APC_ANONYMOUS_MMAP, 1, [ ])
 fi
 
-fi
+AC_MSG_CHECKING(whether to enable mmap support instead of IPC shm)
+AC_ARG_ENABLE(mmap,
+[  --enable-mmap  Enable mmap support instead of IPC shm],[
+  if test "$enableval" = "yes" ; then
+    AC_DEFINE(APC_MMAP, 1, [ ])
+    AC_MSG_RESULT(yes)
+  else
+    AC_MSG_RESULT(no)
+  fi
+],[
+  AC_MSG_RESULT(no)
+])
 
