@@ -546,7 +546,7 @@ void apc_serialize_zstring(char* string, int len)
     SERIALIZE_SCALAR(-1, int);
     return;
   }
-  len = strlen(string);
+//  len = strlen(string);
   SERIALIZE_SCALAR(len, int);
   STORE_BYTES(string, len);
 }
