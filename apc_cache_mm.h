@@ -16,6 +16,7 @@
 #ifndef INCLUDED_APC_CACHE_MM
 #define INCLUDED_APC_CACHE_MM
 #include "apc_iface.h"
+#include "apc_lib.h"
 #include "zend.h"
 #include "zend_hash.h"
 
@@ -32,6 +33,12 @@ struct mm_fl_element {
 
 /* apc_mmap_dump generates output for apcinfo() */
 void apc_mmap_dump(apc_outputfn_t outputfn, HashTable* cache);
+
+/*
+ * apc_mmap_dump_entry: document me
+ */
+extern void apc_mmap_dump_entry(const char* filename, apc_outputfn_t outputfn);
+
 #endif
 	
 	

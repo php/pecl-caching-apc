@@ -78,5 +78,44 @@ void apc_mmap_dump(apc_outputfn_t outputfn, HashTable* cache)
 	outputfn("<br>\n");
 }	
 
+void apc_mmap_dump_entry(const char* filename, apc_outputfn_t outputfn)
+{
+//	struct mm_fl_element* in_elem;
+	HashTable function_table;		// in lieu of global function table
+	HashTable class_table;			// in lieu of global class table
+	apc_nametable_t* dummy;
+	zend_op_array op_array;
+	Bucket* p;
 
-	
+//	if (zend_hash_find(cache, name, strlen(name) + 1, (void**) &in_elem) ==
+//		FAILURE)
+//	{
+//		outputfn("error: entry '%s' not found\n", name);
+//	}
+//
+//	if (!apc_load(in_elem->cache_filename)) {
+//		outputfn("error: could not open '%s'\n", in_elem->cache_filename):
+//	}
+
+	if (!apc_load(filename)) {
+		outputfn("error: could not open '%s'\n", filename):
+	}
+
+	apc_deserialize_zend_op_array(&op_array);
+	apc_deserialize_zend_function_table(&function_table, dummy);
+	apc_deserialize_zend_class_table(&class_table, dummy);
+
+	outputfn("!!! functions !!!\n");
+	p = cache->pListHead;
+  	while(p !=NULL) {
+		zend_function* zf = (zend_function*) p->pData;
+		outputfn("%s\n", zf->common.function_name);
+	}
+	outputfn("!!! classes !!!\n");
+	p = cache->pListHead;
+  	while(p !=NULL) {
+		zend_class_entry* zc = (zend_class_entry*) p->pData;
+		outputfn("%s\n", zc->name);
+	}
+}
+
