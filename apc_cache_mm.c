@@ -299,10 +299,11 @@ int apc_cache_index_mmap(HashTable* cache, zval **hash) {
 	Bucket *p;
     p = cache->pListHead;
     while(p !=NULL) {
-        zval *array;
+        zval *array = NULL;
         struct mm_fl_element *in_elem;
 
         ALLOC_ZVAL(array);
+		INIT_PZVAL(array);
         if(array_init(array) == FAILURE) {
             return 1;
         }

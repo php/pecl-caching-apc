@@ -926,11 +926,12 @@ int apc_cache_index_shm(apc_cache_t* cache, zval **hash) {
 
 	for (i = 0; i < cache->header->nbuckets; i++) {
   	bucket_t* bucket;
-  	zval *array;
+  	zval *array = NULL;
   	if (cache->buckets[i].shmid < 0) {
     	continue;
   	}
 	ALLOC_ZVAL(array);
+	INIT_PZVAL(array);
   	bucket = &(cache->buckets[i]);
   	if(array_init(array) == FAILURE) {
 			UNLOCK(cache->lock);
