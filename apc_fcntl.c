@@ -5,7 +5,7 @@
  * ==================================================================
  * This source code is made available free and without charge subject
  * to the terms of the QPL as detailed in bundled LICENSE file, which
- * is also available at http://apc.communityconnect.com/LICENSE.
+ * is also available at http://apc.communityconnect.com/LICENSE. 
  * ==================================================================
  * Daniel Cowgill <dan@mail.communityconnect.com>
  * George Schlossnagle <george@lethargy.org>
@@ -41,7 +41,7 @@ int apc_unlink(char *filename)
 	int res;
 
 	fd = open(filename, O_RDONLY);
-	writew_lock(fd, 0, SEEK_SET, 0);  //we only need to lock 1 byte
+	writew_lock(fd, 0, SEEK_SET, 0);  /* we only need to lock 1 byte */
 	res = unlink(filename);
 	close(fd);
 	un_lock(fd, 0, SEEK_SET, 0);

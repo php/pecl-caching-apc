@@ -28,7 +28,9 @@ Contributors:
 
 Special Thanks:
  Florian Baumert - help debugging phplib problems
- Christian Rishøj - help debugging phplib problems
+ Thomas Duffey - invaluable help debugging inheritance issues
  Vibol Hou -	- help debugging phplib problems
+ Angel Li	-	diffs for ANSI comment compliance
+ Christian Rishøj - help debugging phplib problems
  Sascha Schumann - memory error bug fix
 

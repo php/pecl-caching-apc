@@ -5,7 +5,7 @@
  * ==================================================================
  * This source code is made available free and without charge subject
  * to the terms of the QPL as detailed in bundled LICENSE file, which
- * is also available at http://apc.communityconnect.com/LICENSE.
+ * is also available at http://apc.communityconnect.com/LICENSE. 
  * ==================================================================
  * Daniel Cowgill <dan@mail.communityconnect.com>
  * George Schlossnagle <george@lethargy.org>
@@ -401,7 +401,7 @@ ZEND_API zend_op_array* apc_shm_compile_file(zend_file_handle *file_handle,
 	if (apc_cache_retrieve(cache, key, &inputbuf, &inputlen,
 		&inputsize, mtime) == 1)
 	{
-		zend_llist_add_element(&CG(open_files), file_handle); // FIXME
+		zend_llist_add_element(&CG(open_files), file_handle); /*  FIXME */
 		apc_init_deserializer(inputbuf, inputlen);
 		op_array = (zend_op_array*) emalloc(sizeof(zend_op_array));
 
@@ -622,9 +622,9 @@ ZEND_API zend_op_array* apc_mmap_compile_file(zend_file_handle *file_handle,
 		if(n == 0)
 		{
 			if(in_elem->inode == statbuf.st_ino && 
-					in_elem->mtime == statbuf.st_mtime ) //file exists and matches
+					in_elem->mtime == statbuf.st_mtime ) /* file exists and matches */
 			{
-				zend_llist_add_element(&CG(open_files), file_handle); // FIXME
+				zend_llist_add_element(&CG(open_files), file_handle); /*  FIXME */
 				apc_init_deserializer(in_elem->input, in_elem->inputlen);
 
 				/* deserialize the global function/class tables. 
@@ -820,7 +820,7 @@ ZEND_API zend_op_array* apc_mmap_compile_file(zend_file_handle *file_handle,
 	}
 	close(fd);
 	in_elem->input = mmapaddr;
-	zend_llist_add_element(&CG(open_files), file_handle); // FIXME
+	zend_llist_add_element(&CG(open_files), file_handle); /*  FIXME */
 	apc_init_deserializer(in_elem->input, in_elem->inputlen);
 	
 	/* deserialize the global function/class tables. every object that

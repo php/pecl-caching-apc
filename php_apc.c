@@ -99,7 +99,7 @@ static PHP_INI_MH(set_mode)
           APCG(mode) = MMAP_MODE;
         }
         else {
-          // be nice to wrongly configured apc - just switch off
+          /*  be nice to wrongly configured apc - just switch off */
           APCG(mode) = OFF_MODE;
         }
         
@@ -244,7 +244,7 @@ PHP_MINIT_FUNCTION(apc)
 	REGISTER_INI_ENTRIES();
 	apc_module_init();
     snprintf(log_buffer, 1024, "PHP: Startup: %s", apc_version());
-//    php_log_err(log_buffer);
+/*     php_log_err(log_buffer); */
 	apc_setoutputfn(printlog);
 	return SUCCESS;
 }
@@ -486,7 +486,7 @@ ZEND_DLEXPORT zend_extension zend_extension_entry = {
 	"APC Caching",
 	APC_VERSION,
 	"Dan Cowgill and George Schlossnagle",
-	"http://apc.communityconnect.com",
+	"http://apc.communityconnect.com", 
 	"Copyright (c) 2000-2001 Community Connect Inc.",
 	apc_zend_startup,
 	apc_zend_shutdown,
