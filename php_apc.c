@@ -147,15 +147,20 @@ static void apc_init_globals(void)
 /* all apc_ functions here are in apc_iface.c */
 PHP_MINIT_FUNCTION(apc)
 {
+	char log_buffer[1024];
 	apc_init_globals();
 	REGISTER_INI_ENTRIES();
 	apc_module_init();
+    snprintf(log_buffer, 1024, "PHP: Startup: %s", apc_version());
+    php_log_err(log_buffer);
 	apc_setoutputfn(printlog);
 	return SUCCESS;
 }
 
 PHP_MSHUTDOWN_FUNCTION(apc)
 {
+	/* This is a hack, necessary since apache registers modules
+	 * twice during startup */
 	UNREGISTER_INI_ENTRIES();
 	apc_module_shutdown();
 	return SUCCESS;

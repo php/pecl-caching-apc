@@ -82,9 +82,11 @@ void apc_mmap_dump(HashTable* cache, const char *linkurl, apc_outputfn_t outputf
 
  /* display bucket info */
 	outputfn("<table border=1 cellpadding=2 cellspacing=1>\n");
+	outputfn("<tr><FORM METHOD=POST ACTION=\"%s\">\n", linkurl);
 	outputfn("<tr>\n");
-	outputfn("<td colspan=5 bgcolor=#dde4ff>Child Cache Data</td>\n");
+	outputfn("<td colspan=6 bgcolor=#dde4ff>Child Cache Data</td>\n");
 	outputfn("<tr>\n");
+	outputfn("<td bgcolor=#ffffff>Delete</td>\n");
 	outputfn("<td bgcolor=#ffffff>Key</td>\n");
 	outputfn("<td bgcolor=#ffffff>Length</td>\n");
 	outputfn("<td bgcolor=#ffffff>Last ModTime(B)</td>\n");
@@ -95,8 +97,15 @@ void apc_mmap_dump(HashTable* cache, const char *linkurl, apc_outputfn_t outputf
 		struct mm_fl_element *in_elem;
 		in_elem = (struct mm_fl_element *) p->pData;
 		outputfn("<tr>\n");
+	 	if (linkurl != 0) {
+            outputfn("<td bgcolor=#eeeeee><INPUT TYPE=CHECKBOX NAME=\"APC_RM\" VALUE=\"%s\"> &nbsp </td>\n",
+                p->arKey);
+        }
+        else {
+            outputfn("<td bgcolor=#eeeeee>&nbsp</td>\n");
+        }
 		if (linkurl != 0) {
-            outputfn("<td bgcolor=#eeeeee><a href=%s%s>%s</a></td>\n",
+            outputfn("<td bgcolor=#eeeeee><a href=%s?APC_INFO=%s>%s</a></td>\n",
                 linkurl, p->arKey, p->arKey);
         }
         else {
@@ -109,6 +118,10 @@ void apc_mmap_dump(HashTable* cache, const char *linkurl, apc_outputfn_t outputf
 		outputfn("</tr>\n");
 		p = p->pListNext;
 	}
+	if(linkurl != 0 ) {
+        outputfn("<tr><td><INPUT type=submit name=submit value=\"Delete Marked Objects\"></tr></td>\n");
+    }
+    outputfn("</FORM>\n");
 	outputfn("</table>\n");
 	outputfn("<br>\n");
 	outputfn("<br>\n");

@@ -617,10 +617,11 @@ void apc_cache_dump(apc_cache_t* cache, const char* linkurl,
 
 	/* display bucket info */
 	outputfn("<table border=1 cellpadding=2 cellspacing=1>\n");
-	outputfn("<tr>\n");
-	outputfn("<td colspan=8 bgcolor=#dde4ff>Bucket Data</td>\n");
+	outputfn("<tr><FORM METHOD=POST ACTION=\"%s\">\n", linkurl);
+	outputfn("<td colspan=9 bgcolor=#dde4ff>Bucket Data</td>\n");
 	outputfn("<tr>\n");
 	outputfn("<td bgcolor=#ffffff>Index</td>\n");
+	outputfn("<td bgcolor=#ffffff>Delete</td>\n");
 	outputfn("<td bgcolor=#ffffff>Key</td>\n");
 	outputfn("<td bgcolor=#ffffff>Offset</td>\n");
 	outputfn("<td bgcolor=#ffffff>Length (B)</td>\n");
@@ -638,13 +639,21 @@ void apc_cache_dump(apc_cache_t* cache, const char* linkurl,
 		outputfn("<tr>\n");
 		outputfn("<td bgcolor=#eeeeee>%d</td>\n", i);
 
-		if (linkurl != 0) {
-			outputfn("<td bgcolor=#eeeeee><a href=%s%s>%s</a></td>\n",
-				linkurl, bucket->key, bucket->key);
-		}
-		else {
-			outputfn("<td bgcolor=#eeeeee>%s</td>\n", bucket->key);
-		}
+        if (linkurl != 0) {
+            outputfn("<td bgcolor=#eeeeee><INPUT TYPE=CHECKBOX NAME=\"APC_RM\" VALUE=\"%s\"> &nbsp </td>\n",
+                bucket->key);
+        }
+        else {
+            outputfn("<td bgcolor=#eeeeee>&nbsp</td>\n");
+        }
+
+        if (linkurl != 0) {
+            outputfn("<td bgcolor=#eeeeee><a href=%s?APC_INFO=%s>%s</a></td>\n",
+                linkurl, bucket->key, bucket->key);
+        }
+        else {
+            outputfn("<td bgcolor=#eeeeee>%s</td>\n", bucket->key);
+        }
 
 		outputfn("<td bgcolor=#eeeeee>%d</td>\n", bucket->offset);
 		outputfn("<td bgcolor=#eeeeee>%d</td>\n", bucket->length);
@@ -653,6 +662,10 @@ void apc_cache_dump(apc_cache_t* cache, const char* linkurl,
 		outputfn("<td bgcolor=#eeeeee>%d</td>\n", bucket->createtime + bucket->ttl);
 		outputfn("<td bgcolor=#eeeeee>%u</td>\n", bucket->checksum);
 	}
+	if(linkurl != 0 ) {
+		outputfn("<tr><td><INPUT type=submit name=submit value=\"Delete Marked Objects\"></tr></td>\n");
+	}
+	outputfn("</FORM>\n");
 	outputfn("</table>\n");
 	outputfn("<br>\n");
 	outputfn("<br>\n");
@@ -670,6 +683,7 @@ void apc_cache_dump(apc_cache_t* cache, const char* linkurl,
 		}
 	}
 	outputfn("</table>\n");
+
 	outputfn("<br>\n");
 	outputfn("<br>\n");
 
