@@ -25,10 +25,10 @@ typedef int (*apc_outputfn_t)(const char*, ...);
 
 /* wrappers for memory allocation routines */
 
-extern void* apc_emalloc(size_t n);
+extern void* apc_emalloc (size_t n);
 extern void* apc_erealloc(void* p, size_t n);
-extern void  apc_efree(void* p);
-extern char* apc_estrdup(const char* s);
+extern void  apc_efree   (void* p);
+extern char* apc_estrdup (const char* s);
 
 
 /* simple display facility */
@@ -39,10 +39,13 @@ extern void apc_dprint(char *fmt, ...);
 
 /* simple timer facility */
 
-extern void apc_timerstart(void);
-extern void apc_timerstop(void);
+extern void   apc_timerstart (void);
+extern void   apc_timerstop  (void);
 extern double apc_timerreport(void);
 
-extern apc_ropen(const char *pathname, int flags, int mode);
+
+/* filesystem routines */
+
+extern int apc_ropen(const char *pathname, int flags, int mode);
 
 #endif

@@ -25,7 +25,6 @@
 #include <sys/types.h>
 #include <fcntl.h>
 
-#define DEBUG 1
 #undef DEBUG
 
 /* apc_emalloc: malloc that dies on failure */
@@ -138,37 +137,35 @@ double apc_timerreport()
 	return end - start;
 }
 
+
 /* recursive open */
 
-apc_ropen(const char *pathname, int flags, int mode)
+enum { PATH_SEPARATOR = '/' };
+
+int apc_ropen(const char* pathname, int flags, int mode)
 {
 	int fd;
-
-	if ((fd = open(pathname, flags, mode)) < 0 )
-	{
-  	char  *cp2;
-  	cp2 = strchr(pathname, '/');
-  	while(cp2!=NULL)
-  	{
-    	errno = 0;
-    	cp2 = strchr(++cp2, '/');
-    	if(cp2 != NULL)
-    	{
-      	*cp2 = '\0';
-      	if(mkdir(pathname, 0755) != 0)
-      	{
-        	if(errno != EEXIST)
-        	{
-          	*cp2 = '/';
-          	return -1;
-        	}
-      	}
-      	*cp2 = '/';
-    	}
-  	}
-  	return open(pathname, flags, mode);
+	char* p;
+	
+	if ((fd = open(pathname, flags, mode)) >= 0) {
+		return fd;
 	}
-	else return fd;
-}
 
+	/* under the assumption that the file could not be opened because
+	 * intermediate directories to it need to be created, move along
+	 * the pathname and create those directories */
+	
+	p = strchr(pathname, PATH_SEPARATOR);
+	while (p != 0) {
+		*p = '\0';
+		if (mkdir(pathname, 0755) < 0 && errno != EEXIST) {
+			*p = PATH_SEPARATOR;
+			return -1;
+		}
+		*p = PATH_SEPARATOR;
+		p = strchr(p + 1, PATH_SEPARATOR);
+	}
+
+	return open(pathname, flags, mode);
+}
 
