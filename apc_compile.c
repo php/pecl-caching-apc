@@ -286,7 +286,9 @@ static zend_function* my_copy_function(zend_function* dst, zend_function* src, a
     switch (src->type) {
     case ZEND_INTERNAL_FUNCTION:
     case ZEND_OVERLOADED_FUNCTION:
-        assert(0);
+        /* shallow copy because op_array is internal */
+        dst->op_array = src->op_array;
+        break;
         
     case ZEND_USER_FUNCTION:
     case ZEND_EVAL_CODE:
@@ -730,7 +732,7 @@ static void my_destroy_function(zend_function* src, apc_free_t deallocate)
     switch (src->type) {
     case ZEND_INTERNAL_FUNCTION:
     case ZEND_OVERLOADED_FUNCTION:
-        assert(0);
+        break;
         
     case ZEND_USER_FUNCTION:
     case ZEND_EVAL_CODE:
