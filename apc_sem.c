@@ -28,9 +28,8 @@
 #include <stdarg.h>
 #include <errno.h>
 
-/* If host type is linux, or any other that doesn't define semun,
- * define it ourselves. */
-#ifdef APC_HOST_LINUX
+/* If host type is not BSD, we must define semun ourselves. */
+#ifndef APC_HOST_BSD
 union semun {
 	int val;                    /* value for SETVAL */
 	struct semid_ds *buf;       /* buffer for IPC_STAT, IPC_SET */
