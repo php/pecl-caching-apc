@@ -178,9 +178,9 @@ void apc_create_zend_function(zend_function** zf);
 
 /* special purpose */
 void apc_serialize_zend_function_table(HashTable* gft, apc_nametable_t* acc);
-void apc_deserialize_zend_function_table(HashTable* gft);
+void apc_deserialize_zend_function_table(HashTable* gft, apc_nametable_t* acc);
 void apc_serialize_zend_class_table(HashTable* gct, apc_nametable_t* acc);
-void apc_deserialize_zend_class_table(HashTable* gct);
+void apc_deserialize_zend_class_table(HashTable* gct, apc_nametable_t* acc);
 
 
 /* type: Fundamental operations */
@@ -965,7 +965,7 @@ void apc_serialize_zend_function_table(HashTable* gft, apc_nametable_t* acc)
 	SERIALIZE_SCALAR(0, char);
 }
 
-void apc_deserialize_zend_function_table(HashTable* gft)
+void apc_deserialize_zend_function_table(HashTable* gft, apc_nametable_t* acc)
 {
 	zend_function* zf;
 	char exists;
@@ -980,6 +980,7 @@ void apc_deserialize_zend_function_table(HashTable* gft)
 //			zend_error(E_WARNING, "failed to add '%s' to ftable\n", zf->common.function_name);
 		//	assert(0); /* should never fail! */
 		}
+		apc_nametable_insert(acc, zf->common.function_name);
 		DESERIALIZE_SCALAR(&exists, char);
 	}
 }
@@ -1014,7 +1015,7 @@ void apc_serialize_zend_class_table(HashTable* gct, apc_nametable_t* acc)
 	SERIALIZE_SCALAR(0, char);
 }
 
-void apc_deserialize_zend_class_table(HashTable* gct)
+void apc_deserialize_zend_class_table(HashTable* gct, apc_nametable_t* acc)
 {
 	char exists;
 	zend_class_entry* zc;
@@ -1028,6 +1029,7 @@ void apc_deserialize_zend_class_table(HashTable* gct)
 		{
 			//assert(0); /* should never fail! */
 		}
+		apc_nametable_insert(acc, zc->name);
 		DESERIALIZE_SCALAR(&exists, char);
 	}
 }

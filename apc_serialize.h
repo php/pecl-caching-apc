@@ -86,8 +86,8 @@ extern void apc_create_zend_function(zend_function** zf);
 
 /* special purpose */
 extern void apc_serialize_zend_function_table(HashTable* gft, apc_nametable_t* acc);
-extern void apc_deserialize_zend_function_table(HashTable* gft);
+extern void apc_deserialize_zend_function_table(HashTable* gft, apc_nametable_t* acc);
 extern void apc_serialize_zend_class_table(HashTable* gct, apc_nametable_t* acc);
-extern void apc_deserialize_zend_class_table(HashTable* gct);
+extern void apc_deserialize_zend_class_table(HashTable* gct, apc_nametable_t* acc);
 
 #endif
