@@ -34,6 +34,10 @@ void apc_mmap_dump(apc_outputfn_t outputfn, HashTable* cache)
 	outputfn("<td bgcolor=#ffffff>Name</td>\n");
 	outputfn("<td bgcolor=#ffffff>Value</td>\n");
 	outputfn("<tr>\n");
+	outputfn("<td bgcolor=#eeeeee>Global TTL</td>\n");
+	outputfn("<td bgcolor=#eeeeee>%d</td>\n", APCG(ttl) ? APCG(ttl) : 0 );
+
+	outputfn("<tr>\n");
 	outputfn("<td bgcolor=#eeeeee>Root Cache Dir</td>\n");
 	outputfn("<td bgcolor=#eeeeee>%s</td>\n", APCG(cachedir) ? APCG(cachedir) : "(none)");
 	outputfn("<tr>\n");
@@ -46,10 +50,9 @@ void apc_mmap_dump(apc_outputfn_t outputfn, HashTable* cache)
  /* display bucket info */
 	outputfn("<table border=1 cellpadding=2 cellspacing=1>\n");
 	outputfn("<tr>\n");
-	outputfn("<td colspan=6 bgcolor=#dde4ff>Child Cache Data</td>\n");
+	outputfn("<td colspan=5 bgcolor=#dde4ff>Child Cache Data</td>\n");
 	outputfn("<tr>\n");
 	outputfn("<td bgcolor=#ffffff>Key</td>\n");
-	outputfn("<td bgcolor=#ffffff>File</td>\n");
 	outputfn("<td bgcolor=#ffffff>Length</td>\n");
 	outputfn("<td bgcolor=#ffffff>Last ModTime(B)</td>\n");
 	outputfn("<td bgcolor=#ffffff>Hits</td>\n");
@@ -60,7 +63,6 @@ void apc_mmap_dump(apc_outputfn_t outputfn, HashTable* cache)
 		in_elem = (struct mm_fl_element *) p->pData;
 		outputfn("<tr>\n");
 		outputfn("<td bgcolor=#eeeeee>%s</td>\n", p->arKey);
-		outputfn("<td bgcolor=#eeeeee>%s</td>\n", in_elem->cache_filename);
 		outputfn("<td bgcolor=#eeeeee>%d</td>\n", in_elem->inputlen);
 		outputfn("<td bgcolor=#eeeeee>%d</td>\n", in_elem->mtime);
 		outputfn("<td bgcolor=#eeeeee>%d</td>\n", in_elem->hitcounter);
