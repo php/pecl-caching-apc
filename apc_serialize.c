@@ -423,8 +423,8 @@ void apc_create_zend_llist(zend_llist** list);
 /* routines for handling structures from zend_hash.h */
 HashTable* apc_copy_hashtable(HashTable* nt, HashTable* ht, void* funcptr, int datasize, apc_malloc_t);
 void apc_serialize_hashtable(HashTable* ht, void* funcptr);
-void apc_deserialize_hashtable(HashTable* ht, void* funcptr, int datasize);
-void apc_create_hashtable(HashTable** ht, void* funcptr, int datasize);
+void apc_deserialize_hashtable(HashTable* ht, void* funcptr, void* dptr, int datasize);
+void apc_create_hashtable(HashTable** ht, void* funcptr, void* dptr, int datasize);
 
 /* routines for handling structures from zend.h */
 zvalue_value* apc_copy_zvalue_value(zvalue_value* nv, zvalue_value* zv, int type, apc_malloc_t);
@@ -436,6 +436,7 @@ void apc_serialize_zval_ptr(zval** zv);
 void apc_serialize_zval(zval* zv);
 void apc_deserialize_zval(zval* zv);
 void apc_create_zval(zval** zv);
+void apc_free_zval(zval** zv);
 zend_function_entry* apc_copy_zend_function_entry(zend_function_entry* nfe, zend_function_entry* zfe, apc_malloc_t);
 void apc_serialize_zend_function_entry(zend_function_entry* zfe);
 void apc_deserialize_zend_function_entry(zend_function_entry* zfe);
@@ -476,6 +477,7 @@ zend_function *apc_copy_zend_function(zend_function* nf, zend_function* zf, apc_
 void apc_serialize_zend_function(zend_function* zf);
 void apc_deserialize_zend_function(zend_function* zf);
 void apc_create_zend_function(zend_function** zf);
+void apc_free_zend_function(zend_function** zf);
 
 /* special purpose */
 void apc_serialize_zend_function_table(HashTable* gft, apc_nametable_t* acc, apc_nametable_t*);
@@ -486,7 +488,7 @@ int apc_deserialize_zend_class_table(HashTable* gct, apc_nametable_t* acc, apc_n
 int apc_deserialize_shmdirect_class_table(HashTable* gct);
 void apc_fixup_opcodes(zend_op* opcodes, int num_ops, apc_malloc_t ctor);
 void apc_fixup_class_table(HashTable* ht, apc_malloc_t ctor);
-
+void apc_free_string(char **ptr);
 
 /* type: Fundamental operations */
 
@@ -531,6 +533,14 @@ void apc_fixup_class_table(HashTable* ht, apc_malloc_t ctor);
 
 /* type: string (null-terminated) */
 
+void apc_free_string(char **string) 
+{
+  if (*string == NULL)
+    return;
+  efree(*string);
+  *string = NULL;
+}
+
 void apc_serialize_string(char* string)
 {
 	int len;
@@ -540,7 +550,12 @@ void apc_serialize_string(char* string)
 		SERIALIZE_SCALAR(-1, int);
 		return;
 	}
+
 	len = strlen(string);
+        if (len <= 0) {
+                SERIALIZE_SCALAR(-1, int);
+                return;
+        }
 	SERIALIZE_SCALAR(len, int);
 	STORE_BYTES(string, len);
 }
@@ -548,7 +563,7 @@ void apc_serialize_string(char* string)
 void apc_serialize_zstring(char* string, int len)
 {
   /* by convention, mark null strings with a length of -1 */
-  if (len == 0) {
+  if (len <= 0 || string == NULL) {
     SERIALIZE_SCALAR(-1, int);
     return;
   }
@@ -562,7 +577,7 @@ void apc_create_string(char** string)
   int len = 0;
 
   DESERIALIZE_SCALAR(&len, int);
-  if (len == -1) {
+  if (len <= 0) {
     /* by convention, empty marked strings (len is -1)  are returned as an empty string */
     *string = (char*) emalloc(1);
     (*string)[0] = '\0';
@@ -613,7 +628,7 @@ int apc_deserialize_magic(void)
 
 	apc_create_string(&tmp);
 	retval = strcmp(tmp,APC_MAGIC_HEADER);
-	efree(tmp);
+	apc_free_string(&tmp); // MPB
 	return retval;
 }
 /* type: zend_llist */
@@ -828,7 +843,7 @@ void apc_serialize_hashtable(HashTable* ht, void* funcptr)
 	}
 }
 
-void apc_deserialize_hashtable(HashTable* ht, void* funcptr, int datasize)
+void apc_deserialize_hashtable(HashTable* ht, void* funcptr, void* dptr, int datasize)
 {
 	char exists;
 	uint nSize;
@@ -842,8 +857,10 @@ void apc_deserialize_hashtable(HashTable* ht, void* funcptr, int datasize)
 	void* pData;
 	int status;
 	void (*deserialize_bucket)(void*);
+	void (*free_bucket)(void*);
 
 	deserialize_bucket = (void(*)(void*)) funcptr;
+	free_bucket = (void(*)(void*)) dptr;
 
 	DESERIALIZE_SCALAR(&exists, char);
 	assert(exists != 0);
@@ -889,19 +906,24 @@ void apc_deserialize_hashtable(HashTable* ht, void* funcptr, int datasize)
 				zend_hash_index_update(ht, h, pData, datasize, NULL);
 			}
 		}
-                efree(arKey); // ADDED BY MPB
-                efree(pData); // ADDED BY MPB
+                if (dptr != NULL) {
+                  free_bucket(&pData); 
+                }
+                // else {
+                //   fprintf(stderr, "Do not free: %s\n", arKey);
+                // }
+                apc_free_string(&arKey); // ADDED BY MPB
 	}
 }
 
-void apc_create_hashtable(HashTable** ht, void* funcptr, int datasize)
+void apc_create_hashtable(HashTable** ht, void* funcptr, void* dptr, int datasize)
 {
 	char exists;	/* for identifying null hashtables */
 
 	PEEK_SCALAR(&exists, char);
 	if (exists) {
 		*ht = (HashTable*) emalloc(sizeof(HashTable));
-		apc_deserialize_hashtable(*ht, funcptr, datasize);
+		apc_deserialize_hashtable(*ht, funcptr, dptr, datasize);
 	}
 	else {
 		DESERIALIZE_SCALAR(&exists, char);
@@ -931,8 +953,14 @@ zvalue_value* apc_copy_zvalue_value(zvalue_value* nv, zvalue_value* zv, int type
     case IS_CONSTANT:
     case IS_STRING:
     case FLAG_IS_BC:
-		nv->str.val = apc_vmemcpy(zv->str.val, zv->str.len + 1, ctor);
-		nv->str.len = zv->str.len;
+                if (zv->str.val == NULL) {
+		  nv->str.val = NULL;
+		  nv->str.len = zv->str.len;
+                }
+                else {
+		  nv->str.val = apc_vmemcpy(zv->str.val, zv->str.len + 1, ctor);
+		  nv->str.len = zv->str.len;
+                }
     break;
     case IS_ARRAY:
     case IS_CONSTANT_ARRAY:
@@ -994,7 +1022,6 @@ void apc_deserialize_zvalue_value(zvalue_value* zv, int type)
 {
 	/* We peeked ahead in the calling routine to deserialize the
 	 * type. Now we just deserialize. */
-
 	switch(type) {
 	  case IS_RESOURCE:
 	  case IS_BOOL:
@@ -1014,15 +1041,14 @@ void apc_deserialize_zvalue_value(zvalue_value* zv, int type)
 		DESERIALIZE_SCALAR(&zv->str.len, int);
 		break;
 	  case IS_ARRAY:
-		apc_create_hashtable(&zv->ht, apc_create_zval, sizeof(void*));
+		apc_create_hashtable(&zv->ht, apc_create_zval, NULL, sizeof(void*));
 		break;
 	  case IS_CONSTANT_ARRAY:
-		apc_create_hashtable(&zv->ht, apc_create_zval, sizeof(void*));
+		apc_create_hashtable(&zv->ht, apc_create_zval, NULL, sizeof(void*));
 		break;
 	  case IS_OBJECT:
 		apc_create_zend_class_entry(&zv->obj.ce);
-		apc_create_hashtable(&zv->obj.properties, apc_create_zval,
-			sizeof(zval *));
+		apc_create_hashtable(&zv->obj.properties, apc_create_zval, NULL, sizeof(zval *));
 		break;
 	  default:
         /* The above list enumerates all types.  If we get here,
@@ -1087,6 +1113,21 @@ void apc_create_zval(zval** zv)
 	*zv = (zval*) emalloc(sizeof(zval));
 	apc_deserialize_zval(*zv);
 }
+void apc_free_zval(zval** zv)
+{
+  if (*zv != NULL) {
+    switch((*zv)->type) {
+      case IS_CONSTANT:
+      case IS_STRING:
+      case FLAG_IS_BC:
+        apc_free_string(&(*zv)->value.str.val);
+        break;
+    }
+    efree(*zv);
+  }
+  *zv = NULL;
+}
+
 
 
 /* type: zend_function_entry */
@@ -1303,7 +1344,7 @@ void apc_deserialize_zend_class_entry(zend_class_entry* zce)
 		children->length += zce->name_length + 1;
 		}
 		zce->parent = NULL;
-		efree(parent_name);
+		apc_free_string(&parent_name);
 	}
 	else {
 		zce->parent = NULL;
@@ -1314,10 +1355,10 @@ void apc_deserialize_zend_class_entry(zend_class_entry* zce)
 	zce->refcount = (int*) emalloc(sizeof(int));
 	DESERIALIZE_SCALAR(zce->refcount, int);
 	DESERIALIZE_SCALAR(&zce->constants_updated, zend_bool);
-	apc_deserialize_hashtable(&zce->function_table, apc_create_zend_function,
+	apc_deserialize_hashtable(&zce->function_table, apc_create_zend_function, apc_free_zend_function,
 		sizeof(zend_function));
-	apc_deserialize_hashtable(&zce->default_properties, apc_create_zval,
-		sizeof(zval *));
+
+	apc_deserialize_hashtable(&zce->default_properties, apc_create_zval, NULL, sizeof(zval *));
 
 	/* see apc_serialize_zend_class_entry() for a description of the
 	 * zend_class_entry.builtin_functions member */
@@ -1764,7 +1805,7 @@ void apc_deserialize_zend_op_array(zend_op_array* zoa, int master)
 		LOAD_BYTES(zoa->brk_cont_array, zoa->last_brk_cont *
 			sizeof(zend_brk_cont_element));
 	}
-	apc_create_hashtable(&zoa->static_variables, apc_create_zval, sizeof(zval *));
+	apc_create_hashtable(&zoa->static_variables, apc_create_zval, NULL, sizeof(zval *));
 #ifdef APC_MUST_DEFINE_START_OP /*  Introduced in php 4.0.7 */
 	zoa->start_op = NULL;
 #endif
@@ -1772,7 +1813,7 @@ void apc_deserialize_zend_op_array(zend_op_array* zoa, int master)
 	DESERIALIZE_SCALAR(&zoa->done_pass_two, zend_bool);
 	apc_create_string(&fname);
 	zoa->filename = zend_set_compiled_filename(fname);
-	efree(fname);
+	apc_free_string(&fname);
 	if(master) {
 		apc_nametable_difference(parental_inheritors, non_inheritors);
 		apc_nametable_apply(parental_inheritors, call_inherit);
@@ -1936,7 +1977,12 @@ void apc_create_zend_function(zend_function** zf)
 	*zf = (zend_function*) emalloc(sizeof(zend_function));
 	apc_deserialize_zend_function(*zf);
 }
-
+void apc_free_zend_function(zend_function** zf)
+{
+  if (*zf != NULL)
+    efree(*zf);
+  *zf = NULL;
+}
 
 /* special purpose serialization functions */
 
@@ -2008,7 +2054,7 @@ void apc_deserialize_zend_function_table(HashTable* gft, apc_nametable_t* acc, a
 		apc_nametable_insert(acc, zf->common.function_name, 0);
 		apc_nametable_insert(priv, zf->common.function_name, 0);
 		DESERIALIZE_SCALAR(&exists, char);
-                efree(zf); // ADDED BY MPB
+                apc_free_zend_function(&zf);
 	}
 }
 
@@ -2099,7 +2145,9 @@ int apc_deserialize_zend_class_table(HashTable* gct, apc_nametable_t* acc, apc_n
 		apc_nametable_insert(acc, zc->name, 0);
 		apc_nametable_insert(priv, zc->name, 0);
 		DESERIALIZE_SCALAR(&exists, char);
-                efree(zc); // ADDED BY MPB
+                // apc_free_zend_class_entry
+                if (zc != NULL)
+                  efree(zc); // ADDED BY MPB
 		i++;
 	}
 	return i;
@@ -2127,6 +2175,9 @@ int apc_deserialize_shmdirect_class_table(HashTable* gct)
 		}
 		/* We may only want to do this insert if zc->parent is NULL */
 		DESERIALIZE_SCALAR(&exists, char);
+                apc_free_string(&key);
+                if (zc != NULL)
+                  efree(zc);
 		i++;
 	}
 	return i;
