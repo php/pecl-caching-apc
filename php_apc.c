@@ -213,7 +213,7 @@ PHP_INI_BEGIN()
 		OnUpdateInt, shm_segment_size, zend_apc_globals, apc_globals)
 
 	/* Set maximum no. of shared memory segments. Ignored under mmap. */
-	STD_PHP_INI_ENTRY("apc.shm_segments", "10", PHP_INI_ALL, 
+	STD_PHP_INI_ENTRY("apc.shm_segments", "2", PHP_INI_ALL, 
 		OnUpdateInt, shm_segments, zend_apc_globals, apc_globals)
 
 	/* Allow for compiled mmap-style files to be used as 'source' files */
