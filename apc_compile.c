@@ -262,7 +262,9 @@ static znode* my_copy_znode(znode* dst, znode* src, apc_malloc_t allocate, apc_f
            dst ->op_type == IS_UNUSED);
 
     if (src->op_type == IS_CONST) {
-        if(!my_copy_zval(&dst->u.constant, &src->u.constant, allocate, deallocate)) return NULL;
+        if(!my_copy_zval(&dst->u.constant, &src->u.constant, allocate, deallocate)) {
+            return NULL;
+        }
     }
 
     return dst;
@@ -571,6 +573,25 @@ static HashTable* my_copy_static_variables(zend_op_array* src, apc_malloc_t allo
                              (ht_free_fun_t) my_free_zval_ptr,
                              1,
                              allocate, deallocate);
+}
+/* }}} */
+
+/* {{{ apc_copy_zval */
+zval* apc_copy_zval(zval* dst, zval* src, apc_malloc_t allocate, apc_free_t deallocate TSRMLS_DC)
+{
+    int local_dst_alloc = 0;
+    assert(src != NULL);
+
+    if (!dst) {
+        CHECK(dst = (zval*) allocate(sizeof(zval)));
+        local_dst_alloc = 1;
+    }
+
+    if(!my_copy_zval(dst, src, allocate, deallocate)) {
+        if(local_dst_alloc) deallocate(dst);
+        return NULL;
+    }
+    return dst; 
 }
 /* }}} */
 
@@ -1100,6 +1121,16 @@ void apc_free_classes(apc_class_t* src, apc_free_t deallocate)
         }   
         deallocate(src);
     }   
+}
+/* }}} */
+
+/* {{{ apc_free_zval */
+void apc_free_zval(zval* src, apc_free_t deallocate)
+{
+    if (src != NULL) {
+        my_destroy_zval(src, deallocate);
+        deallocate(src);
+    }
 }
 /* }}} */
 

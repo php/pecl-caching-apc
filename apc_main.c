@@ -105,19 +105,19 @@ static zend_op_array* cached_compile(TSRMLS_D)
     cache_entry = (apc_cache_entry_t*) apc_stack_top(APCG(cache_stack));
     assert(cache_entry != NULL);
 
-    if (cache_entry->functions) {
-        for (i = 0; cache_entry->functions[i].function != NULL; i++) {
-            install_function(cache_entry->functions[i] TSRMLS_CC);
+    if (cache_entry->data.file.functions) {
+        for (i = 0; cache_entry->data.file.functions[i].function != NULL; i++) {
+            install_function(cache_entry->data.file.functions[i] TSRMLS_CC);
         }
     }
 
-    if (cache_entry->classes) {
-        for (i = 0; cache_entry->classes[i].class_entry != NULL; i++) {
-            install_class(cache_entry->classes[i] TSRMLS_CC);
+    if (cache_entry->data.file.classes) {
+        for (i = 0; cache_entry->data.file.classes[i].class_entry != NULL; i++) {
+            install_class(cache_entry->data.file.classes[i] TSRMLS_CC);
         }
     }
 
-    return apc_copy_op_array_for_execution(cache_entry->op_array);
+    return apc_copy_op_array_for_execution(cache_entry->data.file.op_array);
 }
 /* }}} */
 
@@ -154,7 +154,7 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
 #endif
 
     /* try to create a cache key; if we fail, give up on caching */
-    if (!apc_cache_make_key(&key, h->filename, PG(include_path) TSRMLS_CC)) {
+    if (!apc_cache_make_file_key(&key, h->filename, PG(include_path) TSRMLS_CC)) {
         return old_compile_file(h, type TSRMLS_CC);
     }
     
@@ -162,7 +162,7 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
     cache_entry = apc_cache_find(APCG(cache), key, t);
     if (cache_entry != NULL) {
         if (h->opened_path == NULL) {
-            h->opened_path = estrdup(cache_entry->filename);
+            h->opened_path = estrdup(cache_entry->data.file.filename);
         }
         zend_llist_add_element(&CG(open_files), h); /* XXX kludge */
         apc_stack_push(APCG(cache_stack), cache_entry);
@@ -203,13 +203,13 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
         return op_array;
     }
 
-    if(!(cache_entry = apc_cache_make_entry(h->opened_path, alloc_op_array, alloc_functions, alloc_classes))) {
+    if(!(cache_entry = apc_cache_make_file_entry(h->opened_path, alloc_op_array, alloc_functions, alloc_classes))) {
         apc_free_op_array(alloc_op_array, apc_sma_free);
         apc_free_functions(alloc_functions, apc_sma_free);
         apc_free_classes(alloc_classes, apc_sma_free);
         apc_cache_expunge(APCG(cache),t);
         HANDLE_UNBLOCK_INTERRUPTIONS();
-        apc_log(APC_WARNING, "(apc_cache_make_entry) unable to cache '%s': insufficient " "shared memory available", h->opened_path);
+        apc_log(APC_WARNING, "(apc_cache_make_file_entry) unable to cache '%s': insufficient " "shared memory available", h->opened_path);
         return op_array;
     }
     HANDLE_UNBLOCK_INTERRUPTIONS();
@@ -266,6 +266,8 @@ int apc_module_init()
     apc_sma_init(APCG(shm_segments), APCG(shm_size)*1024*1024, NULL);
 #endif
     APCG(cache) = apc_cache_create(APCG(num_files_hint), APCG(gc_ttl), APCG(ttl));
+    APCG(user_cache) = apc_cache_create(APCG(user_entries_hint), APCG(gc_ttl), APCG(user_ttl));
+    APCG(user_cache_stack) = apc_stack_create(0);
     APCG(cache_stack) = apc_stack_create(0);
     APCG(compiled_filters) = apc_regex_compile_array(APCG(filters));
 
@@ -276,11 +278,6 @@ int apc_module_init()
     /* override execution */
     old_execute = zend_execute;
     zend_execute = my_execute;
-    
-#if 0
-	/* startup output is not good for stuff like fastcgi */
-    apc_log(APC_NOTICE, "APC version %s -- startup complete", apc_version());
-#endif
 
     APCG(initialized) = 1;
     return 0;
@@ -307,18 +304,18 @@ int apc_module_shutdown()
     while (apc_stack_size(APCG(cache_stack)) > 0) {
         int i;
         apc_cache_entry_t* cache_entry = (apc_cache_entry_t*) apc_stack_pop(APCG(cache_stack));
-        if (cache_entry->functions) {
-            for (i = 0; cache_entry->functions[i].function != NULL; i++) {
+        if (cache_entry->data.file.functions) {
+            for (i = 0; cache_entry->data.file.functions[i].function != NULL; i++) {
                 zend_hash_del(EG(function_table),
-                cache_entry->functions[i].name,
-                cache_entry->functions[i].name_len+1);
+                cache_entry->data.file.functions[i].name,
+                cache_entry->data.file.functions[i].name_len+1);
             }
         }
-        if (cache_entry->classes) {
-            for (i = 0; cache_entry->classes[i].class_entry != NULL; i++) {
+        if (cache_entry->data.file.classes) {
+            for (i = 0; cache_entry->data.file.classes[i].class_entry != NULL; i++) {
                 zend_hash_del(EG(class_table),
-                cache_entry->classes[i].name,
-                cache_entry->classes[i].name_len+1);
+                cache_entry->data.file.classes[i].name,
+                cache_entry->data.file.classes[i].name_len+1);
             }
         }
         apc_cache_free_entry(cache_entry);
@@ -326,9 +323,11 @@ int apc_module_shutdown()
 
     /* apc cleanup */
     apc_stack_destroy(APCG(cache_stack));
+    apc_stack_destroy(APCG(user_cache_stack));
     apc_cache_destroy(APCG(cache));
+    apc_cache_destroy(APCG(user_cache));
     apc_sma_cleanup();
-    
+
     APCG(initialized) = 0;
     return 0;
 }
@@ -341,6 +340,7 @@ int apc_request_init()
 {
 	TSRMLS_FETCH();
     apc_stack_clear(APCG(cache_stack));
+    apc_stack_clear(APCG(user_cache_stack));
     return 0;
 }
 
@@ -364,13 +364,18 @@ void apc_deactivate()
             (apc_cache_entry_t*) apc_stack_pop(APCG(cache_stack));
         apc_cache_release(APCG(cache), cache_entry);
     }
+    while (apc_stack_size(APCG(user_cache_stack)) > 0) {
+        apc_cache_entry_t* cache_entry =
+            (apc_cache_entry_t*) apc_stack_pop(APCG(user_cache_stack));
+        apc_cache_release(APCG(user_cache), cache_entry);
+    }
 }
 /* }}} */
 
 /* {{{ apc_version */
 const char* apc_version()
 {
-    return "2.0.5";
+    return "2.1.0";
 }
 /* }}} */
 

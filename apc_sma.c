@@ -323,6 +323,30 @@ void* apc_sma_malloc(size_t n)
 }
 /* }}} */
 
+/* {{{ apc_sma_realloc */
+void* apc_sma_realloc(void *p, size_t n)
+{
+    apc_sma_free(p);
+    return apc_sma_malloc(n);
+}
+/* }}} */
+
+/* {{{ apc_sma_strdup */
+void* apc_sma_strdup(const char* s)
+{
+    void* q;
+    int len;
+
+    if(!s) return NULL;
+
+    len = strlen(s)+1;
+    q = apc_sma_malloc(len);
+    if(!q) return NULL;
+    memcpy(q, s, len);
+    return q;
+}
+/* }}} */
+
 /* {{{ apc_sma_free */
 void apc_sma_free(void* p)
 {

@@ -25,6 +25,7 @@
  * all required headers are available.
  */
 
+#include "php_config.h"
 #include "php.h"
 #include "zend.h"
 #include "zend_API.h"

@@ -30,8 +30,10 @@ ZEND_BEGIN_MODULE_GLOBALS(apc)
     int shm_size;           /* size of each shared memory segment (in MB) */
     int optimization;       /* optimizer level (higher = more aggressive) */
     int num_files_hint;     /* parameter to apc_cache_create */
+    int user_entries_hint;
     int gc_ttl;             /* parameter to apc_cache_create */
     int ttl;                /* parameter to apc_cache_create */
+    int user_ttl;
 #if APC_MMAP
     char *mmap_file_mask;   /* mktemp-style file-mask to pass to mmap */
 #endif
@@ -40,7 +42,9 @@ ZEND_BEGIN_MODULE_GLOBALS(apc)
     /* module variables */
     int initialized;        /* true if module was initialized */
     apc_cache_t* cache;     /* the global compiler cache */
+    apc_cache_t* user_cache;  /* the global user content cache */
     apc_stack_t* cache_stack; /* the stack of cached executable code */
+    apc_stack_t* user_cache_stack; /* the stack of cached user entries */
     void* compiled_filters; /* compiled filters */
     int cache_by_default;   /* true if files should be cached unless filtered out */
                             /* false if files should only be cached if filtered in */

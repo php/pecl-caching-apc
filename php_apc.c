@@ -32,11 +32,22 @@
 #include "php_ini.h"
 #include "zend_extensions.h"
 #include "ext/standard/info.h"
+#include "SAPI.h"
+/* 
+ * Temporary Apache include until we move to the new SAPI call
+ * generates annoying XtOffsetOf warning because of a circular dependency order problem
+ */
+#if HAVE_APACHE
+#include "httpd.h"
+#endif
+
 
 /* {{{ PHP_FUNCTION declarations */
 PHP_FUNCTION(apc_cache_info);
 PHP_FUNCTION(apc_clear_cache);
 PHP_FUNCTION(apc_sma_info);
+PHP_FUNCTION(apc_store);
+PHP_FUNCTION(apc_fetch);
 /* }}} */
 
 /* {{{ ZEND_DECLARE_MODULE_GLOBALS(apc) */
@@ -85,8 +96,10 @@ STD_PHP_INI_ENTRY("apc.shm_segments",   "1",    PHP_INI_SYSTEM, OnUpdateInt,    
 STD_PHP_INI_ENTRY("apc.shm_size",       "30",   PHP_INI_SYSTEM, OnUpdateInt,            shm_size,       zend_apc_globals, apc_globals)
 STD_PHP_INI_ENTRY("apc.optimization",   "0",    PHP_INI_SYSTEM, OnUpdateInt,            optimization,   zend_apc_globals, apc_globals)
 STD_PHP_INI_ENTRY("apc.num_files_hint", "1000", PHP_INI_SYSTEM, OnUpdateInt,            num_files_hint, zend_apc_globals, apc_globals)
+STD_PHP_INI_ENTRY("apc.user_entries_hint", "100", PHP_INI_SYSTEM, OnUpdateInt,          user_entries_hint, zend_apc_globals, apc_globals)
 STD_PHP_INI_ENTRY("apc.gc_ttl",         "3600", PHP_INI_SYSTEM, OnUpdateInt,            gc_ttl,         zend_apc_globals, apc_globals)
 STD_PHP_INI_ENTRY("apc.ttl",            "0",    PHP_INI_SYSTEM, OnUpdateInt,            ttl,            zend_apc_globals, apc_globals)
+STD_PHP_INI_ENTRY("apc.user_ttl",       "0",    PHP_INI_SYSTEM, OnUpdateInt,            user_ttl,       zend_apc_globals, apc_globals)
 #if APC_MMAP
 STD_PHP_INI_ENTRY("apc.mmap_file_mask",  NULL,  PHP_INI_SYSTEM, OnUpdateString,         mmap_file_mask, zend_apc_globals, apc_globals)
 #endif
@@ -110,8 +123,8 @@ static PHP_MINFO_FUNCTION(apc)
 #endif
 	php_info_print_table_row(2, "Revision", "$Revision$");
 	php_info_print_table_row(2, "Build Date", __DATE__ " " __TIME__);
+    DISPLAY_INI_ENTRIES();
 	php_info_print_table_end();
-	DISPLAY_INI_ENTRIES();
 }
 /* }}} */
 
@@ -164,12 +177,19 @@ PHP_FUNCTION(apc_cache_info)
     apc_cache_info_t* info;
     apc_cache_link_t* p;
     zval* list;
+    char *cache_type;
+    int ct_len;
 
-    if (ZEND_NUM_ARGS() != 0) {
-        WRONG_PARAM_COUNT;
+	if (zend_parse_parameters(ZEND_NUM_ARGS(), "s", &cache_type, &ct_len) == FAILURE) {
+		return;
+	}
+
+    if(!strcasecmp(cache_type,"opcode")) {
+        info = apc_cache_info(APCG(cache));
+    } else if(!strcasecmp(cache_type,"user")) {
+        info = apc_cache_info(APCG(user_cache));
     }
 
-    info = apc_cache_info(APCG(cache));
     if(!info) {
         php_error_docref(NULL TSRMLS_CC, E_WARNING, "No APC info available.  Perhaps APC is disabled via apc.enabled?");
         RETURN_FALSE;
@@ -190,9 +210,16 @@ PHP_FUNCTION(apc_cache_info)
         ALLOC_INIT_ZVAL(link);
         array_init(link);
 
-        add_assoc_string(link, "filename", p->filename, 1);
-        add_assoc_long(link, "device", p->device);
-        add_assoc_long(link, "inode", p->inode);
+        if(p->type == APC_CACHE_ENTRY_FILE) {
+            add_assoc_string(link, "filename", p->data.file.filename, 1);
+            add_assoc_long(link, "device", p->data.file.device);
+            add_assoc_long(link, "inode", p->data.file.inode);
+            add_assoc_string(link, "type", "file", 1);
+        } else if(p->type == APC_CACHE_ENTRY_USER) {
+            add_assoc_string(link, "info", p->data.user.info, 1);
+            add_assoc_long(link, "ttl", (long)p->data.user.ttl);
+            add_assoc_string(link, "type", "user", 1);
+        }
         add_assoc_long(link, "num_hits", p->num_hits);
         add_assoc_long(link, "mtime", p->mtime);
         add_assoc_long(link, "creation_time", p->creation_time);
@@ -212,9 +239,15 @@ PHP_FUNCTION(apc_cache_info)
         ALLOC_INIT_ZVAL(link);
         array_init(link);
 
-        add_assoc_string(link, "filename", p->filename, 1);
-        add_assoc_long(link, "device", p->device);
-        add_assoc_long(link, "inode", p->inode);
+        if(p->type == APC_CACHE_ENTRY_FILE) {
+            add_assoc_string(link, "filename", p->data.file.filename, 1);
+            add_assoc_long(link, "device", p->data.file.device);
+            add_assoc_long(link, "inode", p->data.file.inode);
+            add_assoc_string(link, "type", "file", 1);
+        } else if(p->type == APC_CACHE_ENTRY_USER) {
+            add_assoc_string(link, "filename", p->data.user.info, 1);
+            add_assoc_string(link, "type", "user", 1);
+        }
         add_assoc_long(link, "num_hits", p->num_hits);
         add_assoc_long(link, "mtime", p->mtime);
         add_assoc_long(link, "creation_time", p->creation_time);
@@ -239,6 +272,16 @@ PHP_FUNCTION(apc_clear_cache)
 }
 /* }}} */
 
+/* {{{ proto void apc_clear_user_cache() */
+PHP_FUNCTION(apc_clear_user_cache)
+{
+    if (ZEND_NUM_ARGS() != 0) {
+        WRONG_PARAM_COUNT;
+    }
+    apc_cache_clear(APCG(user_cache));
+}
+/* }}} */
+
 /* {{{ proto array apc_sma_info() */
 PHP_FUNCTION(apc_sma_info)
 {
@@ -251,6 +294,7 @@ PHP_FUNCTION(apc_sma_info)
     }
 
     info = apc_sma_info();
+
     if(!info) {
         php_error_docref(NULL TSRMLS_CC, E_WARNING, "No APC SMA info available.  Perhaps APC is disabled via apc.enabled?");
         RETURN_FALSE;
@@ -288,11 +332,123 @@ PHP_FUNCTION(apc_sma_info)
 }
 /* }}} */
 
+/* {{{ proto int apc_store(string key, zval var [, ttl ])
+ */
+PHP_FUNCTION(apc_store) {
+	zval *val;
+	char *strkey;
+	int strkey_len;
+	apc_cache_entry_t *entry;
+    apc_cache_key_t key;
+    long ttl = 0L;
+    time_t t;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS(), "sz|l", &strkey, &strkey_len, &val, &ttl) == FAILURE) {
+		return;
+	}
+
+
+    if (!(entry = apc_cache_make_user_entry(strkey, val, (unsigned int)ttl))) {
+        RETURN_FALSE;
+    }
+
+    printf("apc_store: user entry at 0x%lx\n",entry);
+
+    if (!apc_cache_make_user_key(&key, strkey TSRMLS_CC)) {
+        apc_cache_free_entry(entry);
+        RETURN_FALSE;
+    }
+
+#if HAVE_APACHE
+    /* Save a syscall here under Apache.  This should actually be a SAPI call instead
+     * but we don't have that yet.  Once that is introduced in PHP this can be cleaned up  -Rasmus */
+    t = ((request_rec *)SG(server_context))->request_time;
+#else
+    t = time(0);
+#endif
+
+    if (!apc_cache_user_insert(APCG(user_cache), key, entry, t)) {
+        apc_cache_free_user_key(&key);
+        apc_cache_free_entry(entry);
+        RETURN_FALSE;
+    }
+
+    RETURN_TRUE;
+}
+/* }}} */
+
+/* {{{ proto mixed apc_fetch(string key)
+ */
+PHP_FUNCTION(apc_fetch) {
+	char *strkey;
+	int strkey_len;
+    apc_cache_entry_t* entry;
+    time_t t;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS(), "s", &strkey, &strkey_len) == FAILURE) {
+		return;
+	}
+
+#if HAVE_APACHE
+    /* Save a syscall here under Apache.  This should actually be a SAPI call instead
+     * but we don't have that yet.  Once that is introduced in PHP this can be cleaned up  -Rasmus */
+    t = ((request_rec *)SG(server_context))->request_time;
+#else
+    t = time(0);
+#endif
+
+	entry = apc_cache_user_find(APCG(user_cache), strkey, strkey_len, t);
+
+    if(entry) {
+        /* Still working out if I actually need to maintain this stack */
+        apc_stack_push(APCG(user_cache_stack), entry);
+        /* deep-copy returned shm zval to emalloc'ed return_value */
+        memcpy(return_value, entry->data.user.val, sizeof(zval));
+        zval_copy_ctor(return_value);
+        printf("apc_fetch: entry found at 0x%lx\n",entry);
+    } else {
+        printf("apc_cache_user_find returned NULL\n");
+        RETURN_FALSE;
+    }
+}
+/* }}} */
+
+/* {{{ proto mixed apc_delete(string key)
+ */
+PHP_FUNCTION(apc_delete) {
+	char *strkey;
+	int strkey_len;
+    time_t t;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS(), "s", &strkey, &strkey_len) == FAILURE) {
+		return;
+	}
+
+#if HAVE_APACHE
+    /* Save a syscall here under Apache.  This should actually be a SAPI call instead
+     * but we don't have that yet.  Once that is introduced in PHP this can be cleaned up  -Rasmus */
+    t = ((request_rec *)SG(server_context))->request_time;
+#else
+    t = time(0);
+#endif
+
+	if(apc_cache_user_delete(APCG(user_cache), strkey, strkey_len)) {
+        RETURN_TRUE;
+    } else {
+        RETURN_FALSE;
+    }
+}
+/* }}} */
+
 /* {{{ apc_functions[] */
 function_entry apc_functions[] = {
 	PHP_FE(apc_cache_info,          NULL)
 	PHP_FE(apc_clear_cache,         NULL)
+	PHP_FE(apc_clear_user_cache,    NULL)
 	PHP_FE(apc_sma_info,            NULL)
+	PHP_FE(apc_store,               NULL)
+	PHP_FE(apc_fetch,               NULL)
+	PHP_FE(apc_delete,              NULL)
 	{NULL, 		NULL,				NULL}
 };
 /* }}} */

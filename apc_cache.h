@@ -27,26 +27,50 @@
 #include "apc.h"
 #include "apc_compile.h"
 
+#define APC_CACHE_ENTRY_FILE 1
+#define APC_CACHE_ENTRY_USER 2
+
 #define T apc_cache_t*
 typedef struct apc_cache_t apc_cache_t; /* opaque cache type */
+
+typedef union _apc_cache_key_data_t {
+    struct {
+        int device;             /* the filesystem device */
+        int inode;              /* the filesystem inode */
+    } file;
+    struct {
+        char *identifier;
+    } user;
+} apc_cache_key_data_t;
 
 /* {{{ struct definition: apc_cache_key_t */
 typedef struct apc_cache_key_t apc_cache_key_t;
 struct apc_cache_key_t {
-    int device;                 /* the filesystem device */
-    int inode;                  /* the filesystem inode */
-    int mtime;                  /* the mtime of this cached file */
+    apc_cache_key_data_t data;
+    int mtime;                  /* the mtime of this cached entry */
 };
 /* }}} */
+
+typedef union _apc_cache_entry_value_t {
+    struct {
+        char *filename;             /* absolute path to source file */
+        zend_op_array* op_array;    /* op_array allocated in shared memory */
+        apc_function_t* functions;  /* array of apc_function_t's */
+        apc_class_t* classes;       /* array of apc_class_t's */
+    } file;
+    struct {
+        char *info; 
+        zval *val;
+        unsigned int ttl;
+    } user;
+} apc_cache_entry_value_t;
 
 /* {{{ struct definition: apc_cache_entry_t */
 typedef struct apc_cache_entry_t apc_cache_entry_t;
 struct apc_cache_entry_t {
-    char* filename;             /* absolute path to source file */
-    zend_op_array* op_array;    /* op_array allocated in shared memory */
-    apc_function_t* functions;  /* array of apc_function_t's */
-    apc_class_t* classes;       /* array of apc_class_t's */
-    int ref_count;              /* concurrently executing processes */
+    apc_cache_entry_value_t data;
+    unsigned char type;
+    int ref_count;
 };
 /* }}} */
 
@@ -91,20 +115,35 @@ extern void apc_cache_clear(T cache);
  * returned, the caller must free the cache entry by calling
  * apc_cache_free_entry (see below).
  *
- * key is the value created by apc_cache_make_key.
+ * key is the value created by apc_cache_make_file_key for file keys.
  *
  * value is a cache entry returned by apc_cache_make_entry (see below).
  */
 extern int apc_cache_insert(T cache, apc_cache_key_t key,
                             apc_cache_entry_t* value, time_t t);
 
+extern int apc_cache_user_insert(T cache, apc_cache_key_t key,
+                            apc_cache_entry_t* value, time_t t);
+
 /*
  * apc_cache_find searches for a cache entry by filename, and returns a
  * pointer to the entry if found, NULL otherwise.
  *
- * key is a value created by apc_cache_make_key.
+ * key is a value created by apc_cache_make_file_key for file keys.
  */
 extern apc_cache_entry_t* apc_cache_find(T cache, apc_cache_key_t key, time_t t);
+
+/*
+ * apc_cache_user_find searches for a cache entry by its hashed identifier, 
+ * and returns a pointer to the entry if found, NULL otherwise.
+ *
+ */
+extern apc_cache_entry_t* apc_cache_user_find(T cache, char* strkey, int keylen, time_t t);
+
+/*
+ * apc_cache_user_delete finds an entry in the user cache and deletes it.
+ */
+extern int apc_cache_user_delete(apc_cache_t* cache, char *strkey, int keylen);
 
 /*
  * apc_cache_release decrements the reference count associated with a cache
@@ -118,7 +157,7 @@ extern apc_cache_entry_t* apc_cache_find(T cache, apc_cache_key_t key, time_t t)
 extern void apc_cache_release(T cache, apc_cache_entry_t* entry);
 
 /*
- * apc_cache_make_key creates a key object given a relative or absolute
+ * apc_cache_make_file_key creates a key object given a relative or absolute
  * filename and an optional list of auxillary paths to search. include_path is
  * searched if the filename cannot be found relative to the current working
  * directory.
@@ -129,19 +168,24 @@ extern void apc_cache_release(T cache, apc_cache_entry_t* entry);
  *
  * include_path is a colon-separated list of directories to search.
  */
-extern int apc_cache_make_key(apc_cache_key_t* key,
-                              const char* filename,
-                              const char* include_path
-							  TSRMLS_DC);
+extern int apc_cache_make_file_key(apc_cache_key_t* key,
+                                   const char* filename,
+                                   const char* include_path
+							       TSRMLS_DC);
 
 /*
- * apc_cache_make_entry creates an apc_cache_entry_t object given a filename
+ * apc_cache_make_file_entry creates an apc_cache_entry_t object given a filename
  * and the compilation results returned by the PHP compiler.
  */
-extern apc_cache_entry_t* apc_cache_make_entry(const char* filename,
-                                               zend_op_array* op_array,
-                                               apc_function_t* functions,
-                                               apc_class_t* classes);
+extern apc_cache_entry_t* apc_cache_make_file_entry(const char* filename,
+                                                    zend_op_array* op_array,
+                                                    apc_function_t* functions,
+                                                    apc_class_t* classes);
+/*
+ * apc_cache_make_user_entry creates an apc_cache_entry_t object given an info string
+ * and the zval to be stored.
+ */
+extern apc_cache_entry_t* apc_cache_make_user_entry(const char* info, zval *val, unsigned int ttl);
 
 /*
  * Frees all memory associated with an object returned by apc_cache_make_entry
@@ -149,13 +193,25 @@ extern apc_cache_entry_t* apc_cache_make_entry(const char* filename,
  */
 extern void apc_cache_free_entry(apc_cache_entry_t* entry);
 
+/* {{{ struct definition: apc_cache_link_data_t */
+typedef union _apc_cache_link_data_t {
+    struct {
+        char *filename;
+        int device;
+        int inode;
+    } file;
+    struct {
+        char *info;
+        unsigned int ttl;
+    } user;
+} apc_cache_link_data_t;
+/* }}} */
 
 /* {{{ struct definition: apc_cache_link_t */
 typedef struct apc_cache_link_t apc_cache_link_t;
 struct apc_cache_link_t {
-    char* filename;
-    int device;
-    int inode;
+    apc_cache_link_data_t data;
+    unsigned char type;
     int num_hits;
     time_t mtime;
     time_t creation_time;
