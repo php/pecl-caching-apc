@@ -1121,12 +1121,7 @@ void apc_deserialize_zend_op_array(zend_op_array* zoa)
 					if ((class_name = strchr(parent_name, ':')) == 0) {
 						zend_error(E_CORE_ERROR,"Invalid runtime class entry");
 					}
-					*(strchr(parent_name, ':')) = '\0';
-
-					class_name++;	/* advance past ':' */
-
-					parent_name = apc_estrdup(op2str);
-					*(strchr(parent_name, ':')) = '\0';
+					*class_name++ = '\0';	/* advance past ':' */
 
 					if (zend_hash_find(table, class_name, strlen(class_name)+1,
 						(void**) &ce) == SUCCESS) 
@@ -1341,7 +1336,10 @@ static int store_function_table(void *element, int num_args,
 	if (zf->type == ZEND_INTERNAL_FUNCTION) {
 		return 0;
 	}
-
+	/* do not serialize anonymous functions */
+	if (hash_key->nKeyLength == 0 || hash_key->arKey[0] == '\0') {
+		return 0;
+	}
 	/* serialize differences */
 	if (apc_nametable_insert(acc, zf->common.function_name, 0) != 0) {
 		SERIALIZE_SCALAR(1, char);
