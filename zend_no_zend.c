@@ -120,3 +120,7 @@ ZEND_API void apc_destroy_zend_function(zend_function *function)
   }
 }
 
+ZEND_API void apc_dont_destroy(void *ptr)
+{
+}
+
