@@ -9,6 +9,7 @@
  * ==================================================================
  * Daniel Cowgill <dan@mail.communityconnect.com>
  * George Schlossnagle <george@lethargy.org>
+ * Mike Bretz <mike@metropolis-ag.de>
  * ==================================================================
 */
 
@@ -562,7 +563,9 @@ void apc_create_string(char** string)
 
   DESERIALIZE_SCALAR(&len, int);
   if (len == -1) {
-    *string = NULL;
+    /* by convention, empty marked strings (len is -1)  are returned as an empty string */
+    *string = (char*) emalloc(1);
+    (*string)[0] = '\0';
     return;
   }
   *string = (char*) emalloc(len + 1);
