@@ -233,6 +233,7 @@ int apc_cache_info(array &output)
 				"support relative includes"
 				"check for compiled source"
 
+
 #####################################################################
 # Add ons
 #####################################################################
