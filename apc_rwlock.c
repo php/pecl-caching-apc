@@ -8,6 +8,7 @@
  * is also available at http://apc.communityconnect.com/LICENSE.
  * ==================================================================
  * Daniel Cowgill <dan@mail.communityconnect.com>
+ * Ricardo Galli <gallir@uib.es>
  * George Schlossnagle <george@lethargy.org>
  * ==================================================================
 */
