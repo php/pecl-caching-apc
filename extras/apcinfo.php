@@ -22,7 +22,6 @@
 			// selected one or more files for deletion. Remove
 			// them all now.
 			
-			int $num_files = count($apc_rm);
 			print "Removed the following files:<br>\n";
 			print "<ul>\n";
 			foreach ($apc_rm as $filename)
@@ -33,6 +32,6 @@
 			print "</ul>\n";
 		}
 
-		apc_info($MY_PATH);
+		apcinfo($MY_PATH);
 	}
 ?>
