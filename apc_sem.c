@@ -28,13 +28,15 @@
 #include <stdarg.h>
 #include <errno.h>
 
-#ifdef DEFINE_SEMUN
+#if !HAVE_SEMUN
 union semun {
 	int val;                    /* value for SETVAL */
 	struct semid_ds *buf;       /* buffer for IPC_STAT, IPC_SET */
 	unsigned short int *array;  /* array for GETALL, SETALL */
 	struct seminfo *__buf;      /* buffer for IPC_INFO */
 };
+#undef HAVE_SEMUN
+#define HAVE_SEMUN 1
 #endif
 
 # define APC_SEM_R 0444	/* read permission */

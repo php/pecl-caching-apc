@@ -40,6 +40,8 @@ AC_CACHE_CHECK(for union semun,php_cv_semun,
      php_cv_semun=no
    ])
  )
-if test "$php_cv_semun" = "no"; then
-   AC_DEFINE(DEFINE_SEMUN, 1, [whether we need to define union semun])
+if test "$php_cv_semun" = "yes"; then
+   AC_DEFINE(HAVE_SEMUN, 1, [whether we need to define union semun])
+else
+	AC_DEFINE(HAVE_SEMUN, 0, [ ])
 fi

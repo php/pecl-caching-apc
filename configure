@@ -2,16 +2,21 @@
 
 
 
+
   PHP_VAR_SUBST="$PHP_VAR_SUBST EXT_STATIC"
+  
 
 
   PHP_VAR_SUBST="$PHP_VAR_SUBST EXT_SHARED"
+  
 
 
   PHP_VAR_SUBST="$PHP_VAR_SUBST EXT_LIBS"
+  
 
 
   PHP_VAR_SUBST="$PHP_VAR_SUBST EXT_LTLIBS"
+  
 
 
 
@@ -33,16 +38,12 @@
 
 
 
-
-# serial 40 AC_PROG_LIBTOOL
-
+# serial 35 AC_PROG_LIBTOOL
 
 
 
-# AC_LIBTOOL_DLOPEN - enable checks for dlopen support
 
-
-# AC_LIBTOOL_WIN32_DLL - declare package support for building win32 dll's
+# AC_LIBTOOL_DLOPEN - check for dlopen support
 
 
 # AC_ENABLE_SHARED - implement the --enable-shared flag
@@ -73,6 +74,7 @@
 # AC_ENABLE_FAST_INSTALL - set the default to --disable-fast-install
 
 
+
 # AC_PROG_LD - find the path to the GNU or non-GNU linker
 
 
@@ -81,33 +83,39 @@
 # AC_PROG_NM - find the path to a BSD-compatible name lister
 
 
+# AC_SYS_NM_PARSE - Check for command to grab the raw symbol name followed
+# by C symbol name from nm.
+
+
+# AC_SYS_LIBTOOL_CYGWIN - find tools needed on cygwin
+
+
+# AC_SYS_SYMBOL_UNDERSCORE - does the compiler prefix global symbols
+#                            with an underscore?
+
+
 # AC_CHECK_LIBM - check for math library
 
 
 # AC_LIBLTDL_CONVENIENCE[(dir)] - sets LIBLTDL to the link flags for
-# the libltdl convenience library and INCLTDL to the include flags for
-# the libltdl header and adds --enable-ltdl-convenience to the
-# configure arguments.  Note that LIBLTDL and INCLTDL are not
-# AC_SUBSTed, nor is AC_CONFIG_SUBDIRS called.  If DIR is not
-# provided, it is assumed to be `libltdl'.  LIBLTDL will be prefixed
-# with '${top_builddir}/' and INCLTDL will be prefixed with
-# '${top_srcdir}/' (note the single quotes!).  If your package is not
-# flat and you're not using automake, define top_builddir and
-# top_srcdir appropriately in the Makefiles.
+# the libltdl convenience library, adds --enable-ltdl-convenience to
+# the configure arguments.  Note that LIBLTDL is not AC_SUBSTed, nor
+# is AC_CONFIG_SUBDIRS called.  If DIR is not provided, it is assumed
+# to be `${top_builddir}/libltdl'.  Make sure you start DIR with
+# '${top_builddir}/' (note the single quotes!) if your package is not
+# flat, and, if you're not using automake, define top_builddir as
+# appropriate in the Makefiles.
 
 
 # AC_LIBLTDL_INSTALLABLE[(dir)] - sets LIBLTDL to the link flags for
-# the libltdl installable library and INCLTDL to the include flags for
-# the libltdl header and adds --enable-ltdl-install to the configure
-# arguments.  Note that LIBLTDL and INCLTDL are not AC_SUBSTed, nor is
-# AC_CONFIG_SUBDIRS called.  If DIR is not provided and an installed
-# libltdl is not found, it is assumed to be `libltdl'.  LIBLTDL will
-# be prefixed with '${top_builddir}/' and INCLTDL will be prefixed
-# with '${top_srcdir}/' (note the single quotes!).  If your package is
-# not flat and you're not using automake, define top_builddir and
-# top_srcdir appropriately in the Makefiles.
+# the libltdl installable library, and adds --enable-ltdl-install to
+# the configure arguments.  Note that LIBLTDL is not AC_SUBSTed, nor
+# is AC_CONFIG_SUBDIRS called.  If DIR is not provided, it is assumed
+# to be `${top_builddir}/libltdl'.  Make sure you start DIR with
+# '${top_builddir}/' (note the single quotes!) if your package is not
+# flat, and, if you're not using automake, define top_builddir as
+# appropriate in the Makefiles.
 # In the future, this macro may have to be called after AC_PROG_LIBTOOL.
-
 
 
 
@@ -136,7 +144,7 @@ ac_help="$ac_help
 ac_help="$ac_help
   --with-gnu-ld           assume the C compiler uses GNU ld [default=no]"
 ac_help="$ac_help
-  --disable-libtool-lock  avoid locking (might break parallel builds)"
+  --disable-libtool-lock  force libtool not to do file locking"
 
 # Initialize some variables set by options.
 # The variables have the same names as the options, with
@@ -657,7 +665,7 @@ php_always_shared=yes
 # Extract the first word of "gcc", so it can be a program name with args.
 set dummy gcc; ac_word=$2
 echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
-echo "configure:661: checking for $ac_word" >&5
+echo "configure:669: checking for $ac_word" >&5
 if eval "test \"`echo '$''{'ac_cv_prog_CC'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -687,7 +695,7 @@ if test -z "$CC"; then
   # Extract the first word of "cc", so it can be a program name with args.
 set dummy cc; ac_word=$2
 echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
-echo "configure:691: checking for $ac_word" >&5
+echo "configure:699: checking for $ac_word" >&5
 if eval "test \"`echo '$''{'ac_cv_prog_CC'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -738,7 +746,7 @@ fi
       # Extract the first word of "cl", so it can be a program name with args.
 set dummy cl; ac_word=$2
 echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
-echo "configure:742: checking for $ac_word" >&5
+echo "configure:750: checking for $ac_word" >&5
 if eval "test \"`echo '$''{'ac_cv_prog_CC'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -770,7 +778,7 @@ fi
 fi
 
 echo $ac_n "checking whether the C compiler ($CC $CFLAGS $LDFLAGS) works""... $ac_c" 1>&6
-echo "configure:774: checking whether the C compiler ($CC $CFLAGS $LDFLAGS) works" >&5
+echo "configure:782: checking whether the C compiler ($CC $CFLAGS $LDFLAGS) works" >&5
 
 ac_ext=c
 # CFLAGS is not in ac_cpp because -g, -O, etc. are not valid cpp options.
@@ -781,12 +789,12 @@ cross_compiling=$ac_cv_prog_cc_cross
 
 cat > conftest.$ac_ext << EOF
 
-#line 785 "configure"
+#line 793 "configure"
 #include "confdefs.h"
 
 main(){return(0);}
 EOF
-if { (eval echo configure:790: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+if { (eval echo configure:798: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
   ac_cv_prog_cc_works=yes
   # If we can't run a trivial program, we are probably using a cross compiler.
   if (./conftest; exit) 2>/dev/null; then
@@ -812,12 +820,12 @@ if test $ac_cv_prog_cc_works = no; then
   { echo "configure: error: installation or configuration problem: C compiler cannot create executables." 1>&2; exit 1; }
 fi
 echo $ac_n "checking whether the C compiler ($CC $CFLAGS $LDFLAGS) is a cross-compiler""... $ac_c" 1>&6
-echo "configure:816: checking whether the C compiler ($CC $CFLAGS $LDFLAGS) is a cross-compiler" >&5
+echo "configure:824: checking whether the C compiler ($CC $CFLAGS $LDFLAGS) is a cross-compiler" >&5
 echo "$ac_t""$ac_cv_prog_cc_cross" 1>&6
 cross_compiling=$ac_cv_prog_cc_cross
 
 echo $ac_n "checking whether we are using GNU C""... $ac_c" 1>&6
-echo "configure:821: checking whether we are using GNU C" >&5
+echo "configure:829: checking whether we are using GNU C" >&5
 if eval "test \"`echo '$''{'ac_cv_prog_gcc'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -826,7 +834,7 @@ else
   yes;
 #endif
 EOF
-if { ac_try='${CC-cc} -E conftest.c'; { (eval echo configure:830: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }; } | egrep yes >/dev/null 2>&1; then
+if { ac_try='${CC-cc} -E conftest.c'; { (eval echo configure:838: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }; } | egrep yes >/dev/null 2>&1; then
   ac_cv_prog_gcc=yes
 else
   ac_cv_prog_gcc=no
@@ -845,7 +853,7 @@ ac_test_CFLAGS="${CFLAGS+set}"
 ac_save_CFLAGS="$CFLAGS"
 CFLAGS=
 echo $ac_n "checking whether ${CC-cc} accepts -g""... $ac_c" 1>&6
-echo "configure:849: checking whether ${CC-cc} accepts -g" >&5
+echo "configure:857: checking whether ${CC-cc} accepts -g" >&5
 if eval "test \"`echo '$''{'ac_cv_prog_cc_g'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -878,10 +886,10 @@ fi
 
 if test "x$CC" != xcc; then
   echo $ac_n "checking whether $CC and cc understand -c and -o together""... $ac_c" 1>&6
-echo "configure:882: checking whether $CC and cc understand -c and -o together" >&5
+echo "configure:890: checking whether $CC and cc understand -c and -o together" >&5
 else
   echo $ac_n "checking whether cc understands -c and -o together""... $ac_c" 1>&6
-echo "configure:885: checking whether cc understands -c and -o together" >&5
+echo "configure:893: checking whether cc understands -c and -o together" >&5
 fi
 set dummy $CC; ac_cc="`echo $2 |
 		       sed -e 's/[^a-zA-Z0-9_]/_/g' -e 's/^[0-9]/_/'`"
@@ -893,16 +901,16 @@ else
 # We do the test twice because some compilers refuse to overwrite an
 # existing .o file with -o, though they will create one.
 ac_try='${CC-cc} -c conftest.c -o conftest.o 1>&5'
-if { (eval echo configure:897: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; } &&
-   test -f conftest.o && { (eval echo configure:898: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; };
+if { (eval echo configure:905: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; } &&
+   test -f conftest.o && { (eval echo configure:906: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; };
 then
   eval ac_cv_prog_cc_${ac_cc}_c_o=yes
   if test "x$CC" != xcc; then
     # Test first that cc exists at all.
-    if { ac_try='cc -c conftest.c 1>&5'; { (eval echo configure:903: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }; }; then
+    if { ac_try='cc -c conftest.c 1>&5'; { (eval echo configure:911: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }; }; then
       ac_try='cc -c conftest.c -o conftest.o 1>&5'
-      if { (eval echo configure:905: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; } &&
-	 test -f conftest.o && { (eval echo configure:906: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; };
+      if { (eval echo configure:913: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; } &&
+	 test -f conftest.o && { (eval echo configure:914: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; };
       then
         # cc works too.
         :
@@ -951,13 +959,13 @@ fi
     { echo "configure: error: Cannot find php-config. Please use --with-php-config=PATH" 1>&2; exit 1; }
   fi
   echo $ac_n "checking for PHP prefix""... $ac_c" 1>&6
-echo "configure:955: checking for PHP prefix" >&5
+echo "configure:963: checking for PHP prefix" >&5
   echo "$ac_t""$prefix" 1>&6
   echo $ac_n "checking for PHP includes""... $ac_c" 1>&6
-echo "configure:958: checking for PHP includes" >&5
+echo "configure:966: checking for PHP includes" >&5
   echo "$ac_t""$INCLUDES" 1>&6
   echo $ac_n "checking for PHP extension directory""... $ac_c" 1>&6
-echo "configure:961: checking for PHP extension directory" >&5
+echo "configure:969: checking for PHP extension directory" >&5
   echo "$ac_t""$EXTENSION_DIR" 1>&6
 
 
@@ -971,7 +979,7 @@ echo "configure:961: checking for PHP extension directory" >&5
 
 
 echo $ac_n "checking whether to enable apc support""... $ac_c" 1>&6
-echo "configure:975: checking whether to enable apc support" >&5
+echo "configure:983: checking whether to enable apc support" >&5
 # Check whether --enable-apc or --disable-apc was given.
 if test "${enable_apc+set}" = set; then
   enableval="$enable_apc"
@@ -985,7 +993,7 @@ case "$PHP_APC" in
 shared,*)
   ext_output="yes, shared"
   ext_shared=yes
-  PHP_APC=`echo "$PHP_APC"|sed 's/^shared,//'`
+  PHP_APC=`echo $ac_n "$PHP_APC$ac_c"|sed s/^shared,//`
   ;;
 shared)
   ext_output="yes, shared"
@@ -1036,13 +1044,7 @@ EOF
   lib_target=""
   
   $php_shtool mkdir -p $ext_builddir
-  if test "$BSD_MAKEFILE" = "yes"; then
-    lib_include_conf=".include \"\$(top_builddir)/config_vars.mk\""
-  else
-    lib_include_conf="include \$(top_builddir)/config_vars.mk"
-  fi
   cat >$lib_makefile<<EOF
-$lib_include_conf
 LTLIBRARY_OBJECTS = \$(LTLIBRARY_SOURCES:.c=.lo) \$(LTLIBRARY_OBJECTS_X)
 LTLIBRARY_SHARED_OBJECTS = \$(LTLIBRARY_OBJECTS:.lo=.slo)
 EOF
@@ -1094,13 +1096,7 @@ EOF
   lib_target=""
   
   $php_shtool mkdir -p $ext_builddir
-  if test "$BSD_MAKEFILE" = "yes"; then
-    lib_include_conf=".include \"\$(top_builddir)/config_vars.mk\""
-  else
-    lib_include_conf="include \$(top_builddir)/config_vars.mk"
-  fi
   cat >$lib_makefile<<EOF
-$lib_include_conf
 LTLIBRARY_OBJECTS = \$(LTLIBRARY_SOURCES:.c=.lo) \$(LTLIBRARY_OBJECTS_X)
 LTLIBRARY_SHARED_OBJECTS = \$(LTLIBRARY_OBJECTS:.lo=.slo)
 EOF
@@ -1157,12 +1153,12 @@ EOF
 fi
 
 echo $ac_n "checking for union semun""... $ac_c" 1>&6
-echo "configure:1161: checking for union semun" >&5
+echo "configure:1157: checking for union semun" >&5
 if eval "test \"`echo '$''{'php_cv_semun'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 1166 "configure"
+#line 1162 "configure"
 #include "confdefs.h"
 
 #include <sys/types.h>
@@ -1173,7 +1169,7 @@ int main() {
 union semun x;
 ; return 0; }
 EOF
-if { (eval echo configure:1177: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
+if { (eval echo configure:1173: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
   rm -rf conftest*
   
      php_cv_semun=yes
@@ -1191,9 +1187,14 @@ rm -f conftest*
 fi
 
 echo "$ac_t""$php_cv_semun" 1>&6
-if test "$php_cv_semun" = "no"; then
+if test "$php_cv_semun" = "yes"; then
    cat >> confdefs.h <<\EOF
-#define DEFINE_SEMUN 1
+#define HAVE_SEMUN 1
+EOF
+
+else
+	cat >> confdefs.h <<\EOF
+#define HAVE_SEMUN 0
 EOF
 
 fi
@@ -1297,7 +1298,7 @@ else { echo "configure: error: can not run $ac_config_sub" 1>&2; exit 1; }
 fi
 
 echo $ac_n "checking host system type""... $ac_c" 1>&6
-echo "configure:1301: checking host system type" >&5
+echo "configure:1302: checking host system type" >&5
 
 host_alias=$host
 case "$host_alias" in
@@ -1318,7 +1319,7 @@ host_os=`echo $host | sed 's/^\([^-]*\)-\([^-]*\)-\(.*\)$/\3/'`
 echo "$ac_t""$host" 1>&6
 
 echo $ac_n "checking build system type""... $ac_c" 1>&6
-echo "configure:1322: checking build system type" >&5
+echo "configure:1323: checking build system type" >&5
 
 build_alias=$build
 case "$build_alias" in
@@ -1338,7 +1339,7 @@ echo "$ac_t""$build" 1>&6
 # Extract the first word of "ranlib", so it can be a program name with args.
 set dummy ranlib; ac_word=$2
 echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
-echo "configure:1342: checking for $ac_word" >&5
+echo "configure:1343: checking for $ac_word" >&5
 if eval "test \"`echo '$''{'ac_cv_prog_RANLIB'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -1377,11 +1378,11 @@ ac_prog=ld
 if test "$ac_cv_prog_gcc" = yes; then
   # Check if gcc -print-prog-name=ld gives a path.
   echo $ac_n "checking for ld used by GCC""... $ac_c" 1>&6
-echo "configure:1381: checking for ld used by GCC" >&5
+echo "configure:1382: checking for ld used by GCC" >&5
   ac_prog=`($CC -print-prog-name=ld) 2>&5`
   case "$ac_prog" in
     # Accept absolute paths.
-    [\\/]* | [A-Za-z]:[\\/]*)
+    /* | [A-Za-z]:[\\/]*)
       re_direlt='/[^/][^/]*/\.\./'
       # Canonicalize the path of ld
       ac_prog=`echo $ac_prog| sed 's%\\\\%/%g'`
@@ -1401,19 +1402,19 @@ echo "configure:1381: checking for ld used by GCC" >&5
   esac
 elif test "$with_gnu_ld" = yes; then
   echo $ac_n "checking for GNU ld""... $ac_c" 1>&6
-echo "configure:1405: checking for GNU ld" >&5
+echo "configure:1406: checking for GNU ld" >&5
 else
   echo $ac_n "checking for non-GNU ld""... $ac_c" 1>&6
-echo "configure:1408: checking for non-GNU ld" >&5
+echo "configure:1409: checking for non-GNU ld" >&5
 fi
 if eval "test \"`echo '$''{'ac_cv_path_LD'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   if test -z "$LD"; then
-  IFS="${IFS= 	}"; ac_save_ifs="$IFS"; IFS="${IFS}${PATH_SEPARATOR-:}"
+  IFS="${IFS= 	}"; ac_save_ifs="$IFS"; IFS="${IFS}:"
   for ac_dir in $PATH; do
     test -z "$ac_dir" && ac_dir=.
-    if test -f "$ac_dir/$ac_prog" || test -f "$ac_dir/$ac_prog$ac_exeext"; then
+    if test -f "$ac_dir/$ac_prog"; then
       ac_cv_path_LD="$ac_dir/$ac_prog"
       # Check to see if the program is GNU ld.  I'd rather use --version,
       # but apparently some GNU ld's only accept -v.
@@ -1438,8 +1439,9 @@ else
   echo "$ac_t""no" 1>&6
 fi
 test -z "$LD" && { echo "configure: error: no acceptable ld found in \$PATH" 1>&2; exit 1; }
+
 echo $ac_n "checking if the linker ($LD) is GNU ld""... $ac_c" 1>&6
-echo "configure:1443: checking if the linker ($LD) is GNU ld" >&5
+echo "configure:1445: checking if the linker ($LD) is GNU ld" >&5
 if eval "test \"`echo '$''{'ac_cv_prog_gnu_ld'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -1455,7 +1457,7 @@ echo "$ac_t""$ac_cv_prog_gnu_ld" 1>&6
 
 
 echo $ac_n "checking for BSD-compatible nm""... $ac_c" 1>&6
-echo "configure:1459: checking for BSD-compatible nm" >&5
+echo "configure:1461: checking for BSD-compatible nm" >&5
 if eval "test \"`echo '$''{'ac_cv_path_NM'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -1463,10 +1465,10 @@ else
   # Let the user override the test.
   ac_cv_path_NM="$NM"
 else
-  IFS="${IFS= 	}"; ac_save_ifs="$IFS"; IFS="${IFS}${PATH_SEPARATOR-:}"
+  IFS="${IFS= 	}"; ac_save_ifs="$IFS"; IFS="${IFS}:"
   for ac_dir in $PATH /usr/ccs/bin /usr/ucb /bin; do
     test -z "$ac_dir" && ac_dir=.
-    if test -f $ac_dir/nm || test -f $ac_dir/nm$ac_exeext ; then
+    if test -f $ac_dir/nm; then
       # Check to see if the nm accepts a BSD-compat flag.
       # Adding the `sed 1q' prevents false positives on HP-UX, which says:
       #   nm: unknown option "B" ignored
@@ -1490,8 +1492,213 @@ fi
 NM="$ac_cv_path_NM"
 echo "$ac_t""$NM" 1>&6
 
+
+# Check for command to grab the raw symbol name followed by C symbol from nm.
+echo $ac_n "checking command to parse $NM output""... $ac_c" 1>&6
+echo "configure:1499: checking command to parse $NM output" >&5
+if eval "test \"`echo '$''{'ac_cv_sys_global_symbol_pipe'+set}'`\" = set"; then
+  echo $ac_n "(cached) $ac_c" 1>&6
+else
+  # These are sane defaults that work on at least a few old systems.
+# {They come from Ultrix.  What could be older than Ultrix?!! ;)}
+
+# Character class describing NM global symbol codes.
+ac_symcode='[BCDEGRST]'
+
+# Regexp to match symbols that can be accessed directly from C.
+ac_sympat='\([_A-Za-z][_A-Za-z0-9]*\)'
+
+# Transform the above into a raw symbol and a C symbol.
+ac_symxfrm='\1 \2\3 \3'
+
+# Transform an extracted symbol line into a proper C declaration
+ac_global_symbol_to_cdecl="sed -n -e 's/^. .* \(.*\)$/extern char \1;/p'"
+
+# Define system-specific variables.
+case "$host_os" in
+aix*)
+  ac_symcode='[BCDT]'
+  ;;
+cygwin* | mingw*)
+  ac_symcode='[ABCDGISTW]'
+  ;;
+hpux*)
+  ac_global_symbol_to_cdecl="sed -n -e 's/^T .* \(.*\)$/extern char \1();/p' -e 's/^. .* \(.*\)$/extern char \1;/p'"
+  ;;
+irix*)
+  ac_symcode='[BCDEGRST]'
+  ;;
+solaris*)
+  ac_symcode='[BDT]'
+  ;;
+esac
+
+# If we're using GNU nm, then use its standard symbol codes.
+if $NM -V 2>&1 | egrep '(GNU|with BFD)' > /dev/null; then
+  ac_symcode='[ABCDGISTW]'
+fi
+
+# Try without a prefix undercore, then with it.
+for ac_symprfx in "" "_"; do
+
+  ac_cv_sys_global_symbol_pipe="sed -n -e 's/^.* 	\($ac_symcode\) 	 	*\($ac_symprfx\)$ac_sympat$/$ac_symxfrm/p'"
+
+  # Check to see that the pipe works correctly.
+  ac_pipe_works=no
+  rm -f conftest.$ac_ext
+  cat > conftest.$ac_ext <<EOF
+#ifdef __cplusplus
+extern "C" {
+#endif
+char nm_test_var;
+void nm_test_func(){}
+#ifdef __cplusplus
+}
+#endif
+int main(){nm_test_var='a';nm_test_func;return 0;}
+EOF
+
+  if { (eval echo configure:1562: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
+    # Now try to grab the symbols.
+    ac_nlist=conftest.nm
+  
+    if { (eval echo configure:1566: \"$NM conftest.$ac_objext \| $ac_cv_sys_global_symbol_pipe \> $ac_nlist\") 1>&5; (eval $NM conftest.$ac_objext \| $ac_cv_sys_global_symbol_pipe \> $ac_nlist) 2>&5; } && test -s "$ac_nlist"; then
+
+      # Try sorting and uniquifying the output.
+      if sort "$ac_nlist" | uniq > "$ac_nlist"T; then
+	mv -f "$ac_nlist"T "$ac_nlist"
+      else
+	rm -f "$ac_nlist"T
+      fi
+
+      # Make sure that we snagged all the symbols we need.
+      if egrep ' nm_test_var$' "$ac_nlist" >/dev/null; then
+	if egrep ' nm_test_func$' "$ac_nlist" >/dev/null; then
+	  cat <<EOF > conftest.c
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+EOF
+	  # Now generate the symbol file.
+	  eval "$ac_global_symbol_to_cdecl"' < "$ac_nlist" >> conftest.c'
+
+	  cat <<EOF >> conftest.c
+#if defined (__STDC__) && __STDC__
+# define lt_ptr_t void *
+#else
+# define lt_ptr_t char *
+# define const
+#endif
+
+/* The mapping between symbol names and symbols. */
+const struct {
+  const char *name;
+  lt_ptr_t address;
+}
+lt_preloaded_symbols[] =
+{
+EOF
+	sed 's/^. \(.*\) \(.*\)$/  {"\2", (lt_ptr_t) \&\2},/' < "$ac_nlist" >> conftest.c
+	cat <<\EOF >> conftest.c
+  {0, (lt_ptr_t) 0}
+};
+
+#ifdef __cplusplus
+}
+#endif
+EOF
+	  # Now try linking the two files.
+	  mv conftest.$ac_objext conftestm.$ac_objext
+	  ac_save_LIBS="$LIBS"
+	  ac_save_CFLAGS="$CFLAGS"
+	  LIBS="conftestm.$ac_objext"
+	  CFLAGS="$CFLAGS$no_builtin_flag"
+	  if { (eval echo configure:1618: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest; then
+	    ac_pipe_works=yes
+	  else
+	    echo "configure: failed program was:" >&5
+	    cat conftest.c >&5
+	  fi
+	  LIBS="$ac_save_LIBS"
+	  CFLAGS="$ac_save_CFLAGS"
+	else
+	  echo "cannot find nm_test_func in $ac_nlist" >&5
+	fi
+      else
+	echo "cannot find nm_test_var in $ac_nlist" >&5
+      fi
+    else
+      echo "cannot run $ac_cv_sys_global_symbol_pipe" >&5
+    fi
+  else
+    echo "$progname: failed program was:" >&5
+    cat conftest.c >&5
+  fi
+  rm -rf conftest*
+
+  # Do not use the global_symbol_pipe unless it works.
+  if test "$ac_pipe_works" = yes; then
+    if test x"$ac_symprfx" = x"_"; then
+      ac_cv_sys_symbol_underscore=yes
+    else
+      ac_cv_sys_symbol_underscore=no
+    fi
+    break
+  else
+    ac_cv_sys_global_symbol_pipe=
+  fi
+done
+
+fi
+
+
+ac_result=yes
+if test -z "$ac_cv_sys_global_symbol_pipe"; then
+   ac_result=no
+fi
+echo "$ac_t""$ac_result" 1>&6
+
+echo $ac_n "checking for _ prefix in compiled symbols""... $ac_c" 1>&6
+echo "configure:1664: checking for _ prefix in compiled symbols" >&5
+if eval "test \"`echo '$''{'ac_cv_sys_symbol_underscore'+set}'`\" = set"; then
+  echo $ac_n "(cached) $ac_c" 1>&6
+else
+  ac_cv_sys_symbol_underscore=no
+cat > conftest.$ac_ext <<EOF
+void nm_test_func(){}
+int main(){nm_test_func;return 0;}
+EOF
+if { (eval echo configure:1673: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
+  # Now try to grab the symbols.
+  ac_nlist=conftest.nm
+  if { (eval echo configure:1676: \"$NM conftest.$ac_objext \| $ac_cv_sys_global_symbol_pipe \> $ac_nlist\") 1>&5; (eval $NM conftest.$ac_objext \| $ac_cv_sys_global_symbol_pipe \> $ac_nlist) 2>&5; } && test -s "$ac_nlist"; then
+    # See whether the symbols have a leading underscore.
+    if egrep '^. _nm_test_func' "$ac_nlist" >/dev/null; then
+      ac_cv_sys_symbol_underscore=yes
+    else
+      if egrep '^. nm_test_func ' "$ac_nlist" >/dev/null; then
+	:
+      else
+	echo "configure: cannot find nm_test_func in $ac_nlist" >&5
+      fi
+    fi
+  else
+    echo "configure: cannot run $ac_cv_sys_global_symbol_pipe" >&5
+  fi
+else
+  echo "configure: failed program was:" >&5
+  cat conftest.c >&5
+fi
+rm -rf conftest*
+
+fi
+
+echo "$ac_t""$ac_cv_sys_symbol_underscore" 1>&6
+USE_SYMBOL_UNDERSCORE=${ac_cv_sys_symbol_underscore=no}
+
 echo $ac_n "checking whether ln -s works""... $ac_c" 1>&6
-echo "configure:1495: checking whether ln -s works" >&5
+echo "configure:1702: checking whether ln -s works" >&5
 if eval "test \"`echo '$''{'ac_cv_prog_LN_S'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -1511,11 +1718,12 @@ else
   echo "$ac_t""no" 1>&6
 fi
 
+if test $host != $build; then
+  ac_tool_prefix=${host_alias}-
+else
+  ac_tool_prefix=
+fi
 
-case "$target" in
-NONE) lt_target="$host" ;;
-*) lt_target="$target" ;;
-esac
 
 # Check for any special flags to pass to ltconfig.
 #
@@ -1527,26 +1735,18 @@ esac
 test "$enable_shared" = no && libtool_flags="$libtool_flags --disable-shared"
 test "$enable_static" = no && libtool_flags="$libtool_flags --disable-static"
 test "$enable_fast_install" = no && libtool_flags="$libtool_flags --disable-fast-install"
+test "$lt_dlopen" = yes && libtool_flags="$libtool_flags --enable-dlopen"
+test "$silent" = yes && libtool_flags="$libtool_flags --silent"
 test "$ac_cv_prog_gcc" = yes && libtool_flags="$libtool_flags --with-gcc"
 test "$ac_cv_prog_gnu_ld" = yes && libtool_flags="$libtool_flags --with-gnu-ld"
 
-
-# Check whether --enable-libtool-lock or --disable-libtool-lock was given.
-if test "${enable_libtool_lock+set}" = set; then
-  enableval="$enable_libtool_lock"
-  :
-fi
-
-test "x$enable_libtool_lock" = xno && libtool_flags="$libtool_flags --disable-lock"
-test x"$silent" = xyes && libtool_flags="$libtool_flags --silent"
-
 # Some flags need to be propagated to the compiler or linker for good
 # libtool support.
-case "$lt_target" in
+case "$host" in
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 1549 "configure"' > conftest.$ac_ext
-  if { (eval echo configure:1550: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
+  echo '#line 1749 "configure"' > conftest.$ac_ext
+  if { (eval echo configure:1750: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
     case "`/usr/bin/file conftest.o`" in
     *32-bit*)
       LD="${LD-ld} -32"
@@ -1567,19 +1767,19 @@ case "$lt_target" in
   SAVE_CFLAGS="$CFLAGS"
   CFLAGS="$CFLAGS -belf"
   echo $ac_n "checking whether the C compiler needs -belf""... $ac_c" 1>&6
-echo "configure:1571: checking whether the C compiler needs -belf" >&5
+echo "configure:1771: checking whether the C compiler needs -belf" >&5
 if eval "test \"`echo '$''{'lt_cv_cc_needs_belf'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 1576 "configure"
+#line 1776 "configure"
 #include "confdefs.h"
 
 int main() {
 
 ; return 0; }
 EOF
-if { (eval echo configure:1583: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+if { (eval echo configure:1783: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
   rm -rf conftest*
   lt_cv_cc_needs_belf=yes
 else
@@ -1598,8 +1798,160 @@ echo "$ac_t""$lt_cv_cc_needs_belf" 1>&6
   fi
   ;;
 
+*-*-cygwin*)
+  # Extract the first word of "${ac_tool_prefix}dlltool", so it can be a program name with args.
+set dummy ${ac_tool_prefix}dlltool; ac_word=$2
+echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
+echo "configure:1806: checking for $ac_word" >&5
+if eval "test \"`echo '$''{'ac_cv_prog_DLLTOOL'+set}'`\" = set"; then
+  echo $ac_n "(cached) $ac_c" 1>&6
+else
+  if test -n "$DLLTOOL"; then
+  ac_cv_prog_DLLTOOL="$DLLTOOL" # Let the user override the test.
+else
+  IFS="${IFS= 	}"; ac_save_ifs="$IFS"; IFS=":"
+  ac_dummy="$PATH"
+  for ac_dir in $ac_dummy; do
+    test -z "$ac_dir" && ac_dir=.
+    if test -f $ac_dir/$ac_word; then
+      ac_cv_prog_DLLTOOL="${ac_tool_prefix}dlltool"
+      break
+    fi
+  done
+  IFS="$ac_save_ifs"
+fi
+fi
+DLLTOOL="$ac_cv_prog_DLLTOOL"
+if test -n "$DLLTOOL"; then
+  echo "$ac_t""$DLLTOOL" 1>&6
+else
+  echo "$ac_t""no" 1>&6
+fi
+
+
+if test -z "$ac_cv_prog_DLLTOOL"; then
+if test -n "$ac_tool_prefix"; then
+  # Extract the first word of "dlltool", so it can be a program name with args.
+set dummy dlltool; ac_word=$2
+echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
+echo "configure:1838: checking for $ac_word" >&5
+if eval "test \"`echo '$''{'ac_cv_prog_DLLTOOL'+set}'`\" = set"; then
+  echo $ac_n "(cached) $ac_c" 1>&6
+else
+  if test -n "$DLLTOOL"; then
+  ac_cv_prog_DLLTOOL="$DLLTOOL" # Let the user override the test.
+else
+  IFS="${IFS= 	}"; ac_save_ifs="$IFS"; IFS=":"
+  ac_dummy="$PATH"
+  for ac_dir in $ac_dummy; do
+    test -z "$ac_dir" && ac_dir=.
+    if test -f $ac_dir/$ac_word; then
+      ac_cv_prog_DLLTOOL="dlltool"
+      break
+    fi
+  done
+  IFS="$ac_save_ifs"
+  test -z "$ac_cv_prog_DLLTOOL" && ac_cv_prog_DLLTOOL="false"
+fi
+fi
+DLLTOOL="$ac_cv_prog_DLLTOOL"
+if test -n "$DLLTOOL"; then
+  echo "$ac_t""$DLLTOOL" 1>&6
+else
+  echo "$ac_t""no" 1>&6
+fi
+
+else
+  DLLTOOL="false"
+fi
+fi
+
+# Extract the first word of "${ac_tool_prefix}as", so it can be a program name with args.
+set dummy ${ac_tool_prefix}as; ac_word=$2
+echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
+echo "configure:1873: checking for $ac_word" >&5
+if eval "test \"`echo '$''{'ac_cv_prog_AS'+set}'`\" = set"; then
+  echo $ac_n "(cached) $ac_c" 1>&6
+else
+  if test -n "$AS"; then
+  ac_cv_prog_AS="$AS" # Let the user override the test.
+else
+  IFS="${IFS= 	}"; ac_save_ifs="$IFS"; IFS=":"
+  ac_dummy="$PATH"
+  for ac_dir in $ac_dummy; do
+    test -z "$ac_dir" && ac_dir=.
+    if test -f $ac_dir/$ac_word; then
+      ac_cv_prog_AS="${ac_tool_prefix}as"
+      break
+    fi
+  done
+  IFS="$ac_save_ifs"
+fi
+fi
+AS="$ac_cv_prog_AS"
+if test -n "$AS"; then
+  echo "$ac_t""$AS" 1>&6
+else
+  echo "$ac_t""no" 1>&6
+fi
+
+
+if test -z "$ac_cv_prog_AS"; then
+if test -n "$ac_tool_prefix"; then
+  # Extract the first word of "as", so it can be a program name with args.
+set dummy as; ac_word=$2
+echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
+echo "configure:1905: checking for $ac_word" >&5
+if eval "test \"`echo '$''{'ac_cv_prog_AS'+set}'`\" = set"; then
+  echo $ac_n "(cached) $ac_c" 1>&6
+else
+  if test -n "$AS"; then
+  ac_cv_prog_AS="$AS" # Let the user override the test.
+else
+  IFS="${IFS= 	}"; ac_save_ifs="$IFS"; IFS=":"
+  ac_dummy="$PATH"
+  for ac_dir in $ac_dummy; do
+    test -z "$ac_dir" && ac_dir=.
+    if test -f $ac_dir/$ac_word; then
+      ac_cv_prog_AS="as"
+      break
+    fi
+  done
+  IFS="$ac_save_ifs"
+  test -z "$ac_cv_prog_AS" && ac_cv_prog_AS="false"
+fi
+fi
+AS="$ac_cv_prog_AS"
+if test -n "$AS"; then
+  echo "$ac_t""$AS" 1>&6
+else
+  echo "$ac_t""no" 1>&6
+fi
+
+else
+  AS="false"
+fi
+fi
+
+
+  ;;
 
 esac
+
+# enable the --disable-libtool-lock switch
+
+# Check whether --enable-libtool-lock or --disable-libtool-lock was given.
+if test "${enable_libtool_lock+set}" = set; then
+  enableval="$enable_libtool_lock"
+  need_locks=$enableval
+else
+  need_locks=yes
+fi
+
+
+if test x"$need_locks" = xno; then
+  libtool_flags="$libtool_flags --disable-lock"
+fi
 
 
 # Save cache, so that ltconfig can load it
@@ -1653,11 +2005,10 @@ rm -f confcache
 
 # Actually configure libtool.  ac_aux_dir is where install-sh is found.
 CC="$CC" CFLAGS="$CFLAGS" CPPFLAGS="$CPPFLAGS" \
-LD="$LD" LDFLAGS="$LDFLAGS" LIBS="$LIBS" \
-LN_S="$LN_S" NM="$NM" RANLIB="$RANLIB" \
-DLLTOOL="$DLLTOOL" AS="$AS" OBJDUMP="$OBJDUMP" \
+LD="$LD" NM="$NM" RANLIB="$RANLIB" LN_S="$LN_S" \
+DLLTOOL="$DLLTOOL" AS="$AS" \
 ${CONFIG_SHELL-/bin/sh} $ac_aux_dir/ltconfig --no-reexec \
-$libtool_flags --no-verify $ac_aux_dir/ltmain.sh $lt_target \
+$libtool_flags --no-verify $ac_aux_dir/ltmain.sh $host \
 || { echo "configure: error: libtool configure failed" 1>&2; exit 1; }
 
 # Reload cache, that may have been modified by ltconfig
@@ -1690,70 +2041,92 @@ test "$exec_prefix" = "NONE" && exec_prefix='$(prefix)'
 
 
   PHP_VAR_SUBST="$PHP_VAR_SUBST prefix"
+  
 
 
   PHP_VAR_SUBST="$PHP_VAR_SUBST exec_prefix"
+  
 
 
   PHP_VAR_SUBST="$PHP_VAR_SUBST libdir"
+  
 
 
   PHP_VAR_SUBST="$PHP_VAR_SUBST prefix"
+  
 
 
   PHP_VAR_SUBST="$PHP_VAR_SUBST phplibdir"
+  
 
 
 
   PHP_VAR_SUBST="$PHP_VAR_SUBST PHP_COMPILE"
+  
 
 
   PHP_VAR_SUBST="$PHP_VAR_SUBST CC"
+  
 
 
   PHP_VAR_SUBST="$PHP_VAR_SUBST CFLAGS"
+  
 
 
   PHP_VAR_SUBST="$PHP_VAR_SUBST CPP"
+  
 
 
   PHP_VAR_SUBST="$PHP_VAR_SUBST CPPFLAGS"
+  
 
 
   PHP_VAR_SUBST="$PHP_VAR_SUBST CXX"
+  
 
 
   PHP_VAR_SUBST="$PHP_VAR_SUBST DEFS"
+  
 
 
   PHP_VAR_SUBST="$PHP_VAR_SUBST EXTENSION_DIR"
+  
 
 
   PHP_VAR_SUBST="$PHP_VAR_SUBST EXTRA_LDFLAGS"
+  
 
 
   PHP_VAR_SUBST="$PHP_VAR_SUBST EXTRA_LIBS"
+  
 
 
   PHP_VAR_SUBST="$PHP_VAR_SUBST INCLUDES"
+  
 
 
   PHP_VAR_SUBST="$PHP_VAR_SUBST LEX"
+  
 
 
   PHP_VAR_SUBST="$PHP_VAR_SUBST LEX_OUTPUT_ROOT"
+  
 
 
   PHP_VAR_SUBST="$PHP_VAR_SUBST LFLAGS"
+  
 
 
   PHP_VAR_SUBST="$PHP_VAR_SUBST SHARED_LIBTOOL"
+  
 
 
   PHP_VAR_SUBST="$PHP_VAR_SUBST LIBTOOL"
+  
 
 
   PHP_VAR_SUBST="$PHP_VAR_SUBST SHELL"
+  
 
 
 
@@ -1763,7 +2136,7 @@ test "$exec_prefix" = "NONE" && exec_prefix='$(prefix)'
 
   
   echo $ac_n "checking for working mkdir -p""... $ac_c" 1>&6
-echo "configure:1767: checking for working mkdir -p" >&5
+echo "configure:2140: checking for working mkdir -p" >&5
 if eval "test \"`echo '$''{'ac_cv_mkdir_p'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -1896,7 +2269,7 @@ done
 
 ac_given_srcdir=$srcdir
 
-trap 'rm -fr `echo " config.h" | sed "s/:[^ ]*//g"` conftest*; exit 1' 1 2 15
+trap 'rm -fr `echo " php_config.h" | sed "s/:[^ ]*//g"` conftest*; exit 1' 1 2 15
 EOF
 cat >> $CONFIG_STATUS <<EOF
 
@@ -1905,6 +2278,11 @@ sed 's/%@/@@/; s/@%/@@/; s/%g\$/@g/; /@g\$/s/[\\\\&%]/\\\\&/g;
  s/@@/%@/; s/@@/@%/; s/@g\$/%g/' > conftest.subs <<\\CEOF
 $ac_vpsub
 $extrasub
+s%@EXT_SUBDIRS@%$EXT_SUBDIRS%g
+s%@EXT_STATIC@%$EXT_STATIC%g
+s%@EXT_SHARED@%$EXT_SHARED%g
+s%@EXT_LIBS@%$EXT_LIBS%g
+s%@EXT_LTLIBS@%$EXT_LTLIBS%g
 s%@SHELL@%$SHELL%g
 s%@CFLAGS@%$CFLAGS%g
 s%@CPPFLAGS@%$CPPFLAGS%g
@@ -1940,8 +2318,25 @@ s%@build_cpu@%$build_cpu%g
 s%@build_vendor@%$build_vendor%g
 s%@build_os@%$build_os%g
 s%@RANLIB@%$RANLIB%g
+s%@LD@%$LD%g
+s%@NM@%$NM%g
+s%@USE_SYMBOL_UNDERSCORE@%$USE_SYMBOL_UNDERSCORE%g
 s%@LN_S@%$LN_S%g
+s%@DLLTOOL@%$DLLTOOL%g
+s%@AS@%$AS%g
 s%@LIBTOOL@%$LIBTOOL%g
+s%@phplibdir@%$phplibdir%g
+s%@PHP_COMPILE@%$PHP_COMPILE%g
+s%@CPP@%$CPP%g
+s%@CXX@%$CXX%g
+s%@EXTENSION_DIR@%$EXTENSION_DIR%g
+s%@EXTRA_LDFLAGS@%$EXTRA_LDFLAGS%g
+s%@EXTRA_LIBS@%$EXTRA_LIBS%g
+s%@INCLUDES@%$INCLUDES%g
+s%@LEX@%$LEX%g
+s%@LEX_OUTPUT_ROOT@%$LEX_OUTPUT_ROOT%g
+s%@LFLAGS@%$LFLAGS%g
+s%@SHARED_LIBTOOL@%$SHARED_LIBTOOL%g
 
 CEOF
 EOF
@@ -2059,7 +2454,7 @@ ac_eD='%g'
 if test "${CONFIG_HEADERS+set}" != set; then
 EOF
 cat >> $CONFIG_STATUS <<EOF
-  CONFIG_HEADERS="config.h"
+  CONFIG_HEADERS="php_config.h"
 EOF
 cat >> $CONFIG_STATUS <<\EOF
 fi
