@@ -187,6 +187,8 @@ extern apc_cache_entry_t* apc_cache_make_file_entry(const char* filename,
  */
 extern apc_cache_entry_t* apc_cache_make_user_entry(const char* info, const zval *val, const unsigned int ttl);
 
+extern int apc_cache_make_user_key(apc_cache_key_t* key, const char* identifier, const time_t t);
+
 /*
  * Frees all memory associated with an object returned by apc_cache_make_entry
  * (see above).

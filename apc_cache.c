@@ -532,7 +532,7 @@ int apc_cache_make_file_key(apc_cache_key_t* key,
 /* }}} */
 
 /* {{{ apc_cache_make_user_key */
-int apc_cache_make_user_key(apc_cache_key_t* key, const char* identifier, const time_t t TSRMLS_DC)
+int apc_cache_make_user_key(apc_cache_key_t* key, const char* identifier, const time_t t)
 {
     assert(key != NULL);
 

@@ -35,8 +35,8 @@ union semun {
                               /* Linux specific part: */
     struct seminfo *__buf;    /* buffer for IPC_INFO */
 };
-#endif
 #define HAVE_SEMUN 1
+#endif
 
 #ifndef SEM_R
 # define SEM_R 0444
