@@ -37,9 +37,6 @@
 static zend_op_array* (*old_compile_file)
     (zend_file_handle*, int TSRMLS_DC);
 
-/* pointer to the original Zend engine execute function */
-static void (*old_execute)(zend_op_array* TSRMLS_DC);
-
 /* }}} */
 
 /* {{{ install_function */
@@ -258,9 +255,6 @@ int apc_module_shutdown()
     if (!APCG(initialized))
         return 0;
 
-    /* restore execution */
-    zend_execute = old_execute;
-    
     /* restore compilation */
     zend_compile_file = old_compile_file;
 
