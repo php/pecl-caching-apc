@@ -159,9 +159,11 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
     /* search for the file in the cache */
     cache_entry = apc_cache_find(APCG(cache), key, t);
     if (cache_entry != NULL) {
+        int dummy = 1;
         if (h->opened_path == NULL) {
             h->opened_path = estrdup(cache_entry->data.file.filename);
         }
+        zend_hash_add(&EG(included_files), h->opened_path, strlen(h->opened_path)+1, (void *)&dummy, sizeof(int), NULL);
         zend_llist_add_element(&CG(open_files), h); /* XXX kludge */
         apc_stack_push(APCG(cache_stack), cache_entry);
         return cached_compile(TSRMLS_C);
