@@ -320,6 +320,12 @@ int apc_cache_index_mmap(HashTable* cache, zval **hash) {
 }
 
 int apc_cache_info_mmap(zval **hash) {
-	return 1;
+	array_init(*hash);
+	add_assoc_long(*hash, "time-to-live", APCG(ttl));
+	add_assoc_string(*hash, "cache filter", APCG(regex_text)? APCG(regex_text): "(none)", 1);
+	add_assoc_string(*hash, "cache directory", APCG(cachedir)?APCG(regex_text):"/tmp", 1 );
+	add_assoc_long(*hash, "check file modification times", APCG(check_mtime));
+	add_assoc_long(*hash, "support relative includes", APCG(relative_includes));
+	add_assoc_long(*hash, "check for compiled source", APCG(check_compiled_source));
+	return 0;
 }
-
