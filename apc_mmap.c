@@ -24,6 +24,17 @@
 #include <sys/types.h>
 #include <sys/mman.h>
 
+/* 
+ * Some operating systems (like FreeBSD) have a MAP_NOSYNC flag that
+ * tells whatever update daemons might be running to not flush dirty
+ * vm pages to disk unless absolutely necessary.  My guess is that
+ * most systems that don't have this probably default to only synching
+ * to disk when absolutely necessary.
+ */
+#ifndef MAP_NOSYNC
+#define MAP_NOSYNC 0
+#endif
+
 void *apc_mmap(char *file_mask, int size)
 {
     void* shmaddr;  /* the shared memory address */
@@ -87,7 +98,7 @@ void *apc_mmap(char *file_mask, int size)
                 unlink(file_mask);
                 apc_eprint("apc_mmap: ftruncate failed:");
             }
-            shmaddr = (void *)mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+            shmaddr = (void *)mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_NOSYNC, fd, 0);
             close(fd);
             unlink(file_mask);
         }
