@@ -30,10 +30,9 @@ int apc_fcntl_create(const char* pathname)
         unlink(pathname);
         return fd;
     } else {
-        fprintf(stderr, "failed to open %s\n", pathname);
-        assert(0);
-        return -1;
+        apc_eprint("apc_fcntl_create: open(%s, O_RDWR|O_CREAT, 0666) failed:", pathname);
     }
+    return -1;
 }
 
 void apc_fcntl_destroy(int fd)
