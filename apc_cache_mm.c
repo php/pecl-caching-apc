@@ -297,3 +297,27 @@ int apc_mmap_dump_entry(const char* filename, apc_outputfn_t outputfn)
 
     return 0;
 }
+
+int apc_cache_index_mmap(HashTable* cache, zval **hash) {
+	Bucket *p;
+    p = cache->pListHead;
+    while(p !=NULL) {
+        zval *array;
+        struct mm_fl_element *in_elem;
+
+        ALLOC_ZVAL(array);
+        if(array_init(array) == FAILURE) {
+            return 1;
+        }
+        in_elem = (struct mm_fl_element *) p->pData;
+        add_next_index_long(array, in_elem->inputlen);
+        add_next_index_long(array, in_elem->mtime);
+        add_next_index_long(array, in_elem->hitcounter);
+        add_next_index_long(array, in_elem->inode);
+        zend_hash_update((*hash)->value.ht, p->arKey, p->nKeyLength,
+            (void *) &array, sizeof(zval *), NULL);
+        p = p->pListNext;
+    }
+    return 0;
+}
+

@@ -140,3 +140,22 @@ int apc_reset_cache()
 int apc_set_my_ttl(int seconds)
 	supported: (S)
 	Sets the ttl of the calling file to ttl seconds.
+
+int apc_cache_index(array &output)
+	supported: (S,M)
+	Fetches an associative array keyed with cache object names and
+	with data bucket an array consisting of:
+	SHM:
+		element0 -> cache offset
+		element1 -> object length
+		element2 -> last access time
+		element3 -> hit counter
+		element4 -> ttl 
+		element5 -> last modification time
+	MMAP:
+		element0 -> object length
+		element2 -> creation time
+		element3 -> hit counter
+		element4 -> inode
+	As with all other functions, the shm return global cache information
+	the mmap version returns that particular child's view of the cache.

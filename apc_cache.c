@@ -894,6 +894,7 @@ int apc_cache_dump_entry(apc_cache_t* cache, const char* key,
 	UNLOCK(cache->lock);
 	return 0;
 }
+
 int apc_cache_index_shm(apc_cache_t* cache, zval **hash) {
 	int i;
 	READLOCK(cache->lock);
@@ -904,7 +905,7 @@ int apc_cache_index_shm(apc_cache_t* cache, zval **hash) {
   	if (cache->buckets[i].shmid < 0) {
     	continue;
   	}
-  	zval_dtor(array);
+	ALLOC_ZVAL(array);
   	bucket = &(cache->buckets[i]);
   	if(array_init(array) == FAILURE) {
 			UNLOCK(cache->lock);

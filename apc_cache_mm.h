@@ -41,6 +41,12 @@ extern void apc_mmap_dump(HashTable* cache, const char * url, apc_outputfn_t out
  * cache entry
  */
 extern int apc_mmap_dump_entry(const char* filename, apc_outputfn_t outputfn);
+
+/*
+ * apc_cache_index_mmap: creates a hash keyed with all the objects in the cache
+ * and containing all the cache object details
+ */
+extern int apc_cache_index_mmap(HashTable* cache, zval** hash);
 #endif
 	
 	

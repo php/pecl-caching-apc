@@ -26,13 +26,15 @@ PHP_FUNCTION(apc_dump_cache_object);
 PHP_FUNCTION(apc_cache_index);
 
 /* list of exported functions */
+static unsigned char a1_arg_force_ref[] = { 2, BYREF_NONE, BYREF_FORCE };
+
 function_entry apc_functions[] = {
 	PHP_FE(apcinfo, NULL)
 	PHP_FE(apc_rm, NULL)
 	PHP_FE(apc_reset_cache, NULL)
 	PHP_FE(apc_set_my_ttl, NULL)
 	PHP_FE(apc_dump_cache_object, NULL)
-	PHP_FE(apc_cache_index, NULL)
+	PHP_FE(apc_cache_index, a1_arg_force_ref)
 	{NULL, NULL, NULL}
 };
 
@@ -324,14 +326,17 @@ PHP_FUNCTION(apc_dump_cache_object)
 }
 /* }}} */
 
-
+/* {{{ proto int apc_cache_index(array &output)
+    Generate detailed information about the cache.  If uri is passed, link
+    all objects to uri, for detailed object information and deleteion
+    tags. */
 PHP_FUNCTION(apc_cache_index)
 {
 	zval **hash;
 	int i;
 	int ac = ZEND_NUM_ARGS();
 
-	if(ac != 1 || zend_get_parameters_ex(ac, hash) == FAILURE) {
+	if(ac != 1 || zend_get_parameters_ex(ac, &hash) == FAILURE) {
   	WRONG_PARAM_COUNT;
 	}
 	if( array_init(*hash) == FAILURE) {
@@ -346,6 +351,7 @@ PHP_FUNCTION(apc_cache_index)
 		RETURN_TRUE
 	}
 }	
+/* }}} */
 
 /* zend extension support */
 

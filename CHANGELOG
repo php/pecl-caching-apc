@@ -1,5 +1,8 @@
 APC Change Log
 -------------------------------
+1.0.5:
++ class member array support fixed [djc 01.18.2001]
++ added apc_cache_index [gws 01.18.2001]
 
 1.0.4:
 + support for class hierarchies greater than two levels deep [djc 01.17.2001]
