@@ -278,19 +278,6 @@ PHP_MINFO_FUNCTION(apc)
 	php_info_print_table_end();
 }
 
-PHP_GINIT_FUNCTION(apc)
-{
-	apc_global_init();
-	return SUCCESS;
-}
-
-PHP_GSHUTDOWN_FUNCTION(apc)
-{
-	apc_global_shutdown();
-	return SUCCESS;
-}
-
-
 /* exported function definitions */
 
 /* generates an html page with cache statistics */
