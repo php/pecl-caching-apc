@@ -214,64 +214,26 @@ static zval* compute_result_of_constant_op(zend_op* op)
 
 /* {{{ rewrite functions */
 
-
 static void rewrite_inc(zend_op* ops, Pair* p)
 {
     assert(pair_length(p) == 3);
     switch (ops[cadr(p)].opcode) {
-      case ZEND_POST_INC:
+    case ZEND_POST_INC:
         ops[cadr(p)].opcode = ZEND_PRE_INC;
         ops[cadr(p)].result.op_type = IS_VAR;
         ops[cadr(p)].result.u.EA.type |= EXT_TYPE_UNUSED;
         break; 
-      case ZEND_POST_DEC:
+    case ZEND_POST_DEC:
         ops[cadr(p)].opcode = ZEND_PRE_DEC;
         ops[cadr(p)].result.op_type = IS_VAR;
         ops[cadr(p)].result.u.EA.type |= EXT_TYPE_UNUSED;
         break;
-      default:
+    default:
         assert(0);
         break;
     }
-    clear_zend_op(&ops[caddr(p)]);  // don't need this anymore
-}
 
-static void add_string_to_char(zval *result, zval *op1, zval *op2)       
-{  
-        result->value.str.len = op2->value.str.len + 1;
-        result->value.str.val = (char *) emalloc(result->value.str.len);
-        result->value.str.val[0] = (char) op1->value.lval;
-        memcpy(result->value.str.val + 1, op2->value.str.val, op2->value.str.len);
-        result->type = IS_STRING;
-}
-
-static void add_char_to_char(zval *result, zval *op1, zval *op2)       
-{  
-        result->value.str.len = 2;
-        result->value.str.val = (char *) emalloc(2);
-        result->value.str.val[0] = (char) op1->value.lval;
-        result->value.str.val[1] = (char) op2->value.lval;
-        result->type = IS_STRING;
-}
-
-
-static void rewrite_multiple_echo(zend_op* ops, Pair* p)
-{
-    zend_op* first;
-    zend_op* second;
-    int      newlen;
-   
-     first = &ops[car(p)];
-     second = &ops[cadr(p)];
-     
-     newlen = first->op1.u.constant.value.str.len + second->op1.u.constant.value.str.len;
-     first->op1.u.constant.value.str.val = erealloc(first->op1.u.constant.value.str.val, newlen);
-     memcpy(first->op1.u.constant.value.str.val + first->op1.u.constant.value.str.len,
-            second->op1.u.constant.value.str.val,
-            second->op1.u.constant.value.str.len);
-     first->op1.u.constant.value.str.len = newlen;
-  
-     clear_zend_op(second);
+    clear_zend_op(&ops[caddr(p)]);
 }
 
 
@@ -310,39 +272,21 @@ static void rewrite_const_cast(zend_op* ops, Pair* p)
 
 static void rewrite_add_string(zend_op* ops, Pair* p)
 {
-    int curr = car(p);
+    zend_op* first;
+    zend_op* second;
+    char*    newstr;
+    int      newlen;
+    
+    first = &ops[car(p)];
+    second = &ops[cadr(p)];
 
-    assert(pair_length(p) == 2);
-
-    for (p = cdr(p); p; p = cdr(p)) {
-        if(ops[car(p)].opcode == ZEND_ADD_STRING) {
-            if(ops[curr].opcode == ZEND_ADD_CHAR) {
-                add_char_to_string(&ops[car(p)].op2.u.constant,
-                                   &ops[car(p)].op2.u.constant,
-                                   &ops[curr].op2.u.constant);
-            } else if (ops[curr].opcode == ZEND_ADD_STRING) {
-                add_string_to_string(&ops[car(p)].op2.u.constant,
-                                   &ops[car(p)].op2.u.constant,
-                                   &ops[curr].op2.u.constant);
-            }
-        } else if (ops[car(p)].opcode == ZEND_ADD_CHAR) {
-            if(ops[curr].opcode == ZEND_ADD_CHAR) {
-                add_char_to_char(&ops[car(p)].op2.u.constant,
-                                 &ops[car(p)].op2.u.constant,
-                                 &ops[curr].op2.u.constant);
-                ops[car(p)].opcode = ZEND_ADD_STRING;
-                ops[car(p)].op2.u.constant.type = IS_STRING;
-            } else if (ops[curr].opcode == ZEND_ADD_STRING) {
-                add_string_to_char(&ops[car(p)].op2.u.constant,
-                                   &ops[car(p)].op2.u.constant,
-                                   &ops[curr].op2.u.constant);
-                ops[car(p)].opcode = ZEND_ADD_STRING;
-                ops[car(p)].op2.u.constant.type = IS_STRING;
-            }
-        }
-        clear_zend_op(ops + curr);
-        curr = car(p);
+    if (second->opcode == ZEND_ADD_STRING) {
+        add_string_to_string(&first->op2.u.constant, &first->op2.u.constant, &second->op2.u.constant);
+    } else {
+        add_char_to_string(&first->op2.u.constant, &first->op2.u.constant, &second->op2.u.constant);
     }
+    
+    clear_zend_op(second);
 }
 
 static void rewrite_constant_fold(zend_op* ops, Pair *p)
@@ -372,6 +316,12 @@ static void rewrite_print(zend_op* ops, Pair* p)
     clear_zend_op(&ops[cadr(p)]);  // don't need this anymore
 }
 
+static void rewrite_multiple_echo(zend_op* ops, Pair* p)
+{
+    add_string_to_string(&ops[car(p)].op1.u.constant, &ops[car(p)].op1.u.constant, &ops[cadr(p)].op1.u.constant);
+    clear_zend_op(&ops[cadr(p)]);
+}
+
 static void rewrite_fcall(zend_op* ops, Pair* p) 
 {
     assert(pair_length(p) == 2);
@@ -379,6 +329,32 @@ static void rewrite_fcall(zend_op* ops, Pair* p)
     ops[cadr(p)].opcode = ZEND_DO_FCALL;
 }
 
+static void rewrite_is_equal_bool(zend_op* ops, Pair* p)
+{
+    zend_op* op;
+
+#define DETERMINE_VALUE(c, v) \
+    (c = (v).u.constant.value.lval ? \
+     (c == ZEND_IS_EQUAL ? ZEND_BOOL : ZEND_BOOL_NOT) : \
+     (c == ZEND_IS_EQUAL ? ZEND_BOOL_NOT : ZEND_BOOL))
+    
+    op = &ops[car(p)];
+    if (op->op1.op_type == IS_CONST && op->op1.u.constant.type == IS_BOOL) {
+        DETERMINE_VALUE(op->opcode, op->op1);
+        memcpy(&op->op1, &op->op2, sizeof(znode));
+    } else {
+        DETERMINE_VALUE(op->opcode, op->op2);
+    }
+    op->op2.op_type = IS_UNUSED;        
+
+#undef DETERMINE_VALUE
+}
+
+static void rewrite_needless_bool(zend_op* ops, Pair* p)
+{
+    clear_zend_op(&ops[car(p)]);
+    clear_zend_op(&ops[cadr(p)]);
+}
 
 /* }}} */
 
@@ -553,6 +529,7 @@ static Pair* peephole_cast(zend_op* ops, int i, int num_ops)
         ops[i].extended_value != IS_RESOURCE) {
         return cons(i, 0);
     }
+
     return NULL;
 }
 
@@ -710,40 +687,23 @@ static Pair* peephole_add_string(zend_op* ops, int i, int num_ops)
 {
     int j;      /* next op after i */
     Pair *p = NULL;
-    int tmp_var_result;
-    int tmp_var_op1;
-
-    if (ops[i].opcode != ZEND_ADD_STRING    ||
-        ops[i].result.op_type != IS_TMP_VAR ||
-        ops[i].op1.op_type != IS_TMP_VAR    ||
-        ops[i].op2.op_type != IS_CONST)
-    {
-        return 0;
+    
+    j = next_op(ops, i, num_ops);
+    if (j == num_ops) {
+        return NULL;
     }
-
-    tmp_var_result = ops[i].result.u.var;
-    tmp_var_op1 = ops[i].op1.u.var;
-
-    for (j = next_op(ops, i, num_ops); j < num_ops; j = next_op(ops, j, num_ops)) {
-        if (ops[j].opcode != ZEND_ADD_STRING && ops[j].opcode != ZEND_ADD_CHAR) {
-            return p;
-        } 
-
-        if (ops[j].op2.op_type == IS_CONST                   &&
-            ops[j].result.op_type == IS_TMP_VAR              &&
-            ops[j].op1.op_type == IS_TMP_VAR                 &&
-            ops[j].result.u.var == tmp_var_result            &&
-            ops[j].op1.u.var == tmp_var_op1)
-        {
-            if (!p) {
-                p = cons(j, cons(i, 0));
-            }
-            else {
-                p = cons(j, p);
-            }
-        }
+    
+    if ((ops[i].opcode == ZEND_ADD_STRING &&
+         ops[i].result.op_type == IS_TMP_VAR &&
+         ops[i].op1.op_type == IS_TMP_VAR &&
+         ops[i].op2.op_type == IS_CONST) && 
+        ((ops[j].opcode == ZEND_ADD_STRING || ops[j].opcode == ZEND_ADD_CHAR) &&
+         ops[j].result.op_type == IS_TMP_VAR &&
+         ops[j].op1.op_type == IS_TMP_VAR &&
+         ops[j].op2.op_type == IS_CONST)) {
+        return cons(i, cons(j, 0));
     }
-    return p;
+    return NULL;
 }
 
 static Pair* peephole_fcall(zend_op* ops, int i, int num_ops)
@@ -751,8 +711,10 @@ static Pair* peephole_fcall(zend_op* ops, int i, int num_ops)
     int j;  /* next op after i */
     j = next_op(ops, i, num_ops);
 
-    if (j == num_ops)
+    if (j == num_ops) {
         return 0;   /* not enough ops left to match */
+    }
+
     if(ops[i].opcode == ZEND_INIT_FCALL_BY_NAME &&
        ops[i].op1.op_type == IS_UNUSED &&
        ops[i].op2.op_type == IS_CONST &&
@@ -766,13 +728,42 @@ static Pair* peephole_fcall(zend_op* ops, int i, int num_ops)
     return 0;
 }
 
+static Pair* peephole_is_equal_bool(zend_op* ops, int i, int num_ops)
+{
+    if ((ops[i].opcode == ZEND_IS_EQUAL || ops[i].opcode == ZEND_IS_NOT_EQUAL) && 
+        (ops[i].op1.op_type == IS_CONST || ops[i].op2.op_type == IS_CONST) &&
+        (ops[i].op1.u.constant.type == IS_BOOL || ops[i].op2.u.constant.type == IS_BOOL)) {
+        return cons(i, 0);
+    }
+    
+    return NULL;
+}
+
+static Pair* peephole_needless_bool(zend_op* ops, int i, int num_ops)
+{
+    int j;
+
+    j = next_op(ops, i, num_ops);
+    if (j == num_ops) {
+        return NULL;
+    }
+
+    /* Try and match a (BOOL, FREE) tuple */
+    if (ops[i].opcode == ZEND_BOOL && ops[j].opcode == ZEND_FREE) {
+        return cons(i, cons(j, 0));
+    }
+    
+    return NULL;
+}
+
 /* }}} */
+
 
 /* {{{ apc_optimize_op_array */
 
 zend_op_array* apc_optimize_op_array(zend_op_array* op_array)
 {
-    #define RESTART_PEEPHOLE_LOOP { pair_destroy(p); i = -1; continue; }
+#define RESTART_PEEPHOLE_LOOP { pair_destroy(p); i = -1; continue; }
 
     Pair** jumps;
     int i;
@@ -786,33 +777,44 @@ zend_op_array* apc_optimize_op_array(zend_op_array* op_array)
     jumps = build_jump_array(op_array);
     for (i = 0; i < op_array->last; i++) {
         Pair* p;
+        
         if ((p = peephole_cast(op_array->opcodes, i, op_array->last))) {
             rewrite_const_cast(op_array->opcodes, p);
             RESTART_PEEPHOLE_LOOP;
         }
+
+        if ((p = peephole_is_equal_bool(op_array->opcodes, i, op_array->last))) {
+            rewrite_is_equal_bool(op_array->opcodes, p);
+            RESTART_PEEPHOLE_LOOP;
+        } 
+        
         if ((p = peephole_inc(op_array->opcodes, i, op_array->last))) {
             if (!are_branch_targets(cdr(p), jumps)) {
                 rewrite_inc(op_array->opcodes, p);
             }
             RESTART_PEEPHOLE_LOOP;
         }
-        if ((p = peephole_multiple_echo(op_array->opcodes, i, op_array->last))) {
-            if (!are_branch_targets(cdr(p), jumps)) {
-                rewrite_multiple_echo(op_array->opcodes, p);
-            }
-        }
+        
         if ((p = peephole_print(op_array->opcodes, i, op_array->last))) {
             if (!are_branch_targets(cdr(p), jumps)) {
                 rewrite_print(op_array->opcodes, p);
             }
             RESTART_PEEPHOLE_LOOP;
         }
+        
+        if ((p = peephole_multiple_echo(op_array->opcodes, i, op_array->last))) {
+            if (!are_branch_targets(cdr(p), jumps)) {
+                rewrite_multiple_echo(op_array->opcodes, p);
+            }
+        } 
+        
         if ((p = peephole_constant_fold(op_array->opcodes, i, op_array->last))) {
             if (!are_branch_targets(cdr(p), jumps)) {
                 rewrite_constant_fold(op_array->opcodes, p);
             }
             RESTART_PEEPHOLE_LOOP;
         }
+        
         if ((p = peephole_fcall(op_array->opcodes, i, op_array->last))) {
             if (!are_branch_targets(cdr(p), jumps)) {
                 rewrite_fcall(op_array->opcodes, p);
@@ -825,21 +827,29 @@ zend_op_array* apc_optimize_op_array(zend_op_array* op_array)
             }
             RESTART_PEEPHOLE_LOOP;
         }
+        if ((p = peephole_needless_bool(op_array->opcodes, i, op_array->last))) {
+            if (!are_branch_targets(cdr(p), jumps)) {
+                rewrite_needless_bool(op_array->opcodes, p);
+            }
+            RESTART_PEEPHOLE_LOOP;
+        }
     }
+
     op_array->last = compress_ops(op_array, jumps);
     destroy_jump_array(jumps, jump_array_size);
-
+    
     return op_array;
 
-    #undef RESTART_PEEPHOLE_LOOP
+#undef RESTART_PEEPHOLE_LOOP
 }
 /* }}} */
 
 /*
  * Local variables:
+ * indent-tabs-mode: nil
  * tab-width: 4
  * c-basic-offset: 4
  * End:
- * vim600: expandtab sw=4 ts=4 sts=4 fdm=marker
- * vim<600: expandtab sw=4 ts=4 sts=4
+ * vim600: fdm=marker
+ * vim: expandtab sw=4 ts=4 sts=4
  */
