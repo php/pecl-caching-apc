@@ -41,6 +41,20 @@ AC_ARG_ENABLE(mmap,
   AC_MSG_RESULT(no)
 ])
 
+AC_MSG_CHECKING(whether to prefer fcntl based locks)
+AC_ARG_ENABLE(fcntl,
+[  --enable-fcntl  Enable fcntl support instead of IPC sem],[
+  if test "$enableval" = "yes" ; then
+    AC_DEFINE(APC_FCNTL_LOCKS, 1, [ ])
+    AC_MSG_RESULT(yes)
+  else
+    AC_MSG_RESULT(no)
+  fi
+],[
+  AC_MSG_RESULT(no)
+])
+
+
 PHP_CHECK_LIBRARY(rt, shm_open, [
   PHP_ADD_LIBRARY(rt,, APC_SHARED_LIBADD)
 ],[ ],[ ])

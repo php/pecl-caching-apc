@@ -9,6 +9,7 @@ LTLIBRARY_SOURCES =     apc.c \
 			apc_compile.c \
 			apc_main.c \
 			apc_sem.c \
+			apc_fcntl.c \
 			apc_shm.c \
 			apc_sma.c \
 			apc_stack.c \
