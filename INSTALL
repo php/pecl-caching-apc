@@ -97,6 +97,12 @@ apc.ttl
 	default: 0
 	ttl sets a global ttl on all cache objects.  Objects not updated in
 	ttl seconds will be expired and delted.
+apc.check_mtime
+	supported: (S)
+	default: 0
+	specifies whether a source file should be re-compiled if it has been
+	modified since it was compiled. This may result in a slight loss of
+	efficiency.
 
 #################################################################
 # Exported functions

@@ -23,6 +23,10 @@
 #include "zend_hash.h"
 #include <stdio.h>
 
+/* request initialize/shutdown routines */
+extern void apc_serializer_request_init();
+extern void apc_serializer_request_shutdown();
+
 /* By convention all apc_serialize_* functions serialize objects of the
  * specified type to the serialization buffer (dst). The apc_deserialize_*
  * functions deserialize objects of the specified type from the

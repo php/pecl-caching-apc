@@ -19,6 +19,21 @@
 
 #include "zend_variables.h"	// for zval_dtor()
 
+/* namearray_t is used to record deferred inheritance relationships */
+typedef struct namearray_t namearray_t;
+struct namearray_t {
+	char* strings;	/* array of null-terminated names */
+	int length;		/* logical size of strings */
+	int size;		/* physical size of strings */
+};
+
+/* deferred_inheritance is a mapping from parent class names to
+ * namearray_t structures that contain the names of all classes
+ * derived from the parent class that were compiled before the
+ * parent class definition was encountered... */ 
+static apc_nametable_t* deferred_inheritance = 0;
+
+
 enum { START_SIZE = 1, GROW_FACTOR = 2 };
 
 static char* dst   = 0;		/* destination (serialization) buffer */
@@ -38,6 +53,31 @@ static void expandbuf(char** bufptr, int* cursize, int minsize)
 	*bufptr = (char*) realloc(*bufptr, *cursize);
 }
 
+/* namearray_dtor: used to clean up deferred_inheritance table (see below) */
+static void namearray_dtor(void* p)
+{
+	namearray_t* na = (namearray_t*) p;
+
+	if (na->strings != 0) {
+		free(na->strings);
+	}
+	free(na);
+}
+
+/* apc_serializer_request_init: initialize this module per request */
+void apc_serializer_request_init()
+{
+	deferred_inheritance = apc_nametable_create(97);
+}
+
+/* apc_serializer_request_shutdown: clean up this module per request */
+void apc_serializer_request_shutdown()
+{
+	if (deferred_inheritance != 0) {
+		apc_nametable_clear(deferred_inheritance, namearray_dtor);
+		apc_nametable_destroy(deferred_inheritance);
+	}
+}
 
 /* First step in serialization.  Creates the serialization buffer */
 void apc_init_serializer()
@@ -651,15 +691,17 @@ void apc_serialize_zend_class_entry(zend_class_entry* zce)
 	SERIALIZE_SCALAR(zce->type, char);
 	apc_serialize_string(zce->name);
 	SERIALIZE_SCALAR(zce->name_length, uint);
-	/* 	class inheritance.  We serialize the name of the parent class to
-		act a as pointer to the parent class.  We'll use zend_hash_find 
-		to pick up later.
-	*/
+
+	/* Serialize the name of this class's parent class (if it has one)
+	 * so that we can perform inheritance during deserialization (see
+	 * apc_deserialize_zend_class_entry). */
+	
  	exists = (zce->parent != NULL) ? 1 : 0;
     SERIALIZE_SCALAR(exists, char);
-	if(exists) {
+	if (exists) {
 		apc_serialize_string(zce->parent->name);
 	}
+
 	SERIALIZE_SCALAR(zce->refcount[0], int);
 	SERIALIZE_SCALAR(zce->constants_updated, zend_bool);
 	apc_serialize_hashtable(&zce->function_table, apc_serialize_zend_function);
@@ -689,21 +731,31 @@ void apc_serialize_zend_class_entry(zend_class_entry* zce)
 void apc_deserialize_zend_class_entry(zend_class_entry* zce)
 {
 	int count, i, exists;
-	char *tmp;
+	namearray_t* children;
 
 	DESERIALIZE_SCALAR(&zce->type, char);
 	apc_create_string(&zce->name);
 	DESERIALIZE_SCALAR(&zce->name_length, uint);
-	/* 	handle inherited classes by deserialing the name of the parent class
-		and looking it up in the class table.  Thinks this works?
-	*/
+
 	DESERIALIZE_SCALAR(&exists, char);
-	if(exists) {
-		apc_create_string(&tmp);
-		zend_hash_find(CG(class_table), tmp, strlen(tmp) + 1, 
-			(void **) &zce->parent);
-		efree(tmp);
+	if (exists) {
+		/* This class knows the name of its parent, most likely because its
+		 * parent is defined in the same source file. Therefore, we can
+		 * simply restore the parent link, and not worry about manually
+		 * inheriting methods from the parent. */
+
+		char* parent_name;	/* name of parent class */
+
+		apc_create_string(&parent_name);
+		if (zend_hash_find(CG(class_table), parent_name,
+			strlen(parent_name) + 1, (void**) &zce->parent) == FAILURE)
+		{
+			zend_error(E_ERROR, "parent '%s' of class '%s' undefined",
+				parent_name, zce->name);
+		}
+		efree(parent_name);
 	}
+
 	/* refcount is a pointer to a single int.  Don't ask me why, I
 	 * just work here. */
 	zce->refcount = (int*) emalloc(sizeof(int));
@@ -731,6 +783,41 @@ void apc_deserialize_zend_class_entry(zend_class_entry* zce)
 	DESERIALIZE_SCALAR(&zce->handle_function_call, void*);
 	DESERIALIZE_SCALAR(&zce->handle_property_get, void*);
 	DESERIALIZE_SCALAR(&zce->handle_property_set, void*);
+
+
+	/* Consult the deferred_inheritance table for this class's entries
+	 * (i.e. where this class is the missing parent). For each child
+	 * that has registered with this parent, call zend_do_inheritance
+	 * to add the parent's methods with the child's function table. */
+
+	children = apc_nametable_retrieve(deferred_inheritance, zce->name);
+
+	if (children != 0) {
+		/* One or more classes are derived from this one and have
+		 * already been deserialized. We must now perform the
+		 * inheritance that would normally be done at run-time. */
+	
+		char* child_name;	/* name of the ith derived class */
+		
+		for (i = 0; i < children->length; i += strlen(child_name)+1) {
+			zend_class_entry* child;	/* the ith derived class entry */
+			int result;
+			
+			child_name = children->strings + i;
+
+			/* get the child class entry */
+			result = zend_hash_find(CG(class_table), child_name,
+				strlen(child_name) + 1, (void**) &child);
+			assert(result == SUCCESS);	/* FIXME */
+
+			zend_do_inheritance(child, zce);
+		}
+
+		/* clean up */
+		apc_nametable_remove(deferred_inheritance, zce->name);
+		free(children->strings);
+		free(children);
+	}
 }
 
 void apc_create_zend_class_entry(zend_class_entry** zce)
@@ -909,7 +996,9 @@ void apc_deserialize_zend_op_array(zend_op_array* zoa)
 	DESERIALIZE_SCALAR(zoa->refcount, zend_uint);
 	DESERIALIZE_SCALAR(&zoa->last, zend_uint);
 	DESERIALIZE_SCALAR(&zoa->size, zend_uint);
+
 	zoa->opcodes = NULL;
+
 	if (zoa->last > 0) {
 		zoa->opcodes = (zend_op*) emalloc(zoa->last * sizeof(zend_op));
 		for (i = 0; i < zoa->last; i++) {
@@ -917,61 +1006,105 @@ void apc_deserialize_zend_op_array(zend_op_array* zoa)
 			if(zoa->opcodes[i].opcode == ZEND_DECLARE_FUNCTION_OR_CLASS) {
 				HashTable *table;
 				switch(zoa->opcodes[i].extended_value) {
-					case ZEND_DECLARE_FUNCTION: {
-						zend_function *function;
-						table = CG(function_table);
-						if (zend_hash_find(table, zoa->opcodes[i].op2.u.constant.value.str.val,
-							zoa->opcodes[i].op2.u.constant.value.str.len + 1, (void **) &function) == SUCCESS) 
-						{
-							zval_dtor(&zoa->opcodes[i].op1.u.constant);
-            	zval_dtor(&zoa->opcodes[i].op2.u.constant);
-            	zoa->opcodes[i].opcode = ZEND_NOP;
-            	memset(&zoa->opcodes[i].op1, 0, sizeof(znode));
-            	memset(&zoa->opcodes[i].op2, 0, sizeof(znode));
-            	zoa->opcodes[i].op1.op_type = IS_UNUSED;
-            	zoa->opcodes[i].op2.op_type = IS_UNUSED;
-            }
+				case ZEND_DECLARE_FUNCTION: {
+					zend_function *function;
+					table = CG(function_table);
+					if (zend_hash_find(table, zoa->opcodes[i].op2.u.constant.value.str.val,
+						zoa->opcodes[i].op2.u.constant.value.str.len + 1, (void **) &function) == SUCCESS) 
+					{
+						zval_dtor(&zoa->opcodes[i].op1.u.constant);
+						zval_dtor(&zoa->opcodes[i].op2.u.constant);
+						zoa->opcodes[i].opcode = ZEND_NOP;
+						memset(&zoa->opcodes[i].op1, 0, sizeof(znode));
+						memset(&zoa->opcodes[i].op2, 0, sizeof(znode));
+						zoa->opcodes[i].op1.op_type = IS_UNUSED;
+						zoa->opcodes[i].op2.op_type = IS_UNUSED;
 					}
-					break;
-					case ZEND_DECLARE_CLASS: {
-						zend_class_entry *ce;
-						table = CG(class_table);
-						if(zend_hash_find(table, zoa->opcodes[i].op2.u.constant.value.str.val, 
-							zoa->opcodes[i].op2.u.constant.value.str.len + 1, (void **) &ce) == SUCCESS)
-						{
-							zval_dtor(&zoa->opcodes[i].op1.u.constant);
-            	zval_dtor(&zoa->opcodes[i].op2.u.constant);
-            	zoa->opcodes[i].opcode = ZEND_NOP;
-            	memset(&zoa->opcodes[i].op1, 0, sizeof(znode));
-            	memset(&zoa->opcodes[i].op2, 0, sizeof(znode));
-            	zoa->opcodes[i].op1.op_type = IS_UNUSED;
-            	zoa->opcodes[i].op2.op_type = IS_UNUSED;
-        		}
+				} break;
+				case ZEND_DECLARE_CLASS: {
+					zend_class_entry *ce;
+					table = CG(class_table);
+					if(zend_hash_find(table, zoa->opcodes[i].op2.u.constant.value.str.val, 
+						zoa->opcodes[i].op2.u.constant.value.str.len + 1, (void **) &ce) == SUCCESS)
+					{
+						zval_dtor(&zoa->opcodes[i].op1.u.constant);
+						zval_dtor(&zoa->opcodes[i].op2.u.constant);
+						zoa->opcodes[i].opcode = ZEND_NOP;
+						memset(&zoa->opcodes[i].op1, 0, sizeof(znode));
+						memset(&zoa->opcodes[i].op2, 0, sizeof(znode));
+						zoa->opcodes[i].op1.op_type = IS_UNUSED;
+						zoa->opcodes[i].op2.op_type = IS_UNUSED;
 					}
-					break;
-					case ZEND_DECLARE_INHERITED_CLASS: {
-						zend_class_entry *ce;
-						char *class_name;
-						table = CG(class_table);
-						class_name = strchr(zoa->opcodes[i].op2.u.constant.value.str.val, ':');
-						if (!class_name) {
-							zend_error(E_CORE_ERROR, "Invalid runtime class entry");
-						}
-						class_name++;
-						if(zend_hash_find(table, class_name, strlen(class_name) + 1, (void **) &ce) == SUCCESS) 
-						{
-							zval_dtor(&zoa->opcodes[i].op1.u.constant);
-              zval_dtor(&zoa->opcodes[i].op2.u.constant);
-              zoa->opcodes[i].opcode = ZEND_NOP;
-              memset(&zoa->opcodes[i].op1, 0, sizeof(znode));
-              memset(&zoa->opcodes[i].op2, 0, sizeof(znode));
-              zoa->opcodes[i].op1.op_type = IS_UNUSED;
-              zoa->opcodes[i].op2.op_type = IS_UNUSED;
-            }
+				} break;
+				case ZEND_DECLARE_INHERITED_CLASS: {
+					zend_class_entry *ce;
+					char *class_name;
+					char* parent_name;
+					int class_name_length;
+					namearray_t* children;
 
+
+					table = CG(class_table);
+					class_name = strchr(zoa->opcodes[i].op2.u.constant.value.str.val, ':');
+					if (!class_name) {
+						zend_error(E_CORE_ERROR, "Invalid runtime class entry");
 					}
-					break;
-					default:
+					class_name++;
+
+					/* extract the parent name */
+					parent_name = apc_estrdup(zoa->opcodes[i].op2.u.constant.value.str.val);
+					*(strchr(parent_name, ':')) = '\0';
+
+					if(zend_hash_find(table, class_name, strlen(class_name) + 1, (void **) &ce) == SUCCESS) 
+					{
+						zval_dtor(&zoa->opcodes[i].op1.u.constant);
+						zval_dtor(&zoa->opcodes[i].op2.u.constant);
+						zoa->opcodes[i].opcode = ZEND_NOP;
+						memset(&zoa->opcodes[i].op1, 0, sizeof(znode));
+						memset(&zoa->opcodes[i].op2, 0, sizeof(znode));
+						zoa->opcodes[i].op1.op_type = IS_UNUSED;
+						zoa->opcodes[i].op2.op_type = IS_UNUSED;
+					}
+
+					/* The parent class hasn't been compiled yet, most likely
+					 * because it is defined in an included file. We must defer
+					 * this inheritance until the parent class is created. Add
+					 * a tuple for this class and its parent to the deferred
+					 * inheritance table */
+		
+					class_name_length = strlen(class_name);
+
+					children = apc_nametable_retrieve(deferred_inheritance,
+					                                  parent_name);
+		
+					if (children == 0) {
+						/* Create and initialize a new namearray_t for this
+						 * class's parent and insert into the deferred
+						 * inheritance table. */
+		
+						children = (namearray_t*) malloc(sizeof(namearray_t));
+						children->length = 0;
+						children->size = class_name_length + 1;
+						children->strings = (char*) malloc(children->size);
+		
+						apc_nametable_insert(deferred_inheritance,
+						                     parent_name, children);
+					}
+		
+					/* Add this class's name to the namearray_t 'children' */
+		
+					if (children->length + class_name_length >= children->size)
+					{
+						children->size *= 2;
+						children->strings = realloc(children->strings,
+						                            children->size);
+						assert(children->strings);
+					}
+					memcpy(children->strings + children->length,
+						class_name, class_name_length + 1);
+					children->length += class_name_length + 1;
+				} break;
+				default:
 					break;
 				}
 			}
