@@ -1,0 +1,52 @@
+This FAQis a plain text version of that available at 
+http://apc.communityconnect.com/FAQ.html.
+
+				Frequently Asked Questions
+
+Question:	How does all this stuff work?
+Answer:		The apc cache works by storing the op-tree for a php
+			script in shared memory (either sysv shared memory or
+			memory mapped files).  When a file is run, the extension
+			checks to see if it is cached.  If it is the op-tree is
+			read from memory and the compilation step is bypassed.  
+			Otherwise the file is compiled as usual and is inserted 
+			into the cache.
+
+Question:	Which implementation is right for me?
+Answer:		It depends.  :)  The mmap and shm implementations both
+			have their pros and cons.  The shm implementation allows
+			much finer control of the cache - particularly per-object
+			ttls.  
+
+			shm:
+				pros:
+				- per object ttls
+				- global cache statistics
+				cons:
+				- requires sysv semaphore and shared memory support
+				- as with all apps that use sysv semaphores, has
+				  the potential to 'leak' semaphores.
+			mmap:
+				pros:
+				- greater visibility into how the cache works
+				- can be used as a general compiler, since the
+				  compiled objects are stored as files.
+				- requires only mmap() and fcntl() support
+				cons:
+				- may require many open files 
+				- gives only per-child cache statistics
+				- cache management is somewhat more dificult.
+			
+			Surprisingly, our internal test have shown negligeable
+			speed differences between the two implementations.
+
+Question:	What sort of performance increase can I expect?
+Answer:		Ahh... the magic question.  This really depends on the
+			size and complexity of your php.  For a 'Hello World'
+			script a 50% performance increase was noted.  For
+			our own production code, there was roughly a 400% 
+			performance improvement.  As always, your mileage
+			may vary.
+
+
+

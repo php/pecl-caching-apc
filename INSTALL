@@ -1,0 +1,40 @@
+This is the INSTALL file for apc php cache.
+
+For a deeper explanation of the components involved, please visit 
+http://apc.communityconnect.com/.
+
+#################################################################
+# Compiling and installing as a Zend extension (post-PHP install)
+#################################################################
+
+0a) Untar these sources and cd apc/
+0b) First decide whether you want to run the sysv shared-memory cache
+or the memory-mapped implementation.  (See the FAQ regarding the
+pros and cons of each.)
+1) Copy the contents of the mmap or shm driectory into the main 
+directory.
+2) Run phpize (this is installed with php)
+3) Run ./configure --enable-apc --with-php-config=<path to php-config>
+4) Run make
+5) copy modules/php_apc.so to /path/to/where/you/keep/extensions/
+6) in your php.ini file add the line
+	zend_extension="/path/to/where/you/keep/extensions/php_apc.so"
+7) You're all set!
+
+#################################################################
+# Installing the binary packages
+#################################################################
+
+Before php-4.0.4, a zend extension must be compiled under under the
+same version of php that it will be run under.  Binaries in the 
+binaries subdirectory and follow the naming convention:
+linux-glibc2.1-php-4.0.3p1-mmap.so  is the mmap version of php_apc.so 
+compile under linux for php-4.0.3p1.  We happily accept compiled
+binaries for other platforms.
+
+1) copy the appropriate binary to 
+	/path/to/where/you/keep/extensions/php_apc.so
+2) in your php.ini file add the line
+    zend_extension="/path/to/where/you/keep/extensions/php_apc.so"
+
+

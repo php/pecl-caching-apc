@@ -1,0 +1,19 @@
+This is the NOTICE file that holds acknowledgements and stuff.
+
+APC is the Alternative PHP Cache.  It was conceived of to provide a 
+free, open, and robust framework for compiling and caching php scripts.  
+This extension is being released under the QPL for complete compliance 
+with PHP and to facilitate wide-spread use.  It is our intention that 
+this project be kept open source and that all commercial spin-offs
+contribute their modifications back into th public source-tree.
+
+Creators:
+Daniel Cowgill
+George Schlossnagle
+
+We would like to thank Community Connect, Inc. for supporting this 
+project and providing a challenging and stimulating environment in
+which exciting projects can happen.
+
+We would also like to thank Rasmus Lerdorf for encouraging us to 
+take on this project.
