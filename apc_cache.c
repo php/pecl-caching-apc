@@ -47,7 +47,6 @@ struct segment_t {
  * bucket is removed, its shmid is set to UNUSED, which is considered
  * non-empty when searching, but empty when inserting. Both values are
  * guaranteed to be less than zero */
-
 enum { EMPTY = -1, UNUSED = -2 };
 typedef struct bucket_t bucket_t;
 struct bucket_t {
