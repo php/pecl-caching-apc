@@ -53,7 +53,13 @@ clean-x:
 
 distclean: distclean-recursive clean-x
 	rm -f config.cache config.log config.status config_vars.mk libtool \
-	php_config.h stamp-h Makefile build-defs.h php4.spec libphp4.module
+	config.h stamp-h Makefile build-defs.h php4.spec libphp4.module
+
+cvsclean:
+	@for i in `find . -name .cvsignore`; do \
+		(cd `dirname $$i` 2>/dev/null && rm -rf `cat .cvsignore` *.o *.a || true); \
+	done
+	@rm -f $(SUBDIRS) 2>/dev/null || true
 
 install-modules:
 	@test -d modules && \

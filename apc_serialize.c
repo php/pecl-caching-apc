@@ -19,6 +19,7 @@
 #include "apc_sma.h"
 #include "apc_version.h"
 #include "apc_list.h"
+#include "zend_no_zend.h"
 #include <stdlib.h>
 #include <assert.h>
 
@@ -459,7 +460,7 @@ void apc_deserialize_znode(znode* zn);
 zend_op* apc_copy_zend_op(zend_op *no, zend_op* zo, apc_malloc_t);
 void apc_serialize_zend_op(zend_op* zo);
 void apc_deserialize_zend_op(zend_op* zo);
-zend_op_array* apc_copy_op_array(zend_op_array* noa, zend_op_array* zoa, apc_malloc_t);
+zend_op_array* apc_copy_op_array(zend_op_array* noa, zend_op_array* zoa, apc_malloc_t, int magic);
 void apc_serialize_zend_op_array(zend_op_array* zoa);
 void apc_deserialize_zend_op_array(zend_op_array* zoa, int master);
 void apc_create_zend_op_array(zend_op_array** zoa);
@@ -479,7 +480,7 @@ void apc_serialize_zend_function_table(HashTable* gft, apc_nametable_t* acc, apc
 void apc_deserialize_zend_function_table(HashTable* gft, apc_nametable_t* acc, apc_nametable_t*);
 void apc_serialize_zend_class_table(HashTable* gct, apc_nametable_t* acc, apc_nametable_t*);
 int apc_deserialize_zend_class_table(HashTable* gct, apc_nametable_t* acc, apc_nametable_t*);
-
+void apc_fixup_opcodes(zend_op* opcodes, int num_ops, apc_malloc_t ctor);
 
 /* type: Fundamental operations */
 
@@ -1497,7 +1498,7 @@ void apc_deserialize_zend_op(zend_op* zo)
 /* type: zend_op_array */
 
 
-zend_op_array* apc_copy_op_array(zend_op_array* noa, zend_op_array* zoa, apc_malloc_t ctor)
+zend_op_array* apc_copy_op_array(zend_op_array* noa, zend_op_array* zoa, apc_malloc_t ctor, int magic)
 {
 	int i;
 
@@ -1522,7 +1523,7 @@ zend_op_array* apc_copy_op_array(zend_op_array* noa, zend_op_array* zoa, apc_mal
 		apc_copy_zend_op(&noa->opcodes[i], &zoa->opcodes[i], ctor);
 	}
 	noa->filename = apc_vstrdup(zoa->filename, ctor);
-	noa->reserved[0] = (void *) 1;
+	noa->reserved[0] = (void *) magic;
 	return noa;
 }
 
@@ -1860,7 +1861,8 @@ zend_function *apc_copy_zend_function(zend_function* nf, zend_function* zf, apc_
     break;
     case ZEND_USER_FUNCTION:
     case ZEND_EVAL_CODE:
-    apc_copy_op_array(&nf->op_array, &zf->op_array, ctor);
+    apc_copy_op_array(&nf->op_array, &zf->op_array, 
+		ctor, APC_ZEND_USER_FUNCTION_OP);
     break;
     default:
     /* the above are all valid zend_function types.  If we hit this
@@ -2058,3 +2060,18 @@ int apc_deserialize_zend_class_table(HashTable* gct, apc_nametable_t* acc, apc_n
 	return i;
 }
 
+void apc_fixup_opcodes(zend_op* opcodes, int num_ops, apc_malloc_t ctor)
+{
+    int i;
+    for(i = 0; i < num_ops; i++) {
+        if(opcodes[i].opcode  == ZEND_DECLARE_FUNCTION_OR_CLASS) {
+            znode temp_znode;
+            apc_copy_znode(&temp_znode, &opcodes[i].result, ctor);
+            memcpy(&opcodes[i].result, &temp_znode, sizeof(znode));
+            apc_copy_znode(&temp_znode, &opcodes[i].op1, ctor);
+            memcpy(&opcodes[i].op1, &temp_znode, sizeof(znode));
+            apc_copy_znode(&temp_znode, &opcodes[i].op2, ctor);
+            memcpy(&opcodes[i].op2, &temp_znode, sizeof(znode));
+        }
+    }
+}  

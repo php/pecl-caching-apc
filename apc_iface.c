@@ -26,6 +26,7 @@
 #include "apc_crc32.h"
 #include "apc_nametable.h"
 #include "apc_version.h"
+#include "zend_no_zend.h"
 #include "php_apc.h"
 
 /* must include zend headers */
@@ -193,6 +194,9 @@ void apc_module_init()
 	inputsize = 1;
 	inputbuf  = (char*) malloc(inputsize);
 	inputlen  = 0;
+
+	/* install our own apc-aware function dtors */
+	CG(function_table)->pDestructor = (dtor_func_t) apc_destroy_zend_function;
 }
 
 void apc_module_shutdown()
@@ -336,20 +340,117 @@ int apc_object_info(char const *filename, zval** hash)
    return 0;
 }
 
-/* dummy function to reset ref counts */
-static void increment_refcount(void *d) 
+/* emalloc is a #define, so can't be used as a fn pointer */
+static void *apc_zmalloc(int size) 
 {
-	uint *refcount;
-	refcount = (uint *)d;
-	refcount[0] = 2;
+	return emalloc(size);
+}
+
+	
+/* apc_retrieve_op_array:  retrieves a op_array from shm and does fixup */
+static zend_op_array* apc_retrieve_op_array(apc_cache_t *cache, const char* key, int mtime)
+{
+    zend_op_array** new_op_array;
+    zend_op_array* op_array;
+    zend_op *opcodes;
+    char *opkey;
+    int size, length;
+   
+    op_array = (zend_op_array*) emalloc(sizeof(zend_op_array));
+    new_op_array = (zend_op_array**) apc_emalloc(sizeof(zend_op_array*));
+
+    opkey = (char *)apc_emalloc(strlen(key) + 4);
+    snprintf(opkey, strlen(key) + 4, "op:%s", key);
+
+    length = 0;
+    size = sizeof(zend_op_array*);
+
+    if (apc_cache_retrieve(cache, opkey, (char**) &new_op_array, &length,
+        &size, mtime) != 1)
+    {
+        assert(0);  // FIXME
+    }
+    assert(length == sizeof(zend_op_array*)); // FIXME
+    apc_efree(opkey);
+    memcpy(op_array, *new_op_array, sizeof(zend_op_array));
+    /* re-allocate opcodes in process memory */
+    opcodes = (zend_op*) emalloc(sizeof(zend_op)*op_array->last);
+    memcpy(opcodes, op_array->opcodes,
+        sizeof(zend_op)*op_array->last);
+    apc_fixup_opcodes(opcodes, op_array->last, apc_zmalloc);
+    op_array->opcodes = opcodes;
+    apc_efree(new_op_array);
+    return op_array;
+}
+
+static void apc_store_op_array(apc_cache_t *cache, const char* key, 
+						zend_op_array* op_array, int mtime)
+{
+    char* opkey;
+    zend_op* opcodes;
+	zend_op_array *new_op_array;
+
+    new_op_array = apc_copy_op_array(NULL, op_array, apc_sma_malloc,
+        APC_ZEND_OP_ARRAY_OP);
+    destroy_op_array(op_array);
+    opkey = apc_emalloc(strlen(key) + 4);
+    snprintf(opkey, strlen(key) + 4, "op:%s", key);
+    apc_cache_insert(cache, opkey, (const char*) &new_op_array,
+                    sizeof(zend_op_array*), mtime);
+    apc_efree(opkey);
+    memcpy(op_array, new_op_array, sizeof(zend_op_array));
+    /* re-allocate opcodes in process memory */
+    opcodes = (zend_op*) emalloc(sizeof(zend_op)*new_op_array->last);
+    memcpy(opcodes, new_op_array->opcodes,
+        sizeof(zend_op)*new_op_array->last);
+    apc_fixup_opcodes(opcodes, op_array->last, apc_zmalloc);
+    op_array->opcodes = opcodes;
+}
+
+static void apc_fixup_g_f_t(apc_cache_t *cache, const char* key, int mtime)
+{
+    HashTable** new_function_table;
+    char *funckey;
+    int size, length;
+
+    funckey = (char *) apc_emalloc(strlen(key) +6);
+    snprintf(funckey, strlen(key) +6, "func:%s", key);
+    length = 0;
+    size = sizeof(HashTable*);
+    new_function_table = (HashTable**) apc_emalloc(sizeof(HashTable*));
+    if (apc_cache_retrieve(cache, funckey, (char**) &new_function_table,
+        &length, &size, mtime) != 1)
+    {
+        assert(0); //FIXME
+    }
+    assert(length == sizeof(HashTable*));  // FIXME
+    zend_hash_copy(EG(function_table), *new_function_table, NULL,
+        NULL, sizeof(zend_function));
+    apc_efree(funckey);
+    apc_efree(new_function_table);
+}
+
+static void apc_store_g_f_t(apc_cache_t *cache, const char* key, HashTable* diffhash, int mtime)
+{
+    HashTable* new_function_table;
+    char *funckey;
+
+    funckey = apc_emalloc(strlen(key) + 6);
+    snprintf(funckey, strlen(key) + 6, "func:%s", key);
+    new_function_table = apc_copy_hashtable(NULL, diffhash,
+        apc_copy_zend_function, sizeof(zend_function),
+        apc_sma_malloc);
+    apc_cache_insert(cache, funckey, (const char*) &new_function_table,
+        sizeof(HashTable*), mtime);
+    apc_efree(funckey);
 }
 
 /* apc_execute: replacement for zend_compile_file to allow for refcount reset*/
 static ZEND_API void apc_execute(zend_op_array* op_array ELS_DC)
 {
 	old_execute(op_array ELS_DC);
-	if(op_array->reserved[0] == (void *) 1) {
-		apc_efree(op_array->opcodes);
+	if(op_array->reserved[0] == (void *) APC_ZEND_OP_ARRAY_OP) {
+		efree(op_array->opcodes);
 		memset(op_array, 0, sizeof(zend_op_array));
 		op_array->refcount = (int*) emalloc(sizeof(int));
 		op_array->refcount[0] = 1;
@@ -389,7 +490,8 @@ ZEND_API zend_op_array* apc_shm_compile_file(zend_file_handle *file_handle,
 	int seen;					/* seen this file before, this request? */
 	int mtime;					/* modification time of the file */
 	int numclasses;
-
+	HashTable preFuncTable, postFuncTable;
+	zend_function tmp_zend_function;
 
 	/* If the user has set the check_mtime ini entry to true, we must
 	 * compare the current modification time of the every file against
@@ -433,15 +535,8 @@ ZEND_API zend_op_array* apc_shm_compile_file(zend_file_handle *file_handle,
 	if (apc_cache_retrieve(cache, key, &inputbuf, &inputlen,
 		&inputsize, mtime) == 1)
 	{
-		char *opkey;
-		zend_op_array** new_op_array;
-		int length;
-		int size;
-		zend_op *opcodes;
-
 		zend_llist_add_element(&CG(open_files), file_handle); /*  FIXME */
 		apc_init_deserializer(inputbuf, inputlen);
-		op_array = (zend_op_array*) emalloc(sizeof(zend_op_array));
 
 		/* Deserialize the global function/class tables. Every object that
 		 * is deserialized is also inserted into the file's private tables
@@ -450,33 +545,15 @@ ZEND_API zend_op_array* apc_shm_compile_file(zend_file_handle *file_handle,
 			zend_error(E_ERROR, "%s is not a APC compiled object",
 				key);
 		}
-		apc_deserialize_zend_function_table(CG(function_table),
-			acc_functiontable, tables[0]);
 		numclasses = apc_deserialize_zend_class_table(CG(class_table), 
 			acc_classtable, tables[1]);
-		opkey = (char *)apc_emalloc(strlen(key) + 4);
-		snprintf(opkey, strlen(key) + 4, "op:%s", key);
 
-		new_op_array = (zend_op_array**) apc_emalloc(sizeof(zend_op_array*));
-		length = 0;
-		size = sizeof(zend_op_array*);
+		/* retrieve op_array */
+		op_array = apc_retrieve_op_array(cache, key, mtime);
 
-		if (apc_cache_retrieve(cache, opkey, (char**) &new_op_array, &length,
-		                       &size, mtime) != 1) 
-		{
-			assert(0);
-		}
+		/* retrieve function_table */
+		apc_fixup_g_f_t(cache, key, mtime);
 
-		assert(length == sizeof(zend_op_array*));
-
-		memcpy(op_array, *new_op_array, sizeof(zend_op_array));
-      	opcodes = (zend_op*) apc_emalloc(sizeof(zend_op)*op_array->last);
-      /* re-allocate opcodes in process memory */
-          memcpy(opcodes, op_array->opcodes,
-          sizeof(zend_op)*op_array->last);
-      	op_array->opcodes = opcodes;
-
-		apc_efree(new_op_array);
 		return op_array;
 	}
 
@@ -505,11 +582,22 @@ ZEND_API zend_op_array* apc_shm_compile_file(zend_file_handle *file_handle,
 		return op_array;
 
     }
-	
+
+	/* Store pre-compile function_table state */
+	zend_hash_init_ex(&preFuncTable, 100, NULL, NULL, 1, 0);
+	zend_hash_copy(&preFuncTable, EG(function_table), NULL, 
+		&tmp_zend_function, sizeof(zend_function));
+	/* compile */
 	op_array = old_compile_file(file_handle, type CLS_CC);
 	if (!op_array) {
 		return NULL;
 	}
+	/* find classes declared during compile */
+    zend_hash_init_ex(&postFuncTable, 100, NULL, NULL, 1, 0);
+    zend_hash_copy(&postFuncTable, EG(function_table), NULL,
+        &tmp_zend_function, sizeof(zend_function));
+    apc_zend_hash_diff(&postFuncTable, &preFuncTable);
+
 
 	if (seen) {
 		/* This file has been compiled previously during this request. We
@@ -532,40 +620,32 @@ ZEND_API zend_op_array* apc_shm_compile_file(zend_file_handle *file_handle,
 	{
 		char* buf;	/* will point to serialization buffer */
 		char* opkey;
+		char *funckey;
 		int len, *refcount;	/* will be length of serialization buffer */
 		zend_op_array *new_op_array;
 		zend_op* opcodes;
+		HashTable* new_function_table;
 
 		apc_init_serializer();
-
 		/* Serialize the compiler's global tables, using the accumulator
 		 * tables to compute the differences created by the compilation
 		 * of the file. We also insert every serialized object into the
 		 * file's private tables for later use (see above). */
 		apc_serialize_magic();
-		apc_serialize_zend_function_table(CG(function_table),
-			acc_functiontable, tables[0]);
+//		apc_serialize_zend_function_table(CG(function_table),
+//			acc_functiontable, tables[0]);
 		apc_serialize_zend_class_table(CG(class_table),
 			acc_classtable, tables[1]);
-		new_op_array = apc_copy_op_array(NULL, op_array, apc_sma_malloc);
-		destroy_op_array(op_array);
-		opkey = apc_emalloc(strlen(key) + 4);
-		snprintf(opkey, strlen(key) + 4, "op:%s", key);
 
-		apc_cache_insert(cache, opkey, (const char*) &new_op_array,
-		                 sizeof(zend_op_array*), mtime);
+		/* make a new op_array, destroy the old one, and insert
+		 * into the cache */
+		apc_store_op_array(cache, key, op_array, mtime);
+
+		/* do the function_table */
+		apc_store_g_f_t(cache, key, &postFuncTable, mtime);
 
 		apc_get_serialized_data(&buf, &len);
 		apc_cache_insert(cache, key, buf, len, mtime);
-
-		apc_efree(opkey);
-		memcpy(op_array, new_op_array, sizeof(zend_op_array));
-		/* re-allocate opcodes in process memory */
-		opcodes = (zend_op*) apc_emalloc(sizeof(zend_op)*new_op_array->last);
-   	    memcpy(opcodes, new_op_array->opcodes, 
-			sizeof(zend_op)*new_op_array->last);
-		op_array->opcodes = opcodes;
-		
 	}
 	
 	return op_array;
