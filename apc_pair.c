@@ -16,6 +16,7 @@
 
 #include "apc_pair.h"
 #include <assert.h>
+#include <stdlib.h>
 
 struct Pair {
     int v;
