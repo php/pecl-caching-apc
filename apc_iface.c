@@ -94,6 +94,7 @@ static apc_cache_t* cache;
 static apc_nametable_t* filetable;
 static apc_nametable_t* acc_functiontable;
 static apc_nametable_t* acc_classtable;
+static apc_nametable_t* locktable;
 
 /* these variables are used to deserialize the top-level zend_op_array */
 static char* inputbuf;
@@ -183,6 +184,7 @@ void apc_module_init()
 	filetable          = apc_nametable_create(FILE_TABLE_SIZE);
 	acc_functiontable  = apc_nametable_create(ACC_FUNCTION_TABLE_SIZE);
 	acc_classtable     = apc_nametable_create(ACC_CLASS_TABLE_SIZE);
+	locktable     = apc_nametable_create(ACC_CLASS_TABLE_SIZE);
 
 	/* do APC one-time initialization */
 	if (APC_SHM_MODE) {
@@ -230,6 +232,7 @@ void apc_request_init()
 	apc_nametable_clear(filetable, tabledestructor);
 	apc_nametable_clear(acc_functiontable, 0);
 	apc_nametable_clear(acc_classtable, 0);
+	apc_nametable_clear(locktable, 0);
 
 	/* initialize serializer module */
 	apc_serializer_request_init();
@@ -238,8 +241,9 @@ void apc_request_init()
 void apc_request_shutdown()
 {
 	apc_dprint("apc_request_shutdown()\n");
-
 	/* clean up serializer module */
+// FIXME remove all read locks in nametable
+	apc_nametable_apply(locktable, apc_un_lock_nametable);
 	apc_serializer_request_shutdown();
 }
 
@@ -492,6 +496,7 @@ static ZEND_API void apc_execute(zend_op_array* op_array ELS_DC)
 {
 	old_execute(op_array ELS_DC);
 	if(op_array->reserved[0] == (void *) APC_ZEND_OP_ARRAY_OP) {
+		fprintf(stderr, "Just executed %s\n", op_array->filename);
 		efree(op_array->opcodes);
 		memset(op_array, 0, sizeof(zend_op_array));
 		op_array->refcount = (int*) emalloc(sizeof(int));
@@ -532,6 +537,7 @@ ZEND_API zend_op_array* apc_shm_compile_file(zend_file_handle *file_handle,
 	int seen;					/* seen this file before, this request? */
 	int mtime;					/* modification time of the file */
 	int numclasses;
+	int fd;
 	HashTable preFuncTable, postFuncTable, preClassTable, postClassTable;
 	zend_function tmp_zend_function;
 
@@ -573,43 +579,21 @@ ZEND_API zend_op_array* apc_shm_compile_file(zend_file_handle *file_handle,
 
 	/* Lookup the file in the shared cache. if it exists, deserialize it
 	 * and return, skipping the compile step. */
-
-	if ((op_array = apc_retrieve_op_array(cache, key, mtime)) != NULL)
-	{
-		zend_llist_add_element(&CG(open_files), file_handle); /*  FIXME */
-
-		/* retrieve function_table */
-		apc_reinstantiate_g_f_t(cache, key, mtime);
-		apc_reinstantiate_g_c_t(cache, key, mtime);
-
-		return op_array;
-	}
-
-	/* Could not retrieve this file from the cache, compile it now. */
-	if( APCG(check_compiled_source) && !apc_check_compiled_file(file_handle->filename, 
-		&inputbuf, &inputlen)) 
-	{
-		assert(0);
-		apc_init_deserializer(inputbuf, inputlen);
-		op_array = (zend_op_array*) emalloc(sizeof(zend_op_array));
-        if(apc_deserialize_magic()) {
-            zend_error(E_ERROR, "%s is not a APC compiled object",
-                file_handle->filename);
-        }
-		apc_deserialize_zend_function_table(CG(function_table),
-            acc_functiontable, tables[0]);
-        numclasses = apc_deserialize_zend_class_table(CG(class_table), acc_classtable,
-            tables[1]);
-        apc_deserialize_zend_op_array(op_array, numclasses);
-		apc_init_serializer();
-		if(apc_cache_insert(cache, key, inputbuf, inputlen, mtime) < 0) {
-			/* if we fail to insert, clear the whole cache */
-			zend_error(E_WARNING, "APC cache has run out of available space and has auto-reset the cache.  You should consider raising apc.shm_segments");
-			apc_cache_clear(cache);
+	if(fd = apc_read_lock_key(key, locktable) ) {
+		if((op_array = apc_retrieve_op_array(cache, key, mtime)) != NULL)
+		{
+	fprintf(stderr, "DEBUG: Working!\n");
+			apc_nametable_insert(locktable, key, (void *) fd);
+			zend_llist_add_element(&CG(open_files), file_handle); /*  FIXME */
+	
+			/* retrieve function_table */
+			apc_reinstantiate_g_f_t(cache, key, mtime);
+			apc_reinstantiate_g_c_t(cache, key, mtime);
+	
+			return op_array;
 		}
-		return op_array;
-
-    }
+		apc_un_lock_key(key, locktable);
+	}
 
 	/* Store pre-compile function_table state */
 	zend_hash_init_ex(&preFuncTable, 100, NULL, NULL, 1, 0);
@@ -648,27 +632,14 @@ ZEND_API zend_op_array* apc_shm_compile_file(zend_file_handle *file_handle,
 		zend_op* opcodes;
 		HashTable* new_function_table;
 
-//		apc_init_serializer();
-//		/* Serialize the compiler's global tables, using the accumulator
-//		 * tables to compute the differences created by the compilation
-//		 * of the file. We also insert every serialized object into the
-//		 * file's private tables for later use (see above). */
-//		apc_serialize_magic();
-//		apc_serialize_zend_function_table(CG(function_table),
-//			acc_functiontable, tables[0]);
-//		apc_serialize_zend_class_table(CG(class_table),
-//			acc_classtable, tables[1]);
-
 		/* make a new op_array, destroy the old one, and insert
 		 * into the cache */
-		apc_store_op_array(cache, key, op_array, mtime);
-
-		/* do the function_table */
-		apc_store_g_f_t(cache, key, &postFuncTable, mtime);
-		apc_store_g_c_t(cache, key, &postClassTable, mtime);
-
-//		apc_get_serialized_data(&buf, &len);
-//		apc_cache_insert(cache, key, buf, len, mtime);
+		if(apc_write_lock_key(key, locktable)) {
+			apc_store_op_array(cache, key, op_array, mtime);
+			apc_store_g_f_t(cache, key, &postFuncTable, mtime);
+			apc_store_g_c_t(cache, key, &postClassTable, mtime);
+			apc_un_lock_key(key, locktable);
+		}
 	}
 	
 	return op_array;

@@ -47,3 +47,103 @@ int apc_unlink(char *filename)
 	un_lock(fd, 0, SEEK_SET, 0);
 	return res;
 }
+
+int apc_writew_lock_key(const char* key, apc_nametable_t* locktable)
+{
+	int fd;
+	if(fd = (int) apc_nametable_retrieve(locktable, key)) {
+		return fd;
+	}
+	if( (fd = open(key, O_RDWR)) < 0) {
+		return 0;
+	}
+	else {
+		if(writew_lock(fd, 0, SEEK_SET, 0)) {
+			close(fd);
+		 	return 0;
+		}
+		return fd;
+	}
+}
+
+int apc_write_lock_key(const char* key, apc_nametable_t* locktable)
+{
+	int fd;
+	int err;
+	fprintf(stderr, "DEBUG write locking %s ", key);
+	if(fd = (int) apc_nametable_retrieve(locktable, key)) {
+		fprintf(stderr, "success %d\n", fd);
+		return fd;
+	}
+	if( (fd = open(key, O_RDWR)) < 0) {
+		fprintf(stderr, "failed opene\n");
+		return 0;
+	}
+	else {
+		if(err = write_lock(fd, 0, SEEK_SET, 0)) {
+			close(fd);
+			fprintf(stderr, "failure to lock %d\n", err);
+		 	return 0;
+		}
+		fprintf(stderr, "success %d\n", fd);
+		return fd;
+	}
+}
+
+int apc_readw_lock_key(const char* key, apc_nametable_t* locktable)
+{
+	int fd;
+	if(fd = (int) apc_nametable_retrieve(locktable, key)) {
+		return fd;
+	}
+	if( (fd = open(key, O_RDONLY)) < 0) {
+		return 0;
+	}
+	else {
+		if(readw_lock(fd, 0, SEEK_SET, 0)) {
+			close(fd);
+		 	return 0;
+		}
+		return fd;
+	}
+}
+
+int apc_read_lock_key(const char* key, apc_nametable_t* locktable)
+{
+	int fd;
+	fprintf(stderr, "DEBUG read locking %s ", key);
+	if(fd = (int) apc_nametable_retrieve(locktable, key)) {
+		fprintf(stderr, "success: %d\n", fd);
+		return fd;
+	}
+	if( (fd = open(key, O_RDONLY)) < 0) {
+		fprintf(stderr, "failure\n");
+		return 0;
+	}
+	else {
+		if(read_lock(fd, 0, SEEK_SET, 0)) {
+			close(fd);
+			fprintf(stderr, "failure\n");
+		 	return 0;
+		}
+		fprintf(stderr, "success: %d\n", fd);
+		return fd;
+	}
+}
+
+int apc_un_lock_key(const char* key, apc_nametable_t* locktable)
+{
+	int fd;
+	fprintf(stderr, "DEBUG unlocking %s\n", key);
+	if( fd = (int) apc_nametable_retrieve(locktable, key) ){
+		un_lock(fd, 0, SEEK_SET, 0);
+		close(fd);
+	}
+	return 1;
+}
+
+void apc_un_lock_nametable(char *key, void* fd)
+{
+	un_lock((int) fd, 0, SEEK_SET, 0);
+	close((int) fd);
+}

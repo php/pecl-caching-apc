@@ -2071,15 +2071,12 @@ void apc_fixup_class_table(HashTable* ht, apc_malloc_t ctor)
 		i++;
 		zce = (zend_class_entry*) p->pData;
 		nce = (zend_class_entry*) ctor(sizeof(zend_class_entry));
-		fprintf(stderr, "DEBUG nce == (%p)\n", nce);
 		memcpy(nce, zce, sizeof(zend_class_entry));
 		refcount = (int *) ctor(sizeof(int));
 		refcount[0] = zce->refcount[0];
 		refcount[0]++;
-		fprintf(stderr, "DEBUG refoucnt == (%p)\n", refcount);
 		nce->refcount = refcount;
 		name = apc_vstrdup(zce->name, ctor);
-		fprintf(stderr, "DEBUG name == (%p)\n", name);
 		nce->name = name;
 		nce->function_table.pDestructor = apc_dont_destroy;
 		nce->default_properties.pDestructor = apc_dont_destroy;

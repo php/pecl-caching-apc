@@ -92,10 +92,10 @@ static int sma_allocate(void* shmaddr, int size, int smallblock)
 	minsize = INT_MAX;	/* used to find best fit */
 
 	prv = BLOCKAT(sizeof(header_t));
-fprintf(stderr, "start, prv=%d, prv->next=%d\n", prv, prv->next);
+//fprintf(stderr, "start, prv=%d, prv->next=%d\n", prv, prv->next);
 	while (prv->next != 0) {
 		cur = BLOCKAT(prv->next);
-fprintf(stderr, "prv->next=%d, cur=%d\n", prv->next, cur);
+//fprintf(stderr, "prv->next=%d, cur=%d\n", prv->next, cur);
 		if (cur->size == realsize) {
 			/* found a perfect fit, stop searching */
 			prvbestfit = prv;

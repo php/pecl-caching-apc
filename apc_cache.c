@@ -234,7 +234,6 @@ apc_cache_t* apc_cache_create(const char* pathname, int nbuckets, int ttl)
   #else
 	cache->lock     = apc_sem_create(pathname, 1, 1);
   #endif
-	fprintf(stderr, "apc_cache_create\n");
 	cache->shmaddr  = apc_sma_malloc(cachesize);
 	cache->header   = (header_t*) cache->shmaddr;
 	cache->lcache	= apc_nametable_create(nbuckets);
@@ -550,7 +549,6 @@ int apc_cache_insert(apc_cache_t* cache, const char* key, const char* data,
 		return -1;
 	}
 
-	fprintf(stderr, "apc_cache_insert\n");
 	buckets[slot].shmaddr = apc_sma_malloc(size);
 	memcpy(buckets[slot].shmaddr, data, size);
 

@@ -92,7 +92,6 @@ void apc_zend_hash_diff(HashTable *outer, HashTable *inner)
     p = outer->pListHead;
     while (p != NULL) {
         Bucket *q;
-        fprintf(stderr, "Looking for %s\n", p->arKey);
         if(!zend_hash_find(inner, p->arKey, p->nKeyLength, &tmp))
         {
             p = zend_hash_apply_deleter_no_data(outer, p);
