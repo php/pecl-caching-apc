@@ -224,7 +224,9 @@ static char* shm_strdup(const char* s)
 {
 	int		n;
 	char*	t;
-
+	if( s == NULL) {
+		return NULL;
+	}
 	n = strlen(s) + 1;
 	t = (char*) apc_sma_alloc(n);
 	memcpy(t, s, n);
@@ -234,7 +236,10 @@ static char* shm_strdup(const char* s)
 static void* shm_memcpy(void* p, int n)
 {
 	void*	q;
-
+	
+	if( p == NULL) {
+		return NULL;
+	}
 	q = apc_sma_alloc(n);
 	memcpy(q, p, n);
 	return q;
