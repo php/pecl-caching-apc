@@ -105,11 +105,11 @@ struct apc_cache_t {
 # define UNLOCK(lock)    apc_rwl_unlock(lock)
 #elif defined(USE_FCNTL_LOCK)
 # define READLOCK(lock) \
-		lock_reg(lock, F_SETLK, F_RDLCK, 0, SEEK_SET, 0)
+		lock_reg(lock, F_SETLKW, F_RDLCK, 0, SEEK_SET, 0)
 # define WRITELOCK(lock) \
-		lock_reg(lock, F_SETLK, F_WRLCK, 0, SEEK_SET, 0)
+		lock_reg(lock, F_SETLKW, F_WRLCK, 0, SEEK_SET, 0)
 # define UNLOCK(lock) \
-		lock_reg(lock, F_SETLK, F_UNLCK, 0, SEEK_SET, 0)
+		lock_reg(lock, F_SETLKW, F_UNLCK, 0, SEEK_SET, 0)
 #else
 # define READLOCK(lock)  apc_sem_lock(lock)
 # define WRITELOCK(lock) apc_sem_lock(lock)
