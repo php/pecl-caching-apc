@@ -381,7 +381,7 @@ int apc_cache_make_key(apc_cache_key_t* key,
 
     key->device = buf.st_dev;
     key->inode  = buf.st_ino;
-    key->mtime  = buf.st_mtime;
+	key->mtime  = (buf.st_ctime > buf.st_mtime) ? buf.st_ctime : buf.st_mtime;
     return 1;
 }
 /* }}} */
