@@ -20,10 +20,6 @@
 #include "apc_lock.h"
 #include "apc_sma.h"
 #include "SAPI.h"
-#if HAVE_APACHE
-#include "httpd.h"
-#endif
-
 
 /* TODO: rehash when load factor exceeds threshold */
 
@@ -43,7 +39,6 @@ struct slot_t {
     int num_hits;               /* number of hits to this bucket */
     time_t creation_time;       /* time slot was initialized */
     time_t deletion_time;       /* time slot was removed from cache */
-    time_t access_time;         /* time slot was last accessed */
 };
 /* }}} */
 
@@ -64,7 +59,6 @@ struct apc_cache_t {
     slot_t** slots;             /* array of cache slots (stored in SHM) */
     int num_slots;              /* number of slots in cache */
     int gc_ttl;                 /* maximum time on GC list for a slot */
-    int ttl;                    /* if slot is needed and entry's mtime is older than this ttl, remove it */
     int lock;                   /* global semaphore lock */
 };
 /* }}} */
@@ -83,22 +77,13 @@ static unsigned int hash(apc_cache_key_t key)
 /* {{{ make_slot */
 slot_t* make_slot(apc_cache_key_t key, apc_cache_entry_t* value, slot_t* next)
 {
-    time_t t;
     slot_t* p = apc_sma_malloc(sizeof(slot_t));
     if (!p) return NULL;
-#if HAVE_APACHE
-    /* Save a syscall here under Apache.  This should actually be a SAPI call instead
-     * but we don't have that yet.  Once that is introduced in PHP this can be cleaned up  -Rasmus */
-    t = ((request_rec *)SG(server_context))->request_time;
-#else
-    t = time(0);
-#endif
     p->key = key;
     p->value = value;
     p->next = next;
     p->num_hits = 0;
-    p->creation_time = t;
-    p->access_time = t;
+    p->creation_time = time(0);
     p->deletion_time = 0;
     return p;
 }
@@ -195,7 +180,7 @@ static void prevent_garbage_collection(apc_cache_entry_t* entry)
 /* }}} */
 
 /* {{{ apc_cache_create */
-apc_cache_t* apc_cache_create(int size_hint, int gc_ttl, int ttl)
+apc_cache_t* apc_cache_create(int size_hint, int gc_ttl)
 {
     apc_cache_t* cache;
     int cache_size;
@@ -218,7 +203,6 @@ apc_cache_t* apc_cache_create(int size_hint, int gc_ttl, int ttl)
     cache->slots = (slot_t**) (((char*) cache->shmaddr) + sizeof(header_t));
     cache->num_slots = num_slots;
     cache->gc_ttl = gc_ttl;
-    cache->ttl = ttl;
     cache->lock = CREATE_LOCK;
 
     for (i = 0; i < num_slots; i++) {
@@ -265,7 +249,6 @@ int apc_cache_insert(apc_cache_t* cache,
                      apc_cache_entry_t* value)
 {
     slot_t** slot;
-    time_t t;
 
     if (!value) {
         return 0;
@@ -275,15 +258,6 @@ int apc_cache_insert(apc_cache_t* cache,
     process_pending_removals(cache);
 
     slot = &cache->slots[hash(key) % cache->num_slots];
-    if(*slot) {
-#if HAVE_APACHE
-        /* Save a syscall here under Apache.  This should actually be a SAPI call instead
-         * but we don't have that yet.  Once that is introduced in PHP this can be cleaned up  -Rasmus */
-        t = ((request_rec *)SG(server_context))->request_time;
-#else
-        t = time(0);
-#endif
-    }
     while (*slot) {
         if (key_equals((*slot)->key, key)) {
             if ((*slot)->key.mtime < key.mtime) {
@@ -292,9 +266,6 @@ int apc_cache_insert(apc_cache_t* cache,
             }
             UNLOCK(cache);
             return 0;
-        } else if(cache->ttl && (*slot)->access_time < (t - cache->ttl)) {
-            remove_slot(cache, slot);
-            continue;
         }
         slot = &(*slot)->next;
     }
@@ -313,20 +284,10 @@ int apc_cache_insert(apc_cache_t* cache,
 apc_cache_entry_t* apc_cache_find(apc_cache_t* cache, apc_cache_key_t key)
 {
     slot_t** slot;
-    time_t t;
 
     LOCK(cache);
 
     slot = &cache->slots[hash(key) % cache->num_slots];
-    if(*slot) {
-#if HAVE_APACHE
-        /* Save a syscall here under Apache.  This should actually be a SAPI call instead
-         * but we don't have that yet.  Once that is introduced this can be cleaned up  -Rasmus */
-        t = ((request_rec *)SG(server_context))->request_time;
-#else
-        t = time(0);
-#endif
-    }
     while (*slot) {
         if (key_equals((*slot)->key, key)) {
             if ((*slot)->key.mtime < key.mtime) {
@@ -336,7 +297,6 @@ apc_cache_entry_t* apc_cache_find(apc_cache_t* cache, apc_cache_key_t key)
 
             (*slot)->num_hits++;
             (*slot)->value->ref_count++;
-            (*slot)->access_time = t;
             prevent_garbage_collection((*slot)->value);
 
             cache->header->num_hits++;
@@ -435,7 +395,6 @@ apc_cache_info_t* apc_cache_info(apc_cache_t* cache)
 
     info = (apc_cache_info_t*) apc_emalloc(sizeof(apc_cache_info_t));
     info->num_slots = cache->num_slots;
-    info->ttl = cache->ttl;
     info->num_hits = cache->header->num_hits;
     info->num_misses = cache->header->num_misses;
     info->list = NULL;
@@ -455,7 +414,6 @@ apc_cache_info_t* apc_cache_info(apc_cache_t* cache)
             link->mtime = p->key.mtime;
             link->creation_time = p->creation_time;
             link->deletion_time = p->deletion_time;
-            link->access_time = p->access_time;
             link->ref_count = p->value->ref_count;
             link->next = info->list;
             info->list = link;
@@ -474,7 +432,6 @@ apc_cache_info_t* apc_cache_info(apc_cache_t* cache)
         link->mtime = p->key.mtime;
         link->creation_time = p->creation_time;
         link->deletion_time = p->deletion_time;
-        link->access_time = p->access_time;
         link->ref_count = p->value->ref_count;
         link->next = info->deleted_list;
         info->deleted_list = link;

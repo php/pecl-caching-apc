@@ -222,14 +222,6 @@ users should consider tuning the following parameters:
                             many thousands of source files.
                             (Default: 1000)
 
-    apc.ttl                 The number of seconds a cache entry is allowed to
-                            idle in a slot in case this cache entry slot is 
-			    needed by another entry.  Leaving this at zero
-			    means that your cache could potentially fill up
-			    with stale entries while newer entries won't be
-			    cached.  
-			    (Default: 0)
-
     apc.gc_ttl              The number of seconds that a cache entry may
                             remain on the garbage-collection list. This value
                             provides a failsafe in the event that a server

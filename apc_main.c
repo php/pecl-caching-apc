@@ -237,7 +237,7 @@ int apc_module_init()
 #else
     apc_sma_init(APCG(shm_segments), APCG(shm_size)*1024*1024);
 #endif
-    APCG(cache) = apc_cache_create(APCG(num_files_hint), APCG(gc_ttl), APCG(ttl));
+    APCG(cache) = apc_cache_create(APCG(num_files_hint), APCG(gc_ttl));
     APCG(cache_stack) = apc_stack_create(0);
     APCG(compiled_filters) = apc_regex_compile_array(APCG(filters));
 

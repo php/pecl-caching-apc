@@ -86,7 +86,6 @@ STD_PHP_INI_ENTRY("apc.shm_size",       "30",   PHP_INI_SYSTEM, OnUpdateInt,    
 STD_PHP_INI_ENTRY("apc.optimization",   "0",    PHP_INI_SYSTEM, OnUpdateInt,            optimization,   zend_apc_globals, apc_globals)
 STD_PHP_INI_ENTRY("apc.num_files_hint", "1000", PHP_INI_SYSTEM, OnUpdateInt,            num_files_hint, zend_apc_globals, apc_globals)
 STD_PHP_INI_ENTRY("apc.gc_ttl",         "3600", PHP_INI_SYSTEM, OnUpdateInt,            gc_ttl,         zend_apc_globals, apc_globals)
-STD_PHP_INI_ENTRY("apc.ttl",            "0",    PHP_INI_SYSTEM, OnUpdateInt,            ttl,            zend_apc_globals, apc_globals)
 #if APC_MMAP
 STD_PHP_INI_ENTRY("apc.mmap_file_mask",  NULL,  PHP_INI_SYSTEM, OnUpdateString,         mmap_file_mask, zend_apc_globals, apc_globals)
 #endif
@@ -173,7 +172,6 @@ PHP_FUNCTION(apc_cache_info)
 
     array_init(return_value);
     add_assoc_long(return_value, "num_slots", info->num_slots);
-    add_assoc_long(return_value, "ttl", info->ttl);
     add_assoc_long(return_value, "num_hits", info->num_hits);
     add_assoc_long(return_value, "num_misses", info->num_misses);
 
@@ -193,7 +191,6 @@ PHP_FUNCTION(apc_cache_info)
         add_assoc_long(link, "mtime", p->mtime);
         add_assoc_long(link, "creation_time", p->creation_time);
         add_assoc_long(link, "deletion_time", p->deletion_time);
-        add_assoc_long(link, "access_time", p->access_time);
         add_assoc_long(link, "ref_count", p->ref_count);
         add_next_index_zval(list, link);
     }
@@ -215,7 +212,6 @@ PHP_FUNCTION(apc_cache_info)
         add_assoc_long(link, "mtime", p->mtime);
         add_assoc_long(link, "creation_time", p->creation_time);
         add_assoc_long(link, "deletion_time", p->deletion_time);
-        add_assoc_long(link, "access_time", p->access_time);
         add_assoc_long(link, "ref_count", p->ref_count);
         add_next_index_zval(list, link);
     }
