@@ -19,14 +19,14 @@
 /* declarations of functions to be exported */
 PHP_FUNCTION(apcinfo);
 PHP_FUNCTION(apc_rm);
-PHP_FUNCTION(apc_purge_cache);
+PHP_FUNCTION(apc_reset_cache);
 PHP_FUNCTION(apc_set_my_ttl);
 
 /* list of exported functions */
 function_entry apc_functions[] = {
 	PHP_FE(apcinfo, NULL)
 	PHP_FE(apc_rm, NULL)
-	PHP_FE(apc_purge_cache, NULL)
+	PHP_FE(apc_reset_cache, NULL)
 	PHP_FE(apc_set_my_ttl, NULL)
 	{NULL, NULL, NULL}
 };
@@ -209,7 +209,7 @@ PHP_FUNCTION(apc_rm)
 	}
 }
 
-PHP_FUNCTION(apc_purge_cache)
+PHP_FUNCTION(apc_reset_cache)
 {
 	apc_reset_cache();
 	RETURN_TRUE;
