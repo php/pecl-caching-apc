@@ -83,7 +83,6 @@ static unsigned int hash(apc_cache_key_t key)
 /* {{{ make_slot */
 slot_t* make_slot(apc_cache_key_t key, apc_cache_entry_t* value, slot_t* next, time_t t)
 {
-    time_t t;
     slot_t* p = apc_sma_malloc(sizeof(slot_t));
     if (!p) return NULL;
 
@@ -396,6 +395,10 @@ apc_cache_entry_t* apc_cache_make_entry(const char* filename,
     entry = (apc_cache_entry_t*) apc_sma_malloc(sizeof(apc_cache_entry_t));
     if (!entry) return NULL;
     entry->filename  = apc_xstrdup(filename, apc_sma_malloc);
+    if(!entry->filename) {
+        apc_sma_free(entry);
+        return NULL;
+    }
     entry->op_array  = op_array;
     entry->functions = functions;
     entry->classes   = classes;

@@ -184,8 +184,7 @@ static zval** my_copy_zval_ptr(zval** dst, zval** src, apc_malloc_t allocate, ap
         if(local_dst_alloc) deallocate(dst);
         return NULL;
     }
-    my_copy_zval(*dst, *src, allocate, deallocate);
-    return dst;
+    return my_copy_zval(*dst, *src, allocate, deallocate);
 }
 /* }}} */
 
@@ -236,6 +235,7 @@ static zval* my_copy_zval(zval* dst, zval* src, apc_malloc_t allocate, apc_free_
                               1,
                               allocate, deallocate))) {
             my_destroy_class_entry(dst->value.obj.ce, deallocate);
+            return NULL;
         }
         break;
 
@@ -261,7 +261,7 @@ static znode* my_copy_znode(znode* dst, znode* src, apc_malloc_t allocate, apc_f
            dst ->op_type == IS_UNUSED);
 
     if (src->op_type == IS_CONST) {
-        my_copy_zval(&dst->u.constant, &src->u.constant, allocate, deallocate);
+        dst = my_copy_zval(&dst->u.constant, &src->u.constant, allocate, deallocate);
     }
 
     return dst;
