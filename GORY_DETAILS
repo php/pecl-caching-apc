@@ -55,4 +55,5 @@ Our solution is to remember deferred inheritance relationships as we encounter t
 This is clearly not as efficient as the normal operation of PHP, but for most practical class hierarchies, the additional overhead should not be an issue. We welcome new ideas for implementing this.
 
 * Limitations
+
 Blah blah blah
