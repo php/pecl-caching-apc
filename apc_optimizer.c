@@ -301,7 +301,6 @@ static void convert_switch(zend_op_array *op_array)
         }
         opline->op2.op_type = IS_UNUSED;
         opline->opcode = ZEND_JMP;
-        fprintf(stderr, "Rewriting op\n");
     }
 }
 
