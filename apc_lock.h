@@ -18,7 +18,7 @@
 
 #include "apc_sem.h"
 #include "apc_fcntl.h"
-#ifndef PHP_WIN32
+#ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 

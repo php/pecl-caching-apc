@@ -37,7 +37,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#ifndef PHP_WIN32
+#ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
