@@ -1013,9 +1013,9 @@ int apc_cache_dump_entry(apc_cache_t* cache, const char* key,
 
 int apc_cache_index_shm(apc_cache_t* cache, zval **hash) 
 {
-    outputfn("<html>\n");
-    outputfn("Temporarly Deprecated\n");
-    outputfn("</html>\n");
+    zend_printf("<html>\n");
+    zend_printf("Temporarly Deprecated\n");
+    zend_printf("</html>\n");
 	return 0;
 }
 
@@ -1052,9 +1052,9 @@ int apc_cache_index_shm(apc_cache_t* cache, zval **hash)
 //
 int apc_cache_info_shm(apc_cache_t* cache, zval **hash) 
 {
-    outputfn("<html>\n");
-    outputfn("Temporarly Deprecated\n");
-    outputfn("</html>\n");
+    zend_printf("<html>\n");
+    zend_printf("Temporarly Deprecated\n");
+    zend_printf("</html>\n");
 	return 0;
 }
 
