@@ -63,5 +63,7 @@ extern int apc_check_compiled_file(const char *filename, char **dataptr, int *le
 extern const char* apc_get_zend_opname(int opcode);
 extern const char* apc_get_zend_extopname(int opcode);
 
+/* architecture dependence */
+extern int alignword(int x);
 
 #endif

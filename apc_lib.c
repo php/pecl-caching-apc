@@ -423,3 +423,10 @@ const char* apc_get_zend_extopname(int opcode)
 	return extopnames[opcode];
 }
 
+/* alignword: returns x, aligned to the system's word boundary */
+int alignword(int x)
+{
+    typedef union { void* p; int i; long l; double d; } word_t;
+    return sizeof(word_t) * (1 + ((x-1)/sizeof(word_t)));
+}
+

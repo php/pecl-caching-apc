@@ -15,6 +15,7 @@
 
 #include "apc_smm.h"
 #include "apc_shm.h"
+#include "apc_lib.h"
 #include <limits.h>
 #include <stdlib.h>
 #include <string.h>
@@ -72,12 +73,6 @@ static unsigned int hashtwo(int x)
 	return (x % 53) + 1;
 }
 
-/* alignword: returns x, aligned to the system's word boundary */
-static int alignword(int x)
-{
-	typedef union { void* p; int i; long l; double d; } word_t;
-	return sizeof(word_t) * (1 + ((x-1)/sizeof(word_t)));
-}
 
 /* pow2: return the smallest power of 2 greater than or equal to x */
 static int pow2(int x)
