@@ -65,6 +65,7 @@ void* apc_shm_attach(int shmid)
 	if ((int)(shmaddr = shmat(shmid, 0, 0)) == -1) {
 		apc_eprint("apc_shm_attach: shmat failed:");
 	}
+	shmctl(shmid, IPC_RMID, 0);
 	return shmaddr;
 }
 
