@@ -54,11 +54,11 @@ int apc_unlink(char *filename);
 						lock_reg(fd, F_SETLK, F_UNLCK, offset, whence, len)
 
 /* lock files by name, cache results in locktable */
-extern int apc_writew_lock_key(const char* key, apc_nametable_t* locktable);
-extern int apc_write_lock_key(const char* key, apc_nametable_t* locktable);
-extern int apc_readw_lock_key(const char* key, apc_nametable_t* locktable);
-extern int apc_read_lock_key(const char* key, apc_nametable_t* locktable);
-extern int apc_un_lock_key(const char* key, apc_nametable_t* locktable);
+extern int apc_writew_lock_key(const char* key, apc_nametable_t* locktable, apc_nametable_t* opentable);
+extern int apc_write_lock_key(const char* key, apc_nametable_t* locktable, apc_nametable_t* opentable);
+extern int apc_readw_lock_key(const char* key, apc_nametable_t* locktable, apc_nametable_t* opentable);
+extern int apc_read_lock_key(const char* key, apc_nametable_t* locktable, apc_nametable_t* opentable);
+extern int apc_un_lock_key(const char* key, apc_nametable_t* locktable, apc_nametable_t* opentable);
 extern void apc_un_lock_nametable(char *key, void *fd);
 
 #endif

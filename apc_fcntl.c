@@ -48,96 +48,106 @@ int apc_unlink(char *filename)
 	return res;
 }
 
-int apc_writew_lock_key(const char* key, apc_nametable_t* locktable)
+int apc_writew_lock_key(const char* key, apc_nametable_t* locktable,
+						apc_nametable_t* opentable)
 {
 	int fd;
 	if(fd = (int) apc_nametable_retrieve(locktable, key)) {
 		return fd;
 	}
-	if( (fd = open(key, O_RDWR)) < 0) {
-		return 0;
+    if((fd = (int) apc_nametable_retrieve(opentable, key)) == 0)  {
+        if((fd =  open(key, O_RDWR)) < 0) {
+            fprintf(stderr, "failed opene\n");
+            return 0;
+        }
+		fprintf(stderr, "failed to fond open copy of %s\n", key);
+        apc_nametable_insert(opentable, key, (void *) fd);
+    }
+	if(writew_lock(fd, 0, SEEK_SET, 0)) {
+		close(fd);
+	 	return 0;
 	}
-	else {
-		if(writew_lock(fd, 0, SEEK_SET, 0)) {
-			close(fd);
-		 	return 0;
-		}
-		return fd;
-	}
+	return fd;
 }
 
-int apc_write_lock_key(const char* key, apc_nametable_t* locktable)
+int apc_write_lock_key(const char* key, apc_nametable_t* locktable, 
+						apc_nametable_t* opentable)
 {
 	int fd;
 	int err;
-	fprintf(stderr, "DEBUG write locking %s ", key);
 	if(fd = (int) apc_nametable_retrieve(locktable, key)) {
-		fprintf(stderr, "success %d\n", fd);
 		return fd;
 	}
-	if( (fd = open(key, O_RDWR)) < 0) {
-		fprintf(stderr, "failed opene\n");
-		return 0;
-	}
-	else {
-		if(err = write_lock(fd, 0, SEEK_SET, 0)) {
-			close(fd);
-			fprintf(stderr, "failure to lock %d\n", err);
-		 	return 0;
+	if((fd = (int) apc_nametable_retrieve(opentable, key)) == 0)  {
+		if((fd =  open(key, O_RDWR)) < 0) {
+			fprintf(stderr, "failed opene\n");
+			return 0;
 		}
-		fprintf(stderr, "success %d\n", fd);
-		return fd;
+		fprintf(stderr, "failed to fond open copy of %s\n", key);
+		apc_nametable_insert(opentable, key, (void *) fd);
 	}
+	if(err = write_lock(fd, 0, SEEK_SET, 0)) {
+		close(fd);
+		apc_nametable_remove(opentable, key);
+		fprintf(stderr, "failure to lock %d\n", err);
+	 	return 0;
+	}
+	return fd;
 }
 
-int apc_readw_lock_key(const char* key, apc_nametable_t* locktable)
+int apc_readw_lock_key(const char* key, apc_nametable_t* locktable,
+						apc_nametable_t* opentable)
 {
 	int fd;
 	if(fd = (int) apc_nametable_retrieve(locktable, key)) {
 		return fd;
 	}
-	if( (fd = open(key, O_RDONLY)) < 0) {
-		return 0;
+    if((fd = (int) apc_nametable_retrieve(opentable, key)) == 0)  {
+        if((fd =  open(key, O_RDWR)) < 0) {
+            fprintf(stderr, "failed opene\n");
+            return 0;
+        }
+		fprintf(stderr, "failed to fond open copy of %s\n", key);
+    	apc_nametable_insert(opentable, key, (void *) fd);
+    }
+	if(readw_lock(fd, 0, SEEK_SET, 0)) {
+		close(fd);
+	 	return 0;
 	}
-	else {
-		if(readw_lock(fd, 0, SEEK_SET, 0)) {
-			close(fd);
-		 	return 0;
-		}
-		return fd;
-	}
+	return fd;
 }
 
-int apc_read_lock_key(const char* key, apc_nametable_t* locktable)
+int apc_read_lock_key(const char* key, apc_nametable_t* locktable,
+						apc_nametable_t* opentable)
 {
 	int fd;
-	fprintf(stderr, "DEBUG read locking %s ", key);
 	if(fd = (int) apc_nametable_retrieve(locktable, key)) {
-		fprintf(stderr, "success: %d\n", fd);
 		return fd;
 	}
-	if( (fd = open(key, O_RDONLY)) < 0) {
+    if((fd = (int) apc_nametable_retrieve(opentable, key)) == 0)  {
+        if((fd =  open(key, O_RDWR)) < 0) {
+            fprintf(stderr, "failed opene\n");
+            return 0;
+        }
+		fprintf(stderr, "failed to fond open copy of %s\n", key);
+    	apc_nametable_insert(opentable, key, (void *) fd);
+	}
+	if(read_lock(fd, 0, SEEK_SET, 0)) {
+		close(fd);
 		fprintf(stderr, "failure\n");
-		return 0;
+	 	return 0;
 	}
-	else {
-		if(read_lock(fd, 0, SEEK_SET, 0)) {
-			close(fd);
-			fprintf(stderr, "failure\n");
-		 	return 0;
-		}
-		fprintf(stderr, "success: %d\n", fd);
-		return fd;
-	}
+	return fd;
 }
 
-int apc_un_lock_key(const char* key, apc_nametable_t* locktable)
+int apc_un_lock_key(const char* key, apc_nametable_t* locktable, 
+					apc_nametable_t* opentable)
 {
 	int fd;
 	fprintf(stderr, "DEBUG unlocking %s\n", key);
 	if( fd = (int) apc_nametable_retrieve(locktable, key) ){
 		un_lock(fd, 0, SEEK_SET, 0);
-		close(fd);
+		apc_nametable_remove(locktable, key);
 	}
 	return 1;
 }
@@ -145,5 +155,4 @@ int apc_un_lock_key(const char* key, apc_nametable_t* locktable)
 void apc_un_lock_nametable(char *key, void* fd)
 {
 	un_lock((int) fd, 0, SEEK_SET, 0);
-	close((int) fd);
 }

@@ -764,8 +764,10 @@ HashTable* apc_copy_hashtable(HashTable* nt, HashTable* ht, void* funcptr, int d
 		np->h = p->h;
 		np->nKeyLength = p->nKeyLength;
 		if( datasize == sizeof(void *)) {
-			np->pDataPtr = copy_bucket(NULL, p->pData, ctor);
-			np->pData = &np->pDataPtr;
+			np->pData = copy_bucket(NULL, p->pData, ctor);
+//			np->pDataPtr = &np->pData;  // FIXME
+			np->pDataPtr = NULL;
+
 		}
 		else {
 			np->pData = copy_bucket(NULL, p->pData, ctor);
@@ -773,6 +775,9 @@ HashTable* apc_copy_hashtable(HashTable* nt, HashTable* ht, void* funcptr, int d
 		}
 		np->pListLast = prev_p;
 		np->pListNext = NULL;
+		if(prev_p) {
+			prev_p->pListNext = np;
+		}
 		memcpy(np->arKey, p->arKey, p->nKeyLength);
 		if( firstbucket == 0) {
 			nt->pListHead = np;
@@ -1449,7 +1454,8 @@ void apc_deserialize_znode(znode* zn)
 /* type: zend_op */
 
 zend_op* apc_copy_zend_op(zend_op *no, zend_op* zo, apc_malloc_t ctor)
-{	
+{
+//	fprintf(stderr, "Encountering op %s\n", getOpcodeName(zo->opcode));
 	if ( no == NULL) {
 		no = (zend_op *) ctor(sizeof(zend_op));
 	}
@@ -2074,7 +2080,6 @@ void apc_fixup_class_table(HashTable* ht, apc_malloc_t ctor)
 		memcpy(nce, zce, sizeof(zend_class_entry));
 		refcount = (int *) ctor(sizeof(int));
 		refcount[0] = zce->refcount[0];
-		refcount[0]++;
 		nce->refcount = refcount;
 		name = apc_vstrdup(zce->name, ctor);
 		nce->name = name;
