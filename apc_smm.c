@@ -136,8 +136,6 @@ void apc_smm_cleanup()
 
 	for (i = 0; i < NUM_BUCKETS; i++) {
 		if (segtable[i].shmaddr != 0) {
-			header = (header_t*) segtable[i].shmaddr;
-			apc_smm_initsegment(segtable[i].shmid, header->segsize);
 			apc_shm_detach(segtable[i].shmaddr);
 		}
 	}
