@@ -121,21 +121,37 @@ static PHP_INI_MH(set_check_mtime)
 	return SUCCESS;
 }
 
+/* set the allow_relative_includes flag in apc_globals (shm impl.) */
+static PHP_INI_MH(set_allow_relative_includes)
+{
+	if (new_value == NULL) {
+		APCG(allow_relative_includes) = 0;
+	}
+	else {
+		APCG(allow_relative_includes) = atoi(new_value);
+	}
+	return SUCCESS;
+}
+
 PHP_INI_BEGIN()
 	PHP_INI_ENTRY("apc.ttl",         NULL, PHP_INI_ALL, set_ttl)
 	PHP_INI_ENTRY("apc.cachedir",    NULL, PHP_INI_ALL, set_cachedir)
 	PHP_INI_ENTRY("apc.regex",       NULL, PHP_INI_ALL, set_regex)
 	PHP_INI_ENTRY("apc.check_mtime", NULL, PHP_INI_ALL, set_check_mtime)
 
-	/* Set no. of buckets in the shared cache index. Ignored under mmap. */
+	/* set flag for support for relative include paths */
+	PHP_INI_ENTRY("apc.allow_relative_includes", NULL, PHP_INI_ALL,
+		set_allow_relative_includes)
+
+	/* set no. of buckets in the shared cache index. Ignored under mmap. */
 	STD_PHP_INI_ENTRY("apc.hash_buckets", "1024", PHP_INI_ALL, 
 		OnUpdateInt, hash_buckets, zend_apc_globals, apc_globals)
 
-	/* Set size of shared memory segments. Ignored under mmap. */
+	/* set size of shared memory segments. Ignored under mmap. */
 	STD_PHP_INI_ENTRY("apc.shm_segment_size", "33554431", PHP_INI_ALL, 
 		OnUpdateInt, shm_segment_size, zend_apc_globals, apc_globals)
 
-	/* Set maximum no. of shared memory segments. Ignored under mmap. */
+	/* set maximum no. of shared memory segments. Ignored under mmap. */
 	STD_PHP_INI_ENTRY("apc.shm_segments", "10", PHP_INI_ALL, 
 		OnUpdateInt, shm_segments, zend_apc_globals, apc_globals)
 PHP_INI_END()

@@ -1,4 +1,5 @@
+* support for relative include paths [djc 01.17.2001]
 * fixed support for class inheritance [djc 01.16.2001]
-* added support for inherited classes [gws 01.15.2001]
+* support for inherited classes [gws 01.15.2001]
 * fixed support for intialization of class variables and objects [gws 01.13.2001]
-* added configurable comparison of file modification times to shared memory implementation. the new ini entry is 'check_mtime'. [djc 01.12.2001]
+* configurable comparison of file modification times [djc 01.12.2001]
