@@ -78,6 +78,11 @@ extern void apc_nametable_union(apc_nametable_t* a, apc_nametable_t* b);
 extern void apc_nametable_difference(apc_nametable_t* a, apc_nametable_t* b);
 
 /*
+ * apc_nametable_size: returns number of elements in table
+ */
+extern int apc_nametable_size(apc_nametable_t* table);
+
+/*
  * apc_nametable_dump: debugging display function
  */
 extern void apc_nametable_dump(apc_nametable_t* table,

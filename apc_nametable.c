@@ -177,6 +177,21 @@ void apc_nametable_difference(apc_nametable_t* a, apc_nametable_t* b)
 	}
 }
 
+/* apc_nametable_size: return number of elements of table */
+int apc_nametable_size(apc_nametable_t* table)
+{
+	int i;
+	int size;	/* logical size */
+
+	size = 0;
+	for (i = 0; i < table->nbuckets; i++) {
+		for (link_t* p = table->buckets[i]; p != 0; p = p->next) {
+			size++;
+		}
+	}
+	return size;
+}
+
 /* apc_nametable_dump: debug display of nametable */
 void apc_nametable_dump(apc_nametable_t* table, apc_outputfn_t outputfn)
 {
