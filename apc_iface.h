@@ -55,13 +55,6 @@ extern void apc_module_info(const char* url);
 extern const char* apc_version(void);
 
 /*
- * apc_global_init, apc_global_shutdown: global initialization and
- * shutdown functions
- */
-extern void apc_global_init(void);
-extern void apc_global_shutdown(void);
-
-/*
  * apc_rm: removes a cache entry by name. returns true if the entry
  * was successfully removed, else false
  */

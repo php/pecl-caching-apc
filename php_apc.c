@@ -57,8 +57,6 @@ PHP_MSHUTDOWN_FUNCTION(apc);
 PHP_RINIT_FUNCTION(apc);
 PHP_RSHUTDOWN_FUNCTION(apc);
 PHP_MINFO_FUNCTION(apc);
-PHP_GINIT_FUNCTION(apc);
-PHP_GSHUTDOWN_FUNCTION(apc);
 
 
 /* module entry */
@@ -70,8 +68,8 @@ zend_module_entry apc_module_entry = {
 	PHP_RINIT(apc),
 	PHP_RSHUTDOWN(apc),
 	PHP_MINFO(apc),
-	PHP_GINIT(apc),
-	PHP_GSHUTDOWN(apc),
+	NULL,
+	NULL,
 	STANDARD_MODULE_PROPERTIES_EX
 };
 

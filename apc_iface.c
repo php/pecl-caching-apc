@@ -236,16 +236,6 @@ void apc_module_info(const char* url)
   zend_printf("<HR>\n");
 }
 
-void apc_global_init()
-{
-	apc_dprint("apc_global_init()\n");
-}
-
-void apc_global_shutdown()
-{
-	apc_dprint("apc_global_shutdown()\n");
-}
-
 const char* apc_version()
 {
 	return VERSION_STRING;
