@@ -57,12 +57,10 @@ static PHP_INI_MH(set_ttl)
 
 static PHP_INI_MH(set_cachedir)
 {
-	printf("ENTERED PHP_INI_MH\n");
 	if(new_value == NULL)
 		APCG(cachedir) = NULL;
 	else
 		APCG(cachedir) = new_value;
-	//printf("IN PHP_INI_MH (cachedir) = %s\n",APCG(cachedir));
 	return SUCCESS;
 }
 
