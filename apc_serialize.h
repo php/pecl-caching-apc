@@ -66,8 +66,8 @@ extern void apc_create_zend_llist(zend_llist** list);
 /* zend_hash.h */
 extern HashTable* apc_copy_hashtable(HashTable* nt, HashTable* ht, void* funcptr, int datasize, apc_malloc_t ctor);
 extern void apc_serialize_hashtable(HashTable* ht, void* funcptr);
-extern void apc_deserialize_hashtable(HashTable* ht, void* funcptr, int datasize);
-extern void apc_create_hashtable(HashTable** ht, void* funcptr, int datasize);
+extern void apc_deserialize_hashtable(HashTable* ht, void* funcptr, void* dptr, int datasize);
+extern void apc_create_hashtable(HashTable** ht, void* funcptr, void* dptr, int datasize);
 
 /* zend.h */
 extern zvalue_value* apc_copy_zvalue_value(zvalue_value* nv, zvalue_value* zv, int type, apc_malloc_t ctor);
