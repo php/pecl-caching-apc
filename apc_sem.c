@@ -16,6 +16,7 @@
 #include "apc_sem.h"
 #include "apc_lib.h"
 #include "php_config.h"
+#include "config.h"
 #include <unistd.h>
 #include <semaphore.h>
 #include <sys/types.h>
