@@ -165,8 +165,8 @@ void apc_module_init()
 	acc_classtable     = apc_nametable_create(ACC_CLASS_TABLE_SIZE);
 
 	/* do apc one-time initialization */
-	if (APC_SHM_MODE)
-          cache = apc_cache_create("/tmp/.apc.lock", APCG(hash_buckets), APCG(shm_segments), 
+	if (APC_SHM_MODE) 
+          cache = apc_cache_create(NULL, APCG(hash_buckets), APCG(shm_segments), 
 	 	                   APCG(shm_segment_size), APCG(ttl));
 
 	/* initialize serialization buffers */
