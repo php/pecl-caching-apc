@@ -130,7 +130,8 @@ static PHP_MINIT_FUNCTION(apc)
 /* {{{ PHP_MSHUTDOWN_FUNCTION(apc) */
 static PHP_MSHUTDOWN_FUNCTION(apc)
 {
-    apc_module_shutdown();
+    if(APCG(enabled))
+        apc_module_shutdown();
     UNREGISTER_INI_ENTRIES();
 	return SUCCESS;
 }
@@ -139,7 +140,8 @@ static PHP_MSHUTDOWN_FUNCTION(apc)
 /* {{{ PHP_RINIT_FUNCTION(apc) */
 static PHP_RINIT_FUNCTION(apc)
 {
-    apc_request_init();
+    if(APCG(enabled))
+        apc_request_init();
 	return SUCCESS;
 }
 /* }}} */
@@ -147,7 +149,8 @@ static PHP_RINIT_FUNCTION(apc)
 /* {{{ PHP_RSHUTDOWN_FUNCTION(apc) */
 static PHP_RSHUTDOWN_FUNCTION(apc)
 {
-    apc_request_shutdown();
+    if(APCG(enabled))
+        apc_request_shutdown();
 	return SUCCESS;
 }
 /* }}} */
