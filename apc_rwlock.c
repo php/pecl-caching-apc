@@ -12,7 +12,6 @@
  * ==================================================================
 */
 
-
 #include "apc_rwlock.h"
 #include "apc_sem.h"
 #include "apc_lib.h"
