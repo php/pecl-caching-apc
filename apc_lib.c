@@ -21,6 +21,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <fcntl.h>
 
 #define DEBUG 1
 #undef DEBUG
@@ -134,4 +137,38 @@ double apc_timerreport()
 	printf("elapsed time: %.3g seconds\n", end - start);
 	return end - start;
 }
+
+/* recursive open */
+
+apc_ropen(const char *pathname, int flags, mode_t mode)
+{
+	int fd;
+
+	if ((fd = open(pathname, flags, mode)) < 0 )
+	{
+  	char  *cp2;
+  	cp2 = strchr(pathname, '/');
+  	while(cp2!=NULL)
+  	{
+    	errno = 0;
+    	cp2 = strchr(++cp2, '/');
+    	if(cp2 != NULL)
+    	{
+      	*cp2 = '\0';
+      	if(mkdir(pathname, 0755) != 0)
+      	{
+        	if(errno != EEXIST)
+        	{
+          	*cp2 = '/';
+          	return -1;
+        	}
+      	}
+      	*cp2 = '/';
+    	}
+  	}
+  	return open(pathname, flags, mode);
+	}
+	else return fd;
+}
+
 
