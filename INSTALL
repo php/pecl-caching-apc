@@ -22,6 +22,22 @@ directory.
 7) You're all set!
 
 #################################################################
+# Compiling and installing as php built-in (during php compile)
+#################################################################
+
+0a) Untar these sources into PHP_SRC_DIR/ext/apc/
+0b) Decide whether you want to run the sysv shared-memory cache
+or the memory-mapped implementation.  (See the FAQ regarding the
+pros and cons of each.)
+1) Copy the contents of the mmap or shm driectory into the main
+apc directory.
+2) In the top-level directory of the php source tree, run autoconf
+3) Run ./configure --enable-apc <whatever other compile flags you want>
+4) make; make install
+5) You're all set!
+
+
+#################################################################
 # Installing the binary packages
 #################################################################
 
@@ -37,4 +53,73 @@ binaries for other platforms.
 2) in your php.ini file add the line
     zend_extension="/path/to/where/you/keep/extensions/php_apc.so"
 
+#################################################################
+# Runtime configuration
+#################################################################
 
+The following php.ini runtime settings are supported.  (M) means the command
+is supported in the mmap implemntation, (S) for sysv shared memory 
+implementation.
+
+apc.cachedir
+	supported: (M)
+	default: NULL
+	cachedir sets the top-level dir under which to write compiled php
+	files.  If this is not set, cache files will be created along side 
+	their corresponding php files, with the same name and a _apc 
+	extension.  The webserver user must have permision to create files
+	in this directory.
+apc.hash_buckets 
+	supported: (S)
+	default: 1024
+	hash_buckets sets the number of hash_buckets in the master index.  
+	Since for technical reasons, the master index is statically allocated,
+	it is important that this number be larger than the number of php 
+	files to be cached (don't forget includes!)  Each bucket takes 264 
+	bytes of memory, so setting this to a large (but reasnable) value
+	does no harm.
+apc.regex 
+	supported: (M,S)
+	default: NULL
+	regex is a POSIX extended regex of files NOT to cache.
+apc.shm_segments 
+	supported: (S)
+	default: 10
+	shm_segements sets the maximum number of sysv shared memory segments 
+	to be used.
+apc.shm_segment_size 
+	supported: (S)
+	default: 33554431
+	shm_segment_size sets the size of sysv shared memory segments to use,
+	in bytes.
+apc.ttl 
+	supported: (M,S)
+	default: 0
+	ttl sets a global ttl on all cache objects.  Objects not updated in
+	ttl seconds will be expired and delted.
+
+#################################################################
+# Exported functions
+#################################################################
+
+The following new php functions are exported.  As above (M) indicates
+functions that exist under the mmap implementation, (S) for sysv 
+shared memory implementation.
+
+void apcinfo()	
+	supported: (M,S)
+	Outputs detailed information regarding the configuration and content
+	of the cache.  The sysv implementation displays global cache 
+	information, the mmap implementation displays only cache statistics
+	for the particular child being queried.
+int apc_rm(string pathname)  
+	supported: (M,S)
+	Takes the full path of a php file (NOT cache file), and expires that 
+	item's associated cache object. Returns 1 on success, 0 on failure
+	(failure usually indicates the object was not present in the cache.)
+int apc_reset_cache()
+	supported: (S)
+	Clears all entries from the cache.  Returns 1 on success.
+int apc_set_my_ttl(int seconds)
+	supported: (S)
+	Sets the ttl of the calling file to ttl seconds.
