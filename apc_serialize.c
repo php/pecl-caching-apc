@@ -486,6 +486,7 @@ void apc_serialize_zvalue_value(zvalue_value* zv, int type)
 		break;
 	  case IS_CONSTANT:
 	  case IS_STRING:
+	  case FLAG_IS_BC:
 		apc_serialize_string(zv->str.val);
 		SERIALIZE_SCALAR(zv->str.len, int);
 		break;
@@ -523,6 +524,7 @@ void apc_deserialize_zvalue_value(zvalue_value* zv, int type)
 		break;
 	  case IS_CONSTANT:
 	  case IS_STRING:
+	  case FLAG_IS_BC:
 		apc_create_string(&zv->str.val);
 		DESERIALIZE_SCALAR(&zv->str.len, int);
 		break;
@@ -621,6 +623,20 @@ void apc_deserialize_zend_overloaded_element(zend_overloaded_element* zoe)
 
 /* type: zend_class_entry */
 
+/* apc_serialize_zval_ptr() and apc_create_zval_ptr() are used to
+ * serialize and deserialize the default_properties table in class
+ * entries, which are tables of zval pointers, not zvals. */
+
+static void apc_serialize_zval_ptr(zval** zv)
+{
+	apc_serialize_zval(*zv);
+}
+
+static void apc_create_zval_ptr(zval*** zv)
+{
+	apc_create_zval(*zv);
+}
+
 void apc_serialize_zend_class_entry(zend_class_entry* zce)
 {
 	zend_function_entry* zfe;
@@ -633,7 +649,7 @@ void apc_serialize_zend_class_entry(zend_class_entry* zce)
 	SERIALIZE_SCALAR(zce->refcount[0], int);
 	SERIALIZE_SCALAR(zce->constants_updated, zend_bool);
 	apc_serialize_hashtable(&zce->function_table, apc_serialize_zend_function);
-	apc_serialize_hashtable(&zce->default_properties, apc_serialize_zval);
+	apc_serialize_hashtable(&zce->default_properties, apc_serialize_zval_ptr);
 
 	/* zend_class_entry.builtin_functions: this array appears to be
 	 * terminated by an element where zend_function_entry.fname is null 
@@ -671,7 +687,7 @@ void apc_deserialize_zend_class_entry(zend_class_entry* zce)
 	DESERIALIZE_SCALAR(&zce->constants_updated, zend_bool);
 	apc_deserialize_hashtable(&zce->function_table, apc_create_zend_function,
 		sizeof(zend_function));
-	apc_deserialize_hashtable(&zce->default_properties, apc_create_zval,
+	apc_deserialize_hashtable(&zce->default_properties, apc_create_zval_ptr,
 		sizeof(zval));
 
 	/* see apc_serialize_zend_class_entry() for a description of the
