@@ -41,7 +41,7 @@ static void expandbuf(char** bufptr, int* cursize, int minsize)
 }
 
 
-/* */
+/* First step in serialization.  Creates the serialization buffer */
 void apc_init_serializer()
 {
 	if (dst == 0) {
@@ -51,7 +51,8 @@ void apc_init_serializer()
 	dstpos = 0;
 }
 
-/* */
+/* First step in deserialization.  Sets the size/position of the 
+ * serialized buffer */
 void apc_init_deserializer(char* input, int size)
 {
 	src     = input;
@@ -59,20 +60,23 @@ void apc_init_deserializer(char* input, int size)
 	srcsize = size;
 }
 
-/* zend_serialize_debug: */
+/* zend_serialize_debug: fumps information about the source/destination
+ * serialization buffers */
 void apc_serialize_debug(FILE* out)
 {
 	fprintf(out, "src=%p, srcpos=%d, srcsize=%d\n", src, srcpos, srcsize);
 	fprintf(out, "dst=%p, dstpos=%d, dstsize=%d\n", dst, dstpos, dstsize);
 }
 
-/* */
+/* Sets the pointer to and length of buffer to deserialize to */
 void apc_get_serialized_data(char** bufptr, int* length)
 {
 	*bufptr = dst;
 	*length = dstpos;
 }
 
+/* dumps serialization to a file.  This is for debug only and is not how
+ * the mmap implementation works.  See mmap/apc_iface.c for those details */
 void apc_save(const char* filename)
 {
 	FILE* out;
@@ -96,6 +100,9 @@ void apc_save(const char* filename)
 	fclose(out);
 }
 
+/* Loads in a serialized data file as created by apc_save().  Again this
+ * is for debugging purposes and is not used by the mmap implemntation. 
+ * See mmap/apc_iface.c for those details. */
 int apc_load(const char* filename)
 {
 	FILE* in;
@@ -125,23 +132,28 @@ int apc_load(const char* filename)
 	return 1;
 }
 
+/* By convention all apc_serialize_ an object of the specified type to
+ * the serialization buffer.  apc_deserialize_ deserializes an object of
+ * specified type from the deserialization buffer.  apc_create_ allocates
+ * an object of specified type and deserializes from the deserializes. */
+
 /* general */
 void apc_serialize_string(char* string);
 void apc_create_string(char** string);
 void apc_serialize_arg_types(zend_uchar* arg_types);
 void apc_create_arg_types(zend_uchar** arg_types);
 
-/* zend_llist.h */
+/* routines for handling structures from zend_llist.h */
 void apc_serialize_zend_llist(zend_llist* list);
 void apc_deserialize_zend_llist(zend_llist* list);
 void apc_create_zend_llist(zend_llist** list);
 
-/* zend_hash.h */
+/* routines for handling structures from zend_hash.h */
 void apc_serialize_hashtable(HashTable* ht, void* funcptr);
 void apc_deserialize_hashtable(HashTable* ht, void* funcptr, int datasize);
 void apc_create_hashtable(HashTable** ht, void* funcptr, int datasize);
 
-/* zend.h */
+/* routines for handling structures from zend.h */
 void apc_serialize_zvalue_value(zvalue_value* zvv, int type);
 void apc_deserialize_zvalue_value(zvalue_value* zvv, int type);
 void apc_serialize_zval(zval* zv);
@@ -161,7 +173,7 @@ void apc_deserialize_zend_utility_functions(zend_utility_functions* zuf);
 void apc_serialize_zend_utility_values(zend_utility_values* zuv);
 void apc_deserialize_zend_utility_values(zend_utility_values* zuv);
 
-/* zend_compile.h */
+/* routines for handling structures from zend_compile.h */
 void apc_serialize_znode(znode* zn);
 void apc_deserialize_znode(znode* zn);
 void apc_serialize_zend_op(zend_op* zo);
@@ -321,7 +333,9 @@ void apc_deserialize_zend_llist(zend_llist* list)
 	char* data;
 
 	DESERIALIZE_SCALAR(&exists, char);
-	assert(exists != 0);
+	/* if we are serializing a non-existant list, we have corrupted our
+	 * cache.  */
+	assert(exists != 0); 
 
 	/* read the list parameters */
 	DESERIALIZE_SCALAR(&size, size_t);
@@ -344,7 +358,9 @@ void apc_deserialize_zend_llist(zend_llist* list)
 void apc_create_zend_llist(zend_llist** list)
 {
 	char exists;
-
+	/* Sneak a look one byte ahead to see whether the list exists or not. If
+	 * it does, then exists is part of the structure, otherwise it was a
+	 * 'zero' place holder. */
 	PEEK_SCALAR(&exists, char);
 	if (exists) {
 		*list = (zend_llist*) emalloc(sizeof(zend_llist));
@@ -372,11 +388,13 @@ void apc_serialize_hashtable(HashTable* ht, void* funcptr)
 	if (!exists) {
 		return;
 	}
+	/* serialize the hash meta-data */
 	SERIALIZE_SCALAR(ht->nTableSize, uint);
 	SERIALIZE_SCALAR(ht->pHashFunction, void*);
 	SERIALIZE_SCALAR(ht->pDestructor, void*);
 	SERIALIZE_SCALAR(ht->nNumOfElements, uint);
 	SERIALIZE_SCALAR(ht->persistent, int);
+	/* Iterate through the buckets of the hash, serializing as we go */
 	p = ht->pListHead;
 	while(p != NULL) {
 		SERIALIZE_SCALAR(p->nKeyLength,uint);
@@ -411,10 +429,13 @@ void apc_deserialize_hashtable(HashTable* ht, void* funcptr, int datasize)
 	DESERIALIZE_SCALAR(&pDestructor, void*);
 	DESERIALIZE_SCALAR(&nNumOfElements,uint);
 	DESERIALIZE_SCALAR(&persistent, int);
-	
+	/* although the hash is already allocated (we're a desrialize not a 
+	 * create), we still need to init the hash.  If this fails, something 
+	 * very very bad happened. */
 	status = zend_hash_init(ht, nSize, pHashFunction, pDestructor, persistent);
 	assert(status != FAILURE);
-	
+	/* luckily the number of elements in a hash is part of it's struct, so
+	 * we can just deserialize that many hashtable elements. */
 	for(j = 0; j < nNumOfElements; j++) {
 		DESERIALIZE_SCALAR(&nKeyLength, uint);
 		apc_create_string(&arKey);
