@@ -298,8 +298,8 @@ void* apc_sma_malloc(size_t n)
     int off;
     int i;
 
-    apc_lck_lock(sma_lock);
     assert(sma_initialized);
+    apc_lck_lock(sma_lock);
 
     off = sma_allocate(sma_shmaddrs[sma_lastseg], n);
     if (off != -1) {
