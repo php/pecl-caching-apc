@@ -46,6 +46,8 @@ static void namearray_dtor(void* p)
  * derived from the parent class that were compiled before the
  * parent class definition was encountered... */ 
 static apc_nametable_t* deferred_inheritance = 0;
+static apc_nametable_t* parental_inheritors = 0;
+static apc_nametable_t* non_inheritors = 0;
 
 /* inherit: recursively inherit methods from base to all the children
  * of parent, the children of parent's children, and so on */
@@ -83,6 +85,19 @@ static void inherit(zend_class_entry* base, zend_class_entry* parent)
 	}
 }
 
+/* call_inherit */
+
+static void call_inherit(char *key, void *data)
+{
+	zend_class_entry *ce;
+
+    if(zend_hash_find(CG(class_table), key, strlen(key) + 1, (void **) &ce)
+	        == SUCCESS) 
+    {
+        inherit(ce, ce);
+    }
+}   
+
 enum { START_SIZE = 1, GROW_FACTOR = 2 };
 
 static char* dst   = 0;		/* destination (serialization) buffer */
@@ -106,6 +121,8 @@ static void expandbuf(char** bufptr, int* cursize, int minsize)
 void apc_serializer_request_init()
 {
 	deferred_inheritance = apc_nametable_create(97);
+	parental_inheritors = apc_nametable_create(97);
+	non_inheritors = apc_nametable_create(97);
 }
 
 /* apc_serializer_request_shutdown: clean up this module per request */
@@ -115,6 +132,16 @@ void apc_serializer_request_shutdown()
 		apc_nametable_clear(deferred_inheritance, namearray_dtor);
 		apc_nametable_destroy(deferred_inheritance);
 		deferred_inheritance = 0;
+	}
+	if (parental_inheritors != 0) {
+		apc_nametable_clear(parental_inheritors, NULL);
+		apc_nametable_destroy(parental_inheritors);
+		parental_inheritors = 0;
+	}
+	if (non_inheritors != 0) {
+		apc_nametable_clear(non_inheritors, NULL);
+		apc_nametable_destroy(non_inheritors);
+		non_inheritors = 0;
 	}
 }
 
@@ -263,7 +290,7 @@ void apc_deserialize_znode(znode* zn);
 void apc_serialize_zend_op(zend_op* zo);
 void apc_deserialize_zend_op(zend_op* zo);
 void apc_serialize_zend_op_array(zend_op_array* zoa);
-void apc_deserialize_zend_op_array(zend_op_array* zoa);
+void apc_deserialize_zend_op_array(zend_op_array* zoa, int master);
 void apc_create_zend_op_array(zend_op_array** zoa);
 void apc_serialize_zend_internal_function(zend_internal_function* zif);
 void apc_deserialize_zend_internal_function(zend_internal_function* zif);
@@ -277,7 +304,7 @@ void apc_create_zend_function(zend_function** zf);
 void apc_serialize_zend_function_table(HashTable* gft, apc_nametable_t* acc, apc_nametable_t*);
 void apc_deserialize_zend_function_table(HashTable* gft, apc_nametable_t* acc, apc_nametable_t*);
 void apc_serialize_zend_class_table(HashTable* gct, apc_nametable_t* acc, apc_nametable_t*);
-void apc_deserialize_zend_class_table(HashTable* gct, apc_nametable_t* acc, apc_nametable_t*);
+int apc_deserialize_zend_class_table(HashTable* gct, apc_nametable_t* acc, apc_nametable_t*);
 
 
 /* type: Fundamental operations */
@@ -822,8 +849,27 @@ void apc_deserialize_zend_class_entry(zend_class_entry* zce)
 		if (zend_hash_find(CG(class_table), parent_name,
 			strlen(parent_name) + 1, (void**) &zce->parent) == FAILURE)
 		{
-			zend_error(E_ERROR, "parent '%s' of class '%s' undefined",
-				parent_name, zce->name);
+		namearray_t *children;
+		int minSize;
+
+		if((children = apc_nametable_retrieve(deferred_inheritance,
+			parent_name)) == 0) {
+			children = (namearray_t*) malloc(sizeof(namearray_t));
+			children->length = 0;
+			children->size = zce->name_length + 1;
+			children->strings = (char *) malloc(children->size);
+			apc_nametable_insert(deferred_inheritance, parent_name, children);
+		}
+		minSize = children->length + zce->name_length + 1;
+		if ( minSize > children->size) {
+			while(minSize > children->size) {
+				children->size *= 2;
+			}
+			children->strings = apc_erealloc(children->strings, children->size);
+		}
+		memcpy(children->strings + children->length, zce->name, zce->name_length
+		+ 1);
+		children->length += zce->name_length + 1;
 		}
 		efree(parent_name);
 	}
@@ -865,7 +911,7 @@ void apc_deserialize_zend_class_entry(zend_class_entry* zce)
 	 * inherit will recursively resolve every inheritance relationships
 	 * in which this class is the base. */
 
-	inherit(zce, zce);
+	//inherit(zce, zce);
 }
 
 void apc_create_zend_class_entry(zend_class_entry** zce)
@@ -1032,7 +1078,7 @@ void apc_serialize_zend_op_array(zend_op_array* zoa)
 	/* zend_op_array.reserved is not used */
 }
 
-void apc_deserialize_zend_op_array(zend_op_array* zoa)
+void apc_deserialize_zend_op_array(zend_op_array* zoa, int master)
 {
 	char *fname;
 	char exists;
@@ -1058,6 +1104,8 @@ void apc_deserialize_zend_op_array(zend_op_array* zoa)
 				HashTable* table;
 				char* op2str;	/* op2str and op2len are for convenience */
 				int op2len;
+
+				exists = 1;
 				
 				op2str = zoa->opcodes[i].op2.u.constant.value.str.val;
 				op2len = zoa->opcodes[i].op2.u.constant.value.str.len;
@@ -1103,7 +1151,7 @@ void apc_deserialize_zend_op_array(zend_op_array* zoa)
 				
 				  /* a run-time derived class declaration */
 				  case ZEND_DECLARE_INHERITED_CLASS: {
-					zend_class_entry* ce;
+					zend_class_entry *ce, *pce;
 					char* class_name;
 					char* parent_name;
 					int class_name_length;
@@ -1142,7 +1190,6 @@ void apc_deserialize_zend_op_array(zend_op_array* zoa)
 					 * inheritance table */
 		
 					class_name_length = strlen(class_name);
-
 					children = apc_nametable_retrieve(deferred_inheritance,
 					                                  parent_name);
 		
@@ -1159,8 +1206,10 @@ void apc_deserialize_zend_op_array(zend_op_array* zoa)
 						apc_nametable_insert(deferred_inheritance,
 						                     parent_name, children);
 					}
-		
-					/* Add this class's name to the namearray_t 'children' */
+
+					/* a deferred class can't be a top-level parent */
+					apc_nametable_insert(non_inheritors, class_name, NULL);
+
 
 					minSize = children->length + class_name_length + 1;
 		
@@ -1208,12 +1257,16 @@ void apc_deserialize_zend_op_array(zend_op_array* zoa)
 	apc_create_string(&fname);
 	zoa->filename = zend_set_compiled_filename(fname);
 	efree(fname);
+	if(master) {
+		apc_nametable_difference(parental_inheritors, non_inheritors);
+		apc_nametable_apply(parental_inheritors, call_inherit);
+	}
 }
 
 void apc_create_zend_op_array(zend_op_array** zoa)
 {
 	*zoa = (zend_op_array*) emalloc(sizeof(zend_op_array));
-	apc_deserialize_zend_op_array(*zoa);
+	apc_deserialize_zend_op_array(*zoa, 0);
 }
 
 
@@ -1291,7 +1344,7 @@ void apc_deserialize_zend_function(zend_function* zf)
 		break;
       case ZEND_USER_FUNCTION:
       case ZEND_EVAL_CODE:
-		apc_deserialize_zend_op_array(&zf->op_array);
+		apc_deserialize_zend_op_array(&zf->op_array, 0);
 		break;
 	  default:
 		/* the above are all valid zend_function types.  If we hit this
@@ -1405,7 +1458,9 @@ static int store_class_table(void *element, int num_args,
 	if (apc_nametable_insert(acc, zc->name, 0) != 0) {
 		SERIALIZE_SCALAR(1, char);
 		apc_serialize_zend_class_entry(zc);
-		apc_nametable_insert(priv, zc->name, 0);
+		if(zc->parent != NULL) {
+			apc_nametable_insert(priv, zc->name, 0);
+		}
 	}
 
 	return 0;
@@ -1418,10 +1473,13 @@ void apc_serialize_zend_class_table(HashTable* gct,
 	SERIALIZE_SCALAR(0, char);
 }
 
-void apc_deserialize_zend_class_table(HashTable* gct, apc_nametable_t* acc, apc_nametable_t* priv)
+int apc_deserialize_zend_class_table(HashTable* gct, apc_nametable_t* acc, apc_nametable_t* priv)
 {
 	char exists;
+	int i;
 	zend_class_entry* zc;
+
+	i = 0;
 
 	DESERIALIZE_SCALAR(&exists, char);
 	while (exists) {
@@ -1431,9 +1489,13 @@ void apc_deserialize_zend_class_table(HashTable* gct, apc_nametable_t* acc, apc_
 		{
 		// This can validly happen.
 		}
+		/* We may only want to do this insert if zc->parent is NULL */
+		apc_nametable_insert(parental_inheritors, zc->name, NULL);
 		apc_nametable_insert(acc, zc->name, 0);
 		apc_nametable_insert(priv, zc->name, 0);
 		DESERIALIZE_SCALAR(&exists, char);
+		i++;
 	}
+	return i;
 }
 

@@ -906,6 +906,7 @@ int apc_cache_dump_entry(apc_cache_t* cache, const char* key,
 	bucket_t* buckets;
 	int nbuckets;
 	int i;
+	int numclasses;
 
 	HashTable function_table;
 	HashTable class_table;
@@ -992,8 +993,8 @@ int apc_cache_dump_entry(apc_cache_t* cache, const char* key,
 	apc_init_deserializer((char *) ((char *)apc_smm_attach(bp->shmid) + bp->offset), bp->length);
 	apc_deserialize_magic();
 	apc_deserialize_zend_function_table(&function_table, dummy, dummy);
-	apc_deserialize_zend_class_table(&class_table, dummy, dummy);
-	apc_deserialize_zend_op_array(op_array);
+	numclasses = apc_deserialize_zend_class_table(&class_table, dummy, dummy);
+	apc_deserialize_zend_op_array(op_array, numclasses);
 
 	/* begin second row of outer table */
 	outputfn("<tr>\n");
@@ -1197,6 +1198,7 @@ int apc_object_info_shm(apc_cache_t* cache, char const*filename, zval **arr) {
   Bucket* p;
   Bucket* q;
   int i;
+  int numclasses;
 
   zval *functions_array = NULL;
   zval *classes_array   = NULL;
@@ -1280,9 +1282,9 @@ int apc_object_info_shm(apc_cache_t* cache, char const*filename, zval **arr) {
   apc_init_deserializer((char *)apc_smm_attach(bp->shmid) + bp->offset, bp->length);
   apc_deserialize_magic();
   apc_deserialize_zend_function_table(&function_table, dummy, dummy);
-  apc_deserialize_zend_class_table(&class_table, dummy, dummy);
+  numclasses = apc_deserialize_zend_class_table(&class_table, dummy, dummy);
 
-  apc_deserialize_zend_op_array(op_array);
+  apc_deserialize_zend_op_array(op_array, numclasses);
 
 
   add_assoc_string(bucket_array, "key", bp->key, 1);

@@ -358,6 +358,7 @@ ZEND_API zend_op_array* apc_shm_compile_file(zend_file_handle *file_handle,
 	apc_nametable_t** tables;	/* private tables for the file (see below) */
 	int seen;					/* seen this file before, this request? */
 	int mtime;					/* modification time of the file */
+	int numclasses;
 
 	/* If the user has set the check_mtime ini entry to true, we must
 	 * compare the current modification time of the every file against
@@ -419,9 +420,9 @@ ZEND_API zend_op_array* apc_shm_compile_file(zend_file_handle *file_handle,
 		}
 		apc_deserialize_zend_function_table(CG(function_table),
 			acc_functiontable, tables[0]);
-		apc_deserialize_zend_class_table(CG(class_table), acc_classtable,
+		numclasses = apc_deserialize_zend_class_table(CG(class_table), acc_classtable,
 			tables[1]);
-		apc_deserialize_zend_op_array(op_array);
+		apc_deserialize_zend_op_array(op_array, numclasses);
 
 		return op_array;
 	}
@@ -438,9 +439,9 @@ ZEND_API zend_op_array* apc_shm_compile_file(zend_file_handle *file_handle,
         }
 		apc_deserialize_zend_function_table(CG(function_table),
             acc_functiontable, tables[0]);
-        apc_deserialize_zend_class_table(CG(class_table), acc_classtable,
+        numclasses = apc_deserialize_zend_class_table(CG(class_table), acc_classtable,
             tables[1]);
-        apc_deserialize_zend_op_array(op_array);
+        apc_deserialize_zend_op_array(op_array, numclasses);
 		apc_init_serializer();
 		if(apc_cache_insert(cache, key, inputbuf, inputlen, mtime) < 0) {
 			/* if we fail to insert, clear the whole cache */
@@ -553,6 +554,7 @@ ZEND_API zend_op_array* apc_mmap_compile_file(zend_file_handle *file_handle,
 	int fd;
 	int n;
 	int seen;
+	int numclasses;
 	struct stat statbuf, srcstatbuf;
 	zend_op_array* op_array;
 	struct mm_fl_element *in_elem;
@@ -642,9 +644,9 @@ ZEND_API zend_op_array* apc_mmap_compile_file(zend_file_handle *file_handle,
 				}
 				apc_deserialize_zend_function_table(CG(function_table), 
 					acc_functiontable, tables[0]);
-				apc_deserialize_zend_class_table(CG(class_table), 
+				numclasses = apc_deserialize_zend_class_table(CG(class_table), 
 					acc_classtable, tables[1]);
-				apc_deserialize_zend_op_array(op_array);
+				apc_deserialize_zend_op_array(op_array, numclasses);
 
 				in_elem->hitcounter++;
 				return op_array;
@@ -690,9 +692,9 @@ ZEND_API zend_op_array* apc_mmap_compile_file(zend_file_handle *file_handle,
                 }
 				apc_deserialize_zend_function_table(CG(function_table), 
 					acc_functiontable, tables[0]);
-				apc_deserialize_zend_class_table(CG(class_table), 
+				numclasses = apc_deserialize_zend_class_table(CG(class_table), 
 					acc_classtable, tables[1]);
-				apc_deserialize_zend_op_array(op_array);
+				apc_deserialize_zend_op_array(op_array, numclasses);
 				
 				/* update our private cache hash with the new objects 
 				 * information */
@@ -745,9 +747,9 @@ ZEND_API zend_op_array* apc_mmap_compile_file(zend_file_handle *file_handle,
                 	}
 					apc_deserialize_zend_function_table(CG(function_table),
 			            acc_functiontable, tables[0]);
-        			apc_deserialize_zend_class_table(CG(class_table), acc_classtable,
+        			numclasses = apc_deserialize_zend_class_table(CG(class_table), acc_classtable,
             			tables[1]);
-        			apc_deserialize_zend_op_array(op_array);
+        			apc_deserialize_zend_op_array(op_array, numclasses);
 					write(fd, inputbuf, inputlen);
 					close(fd);
 					rename(my_cache_filename,cache_filename);
@@ -837,8 +839,8 @@ ZEND_API zend_op_array* apc_mmap_compile_file(zend_file_handle *file_handle,
 	}
 	apc_deserialize_zend_function_table(CG(function_table), 
 		acc_functiontable, tables[0]);
-	apc_deserialize_zend_class_table(CG(class_table), acc_classtable, tables[1]);
-	apc_deserialize_zend_op_array(op_array);
+	numclasses = apc_deserialize_zend_class_table(CG(class_table), acc_classtable, tables[1]);
+	apc_deserialize_zend_op_array(op_array, numclasses);
 	zend_hash_update(&apc_mm_fl, filename, 
 		strlen(filename)+1, in_elem, 
 		sizeof(struct mm_fl_element), NULL);

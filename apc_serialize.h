@@ -91,7 +91,7 @@ extern void apc_deserialize_znode(znode* zn);
 extern void apc_serialize_zend_op(zend_op* zo);
 extern void apc_deserialize_zend_op(zend_op* zo);
 extern void apc_serialize_zend_op_array(zend_op_array* zoa);
-extern void apc_deserialize_zend_op_array(zend_op_array* zoa);
+extern void apc_deserialize_zend_op_array(zend_op_array* zoa, int master);
 extern void apc_serialize_zend_internal_function(zend_internal_function* zif);
 extern void apc_deserialize_zend_internal_function(zend_internal_function* zif);
 extern void apc_serialize_zend_overloaded_function(zend_overloaded_function* zof);
@@ -107,7 +107,7 @@ extern void apc_deserialize_zend_function_table(HashTable* gft,
 	apc_nametable_t* acc, apc_nametable_t* priv);
 extern void apc_serialize_zend_class_table(HashTable* gct,
 	apc_nametable_t* acc, apc_nametable_t* priv);
-extern void apc_deserialize_zend_class_table(HashTable* gct,
+extern int apc_deserialize_zend_class_table(HashTable* gct,
 	apc_nametable_t* acc, apc_nametable_t* priv);
 
 #endif

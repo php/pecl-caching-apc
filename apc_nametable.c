@@ -195,6 +195,20 @@ int apc_nametable_size(apc_nametable_t* table)
 	return size;
 }
 
+void apc_nametable_apply(apc_nametable_t* table, apc_nametablefn_t func)
+{
+	int i;
+
+	for (i = 0; i < table->nbuckets; i++) {
+		link_t* p = table->buckets[i];
+		while (p != 0) {
+			link_t* q = p;
+			p = p->next;
+			func(q->key, q->value);
+		}
+	}
+}
+
 /* apc_nametable_dump: debug display of nametable */
 void apc_nametable_dump(apc_nametable_t* table, apc_outputfn_t outputfn)
 {
@@ -205,7 +219,7 @@ void apc_nametable_dump(apc_nametable_t* table, apc_outputfn_t outputfn)
 		while (p != 0) {
 			link_t* q = p;
 			p = p->next;
-			outputfn("%s => %p\n", q->key, q->value);
+			outputfn("%s => %p next (%x)\n", q->key, q->value, p);
 		}
 	}
 }

@@ -134,7 +134,7 @@ int apc_mmap_dump_entry(const char* filename, apc_outputfn_t outputfn)
 {
 
     static const char NBSP[] = "&nbsp;";
-    int i, n, fd;
+    int i, n, fd, numclasses;
 		char* input;
 		char* cache_filename;
 
@@ -169,8 +169,8 @@ int apc_mmap_dump_entry(const char* filename, apc_outputfn_t outputfn)
     apc_init_deserializer(input, statbuf.st_size);
 	apc_deserialize_magic();
     apc_deserialize_zend_function_table(&function_table, dummy, dummy);
-    apc_deserialize_zend_class_table(&class_table, dummy, dummy);
-    apc_deserialize_zend_op_array(op_array);
+    numclasses = apc_deserialize_zend_class_table(&class_table, dummy, dummy);
+    apc_deserialize_zend_op_array(op_array, numclasses);
     munmap(input, statbuf.st_size);
 
     /* begin outer table */

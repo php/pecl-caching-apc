@@ -19,6 +19,7 @@
 #define T apc_nametable_t*
 typedef struct apc_nametable_t apc_nametable_t;
 typedef void (*apc_nametable_destructor_t)(void*);
+typedef void (*apc_nametablefn_t)(char *, void *);
 
 /*
  * apc_nametable_create: creates a new nametable with the specified
@@ -81,6 +82,8 @@ extern void apc_nametable_difference(T a, T b);
  * apc_nametable_size: returns number of elements in table
  */
 extern int apc_nametable_size(T table);
+
+extern void apc_nametable_apply(apc_nametable_t* table, apc_nametablefn_t func);
 
 /*
  * apc_nametable_dump: debugging display function
