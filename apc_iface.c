@@ -12,7 +12,8 @@
    | obtain it through the world-wide-web, please send a note to          |
    | license@php.net so we can mail you a copy immediately.               |
    +----------------------------------------------------------------------+
-   | Authors: Daniel Cowgill <dcowgill@communityconnect.com>              |
+   | Authors: Mike Bretz <mike@metropolis-ag.de>                          |
+   |          Daniel Cowgill <dcowgill@communityconnect.com>              |
    |          George Schlossnagle <george@lethargy.org>                   |
    +----------------------------------------------------------------------+
 */

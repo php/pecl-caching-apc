@@ -13,6 +13,7 @@
    | license@php.net so we can mail you a copy immediately.               |
    +----------------------------------------------------------------------+
    | Authors: Daniel Cowgill <dcowgill@communityconnect.com>              |
+   |          Ricardo Galli <gallir@uib.es>                               |
    |          George Schlossnagle <george@lethargy.org>                   |
    +----------------------------------------------------------------------+
 */
