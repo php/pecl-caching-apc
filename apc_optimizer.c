@@ -2,10 +2,10 @@
    +----------------------------------------------------------------------+
    | Copyright (c) 2002 by Community Connect Inc. All rights reserved.    |
    +----------------------------------------------------------------------+
-   | This source file is subject to version 3.0 of the PHP license,      |
+   | This source file is subject to version 3.0 of the PHP license,       |
    | that is bundled with this package in the file LICENSE, and is        |
    | available at through the world-wide-web at                           |
-   | http://www.php.net/license/3_0.txt.                                 |
+   | http://www.php.net/license/3_0.txt.                                  |
    | If you did not receive a copy of the PHP license and are unable to   |
    | obtain it through the world-wide-web, please send a note to          |
    | license@php.net so we can mail you a copy immediately.               |
@@ -139,7 +139,10 @@ static int compress_ops(zend_op_array* op_array, Pair** jumps)
                 if (ops[j].opcode != ZEND_NOP) {
                     break;
                 }
-                j++;
+                if (++j >= num_ops) {
+                    j--;
+                    break;
+                }
             }
 
             /* update jump table IFF ops[j] is a branch */
@@ -263,7 +266,7 @@ static void rewrite_const_cast(zend_op* ops, Pair* p)
         convert_to_string(&convert);
         break;
     }
-    zval_dtor(&cur->op1.u.constant);
+    /* zval_dtor(&cur->op1.u.constant); */
     cur->opcode = ZEND_QM_ASSIGN;
     cur->extended_value = 0;
     cur->op1.op_type = IS_CONST;
@@ -293,19 +296,19 @@ static void rewrite_constant_fold(zend_op* ops, Pair *p)
     zval *result;
     zend_op *const_op = &ops[car(p)];
     zend_op *fetch_op = &ops[cadr(p)];
+
     result = compute_result_of_constant_op(const_op);
     if(const_op->result.u.var == fetch_op->op1.u.var) {
         fetch_op->op1.op_type = IS_CONST;
         fetch_op->op1.u.constant = *result;
-        zval_copy_ctor(&fetch_op->op1.u.constant);
+        /* zval_copy_ctor(&fetch_op->op1.u.constant); */
     }
     else if(const_op->result.u.var == fetch_op->op2.u.var) {
         fetch_op->op2.op_type = IS_CONST;
         fetch_op->op2.u.constant = *result;
-        zval_copy_ctor(&fetch_op->op2.u.constant);
+        /* zval_copy_ctor(&fetch_op->op2.u.constant); */
     }
-    clear_zend_op(ops + car(p));
-
+    clear_zend_op(const_op);
 }
 
 static void rewrite_print(zend_op* ops, Pair* p)
@@ -392,8 +395,8 @@ static void convert_switch(zend_op_array *op_array)
         array_offset = opline->op1.u.opline_num;
         do {
             if (array_offset < 0) {
-                zend_error(E_ERROR, "Cannot break/continue %d level", 
-                           original_nest_levels);
+                zend_error(E_ERROR, "Cannot break/continue %d level (%s#%d)", 
+                           original_nest_levels,op_array->filename,opline->lineno);
             }
             jmp_to = &op_array->brk_cont_array[array_offset];
             if (nest_levels>1) {
@@ -518,7 +521,7 @@ static int is_pure_binary_op(zend_op* op)
 
 /* {{{ peephole match functions */
 
-static Pair* peephole_cast(zend_op* ops, int i, int num_ops)
+static Pair* peephole_const_cast(zend_op* ops, int i, int num_ops)
 {
     if (ops[i].opcode == ZEND_CAST &&
         ops[i].op1.op_type == IS_CONST &&
@@ -757,12 +760,27 @@ static Pair* peephole_needless_bool(zend_op* ops, int i, int num_ops)
 
 /* }}} */
 
-
 /* {{{ apc_optimize_op_array */
 
 zend_op_array* apc_optimize_op_array(zend_op_array* op_array)
 {
 #define RESTART_PEEPHOLE_LOOP { pair_destroy(p); i = -1; continue; }
+#define OPTIMIZE1(name) { \
+    if ((p = peephole_ ## name(op_array->opcodes, i, op_array->last))) { \
+        rewrite_ ## name(op_array->opcodes, p); \
+        pair_destroy(p); \
+    } \
+}
+
+#define OPTIMIZE2(name) { \
+    if ((p = peephole_ ## name(op_array->opcodes, i, op_array->last))) { \
+        if (!are_branch_targets(cdr(p), jumps)) { \
+            rewrite_ ## name(op_array->opcodes, p); \
+            RESTART_PEEPHOLE_LOOP; \
+        } \
+        pair_destroy(p); \
+    } \
+}
 
     Pair** jumps;
     int i;
@@ -776,62 +794,16 @@ zend_op_array* apc_optimize_op_array(zend_op_array* op_array)
     jumps = build_jump_array(op_array);
     for (i = 0; i < op_array->last; i++) {
         Pair* p;
-        
-        if ((p = peephole_cast(op_array->opcodes, i, op_array->last))) {
-            rewrite_const_cast(op_array->opcodes, p);
-            RESTART_PEEPHOLE_LOOP;
-        }
-
-        if ((p = peephole_is_equal_bool(op_array->opcodes, i, op_array->last))) {
-            rewrite_is_equal_bool(op_array->opcodes, p);
-            RESTART_PEEPHOLE_LOOP;
-        } 
-        
-        if ((p = peephole_inc(op_array->opcodes, i, op_array->last))) {
-            if (!are_branch_targets(cdr(p), jumps)) {
-                rewrite_inc(op_array->opcodes, p);
-            }
-            RESTART_PEEPHOLE_LOOP;
-        }
-        
-        if ((p = peephole_print(op_array->opcodes, i, op_array->last))) {
-            if (!are_branch_targets(cdr(p), jumps)) {
-                rewrite_print(op_array->opcodes, p);
-            }
-            RESTART_PEEPHOLE_LOOP;
-        }
-        
-        if ((p = peephole_multiple_echo(op_array->opcodes, i, op_array->last))) {
-            if (!are_branch_targets(cdr(p), jumps)) {
-                rewrite_multiple_echo(op_array->opcodes, p);
-            }
-        } 
-        
-        if ((p = peephole_constant_fold(op_array->opcodes, i, op_array->last))) {
-            if (!are_branch_targets(cdr(p), jumps)) {
-                rewrite_constant_fold(op_array->opcodes, p);
-            }
-            RESTART_PEEPHOLE_LOOP;
-        }
-        
-        if ((p = peephole_fcall(op_array->opcodes, i, op_array->last))) {
-            if (!are_branch_targets(cdr(p), jumps)) {
-                rewrite_fcall(op_array->opcodes, p);
-            }
-            RESTART_PEEPHOLE_LOOP;
-        }
-        if ((p = peephole_add_string(op_array->opcodes, i, op_array->last))) {
-            if (!are_branch_targets(cdr(p), jumps)) {
-                rewrite_add_string(op_array->opcodes, p);
-            }
-            RESTART_PEEPHOLE_LOOP;
-        }
-        if ((p = peephole_needless_bool(op_array->opcodes, i, op_array->last))) {
-            if (!are_branch_targets(cdr(p), jumps)) {
-                rewrite_needless_bool(op_array->opcodes, p);
-            }
-            RESTART_PEEPHOLE_LOOP;
-        }
+    
+        OPTIMIZE1(const_cast);
+        OPTIMIZE1(is_equal_bool);
+        OPTIMIZE2(inc);
+        OPTIMIZE2(print);
+        OPTIMIZE2(multiple_echo);
+        /* OPTIMIZE2(constant_fold); */
+        OPTIMIZE2(fcall);
+        OPTIMIZE2(add_string);
+        OPTIMIZE2(needless_bool);
     }
 
     op_array->last = compress_ops(op_array, jumps);
@@ -839,6 +811,8 @@ zend_op_array* apc_optimize_op_array(zend_op_array* op_array)
     
     return op_array;
 
+#undef OPTIMIZE1
+#undef OPTIMIZE2
 #undef RESTART_PEEPHOLE_LOOP
 }
 /* }}} */
