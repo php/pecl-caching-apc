@@ -503,67 +503,121 @@ void apc_cache_unlock(apc_cache_t* cache)
 
 
 /* apc_cache_dump: */
-void apc_cache_dump(apc_outputfn_t outputfn, apc_cache_t* cache)
+void apc_cache_dump(apc_cache_t* cache, apc_outputfn_t outputfn)
 {
 	int i;
+	double hitrate;
 
-	//apc_rwl_writelock(cache->lock);
 	apc_rwl_readlock(cache->lock);
-	outputfn("<html>\n<head>\n\t<title>APC-SHM Cache Info\n</title>\n</head>\n");
-	outputfn("*** begin cache info ***<br>\n");
-	outputfn("header.magic: %x<br>\n", cache->header->magic);
-	outputfn("header.nbuckets: %d<br>\n", cache->header->nbuckets);
-	outputfn("header.maxseg: %d<br>\n", cache->header->maxseg);
-	outputfn("header.segsize: %d<br>\n", cache->header->segsize);
-	outputfn("header.ttl: %d<br>\n", cache->header->ttl);
-	outputfn("header.hits: %d<br>\n", cache->header->hits);
-	outputfn("header.misses: %d<br>\n", cache->header->misses);
+
+	hitrate = (1.0 * cache->header->hits) /
+		(cache->header->hits + cache->header->misses);
+
+	outputfn("<html>\n");
+
+	/* display HEAD */
+	outputfn("<head>\n");
+	outputfn("<title>APC-SHM Cache Info</title>\n");
+	outputfn("</head>\n");
+
+	/* display cache header info */
+	outputfn("<table border=1 cellpadding=2 cellspacing=1>\n");
+	outputfn("<tr>\n");
+	outputfn("<td colspan=2 bgcolor=#dde4ff>Cache Header</td>\n");
+	outputfn("<tr>\n");
+	outputfn("<td bgcolor=#ffffff>Name</td>\n");
+	outputfn("<td bgcolor=#ffffff>Value</td>\n");
+	outputfn("<tr>\n");
+	outputfn("<td bgcolor=#eeeeee>magic</td>\n");
+	outputfn("<td bgcolor=#eeeeee>0x%x</td>\n", cache->header->magic);
+	outputfn("<tr>\n");
+	outputfn("<td bgcolor=#eeeeee>total buckets</td>\n");
+	outputfn("<td bgcolor=#eeeeee>%d</td>\n", cache->header->nbuckets);
+	outputfn("<tr>\n");
+	outputfn("<td bgcolor=#eeeeee>maximum shared memory segments</td>\n");
+	outputfn("<td bgcolor=#eeeeee>%d</td>\n", cache->header->maxseg);
+	outputfn("<tr>\n");
+	outputfn("<td bgcolor=#eeeeee>shared memory segment size (B)</td>\n");
+	outputfn("<td bgcolor=#eeeeee>%d</td>\n", cache->header->segsize);
+	outputfn("<tr>\n");
+	outputfn("<td bgcolor=#eeeeee>time-to-live</td>\n");
+	outputfn("<td bgcolor=#eeeeee>%d</td>\n", cache->header->ttl);
+	outputfn("<tr>\n");
+	outputfn("<td bgcolor=#eeeeee>hits</td>\n");
+	outputfn("<td bgcolor=#eeeeee>%d</td>\n", cache->header->hits);
+	outputfn("<tr>\n");
+	outputfn("<td bgcolor=#eeeeee>misses</td>\n");
+	outputfn("<td bgcolor=#eeeeee>%d</td>\n", cache->header->misses);
+	outputfn("<tr>\n");
+	outputfn("<td bgcolor=#eeeeee>hit rate</td>\n");
+	outputfn("<td bgcolor=#eeeeee>%.2f</td>\n", hitrate);
+	outputfn("<tr>\n");
+	outputfn("<td colspan=2 bgcolor=#ffffff>local information</td>\n");
+	outputfn("<tr>\n");
+	outputfn("<td bgcolor=#eeeeee>shared memory ID</td>\n");
+	outputfn("<td bgcolor=#eeeeee>%d</td>\n", cache->shmid);
+	outputfn("<tr>\n");
+	outputfn("<td bgcolor=#eeeeee>local shared memory address</td>\n");
+	outputfn("<td bgcolor=#eeeeee>%p</td>\n", cache->shmaddr);
+	outputfn("<tr>\n");
+	outputfn("<td bgcolor=#eeeeee>creation pathname</td>\n");
+	outputfn("<td bgcolor=#eeeeee>%s</td>\n",
+		cache->pathname ? cache->pathname : "(null)");
+	outputfn("</table>\n");
 	outputfn("<br>\n");
-	outputfn("shmid is %d (local addr %p)<br>\n", cache->shmid, cache->shmaddr);
-	outputfn("creation pathname: '%s'<br>\n", cache->pathname);
 	outputfn("<br>\n");
 
-	outputfn("<table BORDER=0 CELLSPACING=0 CELLPADDING=0 WIDTH=\"98%\"
-            BGCOLOR=\"#006666\" >");
-	outputfn("<tr BGCOLOR=\"#0000FF\">\n");
-	outputfn("<td>Bucket</td><td>Key</td><td>offset</td><td>length</td><td>
-					lastaccess</td><td>hitcount</td><td>expiretime</td><td>checksum</td>\n");
-	outputfn("</tr>\n");
+	/* display bucket info */
+	outputfn("<table border=1 cellpadding=2 cellspacing=1>\n");
+	outputfn("<tr>\n");
+	outputfn("<td colspan=8 bgcolor=#dde4ff>Bucket Data</td>\n");
+	outputfn("<tr>\n");
+	outputfn("<td bgcolor=#ffffff>Index</td>\n");
+	outputfn("<td bgcolor=#ffffff>Key</td>\n");
+	outputfn("<td bgcolor=#ffffff>Offset</td>\n");
+	outputfn("<td bgcolor=#ffffff>Length (B)</td>\n");
+	outputfn("<td bgcolor=#ffffff>Last Access</td>\n");
+	outputfn("<td bgcolor=#ffffff>Hits</td>\n");
+	outputfn("<td bgcolor=#ffffff>Expire Time</td>\n");
+	outputfn("<td bgcolor=#ffffff>Checksum</td>\n");
+
 	for (i = 0; i < cache->header->nbuckets; i++) {
-		if (cache->buckets[i].shmid >= 0) {
-			outputfn("<tr>\n");
-			outputfn("<td>%d</td>%s</td><td>%d</td><td>%d</td><td>%d</td><td>%d</td>
-						<td>%d</td><td>%u</td>\n", i, cache->buckets[i].key, 
-						cache->buckets[i].offset, cache->buckets[i].length,
-						cache->buckets[i].lastaccess, cache->buckets[i].hitcount, 
-						cache->buckets[i].expiretime, cache->buckets[i].checksum);
-			outputfn("</tr>\n");
-/*
-			outputfn("=> bucket %d (key='%s', h%%N=%u, h2%%N=%u)<br>\n",
-				i, cache->buckets[i].key,
-				hash(cache->buckets[i].key) % cache->header->nbuckets,
-				hashtwo(cache->buckets[i].key) % cache->header->nbuckets);
-			outputfn("   bucket %d (offset=%d, length=%d, lastaccess=%d)<br>\n",
-				i, cache->buckets[i].offset, cache->buckets[i].length,
-				cache->buckets[i].lastaccess);
-			outputfn("   bucket %d (hitcount=%d, expiretime=%d, checksum=%u)<br>\n",
-				i, cache->buckets[i].hitcount, cache->buckets[i].expiretime,
-				cache->buckets[i].checksum);
-*/
+		bucket_t* bucket;
+		if (cache->buckets[i].shmid < 0) {
+			continue;
 		}
+		bucket = &(cache->buckets[i]);
+		outputfn("<tr>\n");
+		outputfn("<td bgcolor=#eeeeee>%d</td>\n", i);
+		outputfn("<td bgcolor=#eeeeee>%s</td>\n", bucket->key);
+		outputfn("<td bgcolor=#eeeeee>%d</td>\n", bucket->offset);
+		outputfn("<td bgcolor=#eeeeee>%d</td>\n", bucket->length);
+		outputfn("<td bgcolor=#eeeeee>%d</td>\n", bucket->lastaccess);
+		outputfn("<td bgcolor=#eeeeee>%d</td>\n", bucket->hitcount);
+		outputfn("<td bgcolor=#eeeeee>%d</td>\n", bucket->expiretime);
+		outputfn("<td bgcolor=#eeeeee>%u</td>\n", bucket->checksum);
 	}
-	outputfn("</tr>\n");
-//	outputfn("<br>\n");
-	outputfn("<tr BGCOLOR=\"#0000FF\">\n");
-	outputfn("<center><td>Cache segment info</td></tr>\n");
+	outputfn("</table>\n");
+	outputfn("<br>\n");
+	outputfn("<br>\n");
+
+	/* display shared memory segment info */
+	outputfn("<table border=1 cellpadding=2 cellspacing=1>\n");
+	outputfn("<tr>\n");
+	outputfn("<td bgcolor=#dde4ff>Shared Memory Info</td>\n");
 	for (i = 0; i < cache->header->maxseg; i++) {
 		if (cache->segments[i].shmid > 0) {
-			outputfn("=> contents of segment %d:<br>\n", i);
-			apc_smm_dump(outputfn, apc_smm_attach(cache->segments[i].shmid));
+			outputfn("<tr>\n");
+			outputfn("<td>\n");
+			apc_smm_dump(apc_smm_attach(cache->segments[i].shmid), outputfn);
+			outputfn("</td>\n");
 		}
 	}
+	outputfn("</table>\n");
+	outputfn("<br>\n");
+	outputfn("<br>\n");
 
-//	outputfn("*** end cache info ***<br>\n");
+	outputfn("</html>\n");
 
 	apc_rwl_unlock(cache->lock);
 }
