@@ -23,8 +23,8 @@ APC is the Alternative PHP Cache. It was conceived of to provide a free, open, a
  <license>PHP</license>
  <release>
   <state>stable</state>
-  <version>2.0.1</version>
-  <date>2003-07-01</date>
+  <version>2.0.2</version>
+  <date>2004-03-12</date>
   <notes>
 Win32 support added.  
   </notes>
@@ -77,6 +77,14 @@ Win32 support added.
       <date>2003-07-01</date>
       <notes>
 Complete rework.  
+      </notes>
+     </release>
+     <release>
+      <state>stable</state>
+      <version>2.0.1</version>
+      <date>2003-07-01</date>
+      <notes>
+    Win32 support added.  
       </notes>
      </release>
   </changelog>
