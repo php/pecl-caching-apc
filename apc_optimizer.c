@@ -603,7 +603,7 @@ static Pair* peephole_constant_fold(zend_op* ops, int i, int num_ops)
     int tmp_var_result;
 
     if(!is_constant_op(ops + i)) {
-        return (Pair *)0;
+        return 0;
     } 
     tmp_var_result = ops[i].result.u.var;
     for( j = i+1; j < num_ops; j++) {
@@ -616,7 +616,7 @@ static Pair* peephole_constant_fold(zend_op* ops, int i, int num_ops)
             return cons(i, cons(j, 0));
         }
     }
-    return (Pair *)0;
+    return 0;
 }
 
 static Pair* peephole_add_string(zend_op* ops, int i, int num_ops)
