@@ -709,14 +709,9 @@ void apc_serialize_znode(znode* zn)
 {
 	SERIALIZE_SCALAR(zn->op_type, int);
 	switch(zn->op_type) {
-//	  case IS_UNUSED:
-//		break;
 	  case IS_CONST: 
 		apc_serialize_zval(&zn->u.constant);
 		break;
-//	  case IS_VAR:
-//		SERIALIZE_SCALAR(zn->u.var, zend_uint);
-//		break;
 	  default:
 		STORE_BYTES(&zn->u, sizeof(zn->u));
 		break;
@@ -727,15 +722,9 @@ void apc_deserialize_znode(znode* zn)
 {
 	DESERIALIZE_SCALAR(&zn->op_type, int);
 	switch(zn->op_type) {
-//	  case IS_UNUSED:
-//		break;
 	  case IS_CONST:
 		apc_deserialize_zval(&zn->u.constant);
 		break;
-//	  case IS_VAR:
-//		DESERIALIZE_SCALAR(&zn->u.var, zend_uint);
-//		zn->u.EA.type = 0;
-//		break;
 	  default:
 		LOAD_BYTES(&zn->u, sizeof(zn->u));
 		break;
@@ -981,8 +970,7 @@ void apc_deserialize_zend_function_table(HashTable* gft, apc_nametable_t* acc, a
 			strlen(zf->common.function_name)+1, zf,
 			sizeof(zend_function), NULL) == FAILURE)
 		{
-//			zend_error(E_WARNING, "failed to add '%s' to ftable\n", zf->common.function_name);
-//			assert(0); /* should never fail! */
+			zend_error(E_WARNING, "failed to add '%s' to ftable\n", zf->common.function_name);
 		}
 		apc_nametable_insert(acc, zf->common.function_name, 0);
 		apc_nametable_insert(priv, zf->common.function_name, 0);
@@ -1037,6 +1025,7 @@ void apc_deserialize_zend_class_table(HashTable* gct, apc_nametable_t* acc, apc_
 		if (zend_hash_add(gct, zc->name, zc->name_length + 1,
 			zc, sizeof(zend_class_entry), NULL) == FAILURE)
 		{
+			zend_error(E_WARNING,"Failed to add %s to CG(class_table", zc->name);
 			//assert(0); /* should never fail! */
 		}
 		apc_nametable_insert(acc, zc->name, 0);
