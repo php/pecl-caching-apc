@@ -24,10 +24,10 @@
 static int sma_initialized = 0;
 static int sma_numseg;
 static int sma_segsize;
-static int sma_shmid;
-static void* sma_shmaddr;
-static int* sma_segments;		/* points to shared memory */
-static void** sma_shmaddrs;		/* points to local (process) memory */
+//static int sma_shmid;
+//static void* sma_shmaddr;
+static int* sma_segments;
+static void** sma_shmaddrs;
 static int sma_lastseg = 0;
 static int sma_lock;
 
@@ -92,8 +92,10 @@ static int sma_allocate(void* shmaddr, int size, int smallblock)
 	minsize = INT_MAX;	/* used to find best fit */
 
 	prv = BLOCKAT(sizeof(header_t));
+fprintf(stderr, "start, prv=%d, prv->next=%d\n", prv, prv->next);
 	while (prv->next != 0) {
 		cur = BLOCKAT(prv->next);
+fprintf(stderr, "prv->next=%d, cur=%d\n", prv->next, cur);
 		if (cur->size == realsize) {
 			/* found a perfect fit, stop searching */
 			prvbestfit = prv;
@@ -187,7 +189,6 @@ static int sma_deallocate(void* shmaddr, int offset)
 
 void apc_sma_init(int numseg, int segsize)
 {
-	int size;
 	int i;
 
 	if (sma_initialized) {
@@ -198,13 +199,12 @@ void apc_sma_init(int numseg, int segsize)
 	sma_numseg = numseg;
 	sma_segsize = segsize;
 
-	size = sma_numseg*sizeof(int);
+//	size = sma_numseg*sizeof(int);
+//	sma_shmid = apc_shm_create(NULL, 0, size);
+//	sma_shmaddr = apc_shm_attach(sma_shmid);
+//	memset(sma_shmaddr, 0, size);
 
-	sma_shmid = apc_shm_create(NULL, 0, size);
-	sma_shmaddr = apc_shm_attach(sma_shmid);
-	memset(sma_shmaddr, 0, size);
-
-	sma_segments = (int*) sma_shmaddr;
+	sma_segments = (int*) apc_emalloc(sma_numseg*sizeof(int));
 	sma_shmaddrs = (void**) apc_emalloc(sma_numseg*sizeof(void*));
 
 	sma_lock = apc_sem_create(NULL, 0, 1);
@@ -214,7 +214,7 @@ void apc_sma_init(int numseg, int segsize)
 		block_t*	block;
 		void*		shmaddr;
 
-		sma_segments[i] = apc_shm_create(NULL, 0, sma_segsize);
+		sma_segments[i] = apc_shm_create(NULL, i, sma_segsize);
 		sma_shmaddrs[i] = apc_shm_attach(sma_segments[i]);
 		shmaddr = sma_shmaddrs[i];
 	

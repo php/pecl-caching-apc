@@ -348,7 +348,15 @@ static void increment_refcount(void *d)
 static ZEND_API void apc_execute(zend_op_array* op_array ELS_DC)
 {
 	old_execute(op_array ELS_DC);
-	apc_list_apply((apc_list*)op_array->reserved[0], increment_refcount);
+//	if(op_array->reserved[0] == 1) {
+//		apc_list_apply((apc_list*)op_array->reserved[1], increment_refcount);
+//	}
+
+	memset(op_array, 0, sizeof(op_array));
+
+	op_array->refcount = (int*) emalloc(sizeof(int));
+	op_array->refcount[0] = 1;
+	op_array->opcodes = (zend_op*) emalloc(sizeof(zend_op));
 }
 
 /* apc_compile_file: replacement for zend_compile_file */
@@ -428,8 +436,10 @@ ZEND_API zend_op_array* apc_shm_compile_file(zend_file_handle *file_handle,
 		&inputsize, mtime) == 1)
 	{
 		char *opkey;
-		int dummy, dummy2;
-		zend_op_array *new_op_array;
+		zend_op_array** new_op_array;
+		int length;
+		int size;
+
 		zend_llist_add_element(&CG(open_files), file_handle); /*  FIXME */
 		apc_init_deserializer(inputbuf, inputlen);
 		op_array = (zend_op_array*) emalloc(sizeof(zend_op_array));
@@ -447,12 +457,21 @@ ZEND_API zend_op_array* apc_shm_compile_file(zend_file_handle *file_handle,
 			acc_classtable, tables[1]);
 		opkey = (char *)apc_emalloc(strlen(key) + 4);
 		snprintf(opkey, strlen(key) + 4, "op:%s", key);
-		if(apc_cache_retrieve(cache, opkey, (char **) &new_op_array, &dummy,
-			&dummy2, mtime) != 1) 
+
+		new_op_array = (zend_op_array**) apc_emalloc(sizeof(zend_op_array*));
+		length = 0;
+		size = sizeof(zend_op_array*);
+
+		if (apc_cache_retrieve(cache, opkey, (char**) &new_op_array, &length,
+		                       &size, mtime) != 1) 
 		{
 			assert(0);
 		}
-		memcpy(op_array, new_op_array, sizeof(zend_op_array));
+
+		assert(length == sizeof(zend_op_array*));
+
+		memcpy(op_array, *new_op_array, sizeof(zend_op_array));
+		apc_efree(new_op_array);
 		return op_array;
 	}
 
@@ -508,7 +527,7 @@ ZEND_API zend_op_array* apc_shm_compile_file(zend_file_handle *file_handle,
 	{
 		char* buf;	/* will point to serialization buffer */
 		char* opkey;
-		int len;	/* will be length of serialization buffer */
+		int len, *refcount;	/* will be length of serialization buffer */
 		zend_op_array *new_op_array;
 
 		apc_init_serializer();
@@ -523,12 +542,22 @@ ZEND_API zend_op_array* apc_shm_compile_file(zend_file_handle *file_handle,
 		apc_serialize_zend_class_table(CG(class_table),
 			acc_classtable, tables[1]);
 		new_op_array = apc_copy_op_array(NULL, op_array);
+//		refcount = (int *) apc_emalloc(sizeof(int));
+//		refcount[0] = op_array->refcount[0];
+		destroy_op_array(op_array);
 		opkey = apc_emalloc(strlen(key) + 4);
 		snprintf(opkey, strlen(key) + 4, "op:%s", key);
-		apc_cache_insert(cache, opkey, (const char *) new_op_array, sizeof(zend_op_array), mtime);
+
+		apc_cache_insert(cache, opkey, (const char*) &new_op_array,
+		                 sizeof(zend_op_array*), mtime);
+
+		apc_get_serialized_data(&buf, &len);
 		apc_cache_insert(cache, key, buf, len, mtime);
+
 		apc_efree(opkey);
 		memcpy(op_array, new_op_array, sizeof(zend_op_array));
+//		op_array->refcount = refcount;
+		
 	}
 	
 	return op_array;

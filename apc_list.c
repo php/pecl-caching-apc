@@ -20,13 +20,16 @@ void apc_list_prepend(apc_list *list, void *data)
 
 	fprintf(stderr, "apc_list_prepend\n");
 	element = (apc_list_element *) list->list_ctor(sizeof(apc_list_element));
+fprintf(stderr, "element=%p\n", element);
 	if(list->head) {
+fprintf(stderr, "here 1\n");
 		element->next = list->head;
 		element->prev = NULL;
 		list->head->prev = element;
 		list->head = element;
 	}
 	else {
+fprintf(stderr, "here 2\n");
 		element->next = NULL;
 		element->prev = NULL;
 		list->head = element;
