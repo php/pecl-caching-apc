@@ -1,0 +1,16 @@
+Why Cache?
+
+When PHP executes a file, it compiles the file's source code into a series of instructions, or "opcodes," and then executes those instructions. Because the process of converting source code into executable instructions is costly in time and memory, we can benefit by storing the instructions for later use. Ideally, a file is compiled only when it is accessed for the first time, or when it changes.
+
+To explain simply, APC overrides PHP's compile routine, so that a cache is always consulted before compiling a file. If that file's instructions are already stored in the cache, the compilation step is skipped and the stored instructions are used. Otherwise, the compilation of the file proceeds and its instructions are inserted into the cache.
+
+
+Storing the Results of Compilation.
+
+The Zend PHP compiler stores compile results for a file in three places: an array of opcodes (in a struct of type 'zend_op_array', defined in 'zend_compile.h'), a global function table (of type 'HashTable', defined in 'zend_hash.h'), and a global class table (also of type 'HashTable'). The instructions in the 'zend_op_array' are the 
+
+
+
+
+When APC starts up it replaces the function pointer 'zend_compile_file' with its own compile function, 'apc_compile_file' (defined in 'apc_iface.c'). On shutdown, it reverses the change. 
+
