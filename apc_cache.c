@@ -57,7 +57,6 @@ struct apc_cache_t {
     header_t* header;           /* cache header (stored in SHM) */
     slot_t** slots;             /* array of cache slots (stored in SHM) */
     int num_slots;              /* number of slots in cache */
-    int mask;                   /* Mask to find necessary slot */
     int gc_ttl;                 /* maximum time on GC list for a slot */
     int lock;                   /* global semaphore lock */
 };
@@ -202,7 +201,6 @@ apc_cache_t* apc_cache_create(int size_hint, int gc_ttl)
 
     cache->slots = (slot_t**) (((char*) cache->shmaddr) + sizeof(header_t));
     cache->num_slots = num_slots;
-    cache->mask = 1 << num_slots;
     cache->gc_ttl = gc_ttl;
     cache->lock = CREATE_LOCK;
 
@@ -258,7 +256,7 @@ int apc_cache_insert(apc_cache_t* cache,
     LOCK(cache);
     process_pending_removals(cache);
 
-    slot = &cache->slots[hash(key) & cache->mask];
+    slot = &cache->slots[hash(key) % cache->num_slots];
     while (*slot) {
         if (key_equals((*slot)->key, key)) {
             if ((*slot)->key.mtime < key.mtime) {
@@ -288,7 +286,7 @@ apc_cache_entry_t* apc_cache_find(apc_cache_t* cache, apc_cache_key_t key)
 
     LOCK(cache);
 
-    slot = &cache->slots[hash(key) & cache->mask];
+    slot = &cache->slots[hash(key) % cache->num_slots];
     while (*slot) {
         if (key_equals((*slot)->key, key)) {
             if ((*slot)->key.mtime < key.mtime) {
