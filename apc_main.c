@@ -227,36 +227,6 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
 }
 /* }}} */
 
-/* {{{ my_execute */
-static void my_execute(zend_op_array* op_array TSRMLS_DC)
-{
-    old_execute(op_array TSRMLS_CC);
-
-/* Delaying the pop and release here to keep the cache entries on
- * the stack in case we get interrupted before request shutdown.
- * In the case of an interruption our module shutdown function may
- * need to clean everything up, and in order for it to remove the
- * function and class entries we may have added over the course of
- * this request we need to keep all our cache entries around.
- * This should mean we don't even need to override zend_execute with
- * this function anymore, so if this works well this entire function
- * should just go away.   -Rasmus
- */
-#if 0
-    if (apc_stack_size(APCG(cache_stack)) > 0) {
-        apc_cache_entry_t* cache_entry =
-            (apc_cache_entry_t*) apc_stack_top(APCG(cache_stack));
-
-        /* compare pointers to determine if op_array's are same */
-        if (cache_entry->op_array->opcodes == op_array->opcodes) {
-            apc_stack_pop(APCG(cache_stack));
-            apc_cache_release(APCG(cache), cache_entry);
-        }
-    }
-#endif
-}
-/* }}} */
-
 /* {{{ module init and shutdown */
 
 int apc_module_init()
@@ -278,10 +248,6 @@ int apc_module_init()
     old_compile_file = zend_compile_file;
     zend_compile_file = my_compile_file;
     
-    /* override execution */
-    old_execute = zend_execute;
-    zend_execute = my_execute;
-
     APCG(initialized) = 1;
     return 0;
 }
