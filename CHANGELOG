@@ -1,2 +1,3 @@
+* fixed support for intialization o class variables and objects [gws 01.13.2001]
 * added configurable comparison of file modification times to shared memory
 implementation. the new ini entry is 'check_mtime'. [djc 01.12.2001]
