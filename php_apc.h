@@ -49,9 +49,11 @@ ZEND_END_MODULE_GLOBALS(apc)
 
 #define APCG(v) (apc_globals.v)
 
+#define SHMDIRECT_MODE 3
 #define SHM_MODE  2
 #define MMAP_MODE 1
 #define OFF_MODE  0
+#define APC_SHMDIRECT_MODE  (APCG(mode) == SHMDIRECT_MODE)
 #define APC_SHM_MODE  APCG(mode) == SHM_MODE
 #define APC_MMAP_MODE APCG(mode) == MMAP_MODE
 #define APC_OFF_MODE  APCG(mode) == OFF_MODE

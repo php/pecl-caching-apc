@@ -98,6 +98,9 @@ static PHP_INI_MH(set_mode)
         else if (strcasecmp(new_value, "mmap") == 0) {
           APCG(mode) = MMAP_MODE;
         }
+		else if (strcasecmp(new_value, "shmdirect") == 0) {
+			APCG(mode) = SHMDIRECT_MODE;
+		}
         else {
           /*  be nice to wrongly configured apc - just switch off */
           APCG(mode) = OFF_MODE;

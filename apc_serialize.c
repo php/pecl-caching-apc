@@ -1520,8 +1520,13 @@ zend_op_array* apc_copy_op_array(zend_op_array* noa, zend_op_array* zoa, apc_mal
 	else {
 		noa->brk_cont_array = 0;
 	}
-	noa->static_variables = apc_copy_hashtable(NULL, zoa->static_variables, 
-		apc_copy_zval_ptr, sizeof(void*), ctor); 
+	if(zoa->static_variables) {
+		noa->static_variables = apc_copy_hashtable(NULL, zoa->static_variables, 
+			apc_copy_zval_ptr, sizeof(void*), ctor); 
+	}
+	else {
+		noa->static_variables = 0;
+	}
 	noa->filename = apc_vstrdup(zoa->filename, ctor);
 	noa->reserved[0] = (void *) magic;
 	return noa;

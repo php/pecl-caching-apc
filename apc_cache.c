@@ -644,6 +644,13 @@ int apc_cache_set_object_ttl(apc_cache_t* cache, const char* key, int ttl)
 }
 
 ///* apc_cache_dump: outputs cache information as HTML */
+void apc_cache_dump(apc_cache_t* cache, const char* linkurl,
+	apc_outputfn_t outputfn)
+{
+	outputfn("<html>\n");
+	outputfn("Temporarly Deprecated\n");
+	outputfn("</html>\n");
+}
 //void apc_cache_dump(apc_cache_t* cache, const char* linkurl,
 //	apc_outputfn_t outputfn)
 //{
@@ -794,6 +801,15 @@ int apc_cache_set_object_ttl(apc_cache_t* cache, const char* key, int ttl)
 //	UNLOCK(cache->lock);
 //}
 //
+int apc_cache_dump_entry(apc_cache_t* cache, const char* key,
+	apc_outputfn_t outputfn)
+{
+    outputfn("<html>\n");
+    outputfn("Temporarly Deprecated\n");
+    outputfn("</html>\n");
+	return 0;
+}
+
 //int apc_cache_dump_entry(apc_cache_t* cache, const char* key,
 //	apc_outputfn_t outputfn)
 //{
@@ -994,6 +1010,15 @@ int apc_cache_set_object_ttl(apc_cache_t* cache, const char* key, int ttl)
 //	UNLOCK(cache->lock);
 //	return 0;
 //}
+
+int apc_cache_index_shm(apc_cache_t* cache, zval **hash) 
+{
+    outputfn("<html>\n");
+    outputfn("Temporarly Deprecated\n");
+    outputfn("</html>\n");
+	return 0;
+}
+
 //
 //int apc_cache_index_shm(apc_cache_t* cache, zval **hash) {
 //	int i;
@@ -1025,6 +1050,14 @@ int apc_cache_set_object_ttl(apc_cache_t* cache, const char* key, int ttl)
 //	return 0;
 //}
 //
+int apc_cache_info_shm(apc_cache_t* cache, zval **hash) 
+{
+    outputfn("<html>\n");
+    outputfn("Temporarly Deprecated\n");
+    outputfn("</html>\n");
+	return 0;
+}
+
 //int apc_cache_info_shm(apc_cache_t* cache, zval **hash) {
 //        int i,j;
 //        double hitrate;
@@ -1081,6 +1114,15 @@ int apc_cache_set_object_ttl(apc_cache_t* cache, const char* key, int ttl)
 //        return 0;
 //}
 //
+int apc_object_info_shm(apc_cache_t* cache, char const*filename, zval **arr) 
+{
+    outputfn("<html>\n");
+    outputfn("Temporarly Deprecated\n");
+    outputfn("</html>\n");
+	return 0;
+}
+
+
 //int apc_object_info_shm(apc_cache_t* cache, char const*filename, zval **arr) {
 //  unsigned slot;          /* initial hash value */
 //  unsigned k;             /* second hash value, for open-addressing */
