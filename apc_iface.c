@@ -19,7 +19,7 @@
 #include "apc_cache.h"
 #include "apc_cache_mm.h"
 #include "apc_serialize.h"
-#include "apc_smm.h"
+#include "apc_sma.h"
 #include "apc_lib.h"
 #include "apc_crc32.h"
 #include "apc_nametable.h"
@@ -181,10 +181,11 @@ void apc_module_init()
 	acc_functiontable  = apc_nametable_create(ACC_FUNCTION_TABLE_SIZE);
 	acc_classtable     = apc_nametable_create(ACC_CLASS_TABLE_SIZE);
 
-	/* do apc one-time initialization */
-	if (APC_SHM_MODE) 
-          cache = apc_cache_create(NULL, APCG(hash_buckets), APCG(shm_segments), 
-	 	                   APCG(shm_segment_size), APCG(ttl));
+	/* do APC one-time initialization */
+	if (APC_SHM_MODE) {
+		apc_sma_init(APCG(shm_segments), APCG(shm_segment_size));
+		cache = apc_cache_create(NULL, APCG(hash_buckets), APCG(ttl));
+	}
 
 	/* initialize serialization buffers */
 	inputsize = 1;
@@ -206,7 +207,7 @@ void apc_module_shutdown()
           zend_hash_clean(&apc_mm_fl);	
 		}
 	if (APC_SHM_MODE) {
-		  apc_smm_cleanup();
+		  apc_sma_cleanup();
           apc_cache_destroy(cache);
 	}
 	apc_nametable_clear(filetable, tabledestructor);
