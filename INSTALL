@@ -25,11 +25,6 @@ apc.mode - See "Runtime configuration"
         apc.mode = shm # for using SHM support
         apc.mode = mmap # for using MMAP support 
    See FAQ for pros and contras of SHM / MMAP support
-6) in your php.ini file add the line
-  apc.mode = off # for switching off the APC
-        apc.mode = shm # for using SHM support
-        apc.mode = mmap # for using MMAP support
-   See FAQ for pros and contras of SHM / MMAP support
 7) You're all set!
 
 #################################################################
@@ -45,12 +40,7 @@ apc.mode - See "Runtime configuration"
         apc.mode = shm # for using SHM support
         apc.mode = mmap # for using MMAP support
    See FAQ for pros and contras of SHM / MMAP support
-5) in your php.ini file add the line
-  apc.mode = off # for switching off the APC
-        apc.mode = shm # for using SHM support
-        apc.mode = mmap # for using MMAP support
-   See FAQ for pros and contras of SHM / MMAP support
-6) You're all set!
+5) You're all set!
 
 
 #################################################################
