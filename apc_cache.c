@@ -30,8 +30,8 @@
 /* {{{ locking macros */
 #define CREATE_LOCK     apc_lck_create(NULL, 0, 1)
 #define DESTROY_LOCK(c) apc_lck_destroy(c->lock)
-#define LOCK(c)         apc_lck_lock(c->lock)
-#define UNLOCK(c)       apc_lck_unlock(c->lock)
+#define LOCK(c)         { HANDLE_BLOCK_INTERRUPTIONS(); apc_lck_lock(c->lock); }
+#define UNLOCK(c)       { apc_lck_unlock(c->lock); HANDLE_UNBLOCK_INTERRUPTIONS(); }
 /* }}} */
 
 /* {{{ struct definition: slot_t */
