@@ -79,14 +79,15 @@ static int alignword(int x)
 	return sizeof(word_t) * (1 + ((x-1)/sizeof(word_t)));
 }
 
+/* pow2: return the smallest power of 2 greater than or equal to x */
 static int pow2(int x)
 {
-      int p = 1;
+	int p = 1;
 
-      while (p < x) {
-              p <<= 1;
-      }
-      return p;
+	while (p < x) {
+		p <<= 1;
+	}
+	return p;
 }
 
 /* apc_smm_init: initialize the management system */
@@ -194,10 +195,9 @@ int apc_smm_alloc(void* shmaddr, int size)
 	/* realsize must be aligned to a word boundary on some architectures */
 	realsize = alignword(max(size + sizeof(int), sizeof(block_t)));
 	
-	/* make realsize the smallest power of 2 greater than or
-	 * equal to realsize.  We do this to minimize fagmentation by
-   * helping to guarantee that neighboring blocks can be coalesced */
-
+	/* set realsize to the smallest power of 2 greater than or equal to
+	 * realsize. this increases the likelihood that neighboring blocks
+	 * can be coalesced, reducing memory fragmentation */
 	realsize = pow2(realsize);
 
 	/* first insure that the segment contains at least realsize free
