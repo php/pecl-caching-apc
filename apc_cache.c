@@ -28,10 +28,10 @@
 #include <stdlib.h>
 #include <time.h>
 
-#undef USE_RWLOCK	/* this cache implementation is broken if readers-writer
-					 * locks are used, because it may attempt to modify
-					 * the cache with a read-only lock. USE_RWLOCK must
-					 * not be defined until the implementation is fixed */
+#define USE_RWLOCK	/* synchronize the cache with a readers-writer lock;
+                     * this should be more efficient in many cases, and
+					 * where it is not necessary, its extra overhead is
+					 * not significant */
 
 enum { MAX_KEY_LEN = 256 };			/* must be >= maximum path length */
 enum { DO_CHECKSUM = 0 };			/* if this is true, perform checksums */
