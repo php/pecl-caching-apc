@@ -12,7 +12,6 @@
  * ==================================================================
 */
 
-#include "zend.h"
 #include "apc_nametable.h"
 #include "apc_lib.h"
 #include <string.h>
@@ -20,6 +19,7 @@
 typedef struct link_t link_t;
 struct link_t {
 	char* key;			/* the hashed key */
+	void* value;		/* associated value */
 	link_t* next;		/* the next bucket in the chain */
 };
 
@@ -29,10 +29,11 @@ struct apc_nametable_t {
 };
 
 /* newlink: create and initialize a new link_t instance */
-static link_t* newlink(const char* key, link_t* next)
+static link_t* newlink(const char* key, void* value, link_t* next)
 {
 	link_t* link = (link_t*) malloc(sizeof(link_t));
 	link->key = apc_estrdup(key);
+	link->value = value;
 	link->next = next;
 	return link;
 }
@@ -68,13 +69,13 @@ apc_nametable_t* apc_nametable_create(int nbuckets)
 /* apc_nametable_destroy: free all memory associated with a name table */
 void apc_nametable_destroy(apc_nametable_t* table)
 {
-	apc_nametable_clear(table);
+	apc_nametable_clear(table, 0);
 	free(table->buckets);
 	free(table);
 }
 
 /* apc_nametable_insert: add a new key to the table if it doesn't exist */
-int apc_nametable_insert(apc_nametable_t* table, const char* key)
+int apc_nametable_insert(apc_nametable_t* table, const char* key, void* value)
 {
 	link_t** slot = &table->buckets[hash(key) % table->nbuckets];
 
@@ -84,19 +85,30 @@ int apc_nametable_insert(apc_nametable_t* table, const char* key)
 	if (*slot != 0) {
 		return 0;
 	}
-	*slot = newlink(key, 0);
+	*slot = newlink(key, value, 0);
 	return 1;
 }
 
 /* apc_nametable_search: return true is a key exists in table */
 int apc_nametable_search(apc_nametable_t* table, const char* key)
 {
-	link_t** slot = &table->buckets[hash(key) % table->nbuckets];
+	link_t* slot = table->buckets[hash(key) % table->nbuckets];
 
-	while (*slot != 0 && strcmp((*slot)->key, key) != 0) {
-		slot = &((*slot)->next);
+	while (slot != 0 && strcmp(slot->key, key) != 0) {
+		slot = slot->next;
 	}
-	return (*slot != 0); /* if (*slot != 0), strcmp returned 0 */
+	return (slot != 0); /* if (slot != 0), strcmp returned 0 */
+}
+
+/* apc_nametable_search: return true is a key exists in table */
+void* apc_nametable_retrieve(apc_nametable_t* table, const char* key)
+{
+	link_t* slot = table->buckets[hash(key) % table->nbuckets];
+
+	while (slot != 0 && strcmp(slot->key, key) != 0) {
+		slot = slot->next;
+	}
+	return (slot != 0) ? slot->value : 0;
 }
 
 /* apc_nametable_remove: remove a key from the table */
@@ -118,7 +130,8 @@ int apc_nametable_remove(apc_nametable_t* table, const char* key)
 }
 
 /* apc_nametable_clear: remove all keys from the table */
-void apc_nametable_clear(apc_nametable_t* table)
+void apc_nametable_clear(apc_nametable_t* table,
+	apc_nametable_destructor_t destructor)
 {
 	int i;
 
@@ -127,21 +140,54 @@ void apc_nametable_clear(apc_nametable_t* table)
 		while (p != 0) {
 			link_t* q = p;
 			p = p->next;
+			if (destructor != 0) {
+				destructor(q->value);
+			}
 			deletelink(q);
 		}
 	}
 	memset(table->buckets, 0, table->nbuckets * sizeof(link_t*));
 }
 
-void apc_nametable_dump(apc_nametable_t* table)
+/* apc_nametable_union: add elements in a to b */
+void apc_nametable_union(apc_nametable_t* a, apc_nametable_t* b)
 {
 	int i;
+
+	for (i = 0; i < b->nbuckets; i++) {
+		link_t* p = b->buckets[i];
+		while (p != 0) {
+			apc_nametable_insert(a, p->key, p->value);
+			p = p->next;
+		}
+	}
+}
+
+/* apc_nametable_difference: remove elements in b from a */
+void apc_nametable_difference(apc_nametable_t* a, apc_nametable_t* b)
+{
+	int i;
+
+	for (i = 0; i < b->nbuckets; i++) {
+		link_t* p = b->buckets[i];
+		while (p != 0) {
+			apc_nametable_remove(a, p->key);
+			p = p->next;
+		}
+	}
+}
+
+/* apc_nametable_dump: debug display of nametable */
+void apc_nametable_dump(apc_nametable_t* table, apc_outputfn_t outputfn)
+{
+	int i;
+
 	for (i = 0; i < table->nbuckets; i++) {
-    link_t* p = table->buckets[i];
-    while (p != 0) {
-      link_t* q = p;
-      p = p->next;
-			zend_error(E_WARNING, "nametable contains %s", q->key);
+		link_t* p = table->buckets[i];
+		while (p != 0) {
+			link_t* q = p;
+			p = p->next;
+			outputfn("nametable contains %s", q->key);
 		}
 	}
 }
