@@ -221,10 +221,12 @@ static void rewrite_inc(zend_op* ops, Pair* p)
     switch (ops[cadr(p)].opcode) {
       case ZEND_POST_INC:
         ops[cadr(p)].opcode = ZEND_PRE_INC;
+        ops[cadr(p)].result.op_type = IS_VAR;
         ops[cadr(p)].result.u.EA.type |= EXT_TYPE_UNUSED;
         break; 
       case ZEND_POST_DEC:
         ops[cadr(p)].opcode = ZEND_PRE_DEC;
+        ops[cadr(p)].result.op_type = IS_VAR;
         ops[cadr(p)].result.u.EA.type |= EXT_TYPE_UNUSED;
         break;
       default:
@@ -250,6 +252,60 @@ static void add_char_to_char(zval *result, zval *op1, zval *op2)
         result->value.str.val[0] = (char) op1->value.lval;
         result->value.str.val[1] = (char) op2->value.lval;
         result->type = IS_STRING;
+}
+
+
+static void rewrite_multiple_echo(zend_op* ops, Pair* p)
+{
+    zend_op* first;
+    zend_op* second;
+    int      newlen;
+   
+     first = &ops[car(p)];
+     second = &ops[cadr(p)];
+     
+     newlen = first->op1.u.constant.value.str.len + second->op1.u.constant.value.str.len;
+     first->op1.u.constant.value.str.val = erealloc(first->op1.u.constant.value.str.val, newlen);
+     memcpy(first->op1.u.constant.value.str.val + first->op1.u.constant.value.str.len,
+            second->op1.u.constant.value.str.val,
+            second->op1.u.constant.value.str.len);
+     first->op1.u.constant.value.str.len = newlen;
+  
+     clear_zend_op(second);
+}
+
+
+static void rewrite_const_cast(zend_op* ops, Pair* p)
+{
+    zend_op* cur;
+    zval convert;
+
+    cur = &ops[car(p)];
+
+    memcpy(&convert, &cur->op1.u.constant, sizeof(zval));
+    switch (cur->extended_value) {
+      case IS_NULL:
+        convert_to_null(&convert);
+        break;
+      case IS_BOOL:
+        convert_to_bool(&convert);
+        break;
+      case IS_LONG:
+        convert_to_long(&convert);
+        break;
+      case IS_DOUBLE:
+        convert_to_double(&convert);
+        break;
+      case IS_STRING:
+        convert_to_string(&convert);
+        break;
+    }
+    zval_dtor(&cur->op1.u.constant);
+    cur->opcode = ZEND_QM_ASSIGN;
+    cur->extended_value = 0;
+    cur->op1.op_type = IS_CONST;
+    memcpy(&cur->op1.u.constant, &convert, sizeof(zval));
+    cur->op2.op_type = IS_UNUSED;
 }
 
 static void rewrite_add_string(zend_op* ops, Pair* p)
@@ -487,6 +543,18 @@ static int is_pure_binary_op(zend_op* op)
 
 /* {{{ peephole match functions */
 
+static Pair* peephole_cast(zend_op* ops, int i, int num_ops)
+{
+    if (ops[i].opcode == ZEND_CAST &&
+        ops[i].op1.op_type == IS_CONST &&
+        ops[i].result.op_type == IS_TMP_VAR &&
+        ops[i].extended_value != IS_ARRAY &&
+        ops[i].extended_value != IS_OBJECT &&
+        ops[i].extended_value != IS_RESOURCE) {
+        return cons(i, 0);
+    }
+    return NULL;
+}
 
 static Pair* peephole_post_inc(zend_op* ops, int i, int num_ops)
 {
@@ -575,6 +643,25 @@ static Pair* peephole_inc(zend_op* ops, int i, int num_ops)
     }
 
     return 0;
+}
+
+
+static Pair* peephole_multiple_echo(zend_op* ops, int i, int num_ops)
+{
+    int j;
+
+    j = next_op(ops, i, num_ops);
+
+    if (j == num_ops) {
+        return NULL;
+    }
+
+    if (ops[i].opcode == ZEND_ECHO && ops[i].op1.op_type == IS_CONST &&
+        ops[j].opcode == ZEND_ECHO && ops[j].op1.op_type == IS_CONST) {
+        return cons(i, cons(j, 0));
+    }
+
+    return NULL;
 }
 
 static Pair* peephole_print(zend_op* ops, int i, int num_ops)
@@ -699,14 +786,21 @@ zend_op_array* apc_optimize_op_array(zend_op_array* op_array)
     jumps = build_jump_array(op_array);
     for (i = 0; i < op_array->last; i++) {
         Pair* p;
-/* For some reason this optimization _still_ causes a major slowdown
+        if ((p = peephole_cast(op_array->opcodes, i, op_array->last))) {
+            rewrite_const_cast(op_array->opcodes, p);
+            RESTART_PEEPHOLE_LOOP;
+        }
         if ((p = peephole_inc(op_array->opcodes, i, op_array->last))) {
             if (!are_branch_targets(cdr(p), jumps)) {
                 rewrite_inc(op_array->opcodes, p);
             }
             RESTART_PEEPHOLE_LOOP;
         }
-*/
+        if ((p = peephole_multiple_echo(op_array->opcodes, i, op_array->last))) {
+            if (!are_branch_targets(cdr(p), jumps)) {
+                rewrite_multiple_echo(op_array->opcodes, p);
+            }
+        }
         if ((p = peephole_print(op_array->opcodes, i, op_array->last))) {
             if (!are_branch_targets(cdr(p), jumps)) {
                 rewrite_print(op_array->opcodes, p);
