@@ -110,9 +110,12 @@ static int is_branch_op(int opcode)
 }
 
 /* squeezes no-ops out of the zend_op array */
-static int compress_ops(zend_op* ops, Pair** jumps, int num_ops)
+static int compress_ops(zend_op_array* op_array, Pair** jumps)
 {
-    int i, j;
+    int i, j, k, num_ops;
+
+    zend_op *ops = op_array->opcodes;
+    num_ops = op_array->last;
 
     for (i = 0, j = 0; j < num_ops; i++, j++) {
         if (ops[i].opcode == ZEND_NOP) {
@@ -123,6 +126,11 @@ static int compress_ops(zend_op* ops, Pair** jumps, int num_ops)
                 /* update branch targets */
                 for (branches = jumps[j]; branches; branches = cdr(branches)) {
                     change_branch_target(&ops[car(branches)], j, i);
+                }
+                for (k = 0; k < op_array->last_brk_cont; k++) {
+                    if(op_array->brk_cont_array[k].brk == j) {
+                        op_array->brk_cont_array[k].brk = i;
+                    }
                 }
                 /* quit when we've found a non-noop instruction */
                 if (ops[j].opcode != ZEND_NOP) {
@@ -255,7 +263,7 @@ static int next_op(zend_op* ops, int i, int num_ops)
 
 static void convert_switch(zend_op_array *op_array) 
 {
-    int i, nest_levels = 0;
+    int i, original_nest_levels, nest_levels = 0;
     int array_offset = 0;
     for (i = 0; i < op_array->last; i++) {
         zend_op *opline = &op_array->opcodes[i];
@@ -263,28 +271,26 @@ static void convert_switch(zend_op_array *op_array)
         if(opline->opcode != ZEND_BRK && opline->opcode != ZEND_CONT) {
             continue;
         }
-        if(opline->op2.op_type == IS_CONST && opline->op2.u.constant.type == IS_LONG) {
+        if(opline->op2.op_type == IS_CONST && 
+           opline->op2.u.constant.type == IS_LONG) {
             nest_levels = opline->op2.u.constant.value.lval;
+            original_nest_levels = nest_levels;
         } else {
-            assert(0);
+            continue;
         }
         array_offset = opline->op1.u.opline_num;
         do {
             if (array_offset < 0) {
-                 assert(0);
-                // fail
+                zend_error(E_ERROR, "Cannot break/continue %d level", 
+                           original_nest_levels);
             }
             jmp_to = &op_array->brk_cont_array[array_offset];
             if (nest_levels>1) {
                 zend_op *brk_opline = &op_array->opcodes[jmp_to->brk];
                 switch (brk_opline->opcode) {
                   case ZEND_SWITCH_FREE:
-                    // fail
-                    assert(0);
                     break;
                   case ZEND_FREE:
-                    // fail
-                    assert(0);
                     break;
                 }
             }
@@ -306,8 +312,9 @@ static void convert_switch(zend_op_array *op_array)
 
 
 /* returns list of potential branch targets for this op */
-static Pair* extract_branch_targets(zend_op* op)
+static Pair* extract_branch_targets(zend_op_array* op_array, int i)
 {
+    zend_op *op = &op_array->opcodes[i];
     switch (op->opcode) {
       case ZEND_JMP:
         return cons(op->op1.u.opline_num, 0);
@@ -320,21 +327,21 @@ static Pair* extract_branch_targets(zend_op* op)
         return cons(op->op2.u.opline_num, 0);
       case ZEND_JMPZNZ:
         return cons(op->op2.u.opline_num, cons(op->extended_value, 0));
-        
     }
     return 0;
 }
 
 /* retval[i] -> list of instruction indices that may branch to i */
-static Pair** build_jump_array(zend_op* ops, int num_ops)
+static Pair** build_jump_array(zend_op_array* op_array)
 {
     Pair** jumps;
-    int i;
+    int i, num_ops;
+    num_ops = op_array->last;
 
     jumps = (Pair**) malloc(num_ops * sizeof(Pair*));
     memset(jumps, 0, num_ops * sizeof(Pair*));
     for (i = 0; i < num_ops; i++) {
-        Pair* targets = extract_branch_targets(&ops[i]);
+        Pair* targets = extract_branch_targets(op_array, i);
         while (targets) {
             jumps[car(targets)] = cons(i, jumps[car(targets)]);
             targets = cdr(targets);
@@ -548,7 +555,7 @@ zend_op_array *apc_optimize_op_array(zend_op_array* op_array)
 
     convert_switch(op_array);
     jump_array_size = op_array->last;
-    jumps = build_jump_array(op_array->opcodes, jump_array_size);
+    jumps = build_jump_array(op_array);
     for (i = 0; i < op_array->last; i++) {
         Pair* p;
         if ((p = peephole_inc(op_array->opcodes, i, op_array->last))) {
@@ -564,7 +571,7 @@ zend_op_array *apc_optimize_op_array(zend_op_array* op_array)
             RESTART_PEEPHOLE_LOOP;
         }
     }
-    op_array->last = compress_ops(op_array->opcodes, jumps, op_array->last);
+    op_array->last = compress_ops(op_array, jumps);
     destroy_jump_array(jumps, jump_array_size);
 
     return op_array;
