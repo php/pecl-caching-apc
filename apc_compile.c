@@ -949,7 +949,7 @@ zend_class_entry* apc_copy_class_entry_for_execution(zend_class_entry* src, int 
                       (ht_copy_fun_t) apc_copy_function_for_execution_ex,
                       0,
                       apc_php_malloc);
-    }
+
     return dst;
 }
 /* }}} */
