@@ -120,7 +120,7 @@ int apc_nametable_remove(apc_nametable_t* table, const char* key)
 	while (*slot != 0 && strcmp((*slot)->key, key) != 0) {
 		slot = &((*slot)->next);
 	}
-	if (*slot != 0) {
+	if (*slot == 0) {
 		return 0;
 	}
 	q = *slot;
@@ -185,8 +185,10 @@ int apc_nametable_size(apc_nametable_t* table)
 
 	size = 0;
 	for (i = 0; i < table->nbuckets; i++) {
-		for (link_t* p = table->buckets[i]; p != 0; p = p->next) {
+		link_t* p = table->buckets[i];
+		while (p != 0) {
 			size++;
+			p = p->next;
 		}
 	}
 	return size;
