@@ -16,6 +16,7 @@
 #ifndef APC_IFACE_H
 #define APC_IFACE_H
 
+#include "zend.h"
 #include "apc_lib.h"
 
 /*
@@ -83,4 +84,8 @@ extern void apc_set_object_ttl(const char* name, int ttl);
  */
 extern int apc_dump_cache_object(const char* name, apc_outputfn_t outputfn);
 
+/*
+ * apc_cache_index: fills out a hash with cache object data
+ */
+extern int apc_cache_index(zval** hash);
 #endif
