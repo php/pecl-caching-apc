@@ -18,6 +18,11 @@ projects can happen.
 We would also like to thank Rasmus Lerdorf for encouraging us to take on this
 project.
 
+Contributors:
+ Yann Grossel
+ Thies Arntzen
+
 Special Thanks:
- Florian Baumert
- Christian Rishøj
+ Florian Baumert - help debugging phplib problems
+ Christian Rishøj - help debugging phplib problems
+ Vibol Hou -	- help debugging phplib problems

@@ -782,7 +782,6 @@ void apc_serialize_zend_class_entry(zend_class_entry* zce)
 void apc_deserialize_zend_class_entry(zend_class_entry* zce)
 {
 	int count, i, exists;
-	namearray_t* children;
 
 	DESERIALIZE_SCALAR(&zce->type, char);
 	apc_create_string(&zce->name);
@@ -1014,6 +1013,7 @@ void apc_serialize_zend_op_array(zend_op_array* zoa)
 
 void apc_deserialize_zend_op_array(zend_op_array* zoa)
 {
+	char *fname;
 	char exists;
 	int i;
 
@@ -1189,7 +1189,9 @@ void apc_deserialize_zend_op_array(zend_op_array* zoa)
 #endif
 	DESERIALIZE_SCALAR(&zoa->return_reference, zend_bool);
 	DESERIALIZE_SCALAR(&zoa->done_pass_two, zend_bool);
-	apc_create_string(&zoa->filename);
+	apc_create_string(&fname);
+	zoa->filename = zend_set_compiled_filename(fname);
+	efree(fname);
 }
 
 void apc_create_zend_op_array(zend_op_array** zoa)
@@ -1393,8 +1395,6 @@ static int store_class_table(void *element, int num_args,
 void apc_serialize_zend_class_table(HashTable* gct,
 	apc_nametable_t* acc, apc_nametable_t* priv)
 {
-	zend_class_entry* zc;
-
 	zend_hash_apply_with_arguments(gct, store_class_table, 2, acc, priv);
 	SERIALIZE_SCALAR(0, char);
 }
@@ -1403,7 +1403,6 @@ void apc_deserialize_zend_class_table(HashTable* gct, apc_nametable_t* acc, apc_
 {
 	char exists;
 	zend_class_entry* zc;
-	int status;
 
 	DESERIALIZE_SCALAR(&exists, char);
 	while (exists) {

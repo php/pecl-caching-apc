@@ -33,7 +33,6 @@ extern zend_apc_globals apc_globals;
 char *apc_generate_cache_filename(const char *filename)
 {
   static char cache_filename[1024];
-  char *cp;
 
   if(APCG(cachedir) == NULL)
   {
@@ -130,13 +129,10 @@ int apc_mmap_dump_entry(const char* filename, apc_outputfn_t outputfn)
 {
 
     static const char NBSP[] = "&nbsp;";
-    unsigned slot;      /* initial hash value */
-    unsigned k;         /* second hash value, for open-addressing */
-    int nprobe;         /* running count of cache probes */
     int nbuckets;
     int i, n, fd;
-	char* input;
-	char* cache_filename;
+		char* input;
+		char* cache_filename;
 
     HashTable function_table;
     HashTable class_table;
@@ -154,11 +150,11 @@ int apc_mmap_dump_entry(const char* filename, apc_outputfn_t outputfn)
 
     if( (n = stat(cache_filename, &statbuf)) < 0) {
         outputfn("error: '%s' is not in the cache\n", filename);
-        return;
+        return 1;
     }
     if( (fd = open(cache_filename, O_RDONLY)) < 0) {
         outputfn("error: '%s' is not in the cache\n", filename);
-        return;
+        return 1;
     }
     readw_lock(fd, 0, SEEK_SET, 0);
     input = (char *) mmap(0, statbuf.st_size,  PROT_READ,

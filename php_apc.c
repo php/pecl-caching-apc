@@ -148,6 +148,7 @@ static int printlog(const char* fmt, ...)
 	va_start(args, fmt);
 	zend_error(E_WARNING, fmt, args);
 	va_end(args);
+	return 0;
 }
 
 static void apc_init_globals(void)
@@ -330,7 +331,6 @@ PHP_FUNCTION(apc_dump_cache_object)
 PHP_FUNCTION(apc_cache_index)
 {
 	zval **hash;
-	int i;
 	int ac = ZEND_NUM_ARGS();
 
 	if(ac != 1 || zend_get_parameters_ex(ac, &hash) == FAILURE) {
