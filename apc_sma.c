@@ -303,7 +303,7 @@ void* apc_sma_malloc(size_t n)
 
     off = sma_allocate(sma_shmaddrs[sma_lastseg], n);
     if (off != -1) {
-        void* p = (void *)(((unsigned int)(sma_shmaddrs[sma_lastseg])) + off);
+        void* p = (void *)(((char *)(sma_shmaddrs[sma_lastseg])) + off);
         apc_lck_unlock(sma_lock);
         return p;
     }
@@ -314,7 +314,7 @@ void* apc_sma_malloc(size_t n)
         }
         off = sma_allocate(sma_shmaddrs[i], n);
         if (off != -1) {
-            void* p = (void *)(((unsigned int)(sma_shmaddrs[i])) + off);
+            void* p = (void *)(((char *)(sma_shmaddrs[i])) + off);
             apc_lck_unlock(sma_lock);
             sma_lastseg = i;
             return p;
@@ -339,7 +339,7 @@ void apc_sma_free(void* p)
     assert(sma_initialized);
 
     for (i = 0; i < sma_numseg; i++) {
-		unsigned int d_size = (unsigned int)p - (unsigned int)(sma_shmaddrs[i]);
+		unsigned int d_size = (unsigned int)((char *)p - (char *)(sma_shmaddrs[i]));
         if (p >= sma_shmaddrs[i] && d_size < sma_segsize) {
             sma_deallocate(sma_shmaddrs[i], d_size);
             apc_lck_unlock(sma_lock);
