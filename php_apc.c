@@ -292,46 +292,6 @@ ZEND_GET_MODULE(apc)
 
 /* }}} */
 
-/* {{{ zend extension definitions */
-
-ZEND_DLEXPORT int apc_zend_startup(zend_extension* e)
-{
-	return zend_startup_module(&apc_module_entry);
-}
-
-ZEND_DLEXPORT void apc_zend_shutdown(zend_extension* e)
-{
-    /* Do nothing */
-}
-
-#ifndef ZEND_EXT_API
-#define ZEND_EXT_API ZEND_DLEXPORT
-#endif
-
-ZEND_EXTENSION();
-
-ZEND_DLEXPORT zend_extension zend_extension_entry = {
-    "APC",
-    "2.0b",
-	"Daniel Cowgill <dcowgill@communityconnect.com>",
-	"http://apc.communityconnect.com/",
-	"Copyright (c) 2001-2003 by Community Connect Inc.",
-	apc_zend_startup,
-	apc_zend_shutdown,
-	NULL,                   /* activate_func_t */
-	apc_deactivate,         /* deactivate_func_t */
-	NULL,                   /* message_handler_func_t */
-	NULL,                   /* op_array_handler_func_t */
-	NULL,                   /* statement_handler_func_t */
-	NULL,                   /* fcall_begin_handler_func_t */
-	NULL,                   /* fcall_end_handler_func_t */
-	NULL,                   /* op_array_ctor_func_t */
-	NULL,                   /* op_array_dtor_func_t */
-	STANDARD_ZEND_EXTENSION_PROPERTIES
-};
-
-/* }}} */
-
 /*
  * Local variables:
  * tab-width: 4

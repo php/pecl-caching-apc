@@ -13,6 +13,7 @@ APC has been successfully compiled on the following platforms:
     o 4.2.2
     o 4.2.3
     o 4.3.0
+    o 4.3.2
 
 Versions prior to 4.2.2 have been officially deprecated by the PHP group, and
 therefore aren't supported by APC either.
@@ -26,7 +27,7 @@ These instructions assume your PHP installation is located in /usr/local/php.
 $ gunzip -c apc_x.y.tar.gz | tar xf -
 $ cd apc_x.y
 $ /usr/local/php/bin/phpize
-$ ./configure --with-php-config=/usr/local/bin/php-config
+$ ./configure --enable-apc
 $ make
 $ make install
 
@@ -39,7 +40,7 @@ that path to the screen.
 Next you must edit your php.ini file, which is normally located in
 /usr/local/php/lib/php.ini, and add the following line:
 
-    zend_extension="/path/to/php/extensions/apc.so"
+    extension="apc.so"
 
 Replace "/path/to/php/extensions" with whatever path was displayed when you
 ran make install above.
@@ -121,7 +122,7 @@ These instructions assume your PHP installation is located in /usr/local/php.
     phpize creates a configure script. The only option you need to specify is
     the location of your php-config script:
 
-        ./configure --with-php-config=/usr/local/bin/php-config
+        ./configure --with-enable-apc
 
     php-config should be located in the same directory as phpize.
 
@@ -129,10 +130,10 @@ These instructions assume your PHP installation is located in /usr/local/php.
     add --enable-mmap to your configure line.  If you don't understand the 
     difference between the two, stick with the default.
 
-	If you prefer to use fcntl() locks over sysv IPC semaphores, add
-	--enable-fcntl to your configure line.  If you don't have a problem
+	If you prefer to use sysv IPC semaphores over the safer fcntl() locks, add
+	--enable-sem to your configure line.  If you don't have a problem
 	with your server segaulting, or any other unnatural accumulation of
-	semaphores on your system, stick with the default.
+	semaphores on your system, the semaphore based locking is slightly faster.
 
 4.  Compile and install the files. Simply type: make install
 
@@ -150,7 +151,7 @@ These instructions assume your PHP installation is located in /usr/local/php.
     Copy the path /path/to/extension/ and add the following line to your
     php.ini file (normally located in /usr/local/php/lib/php.ini):
 
-        zend_extension="/path/to/extension/apc.so"
+        extension="apc.so"
 
     If you don't have a php.ini file in that location, you can create it now.
 
@@ -240,10 +241,11 @@ users should consider tuning the following parameters:
 
     apc.mmap_file_mask      If compiled with MMAP support by using --enable-mmap
                             this is the mktemp-style file_mask to pass to the
-			    mmap module for determing whether your mmap'ed memory
-			    region is going to be file-backed or shared memory
-			    backed.  To use POSIX-style shm_open/mmap put a ".shm"
-			    somewhere in your mask.  eg.  "/apc.shm.XXXXXX"
-			    You can also set it to "/dev/zero" to use your kernel's
-			    dev/zero interface to anonymous mmap'ed memory.  Leaving
-			    it undefined will force an anonymous mmap.
+                            mmap module for determing whether your mmap'ed memory
+                            region is going to be file-backed or shared memory
+                            backed.  To use POSIX-style shm_open/mmap put a ".shm"
+                            somewhere in your mask.  eg.  "/apc.shm.XXXXXX"
+                            You can also set it to "/dev/zero" to use your 
+                            kernel's /dev/zero interface to anonymous mmap'ed 
+                            memory.  Leaving it undefined will force an 
+                            anonymous mmap.
