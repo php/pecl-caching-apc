@@ -737,7 +737,6 @@ ZEND_API zend_op_array* apc_mmap_compile_file(zend_file_handle *file_handle,
 					!apc_check_compiled_file(file_handle->filename, &inputbuf, 
 					&inputlen)) 
 				{
-					printf("%s was preocmpiled\n", file_handle->filename);
 					apc_init_deserializer(inputbuf, inputlen);
 					op_array = (zend_op_array*) emalloc(sizeof(zend_op_array));
 					if(apc_deserialize_magic()) {
@@ -758,9 +757,14 @@ ZEND_API zend_op_array* apc_mmap_compile_file(zend_file_handle *file_handle,
     	            free(my_cache_filename);
         	        return op_array;
         		}
-				else {
-    				op_array = old_compile_file(file_handle, type CLS_CC);
-				}
+    				else {
+							if((op_array = old_compile_file(file_handle, type CLS_CC))==NULL) 
+							{
+								unlink(my_cache_filename);
+    	          free(my_cache_filename);
+								return op_array	;
+							}
+						}
 				if (seen) 
 				{
 		        	apc_nametable_difference(acc_functiontable, tables[0]);
@@ -799,9 +803,8 @@ ZEND_API zend_op_array* apc_mmap_compile_file(zend_file_handle *file_handle,
 	{
 		return old_compile_file(file_handle, type CLS_CC);
 	}
-	printf("opened %s to deserialize\n", cache_filename);
   	stat(cache_filename,&statbuf);
-	in_elem = (struct mm_fl_element*) malloc(sizeof(struct mm_fl_element));
+		in_elem = (struct mm_fl_element*) malloc(sizeof(struct mm_fl_element));
   	in_elem->inputlen = statbuf.st_size;
   	in_elem->inode = statbuf.st_ino;
   	in_elem->mtime = statbuf.st_mtime;
@@ -816,13 +819,11 @@ ZEND_API zend_op_array* apc_mmap_compile_file(zend_file_handle *file_handle,
 	if((mmapaddr = (char *)mmap(0, in_elem->inputlen, PROT_READ,
                                MAP_SHARED, fd, 0)) == (caddr_t)-1 )
 	{
-		old_compile_file(file_handle, type CLS_CC);
-		return op_array;
+		return old_compile_file(file_handle, type CLS_CC);
 	}
 	close(fd);
 	in_elem->input = mmapaddr;
 	zend_llist_add_element(&CG(open_files), file_handle); // FIXME
-	printf("initing deserializer\n");
 	apc_init_deserializer(in_elem->input, in_elem->inputlen);
 	
 	/* deserialize the global function/class tables. every object that
