@@ -205,7 +205,7 @@ PHP_GSHUTDOWN_FUNCTION(apc)
 /* {{{ proto int apcinfo([string uri])
 	Generate detailed information about the cache.  If uri is passed, link
 	all objects to uri, for detailed object information and deleteion
-	tags. *.
+	tags. */
 PHP_FUNCTION(apcinfo)
 {
 	zval** param;
