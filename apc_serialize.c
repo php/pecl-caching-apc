@@ -463,6 +463,19 @@ void apc_create_hashtable(HashTable** ht, void* funcptr, int datasize)
 	}
 }
 
+/* apc_serialize_zval_ptr() and apc_create_zval_ptr() are used to
+ * serialize and deserialize the default_properties table in class
+ * entries, which are tables of zval pointers, not zvals. */
+
+static void apc_serialize_zval_ptr(zval** zv)
+{
+        apc_serialize_zval(*zv);
+}
+
+static void apc_create_zval_ptr(zval*** zv)
+{
+        apc_create_zval(*zv);
+}
 
 /* type: zvalue_value */
 
@@ -496,7 +509,7 @@ void apc_serialize_zvalue_value(zvalue_value* zv, int type)
 		break;
 	  case IS_OBJECT:
 		apc_serialize_zend_class_entry(zv->obj.ce);
-		apc_serialize_hashtable(zv->obj.properties, apc_serialize_zval);
+		apc_serialize_hashtable(zv->obj.properties, apc_serialize_zval_ptr);
 		break;
 	  default:
 		/* The above list enumerates all types.  If we get here,
@@ -534,7 +547,7 @@ void apc_deserialize_zvalue_value(zvalue_value* zv, int type)
 		break;
 	  case IS_OBJECT:
 		apc_create_zend_class_entry(&zv->obj.ce);
-		apc_create_hashtable(&zv->obj.properties, apc_create_zval,
+		apc_create_hashtable(&zv->obj.properties, apc_create_zval_ptr,
 			sizeof(zval));
 		break;
 	  default:
@@ -623,19 +636,6 @@ void apc_deserialize_zend_overloaded_element(zend_overloaded_element* zoe)
 
 /* type: zend_class_entry */
 
-/* apc_serialize_zval_ptr() and apc_create_zval_ptr() are used to
- * serialize and deserialize the default_properties table in class
- * entries, which are tables of zval pointers, not zvals. */
-
-static void apc_serialize_zval_ptr(zval** zv)
-{
-	apc_serialize_zval(*zv);
-}
-
-static void apc_create_zval_ptr(zval*** zv)
-{
-	apc_create_zval(*zv);
-}
 
 void apc_serialize_zend_class_entry(zend_class_entry* zce)
 {
@@ -906,7 +906,7 @@ void apc_serialize_zend_op_array(zend_op_array* zoa)
 		STORE_BYTES(zoa->brk_cont_array, zoa->last_brk_cont *
 			sizeof(zend_brk_cont_element));
 	}
-	apc_serialize_hashtable(zoa->static_variables, apc_serialize_zval);
+	apc_serialize_hashtable(zoa->static_variables, apc_serialize_zval_ptr);
 #if SUPPORT_INTERACTIVE
 	/* we don't */
 #endif
@@ -947,7 +947,7 @@ void apc_deserialize_zend_op_array(zend_op_array* zoa)
 		LOAD_BYTES(zoa->brk_cont_array, zoa->last_brk_cont *
 			sizeof(zend_brk_cont_element));
 	}
-	apc_create_hashtable(&zoa->static_variables, apc_create_zval, sizeof(zval));
+	apc_create_hashtable(&zoa->static_variables, apc_create_zval_ptr, sizeof(zval));
 #if SUPPORT_INTERACTIVE
 	/* we accept patches */
 #endif
