@@ -538,6 +538,7 @@ int apc_cache_set_object_ttl(apc_cache_t* cache, const char* key, int ttl)
 		if (strcmp(buckets[slot].key, key) == 0) {
 			/* found the key */
 			buckets[slot].ttl = ttl;
+			UNLOCK(cache->lock);
 			return 1;
 		}
 		slot = (slot+k) % nbuckets;
