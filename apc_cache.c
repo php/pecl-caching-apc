@@ -437,7 +437,7 @@ void apc_cache_dump(apc_outputfn_t outputfn, apc_cache_t* cache)
 
 	//apc_rwl_writelock(cache->lock);
 	apc_rwl_readlock(cache->lock);
-
+	outputfn("<html>\n<head>\n\t<title>APC-SHM Cache Info\n</title>\n</head>\n");
 	outputfn("*** begin cache info ***<br>\n");
 	outputfn("header.magic: %x<br>\n", cache->header->magic);
 	outputfn("header.nbuckets: %d<br>\n", cache->header->nbuckets);
@@ -451,8 +451,22 @@ void apc_cache_dump(apc_outputfn_t outputfn, apc_cache_t* cache)
 	outputfn("creation pathname: '%s'<br>\n", cache->pathname);
 	outputfn("<br>\n");
 
+	outputfn("<table BORDER=0 CELLSPACING=0 CELLPADDING=0 WIDTH=\"98%\"
+            BGCOLOR=\"#006666\" >");
+	outputfn("<tr BGCOLOR=\"#0000FF\">\n");
+	outputfn("<td>Bucket</td><td>Key</td><td>offset</td><td>length</td><td>
+					lastaccess</td><td>hitcount</td><td>expiretime</td><td>checksum</td>\n");
+	outputfn("</tr>\n");
 	for (i = 0; i < cache->header->nbuckets; i++) {
 		if (cache->buckets[i].shmid >= 0) {
+			outputfn("<tr>\n");
+			outputfn("<td>%d</td>%s</td><td>%d</td><td>%d</td><td>%d</td><td>%d</td>
+						<td>%d</td><td>%u</td>\n", i, cache->buckets[i].key, 
+						cache->buckets[i].offset, cache->buckets[i].length,
+						cache->buckets[i].lastaccess, cache->buckets[i].hitcount, 
+						cache->buckets[i].expiretime, cache->buckets[i].checksum);
+			outputfn("</tr>\n");
+/*
 			outputfn("=> bucket %d (key='%s', h%%N=%u, h2%%N=%u)<br>\n",
 				i, cache->buckets[i].key,
 				hash(cache->buckets[i].key) % cache->header->nbuckets,
@@ -463,10 +477,13 @@ void apc_cache_dump(apc_outputfn_t outputfn, apc_cache_t* cache)
 			outputfn("   bucket %d (hitcount=%d, expiretime=%d, checksum=%u)<br>\n",
 				i, cache->buckets[i].hitcount, cache->buckets[i].expiretime,
 				cache->buckets[i].checksum);
+*/
 		}
 	}
-	outputfn("<br>\n");
-
+	outputfn("</tr>\n");
+//	outputfn("<br>\n");
+	outputfn("<tr BGCOLOR=\"#0000FF\">\n");
+	outputfn("<center><td>Cache segment info</td></tr>\n");
 	for (i = 0; i < cache->header->maxseg; i++) {
 		if (cache->segments[i].shmid > 0) {
 			outputfn("=> contents of segment %d:<br>\n", i);
@@ -474,7 +491,7 @@ void apc_cache_dump(apc_outputfn_t outputfn, apc_cache_t* cache)
 		}
 	}
 
-	outputfn("*** end cache info ***<br>\n");
+//	outputfn("*** end cache info ***<br>\n");
 
 	apc_rwl_unlock(cache->lock);
 }
