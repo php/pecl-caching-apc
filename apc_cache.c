@@ -265,14 +265,13 @@ apc_cache_t* apc_cache_create(const char* pname, int nbuckets,
 	int cachesize;
 
 	#ifdef USE_FCNTL_LOCK
-		pathname = strdup("/tmp/.apc.lock");
+		pathname = apc_estrdup("/tmp/.apc.lock");
 	#else
 		pathname = (char *) pname;
 	#endif
 	if (apc_create_lock(pathname) < 0 ) {
 	
 	}	
-	printf("DEBUG %s is the pathname %s is the pname", pathname, pname);
 	cache = (apc_cache_t*) apc_emalloc(sizeof(apc_cache_t));
 	cachesize = computecachesize(nbuckets, maxseg);
 
