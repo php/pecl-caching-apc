@@ -38,12 +38,8 @@ union semun {
 };
 #endif
 
-#ifndef SEM_R
-# define SEM_R 0444	/* read permission */
-#endif
-#ifndef SEM_A
-# define SEM_A 0222	/* write permission */
-#endif
+# define APC_SEM_R 0444	/* read permission */
+# define APC_SEM_A 0222	/* write permission */
 
 /* always use SEM_UNDO, otherwise we risk deadlock */
 #define USE_SEM_UNDO
@@ -63,7 +59,7 @@ int apc_sem_create(const char* pathname, int proj, int initval)
 	union semun arg;
 	key_t key;
 
-	perms = SEM_R | SEM_A;
+	perms = APC_SEM_R | APC_SEM_A;
 
 	key = IPC_PRIVATE;
 	if (pathname != NULL) {
