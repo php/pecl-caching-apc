@@ -47,6 +47,7 @@ extern double apc_timerreport(void);
 /* filesystem routines */
 
 extern int apc_ropen(const char *pathname, int flags, int mode);
+extern const char* apc_rstat(const char* filename, const char* searchpath);
 
 
 /* zend-related */

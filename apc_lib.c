@@ -155,6 +155,7 @@ int apc_ropen(const char* pathname, int flags, int mode)
 	/* under the assumption that the file could not be opened because
 	 * intermediate directories to it need to be created, move along
 	 * the pathname and create those directories */
+
 	if(*pathname == PATH_SEPARATOR) {
 		p = strchr(pathname +1, PATH_SEPARATOR);
 	}
@@ -172,6 +173,39 @@ int apc_ropen(const char* pathname, int flags, int mode)
 	}
 
 	return open(pathname, flags, mode);
+}
+
+const char* apc_rstat(const char* filename, const char* searchpath)
+{
+	static const char SEPARATOR = ':';
+	static char try[1024];	/* filename to try */
+	char* path;				/* working copy of searchpath */
+	char* p;				/* start of current path string */
+	char* q;				/* pointer to next SEPARATOR in path */
+	struct stat st;
+
+	if (!searchpath) {
+		return filename;
+	}
+	
+	p = path = apc_estrdup(searchpath);
+
+	do {
+		if ((q = strchr(p, SEPARATOR)) != 0) {
+			*q = '\0';
+		}
+		snprintf(try, sizeof(try), "%s/%s", p, filename);
+		if (stat(try, &st) == 0) {
+			free(path);
+			return try;
+		}
+		if (q != 0) {
+			q++;
+		}
+	} while ((p = q) != 0);
+
+	free(path);
+	return filename;
 }
 
 
