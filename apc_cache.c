@@ -526,7 +526,19 @@ int apc_cache_make_file_key(apc_cache_key_t* key,
 
     key->data.file.device = buf.st_dev;
     key->data.file.inode  = buf.st_ino;
-    key->mtime  = (buf.st_ctime > buf.st_mtime) ? buf.st_ctime : buf.st_mtime;
+
+    /* 
+     * If working with content management systems that like to munge the mtime, 
+     * it might be appropriate to key off of the ctime to be immune to systems
+     * that try to backdate a template.  If the mtime is set to something older
+     * than the previous mtime of a template we will obviously never see this
+     * "older" template.  At some point the Smarty templating system did this.
+     * I generally disagree with using the ctime here because you lose the 
+     * ability to warm up new content by saving it to a temporary file, hitting
+     * it once to cache it and then renaming it into its permanent location.
+     */
+    /* key->mtime  = (buf.st_ctime > buf.st_mtime) ? buf.st_ctime : buf.st_mtime; */
+    key->mtime = buf.st_mtime;
     return 1;
 }
 /* }}} */
