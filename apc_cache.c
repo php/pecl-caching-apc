@@ -180,8 +180,10 @@ static void initcache(apc_cache_t* cache, const char* pathname,
 	}
 
 	/* create the first shared memory segment */
-	cache->segments[0].shmid  = apc_shm_create(pathname, 1, segsize);
-	apc_smm_initsegment(cache->segments[0].shmid, segsize);
+	for(i = 0; i < maxseg; i++) {
+		cache->segments[i].shmid  = apc_shm_create(NULL, 1, segsize);
+		apc_smm_initsegment(cache->segments[i].shmid, segsize);
+	}
 }
 
 
@@ -629,7 +631,7 @@ int apc_cache_insert(apc_cache_t* cache, const char* key,
 	offset = 0;
 	for (i = 0; i < maxseg; i++) {
 		if (segments[i].shmid == 0) { /* segment not initialized */
-			segments[i].shmid = apc_shm_create(cache->pathname, i+2, segsize);
+			segments[i].shmid = apc_shm_create(cache->pathname, i+1, segsize);
 			apc_smm_initsegment(segments[i].shmid, segsize);
 		}
 		shmaddr = apc_smm_attach(segments[i].shmid);
