@@ -232,24 +232,55 @@ static void rewrite_inc(zend_op* ops, Pair* p)
     clear_zend_op(&ops[caddr(p)]);  // don't need this anymore
 }
 
+static void add_string_to_char(zval *result, zval *op1, zval *op2)       
+{  
+        result->value.str.len = op1->value.str.len + 1;
+        result->value.str.val = (char *) emalloc(result->value.str.len+1);
+        result->value.str.val[0] = (char) op1->value.lval;
+        memcpy(result->value.str.val + 1, op2->value.str.val, op2->value.str.len);
+        result->type = IS_STRING;
+}
+
+static void add_char_to_char(zval *result, zval *op1, zval *op2)       
+{  
+        result->value.str.len = 2;
+        result->value.str.val = (char *) emalloc(2);
+        result->value.str.val[0] = (char) op1->value.lval;
+        result->value.str.val[1] = (char) op2->value.lval;
+        result->type = IS_STRING;
+}
+
 static void rewrite_add_string(zend_op* ops, Pair* p)
 {
     int curr = car(p);
 
-    assert(pair_length(p) >= 2);
+    assert(pair_length(p) == 2);
 
     for (p = cdr(p); p; p = cdr(p)) {
-        switch (ops[curr].opcode) {
-          case ZEND_ADD_STRING:
-            add_string_to_string(&ops[car(p)].op2.u.constant,
+        if(ops[car(p)].opcode == ZEND_ADD_STRING) {
+            if(ops[curr].opcode == ZEND_ADD_CHAR) {
+                add_char_to_string(&ops[car(p)].op2.u.constant,
+                                   &ops[car(p)].op2.u.constant,
+                                   &ops[curr].op2.u.constant);
+            } else if (ops[curr].opcode == ZEND_ADD_STRING) {
+                add_string_to_char(&ops[car(p)].op2.u.constant,
+                                   &ops[car(p)].op2.u.constant,
+                                   &ops[curr].op2.u.constant);
+            }
+        } else if (ops[car(p)].opcode == ZEND_ADD_CHAR) {
+            if(ops[curr].opcode == ZEND_ADD_CHAR) {
+                add_char_to_char(&ops[car(p)].op2.u.constant,
                                  &ops[car(p)].op2.u.constant,
                                  &ops[curr].op2.u.constant);
-            break;
-          case ZEND_ADD_CHAR:
-            add_char_to_string(&ops[car(p)].op2.u.constant,
-                                 &ops[car(p)].op2.u.constant,
-                                 &ops[curr].op2.u.constant);
-            break;
+                ops[car(p)].opcode = ZEND_ADD_STRING;
+                ops[car(p)].op2.u.constant.type = IS_STRING;
+            } else if (ops[curr].opcode == ZEND_ADD_STRING) {
+                add_string_to_char(&ops[car(p)].op2.u.constant,
+                                   &ops[car(p)].op2.u.constant,
+                                   &ops[curr].op2.u.constant);
+                ops[car(p)].opcode = ZEND_ADD_STRING;
+                ops[car(p)].op2.u.constant.type = IS_STRING;
+            }
         }
         clear_zend_op(ops + curr);
         curr = car(p);
@@ -660,7 +691,6 @@ zend_op_array* apc_optimize_op_array(zend_op_array* op_array)
     if (!op_array->opcodes) {
         return op_array;
     }
-
     convert_switch(op_array);
     jump_array_size = op_array->last;
     jumps = build_jump_array(op_array);
@@ -671,7 +701,6 @@ zend_op_array* apc_optimize_op_array(zend_op_array* op_array)
          *
         if ((p = peephole_inc(op_array->opcodes, i, op_array->last))) {
             if (!are_branch_targets(cdr(p), jumps)) {
-                fprintf(stderr, "inc\n");
                 rewrite_inc(op_array->opcodes, p);
             }
             RESTART_PEEPHOLE_LOOP;
@@ -679,34 +708,30 @@ zend_op_array* apc_optimize_op_array(zend_op_array* op_array)
         */
         if ((p = peephole_print(op_array->opcodes, i, op_array->last))) {
             if (!are_branch_targets(cdr(p), jumps)) {
-                fprintf(stderr, "print\n");
                 rewrite_print(op_array->opcodes, p);
             }
             RESTART_PEEPHOLE_LOOP;
         }
         if ((p = peephole_constant_fold(op_array->opcodes, i, op_array->last))) {
             if (!are_branch_targets(cdr(p), jumps)) {
-                fprintf(stderr, "fold\n");
                 rewrite_constant_fold(op_array->opcodes, p);
             }
             RESTART_PEEPHOLE_LOOP;
         }
         if ((p = peephole_fcall(op_array->opcodes, i, op_array->last))) {
             if (!are_branch_targets(cdr(p), jumps)) {
-                fprintf(stderr, "fcall\n");
                 rewrite_fcall(op_array->opcodes, p);
             }
             RESTART_PEEPHOLE_LOOP;
         }
         if ((p = peephole_add_string(op_array->opcodes, i, op_array->last))) {
             if (!are_branch_targets(cdr(p), jumps)) {
-                fprintf(stderr, "interp\n");
                 rewrite_add_string(op_array->opcodes, p);
             }
             RESTART_PEEPHOLE_LOOP;
         }
     }
-    op_array->last = compress_ops(op_array, jumps);
+  //  op_array->last = compress_ops(op_array, jumps);
     destroy_jump_array(jumps, jump_array_size);
 
     return op_array;
