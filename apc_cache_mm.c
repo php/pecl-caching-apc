@@ -82,7 +82,7 @@ void apc_mmap_dump(HashTable* cache, const char *linkurl, apc_outputfn_t outputf
 
  /* display bucket info */
 	outputfn("<table border=1 cellpadding=2 cellspacing=1>\n");
-	outputfn("<tr><FORM METHOD=POST ACTION=\"%s\">\n", linkurl);
+	outputfn("<tr><form method=post action=%s>\n", linkurl);
 	outputfn("<tr>\n");
 	outputfn("<td colspan=6 bgcolor=#dde4ff>Child Cache Data</td>\n");
 	outputfn("<tr>\n");
@@ -97,20 +97,19 @@ void apc_mmap_dump(HashTable* cache, const char *linkurl, apc_outputfn_t outputf
 		struct mm_fl_element *in_elem;
 		in_elem = (struct mm_fl_element *) p->pData;
 		outputfn("<tr>\n");
+
 	 	if (linkurl != 0) {
-            outputfn("<td bgcolor=#eeeeee><INPUT TYPE=CHECKBOX NAME=\"APC_RM\" VALUE=\"%s\"> &nbsp </td>\n",
-                p->arKey);
+            outputfn("<td bgcolor=#eeeeee><input type=checkbox "
+			         "name=apc_rm[] value=%s>&nbsp</td>\n",
+					 p->arKey);
+            outputfn("<td bgcolor=#eeeeee><a href=%s?apc_info=%s>"
+			         "%s</a></td>\n", linkurl, p->arKey, p->arKey);
         }
         else {
             outputfn("<td bgcolor=#eeeeee>&nbsp</td>\n");
-        }
-		if (linkurl != 0) {
-            outputfn("<td bgcolor=#eeeeee><a href=%s?APC_INFO=%s>%s</a></td>\n",
-                linkurl, p->arKey, p->arKey);
-        }
-        else {
             outputfn("<td bgcolor=#eeeeee>%s</td>\n", p->arKey);
         }
+		
 		outputfn("<td bgcolor=#eeeeee>%d</td>\n", in_elem->inputlen);
 		outputfn("<td bgcolor=#eeeeee>%d</td>\n", in_elem->mtime);
 		outputfn("<td bgcolor=#eeeeee>%d</td>\n", in_elem->hitcounter);
@@ -119,9 +118,10 @@ void apc_mmap_dump(HashTable* cache, const char *linkurl, apc_outputfn_t outputf
 		p = p->pListNext;
 	}
 	if(linkurl != 0 ) {
-        outputfn("<tr><td><INPUT type=submit name=submit value=\"Delete Marked Objects\"></tr></td>\n");
+        outputfn("<tr><td><input type=submit name=submit "
+		         "value=\"Delete Marked Objects\"></tr></td>\n");
     }
-    outputfn("</FORM>\n");
+    outputfn("</form>\n");
 	outputfn("</table>\n");
 	outputfn("<br>\n");
 	outputfn("<br>\n");
