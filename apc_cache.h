@@ -43,7 +43,7 @@ extern void apc_cache_destroy(apc_cache_t* cache);
 extern void apc_cache_clear(apc_cache_t* cache);
 
 /*
- * apc_cache_search:
+ * apc_cache_search: returns true if key exists in cache, else false
  */
 extern int apc_cache_search(apc_cache_t* cache, const char* key);
 
