@@ -283,6 +283,12 @@ static void rewrite_print(zend_op* ops, Pair* p)
     clear_zend_op(&ops[cadr(p)]);  // don't need this anymore
 }
 
+static void rewrite_fcall(zend_op* ops, Pair* p) 
+{
+    assert(pair_length(p) == 2);
+    clear_zend_op(ops + car(p));
+    ops[cadr(p)].opcode = ZEND_DO_FCALL;
+}
 
 
 /* }}} */
@@ -619,11 +625,31 @@ static Pair* peephole_add_string(zend_op* ops, int i, int num_ops)
     return p;
 }
 
+static Pair* peephole_fcall(zend_op* ops, int i, int num_ops)
+{
+    int j;  /* next op after i */
+    j = next_op(ops, i, num_ops);
+
+    if (j == num_ops)
+        return 0;   /* not enough ops left to match */
+    if(ops[i].opcode == ZEND_INIT_FCALL_BY_NAME &&
+       ops[i].op1.op_type == IS_UNUSED &&
+       ops[i].op2.op_type == IS_CONST &&
+       ops[j].opcode == ZEND_DO_FCALL_BY_NAME &&
+       ops[j].op1.op_type == IS_CONST &&
+       ops[j].extended_value == 0 && 
+       !zend_binary_zval_strcmp(&ops[i].op2.u.constant, &ops[j].op1.u.constant)) {
+
+       return cons(i, cons(j,0));
+    }
+    return 0;
+}
+
 /* }}} */
 
 /* {{{ apc_optimize_op_array */
 
-zend_op_array *apc_optimize_op_array(zend_op_array* op_array)
+zend_op_array* apc_optimize_op_array(zend_op_array* op_array)
 {
     #define RESTART_PEEPHOLE_LOOP { pair_destroy(p); i = -1; continue; }
 
@@ -655,6 +681,12 @@ zend_op_array *apc_optimize_op_array(zend_op_array* op_array)
         if ((p = peephole_constant_fold(op_array->opcodes, i, op_array->last))) {
             if (!are_branch_targets(cdr(p), jumps)) {
                 rewrite_constant_fold(op_array->opcodes, p);
+            }
+            RESTART_PEEPHOLE_LOOP;
+        }
+        if ((p = peephole_fcall(op_array->opcodes, i, op_array->last))) {
+            if (!are_branch_targets(cdr(p), jumps)) {
+                rewrite_fcall(op_array->opcodes, p);
             }
             RESTART_PEEPHOLE_LOOP;
         }
