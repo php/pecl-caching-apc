@@ -215,7 +215,6 @@ void apc_sma_init(int numseg, int segsize)
 #endif
 {
     int i;
-    char *lock_path = NULL;
 
     if (sma_initialized) {
         return;
@@ -242,10 +241,7 @@ void apc_sma_init(int numseg, int segsize)
     sma_segments = (int*) apc_emalloc(sma_numseg*sizeof(int));
     sma_shmaddrs = (void**) apc_emalloc(sma_numseg*sizeof(void*));
     
-    lock_path = malloc(strlen("/tmp/.apc.") + 6);
-    snprintf(lock_path, strlen("/tmp/.apc.") + 6, "/tmp/.apc.%d", getpid());
-    sma_lock = apc_lck_create(lock_path, 0, 1);
-    free(lock_path);
+    sma_lock = apc_lck_create(NULL, 0, 1);
 
     for (i = 0; i < sma_numseg; i++) {
         header_t*   header;

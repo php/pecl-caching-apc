@@ -17,17 +17,17 @@
 /* $Id$ */
 
 #include "apc_cache.h"
-#include "apc_sem.h"
+#include "apc_lock.h"
 #include "apc_sma.h"
 #include "SAPI.h"
 
 /* TODO: rehash when load factor exceeds threshold */
 
 /* {{{ locking macros */
-#define CREATE_LOCK     apc_sem_create(NULL, 0, 1)
-#define DESTROY_LOCK(c) apc_sem_destroy(c->lock)
-#define LOCK(c)         apc_sem_lock(c->lock)
-#define UNLOCK(c)       apc_sem_unlock(c->lock)
+#define CREATE_LOCK     apc_lck_create(NULL, 0, 1)
+#define DESTROY_LOCK(c) apc_lck_destroy(c->lock)
+#define LOCK(c)         apc_lck_lock(c->lock)
+#define UNLOCK(c)       apc_lck_unlock(c->lock)
 /* }}} */
 
 /* {{{ struct definition: slot_t */
