@@ -51,7 +51,7 @@ const char *apc_generate_cache_filename(char *filename)
 /* apc_mmap_dump recurses through the called child's cache table,
  * displaying the objects and their hit counts */
 
-void apc_mmap_dump(HashTable* cache, const char *url, apc_outputfn_t outputfn)
+void apc_mmap_dump(HashTable* cache, const char *linkurl, apc_outputfn_t outputfn)
 {
 	Bucket *p;
  /* display HEAD */
@@ -95,7 +95,13 @@ void apc_mmap_dump(HashTable* cache, const char *url, apc_outputfn_t outputfn)
 		struct mm_fl_element *in_elem;
 		in_elem = (struct mm_fl_element *) p->pData;
 		outputfn("<tr>\n");
-		outputfn("<td bgcolor=#eeeeee>%s</td>\n", p->arKey);
+		if (linkurl != 0) {
+            outputfn("<td bgcolor=#eeeeee><a href=%s%s>%s</a></td>\n",
+                linkurl, p->arKey, p->arKey);
+        }
+        else {
+            outputfn("<td bgcolor=#eeeeee>%s</td>\n", p->arKey);
+        }
 		outputfn("<td bgcolor=#eeeeee>%d</td>\n", in_elem->inputlen);
 		outputfn("<td bgcolor=#eeeeee>%d</td>\n", in_elem->mtime);
 		outputfn("<td bgcolor=#eeeeee>%d</td>\n", in_elem->hitcounter);
@@ -125,6 +131,7 @@ int apc_mmap_dump_entry(const char* filename, apc_outputfn_t outputfn)
     zend_op_array* op_array;
 	struct stat statbuf;
     Bucket* p;
+    Bucket* q;
 	
 	cache_filename = apc_generate_cache_filename(filename);
 	op_array = (zend_op_array*) malloc(sizeof(zend_op_array));
@@ -239,12 +246,25 @@ int apc_mmap_dump_entry(const char* filename, apc_outputfn_t outputfn)
     outputfn("<td valign=top>");
     outputfn("<table border=1 cellpadding=2 cellspacing=1>\n");
     outputfn("<tr>\n");
-    outputfn("<td bgcolor=#dde4ff>Classes</td>\n");
+    outputfn("<td colspan=2 bgcolor=#dde4ff>Classes</td>\n");
+	outputfn("<tr>\n");
+	outputfn("<td bgcolor=#ffffff>Class</td>\n");
+	outputfn("<td bgcolor=#ffffff>Function</td>\n");
     p = class_table.pListHead;
     while (p) {
         zend_class_entry* zc = (zend_class_entry*) p->pData;
         outputfn("<tr>\n");
-        outputfn("<td bgcolor=#eeeeee>%s</td>\n", zc->name);
+        outputfn("<td bgcolor=#eeeeee>%s</td><td bgcolor=#eeeeee>&nbsp</td>\n", 
+			zc->name);
+		q = zc->function_table.pListHead;
+		while(q) {
+			zend_function* zf = (zend_function*) q->pData;
+			outputfn("<tr>\n");
+			outputfn("<td bgcolor=#eeeeee>&nbsp</td>\n");
+			outputfn("<td bgcolor=#eeeeee>%s</td>\n",
+            	zf->common.function_name);
+        	q = p->pListNext;
+    	}
         p = p->pListNext;
     }
     outputfn("</table>\n");

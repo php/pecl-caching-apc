@@ -695,6 +695,7 @@ int apc_cache_dump_entry(apc_cache_t* cache, const char* key,
 	apc_nametable_t* dummy;
 	zend_op_array* op_array;
 	Bucket* p;
+	Bucket* q;
 
 	READLOCK(cache->lock);
 
@@ -830,11 +831,25 @@ int apc_cache_dump_entry(apc_cache_t* cache, const char* key,
 	outputfn("<table border=1 cellpadding=2 cellspacing=1>\n");
 	outputfn("<tr>\n");
 	outputfn("<td bgcolor=#dde4ff>Classes</td>\n");
+	outputfn("<tr>\n");
+	outputfn("<td bgcolor=#ffffff>Class</td>\n");
+	outputfn("<td bgcolor=#ffffff>Function</td>\n");
 	p = class_table.pListHead;
 	while (p) {
 		zend_class_entry* zc = (zend_class_entry*) p->pData;
 		outputfn("<tr>\n");
-		outputfn("<td bgcolor=#eeeeee>%s</td>\n", zc->name);
+		outputfn("<td bgcolor=#eeeeee>%s</td><td bgcolor=#eeeeee>&nbsp</td>\n",
+			zc->name);
+        q = zc->function_table.pListHead;
+        while(q) {
+            zend_function* zf = (zend_function*) q->pData;
+            outputfn("<tr>\n");
+            outputfn("<td bgcolor=#eeeeee>&nbsp</td>\n");
+            outputfn("<td bgcolor=#eeeeee>%s</td>\n",
+                zf->common.function_name);
+            q = p->pListNext;
+        }
+
 		p = p->pListNext;
 	}
 	outputfn("</table>\n");
