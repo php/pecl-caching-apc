@@ -197,7 +197,7 @@ static zval* my_copy_zval(zval* dst, zval* src, apc_malloc_t allocate, apc_free_
 
     memcpy(dst, src, sizeof(src[0]));
 
-    switch (src->type) {
+    switch (src->type & ~IS_CONSTANT_INDEX) {
     case IS_RESOURCE:
     case IS_BOOL:
     case IS_LONG:
@@ -870,7 +870,7 @@ static void my_destroy_zval_ptr(zval** src, apc_free_t deallocate)
 /* {{{ my_destroy_zval */
 static void my_destroy_zval(zval* src, apc_free_t deallocate)
 {
-    switch (src->type) {
+    switch (src->type & ~IS_CONSTANT_INDEX) {
     case IS_RESOURCE:
     case IS_BOOL:
     case IS_LONG:
