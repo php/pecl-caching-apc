@@ -475,6 +475,7 @@ void apc_serialize_hashtable(HashTable* ht, void* funcptr)
 	/* Iterate through the buckets of the hash, serializing as we go. */
 	p = ht->pListHead;
 	while(p != NULL) {
+		SERIALIZE_SCALAR(p->h, ulong);
 		SERIALIZE_SCALAR(p->nKeyLength,uint);
 		apc_serialize_string(p->arKey);
 		serialize_bucket(p->pData); 
@@ -491,6 +492,7 @@ void apc_deserialize_hashtable(HashTable* ht, void* funcptr, int datasize)
 	uint nNumOfElements;
 	int persistent;
 	int j;
+	ulong h;
 	uint nKeyLength;
 	char* arKey;
 	void* pData;
@@ -516,19 +518,34 @@ void apc_deserialize_hashtable(HashTable* ht, void* funcptr, int datasize)
 	
 	/* Luckily, the number of elements in a hash is part of its struct, so
 	 * we can just deserialize that many hashtable elements. */
+
 	for (j = 0; j < nNumOfElements; j++) {
+		DESERIALIZE_SCALAR(&h, ulong);
 		DESERIALIZE_SCALAR(&nKeyLength, uint);
 		apc_create_string(&arKey);
 		deserialize_bucket(&pData);
-		if(datasize == sizeof(zval *)) {
-		zend_hash_add_or_update(ht, arKey, nKeyLength, &pData, datasize,
-			NULL, HASH_ADD);
-		}
-		else {
-			zend_hash_add_or_update(ht, arKey, nKeyLength, pData, datasize,
-				NULL, HASH_ADD);
-		}
 
+		/* If nKeyLength is non-zero, this element is a hashed key/value
+		 * pair. Otherwise, it is an array element with a numeric index */
+
+		if (nKeyLength != 0) {
+			if(datasize == sizeof(void*)) {
+				zend_hash_add_or_update(ht, arKey, nKeyLength, &pData,
+				                        datasize, NULL, HASH_ADD);
+			}
+			else {
+				zend_hash_add_or_update(ht, arKey, nKeyLength, pData,
+				                        datasize, NULL, HASH_ADD);
+			}
+		}
+		else {	/* numeric index, not key string */
+			if(datasize == sizeof(void*)) {
+				zend_hash_index_update(ht, h, &pData, datasize, NULL);
+			}
+			else {
+				zend_hash_index_update(ht, h, pData, datasize, NULL);
+			}
+		}
 	}
 }
 
@@ -574,8 +591,14 @@ void apc_serialize_zvalue_value(zvalue_value* zv, int type)
 		SERIALIZE_SCALAR(zv->str.len, int);
 		break;
 	  case IS_ARRAY:
-	  case IS_CONSTANT_ARRAY:
+printf("+ IS_ARRAY\n");
 		apc_serialize_hashtable(zv->ht, apc_serialize_zval_ptr);
+printf("- IS_ARRAY\n");
+		break;
+	  case IS_CONSTANT_ARRAY:
+printf("+ IS_CONSTANT_ARRAY\n");
+		apc_serialize_hashtable(zv->ht, apc_serialize_zval_ptr);
+printf("- IS_CONSTANT_ARRAY\n");
 		break;
 	  case IS_OBJECT:
 		apc_serialize_zend_class_entry(zv->obj.ce);
@@ -592,6 +615,7 @@ void apc_deserialize_zvalue_value(zvalue_value* zv, int type)
 {
 	/* We peeked ahead in the calling routine to deserialize the
 	 * type. Now we just deserialize. */
+
 
 	switch(type) {
 	  case IS_RESOURCE:
@@ -612,8 +636,14 @@ void apc_deserialize_zvalue_value(zvalue_value* zv, int type)
 		DESERIALIZE_SCALAR(&zv->str.len, int);
 		break;
 	  case IS_ARRAY:
-	  case IS_CONSTANT_ARRAY:
+printf("+ IS_ARRAY\n");
 		apc_create_hashtable(&zv->ht, apc_create_zval, sizeof(void*));
+printf("- IS_ARRAY\n");
+		break;
+	  case IS_CONSTANT_ARRAY:
+printf("+ IS_CONSTANT_ARRAY\n");
+		apc_create_hashtable(&zv->ht, apc_create_zval, sizeof(void*));
+printf("- IS_CONSTANT_ARRAY\n");
 		break;
 	  case IS_OBJECT:
 		apc_create_zend_class_entry(&zv->obj.ce);
@@ -637,6 +667,7 @@ void apc_serialize_zval_ptr(zval** zv)
 
 void apc_serialize_zval(zval* zv)
 {
+printf("writing zval: type=%d, value.str.val=x\n", zv->type, zv->value.str.val);
 	/* type is the switch for serializing zvalue_value */
 	SERIALIZE_SCALAR(zv->type, zend_uchar);
 	apc_serialize_zvalue_value(&zv->value, zv->type);
@@ -651,6 +682,7 @@ void apc_deserialize_zval(zval* zv)
 	apc_deserialize_zvalue_value(&zv->value, zv->type);
 	DESERIALIZE_SCALAR(&zv->is_ref, zend_uchar);
 	DESERIALIZE_SCALAR(&zv->refcount, zend_ushort);
+printf("read zval: type=%d, value.str.val=x\n", zv->type, zv->value.str.val);
 }
 
 void apc_create_zval(zval** zv)
@@ -886,7 +918,7 @@ void apc_serialize_znode(znode* zn)
 	/* If the znode's op_type is IS_CONST, we know precisely what it is.
 	 * otherwise, it is too case-dependent (or inscrutable), so we do
 	 * a bitwise copy. */
-	
+
 	switch(zn->op_type) {
 	  case IS_CONST: 
 		apc_serialize_zval(&zn->u.constant);
@@ -920,6 +952,7 @@ void apc_deserialize_znode(znode* zn)
 
 void apc_serialize_zend_op(zend_op* zo)
 {
+printf("writing zend_op %s\n", apc_get_zend_opname(zo->opcode));
 	SERIALIZE_SCALAR(zo->opcode, zend_uchar);
 	apc_serialize_znode(&zo->result);
 	apc_serialize_znode(&zo->op1);
@@ -931,6 +964,7 @@ void apc_serialize_zend_op(zend_op* zo)
 void apc_deserialize_zend_op(zend_op* zo)
 {
 	DESERIALIZE_SCALAR(&zo->opcode, zend_uchar);
+printf("reading zend_op %s\n", apc_get_zend_opname(zo->opcode));
 	apc_deserialize_znode(&zo->result);
 	apc_deserialize_znode(&zo->op1);
 	apc_deserialize_znode(&zo->op2);
