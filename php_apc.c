@@ -61,6 +61,9 @@ PHP_MINFO_FUNCTION(apc);
 
 /* module entry */
 zend_module_entry apc_module_entry = {
+#if ZEND_MODULE_API_NO >= 20010901
+ 	STANDARD_MODULE_HEADER,
+#endif
 	"APC",
 	apc_functions,
 	PHP_MINIT(apc),
@@ -70,6 +73,9 @@ zend_module_entry apc_module_entry = {
 	PHP_MINFO(apc),
 	NULL,
 	NULL,
+#if ZEND_MODULE_API_NO >= 20010901
+ 	NO_VERSION_YET,          /* extension version number (string) */
+#endif
 	STANDARD_MODULE_PROPERTIES_EX
 };
 
