@@ -41,11 +41,11 @@ AC_ARG_ENABLE(mmap,
   AC_MSG_RESULT(no)
 ])
 
-AC_MSG_CHECKING(whether to prefer fcntl based locks)
+AC_MSG_CHECKING(whether to prefer semaphore based locks)
 AC_ARG_ENABLE(fcntl,
-[  --enable-fcntl  Enable fcntl support instead of IPC sem],[
+[  --enable-sem  Enable IPC semamphore based locks instead of standard locks],[
   if test "$enableval" = "yes" ; then
-    AC_DEFINE(APC_FCNTL_LOCKS, 1, [ ])
+    AC_DEFINE(APC_SEM_LOCKS, 1, [ ])
     AC_MSG_RESULT(yes)
   else
     AC_MSG_RESULT(no)

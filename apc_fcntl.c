@@ -58,12 +58,16 @@ int lock_reg(int fd, int cmd, int type, off_t offset, int whence, off_t len)
 
 void apc_fcntl_lock(int fd)
 {
-    lock_reg(fd, F_SETLKW, F_WRLCK, 0, SEEK_SET, 1);
+    if(lock_reg(fd, F_SETLKW, F_WRLCK, 0, SEEK_SET, 1) < 0) {
+        apc_eprint("apc_fcntl_lock failed errno:%d", errno);
+    }
 }
 
 void apc_fcntl_unlock(int fd)
 {
-    lock_reg(fd, F_SETLK, F_UNLCK, 0, SEEK_SET, 1);
+    if(lock_reg(fd, F_SETLK, F_UNLCK, 0, SEEK_SET, 1) < 0) {
+        apc_eprint("apc_fcntl_unlock failed errno:%d", errno);
+    }
 }
 
 /*
