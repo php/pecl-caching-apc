@@ -1292,7 +1292,11 @@ void apc_deserialize_zend_class_entry(zend_class_entry* zce)
 		+ 1);
 		children->length += zce->name_length + 1;
 		}
+		zce->parent = NULL;
 		efree(parent_name);
+	}
+	else {
+		zce->parent = NULL;
 	}
 
 	/* refcount is a pointer to a single int.  Don't ask me why, I
