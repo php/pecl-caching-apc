@@ -1275,7 +1275,7 @@ int apc_object_info_shm(apc_cache_t* cache, char const*filename, zval **arr) {
   dummy = apc_nametable_create(97);
 
   /* deserialize bucket and see what's inside */
-  apc_init_deserializer(apc_smm_attach(bp->shmid) + bp->offset, bp->length);
+  apc_init_deserializer((char *)apc_smm_attach(bp->shmid) + bp->offset, bp->length);
   apc_deserialize_magic();
   apc_deserialize_zend_function_table(&function_table, dummy, dummy);
   apc_deserialize_zend_class_table(&class_table, dummy, dummy);
