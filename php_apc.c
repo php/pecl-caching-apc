@@ -180,18 +180,20 @@ PHP_FUNCTION(apc_cache_info)
     char *cache_type;
     int ct_len;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS(), "s", &cache_type, &ct_len) == FAILURE) {
+	if (zend_parse_parameters(ZEND_NUM_ARGS(), "|s", &cache_type, &ct_len) == FAILURE) {
 		return;
 	}
 
-    if(!strcasecmp(cache_type,"opcode")) {
-        info = apc_cache_info(APCG(cache));
-    } else if(!strcasecmp(cache_type,"user")) {
-        info = apc_cache_info(APCG(user_cache));
-    }
+    if(ZEND_NUM_ARGS()) {
+        if(!strcasecmp(cache_type,"user")) {
+            info = apc_cache_info(APCG(user_cache));
+        } else {
+            info = apc_cache_info(APCG(cache));
+        }
+    } else info = apc_cache_info(APCG(cache));
 
     if(!info) {
-        php_error_docref(NULL TSRMLS_CC, E_WARNING, "No APC info available.  Perhaps APC is disabled via apc.enabled?");
+        php_error_docref(NULL TSRMLS_CC, E_WARNING, "No APC info available.  Perhaps APC is not enabled? Check apc.enabled in your ini file");
         RETURN_FALSE;
     }
 
@@ -265,20 +267,20 @@ PHP_FUNCTION(apc_cache_info)
 /* {{{ proto void apc_clear_cache() */
 PHP_FUNCTION(apc_clear_cache)
 {
-    if (ZEND_NUM_ARGS() != 0) {
-        WRONG_PARAM_COUNT;
+    char *cache_type;
+    int ct_len;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS(), "|s", &cache_type, &ct_len) == FAILURE) {
+		return;
+	}
+
+    if(ZEND_NUM_ARGS()) {
+        if(!strcasecmp(cache_type,"user")) {
+            apc_cache_clear(APCG(user_cache));
+            RETURN_TRUE;
+        }
     }
     apc_cache_clear(APCG(cache));
-}
-/* }}} */
-
-/* {{{ proto void apc_clear_user_cache() */
-PHP_FUNCTION(apc_clear_user_cache)
-{
-    if (ZEND_NUM_ARGS() != 0) {
-        WRONG_PARAM_COUNT;
-    }
-    apc_cache_clear(APCG(user_cache));
 }
 /* }}} */
 
@@ -352,8 +354,6 @@ PHP_FUNCTION(apc_store) {
         RETURN_FALSE;
     }
 
-    printf("apc_store: user entry at 0x%lx\n",entry);
-
     if (!apc_cache_make_user_key(&key, strkey TSRMLS_CC)) {
         apc_cache_free_entry(entry);
         RETURN_FALSE;
@@ -405,9 +405,7 @@ PHP_FUNCTION(apc_fetch) {
         /* deep-copy returned shm zval to emalloc'ed return_value */
         memcpy(return_value, entry->data.user.val, sizeof(zval));
         zval_copy_ctor(return_value);
-        printf("apc_fetch: entry found at 0x%lx\n",entry);
     } else {
-        printf("apc_cache_user_find returned NULL\n");
         RETURN_FALSE;
     }
 }
@@ -444,7 +442,6 @@ PHP_FUNCTION(apc_delete) {
 function_entry apc_functions[] = {
 	PHP_FE(apc_cache_info,          NULL)
 	PHP_FE(apc_clear_cache,         NULL)
-	PHP_FE(apc_clear_user_cache,    NULL)
 	PHP_FE(apc_sma_info,            NULL)
 	PHP_FE(apc_store,               NULL)
 	PHP_FE(apc_fetch,               NULL)

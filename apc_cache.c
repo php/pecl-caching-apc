@@ -323,8 +323,6 @@ int apc_cache_insert(apc_cache_t* cache,
         return 0;
     }
 
-    printf("apc_cache_insert called for key at 0x%lx and value at 0x%lx\n",key,value);
-
     LOCK(cache);
     process_pending_removals(cache);
 
@@ -426,7 +424,6 @@ apc_cache_entry_t* apc_cache_find(apc_cache_t* cache, apc_cache_key_t key, time_
 
             cache->header->num_hits++;
             UNLOCK(cache);
-            printf("apc_cache_find: found entry at 0x%lx\n",(*slot)->value);
             return (*slot)->value;
         }
         slot = &(*slot)->next;
@@ -568,7 +565,6 @@ apc_cache_entry_t* apc_cache_make_file_entry(const char* filename,
 
     entry = (apc_cache_entry_t*) apc_sma_malloc(sizeof(apc_cache_entry_t));
     if (!entry) return NULL;
-    printf("Made new file entry at 0x%lx\n",entry);
 
     entry->data.file.filename  = apc_xstrdup(filename, apc_sma_malloc);
     if(!entry->data.file.filename) {
@@ -591,7 +587,6 @@ apc_cache_entry_t* apc_cache_make_user_entry(const char* info, zval* val, unsign
 
     entry = (apc_cache_entry_t*) apc_sma_malloc(sizeof(apc_cache_entry_t));
     if (!entry) return NULL;
-    printf("Made new user entry at 0x%lx\n",entry);
 
     entry->data.user.info  = apc_xstrdup(info, apc_sma_malloc);
     if(!entry->data.user.info) {
@@ -645,6 +640,10 @@ apc_cache_info_t* apc_cache_info(apc_cache_t* cache)
     LOCK(cache);
 
     info = (apc_cache_info_t*) apc_emalloc(sizeof(apc_cache_info_t));
+    if(!info) {
+        UNLOCK(cache);
+        return NULL;
+    }
     info->num_slots = cache->num_slots;
     info->ttl = cache->ttl;
     info->num_hits = cache->header->num_hits;
@@ -656,8 +655,7 @@ apc_cache_info_t* apc_cache_info(apc_cache_t* cache)
     for (i = 0; i < info->num_slots; i++) {
         p = cache->slots[i];
         for (; p != NULL; p = p->next) {
-            apc_cache_link_t* link = (apc_cache_link_t*)
-                apc_emalloc(sizeof(apc_cache_link_t));
+            apc_cache_link_t* link = (apc_cache_link_t*) apc_emalloc(sizeof(apc_cache_link_t));
 
             if(p->value->type == APC_CACHE_ENTRY_FILE) {
                 link->data.file.filename = apc_xstrdup(p->value->data.file.filename, apc_emalloc);
