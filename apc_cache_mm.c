@@ -21,7 +21,6 @@
 #include <unistd.h>
 #include <sys/mman.h>
 #include <sys/types.h>
-#include <sys/stat.h>
 #include <fcntl.h>
 
 extern zend_apc_globals apc_globals;
@@ -35,27 +34,7 @@ char *apc_generate_cache_filename(const char *filename)
 {
   static char cache_filename[1024];
   char *cp;
-	if(APCG(relative_includes))
-	{
-		long long int dev;
-		struct stat st;
-		if(stat(filename, &st) != 0) {
-			return NULL;
-		}
-		else {
-			dev = st.st_dev;
-			if(APCG(cachedir) == NULL) {
-				snprintf(cache_filename, 1024, "/tmp/apc_dev-%lld_ino-%d", 
-					dev, st.st_ino);
-				return cache_filename;
-			}
-			else {
-				snprintf(cache_filename, 1024, "%s/apc_dev-%lld_ino-%d",
-					APCG(cachedir), dev, st.st_ino);
-				return cache_filename;
-			}
-		}
-	}
+
   if(APCG(cachedir) == NULL)
   {
     snprintf(cache_filename, sizeof(cache_filename), "%s_apc", filename);
@@ -108,8 +87,7 @@ void apc_mmap_dump(HashTable* cache, const char *linkurl, apc_outputfn_t outputf
 	outputfn("<td colspan=6 bgcolor=#dde4ff>Child Cache Data</td>\n");
 	outputfn("<tr>\n");
 	outputfn("<td bgcolor=#ffffff>Delete</td>\n");
-	outputfn("<td bgcolor=#ffffff>Script</td>\n");
-	outputfn("<td bgcolor=#ffffff>Cache File</td>\n");
+	outputfn("<td bgcolor=#ffffff>Key</td>\n");
 	outputfn("<td bgcolor=#ffffff>Length</td>\n");
 	outputfn("<td bgcolor=#ffffff>Last ModTime(B)</td>\n");
 	outputfn("<td bgcolor=#ffffff>Hits</td>\n");
@@ -119,20 +97,19 @@ void apc_mmap_dump(HashTable* cache, const char *linkurl, apc_outputfn_t outputf
 		struct mm_fl_element *in_elem;
 		in_elem = (struct mm_fl_element *) p->pData;
 		outputfn("<tr>\n");
-		
+
 	 	if (linkurl != 0) {
             outputfn("<td bgcolor=#eeeeee><input type=checkbox "
 			         "name=apc_rm[] value=%s>&nbsp</td>\n",
-					 in_elem->real_filename);
+					 p->arKey);
             outputfn("<td bgcolor=#eeeeee><a href=%s?apc_info=%s>"
-			         "%s</a></td>\n", linkurl, in_elem->real_filename, 
-								in_elem->real_filename);
+			         "%s</a></td>\n", linkurl, p->arKey, p->arKey);
         }
         else {
             outputfn("<td bgcolor=#eeeeee>&nbsp</td>\n");
-            outputfn("<td bgcolor=#eeeeee>%s</td>\n", in_elem->real_filename);
+            outputfn("<td bgcolor=#eeeeee>%s</td>\n", p->arKey);
         }
-		outputfn("<td bgcolor=#eeeeee>%s</td>\n", p->arKey);
+		
 		outputfn("<td bgcolor=#eeeeee>%d</td>\n", in_elem->inputlen);
 		outputfn("<td bgcolor=#eeeeee>%d</td>\n", in_elem->mtime);
 		outputfn("<td bgcolor=#eeeeee>%d</td>\n", in_elem->hitcounter);
