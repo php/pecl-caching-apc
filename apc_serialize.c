@@ -937,13 +937,16 @@ void apc_create_zend_function(zend_function** zf)
 
 /* special purpose serialization functions */
 
-static int store_function_table(void* data, void* argument)
+static int store_function_table(void *element, int num_args,
+	va_list args, zend_hash_key *hash_key)
 {
 	zend_function* zf;
 	apc_nametable_t* acc;
+	apc_nametable_t* priv;
 
-	zf = (zend_function*) data;
-	acc = (apc_nametable_t*) argument;
+	zf = (zend_function*) element;
+	acc = va_arg(args, apc_nametable_t*);
+	priv = va_arg(args, apc_nametable_t*);
 
 	/* do not serialize internal functions */
 	if (zf->type == ZEND_INTERNAL_FUNCTION) {
@@ -954,14 +957,16 @@ static int store_function_table(void* data, void* argument)
 	if (apc_nametable_insert(acc, zf->common.function_name) != 0) {
 		SERIALIZE_SCALAR(1, char);
 		apc_serialize_zend_function(zf);
+		apc_nametable_insert(priv, zf->common.function_name);
 	}
 
 	return 0;
 }
 
-void apc_serialize_zend_function_table(HashTable* gft, apc_nametable_t* acc)
+void apc_serialize_zend_function_table(HashTable* gft,
+	apc_nametable_t* acc, apc_nametable_t* priv)
 {
-	zend_hash_apply_with_argument(gft, store_function_table, acc);
+	zend_hash_apply_with_arguments(gft, store_function_table, 2, acc, priv);
 	SERIALIZE_SCALAR(0, char);
 }
 
@@ -978,20 +983,23 @@ void apc_deserialize_zend_function_table(HashTable* gft, apc_nametable_t* acc)
 			sizeof(zend_function), NULL) == FAILURE)
 		{
 //			zend_error(E_WARNING, "failed to add '%s' to ftable\n", zf->common.function_name);
-		//	assert(0); /* should never fail! */
+//			assert(0); /* should never fail! */
 		}
 		apc_nametable_insert(acc, zf->common.function_name);
 		DESERIALIZE_SCALAR(&exists, char);
 	}
 }
 
-static int store_class_table(void* data, void *argument)
+static int store_class_table(void *element, int num_args,
+	va_list args, zend_hash_key *hash_key)
 {
 	zend_class_entry* zc;
 	apc_nametable_t* acc;
-	
-	zc = (zend_class_entry*) data;
-	acc = (apc_nametable_t*) argument;
+	apc_nametable_t* priv;
+
+	zc = (zend_class_entry*) element;
+	acc = va_arg(args, apc_nametable_t*);
+	priv = va_arg(args, apc_nametable_t*);
 
 	/* do not serialize internal classes */
 	if (zc->type == ZEND_INTERNAL_CLASS) {
@@ -1002,16 +1010,18 @@ static int store_class_table(void* data, void *argument)
 	if (apc_nametable_insert(acc, zc->name) != 0) {
 		SERIALIZE_SCALAR(1, char);
 		apc_serialize_zend_class_entry(zc);
+		apc_nametable_insert(priv, zc->name);
 	}
 
 	return 0;
 }
 
-void apc_serialize_zend_class_table(HashTable* gct, apc_nametable_t* acc)
+void apc_serialize_zend_class_table(HashTable* gct,
+	apc_nametable_t* acc, apc_nametable_t* priv)
 {
 	zend_class_entry* zc;
 
-	zend_hash_apply_with_argument(gct, store_class_table, acc);
+	zend_hash_apply_with_arguments(gct, store_class_table, 2, acc, priv);
 	SERIALIZE_SCALAR(0, char);
 }
 
