@@ -309,14 +309,14 @@ void apc_deserialize_zend_class_table(HashTable* gct, apc_nametable_t* acc, apc_
 	if (dstsize - dstpos < alignword_int(n)) {								\
 		expandbuf(&dst, &dstsize, alignword_int(n) + dstpos);				\
 	}														\
-	memcpy(dst + dstpos, (void*)bytes, n);					\
+	memcpy((char*) dst + dstpos, (char*)bytes, n);					\
 	dstpos += alignword_int(n);											\
 }
 	
 /* LOAD_BYTES: memcpy wrapper, reads from src buffer */
 #define LOAD_BYTES(bytes, n) {								\
 	assert(srcsize - srcpos >= n);							\
-	memcpy((void*)bytes, src + srcpos, n);					\
+	memcpy((char*)bytes, src + srcpos, n);					\
 	srcpos += alignword_int(n);											\
 }
 
