@@ -21,8 +21,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <stdio.h>
-
 static int sma_initialized = 0;
 static int sma_numseg;
 static int sma_segsize;
@@ -30,6 +28,7 @@ static int sma_shmid;
 static void* sma_shmaddr;
 static int* sma_segments;		/* points to shared memory */
 static void** sma_shmaddrs;		/* points to local (process) memory */
+static int sma_lastseg = 0;
 static int sma_lock;
 
 typedef struct header_t header_t;
@@ -142,17 +141,16 @@ static int sma_allocate(void* shmaddr, int size, int smallblock)
 	return OFFSET(cur) + sizeof(int);
 }
 
-static void sma_deallocate(void* shmaddr, int offset)
+static int sma_deallocate(void* shmaddr, int offset)
 {
 	header_t* header;	/* header of shared memory segment */
 	block_t* cur;		/* the new block to insert */
 	block_t* prv;		/* the block before cur */
 	block_t* nxt;		/* the block after cur */
+	int size;			/* size of deallocated block */
 
 	offset -= sizeof(int);
-	if (offset < 0) {	/* reject invalid offsets */
-		return;
-	}
+	assert(offset >= 0);
 
 	/* find position of new block in free list */
 	prv = BLOCKAT(sizeof(header_t));
@@ -168,6 +166,7 @@ static void sma_deallocate(void* shmaddr, int offset)
 	/* update header */
 	header = (header_t*) shmaddr;
 	header->avail += cur->size;
+	size = cur->size;
 
 	if (((char *)prv) + prv->size == (char *) cur) {
 		/* cur and prv share an edge, combine them */
@@ -182,6 +181,8 @@ static void sma_deallocate(void* shmaddr, int offset)
 		cur->size += nxt->size;
 		cur->next = nxt->next;
 	}
+
+	return size;
 }
 
 void apc_sma_init(int numseg, int segsize)
@@ -267,16 +268,28 @@ void apc_sma_cleanup()
 void* apc_sma_malloc(int n)
 {
 	enum { SMALL_BLOCK = 0 };
+	int off;
 	int i;
 
 	apc_sem_lock(sma_lock);
 	assert(sma_initialized);
 
-	for (i = sma_numseg - 1; i >= 0; i--) {
-		int off = sma_allocate(sma_shmaddrs[i], n, SMALL_BLOCK);
+	off = sma_allocate(sma_shmaddrs[sma_lastseg], n, SMALL_BLOCK);
+	if (off != -1) {
+		void* p = sma_shmaddrs[sma_lastseg] + off;
+		apc_sem_unlock(sma_lock);
+		return p;
+	}
+
+	for (i = 0; i < sma_numseg; i++) {
+		if (i == sma_lastseg) {
+			continue;
+		}
+		off = sma_allocate(sma_shmaddrs[i], n, SMALL_BLOCK);
 		if (off != -1) {
 			void* p = sma_shmaddrs[i] + off;
 			apc_sem_unlock(sma_lock);
+			sma_lastseg = i;
 			return p;
 		}
 	}
@@ -294,7 +307,7 @@ void apc_sma_free(void* p)
 	assert(sma_initialized);
 
 	for (i = 0; i < sma_numseg; i++) {
-		if (p >= sma_shmaddrs[i] && p < sma_shmaddrs[i]) {
+		if (p >= sma_shmaddrs[i] && (p - sma_shmaddrs[i]) < sma_segsize) {
 			sma_deallocate(sma_shmaddrs[i], p - sma_shmaddrs[i]);
 			apc_sem_unlock(sma_lock);
 			return;
