@@ -245,7 +245,7 @@ PHP_FUNCTION(apc_rm)
 			WRONG_PARAM_COUNT;
       break;
   }
-	if(!apc_remove_cache_object(filename))
+	if(!apc_rm(filename))
 	{
 		RETURN_FALSE;
 	}
