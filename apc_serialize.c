@@ -14,6 +14,7 @@
    +----------------------------------------------------------------------+
    | Authors: Daniel Cowgill <dcowgill@communityconnect.com>              |
    |          George Schlossnagle <george@lethargy.org>                   |
+   |          Mike Bretz <mike@metropolis-ag.de>                          |
    +----------------------------------------------------------------------+
 */
 
