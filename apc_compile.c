@@ -37,8 +37,8 @@ static zend_function* my_bitwise_copy_function(zend_function*, zend_function*, a
  * (passed as the second argument). They also optionally allocate space for
  * the destination data structure if the first argument is null.
  */
-static zval** my_copy_zval_ptr(zval**, zval**, apc_malloc_t, apc_free_t);
-static zval* my_copy_zval(zval*, zval*, apc_malloc_t, apc_free_t);
+static zval** my_copy_zval_ptr(zval**, const zval**, apc_malloc_t, apc_free_t);
+static zval* my_copy_zval(zval*, const zval*, apc_malloc_t, apc_free_t);
 static znode* my_copy_znode(znode*, znode*, apc_malloc_t, apc_free_t);
 static zend_op* my_copy_zend_op(zend_op*, zend_op*, apc_malloc_t, apc_free_t);
 static zend_function* my_copy_function(zend_function*, zend_function*, apc_malloc_t, apc_free_t);
@@ -169,7 +169,7 @@ static zend_function* my_bitwise_copy_function(zend_function* dst, zend_function
 /* }}} */
 
 /* {{{ my_copy_zval_ptr */
-static zval** my_copy_zval_ptr(zval** dst, zval** src, apc_malloc_t allocate, apc_free_t deallocate)
+static zval** my_copy_zval_ptr(zval** dst, const zval** src, apc_malloc_t allocate, apc_free_t deallocate)
 {
     int local_dst_alloc = 0;
 
@@ -190,7 +190,7 @@ static zval** my_copy_zval_ptr(zval** dst, zval** src, apc_malloc_t allocate, ap
 /* }}} */
 
 /* {{{ my_copy_zval */
-static zval* my_copy_zval(zval* dst, zval* src, apc_malloc_t allocate, apc_free_t deallocate)
+static zval* my_copy_zval(zval* dst, const zval* src, apc_malloc_t allocate, apc_free_t deallocate)
 {
     assert(dst != NULL);
     assert(src != NULL);
@@ -577,7 +577,7 @@ static HashTable* my_copy_static_variables(zend_op_array* src, apc_malloc_t allo
 /* }}} */
 
 /* {{{ apc_copy_zval */
-zval* apc_copy_zval(zval* dst, zval* src, apc_malloc_t allocate, apc_free_t deallocate TSRMLS_DC)
+zval* apc_copy_zval(zval* dst, const zval* src, apc_malloc_t allocate, apc_free_t deallocate TSRMLS_DC)
 {
     int local_dst_alloc = 0;
     assert(src != NULL);

@@ -56,7 +56,7 @@ extern zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, 
 extern zend_class_entry* apc_copy_class_entry(zend_class_entry* dst, zend_class_entry* src, apc_malloc_t allocate, apc_free_t deallocate);
 extern apc_function_t* apc_copy_new_functions(int old_count, apc_malloc_t allocate, apc_free_t deallocate TSRMLS_DC);
 extern apc_class_t* apc_copy_new_classes(zend_op_array* op_array, int old_count, apc_malloc_t allocate, apc_free_t deallocate TSRMLS_DC);
-extern zval* apc_copy_zval(zval* dst, zval* src, apc_malloc_t allocate, apc_free_t deallocate TSRMLS_DC);
+extern zval* apc_copy_zval(zval* dst, const zval* src, apc_malloc_t allocate, apc_free_t deallocate TSRMLS_DC);
 
 /*
  * Deallocation functions corresponding to the copy functions above.

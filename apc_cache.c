@@ -532,7 +532,7 @@ int apc_cache_make_file_key(apc_cache_key_t* key,
 /* }}} */
 
 /* {{{ apc_cache_make_user_key */
-int apc_cache_make_user_key(apc_cache_key_t* key, const char* identifier, time_t t)
+int apc_cache_make_user_key(apc_cache_key_t* key, const char* identifier, const time_t t TSRMLS_DC)
 {
     assert(key != NULL);
 
@@ -581,7 +581,7 @@ apc_cache_entry_t* apc_cache_make_file_entry(const char* filename,
 /* }}} */
 
 /* {{{ apc_cache_make_user_entry */
-apc_cache_entry_t* apc_cache_make_user_entry(const char* info, zval* val, unsigned int ttl)
+apc_cache_entry_t* apc_cache_make_user_entry(const char* info, const zval* val, const unsigned int ttl)
 {
     apc_cache_entry_t* entry;
 

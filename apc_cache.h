@@ -185,7 +185,7 @@ extern apc_cache_entry_t* apc_cache_make_file_entry(const char* filename,
  * apc_cache_make_user_entry creates an apc_cache_entry_t object given an info string
  * and the zval to be stored.
  */
-extern apc_cache_entry_t* apc_cache_make_user_entry(const char* info, zval *val, unsigned int ttl);
+extern apc_cache_entry_t* apc_cache_make_user_entry(const char* info, const zval *val, const unsigned int ttl);
 
 /*
  * Frees all memory associated with an object returned by apc_cache_make_entry

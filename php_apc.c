@@ -2,15 +2,16 @@
    +----------------------------------------------------------------------+
    | Copyright (c) 2002 by Community Connect Inc. All rights reserved.    |
    +----------------------------------------------------------------------+
-   | This source file is subject to version 3.0 of the PHP license,      |
+   | This source file is subject to version 3.0 of the PHP license,       |
    | that is bundled with this package in the file LICENSE, and is        |
    | available at through the world-wide-web at                           |
-   | http://www.php.net/license/3_0.txt.                                 |
+   | http://www.php.net/license/3_0.txt.                                  |
    | If you did not receive a copy of the PHP license and are unable to   |
    | obtain it through the world-wide-web, please send a note to          |
    | license@php.net so we can mail you a copy immediately.               |
    +----------------------------------------------------------------------+
    | Authors: Daniel Cowgill <dcowgill@communityconnect.com>              |
+   |          Rasmus Lerdorf <rasmus@php.net>                             |
    +----------------------------------------------------------------------+
 */
 
@@ -49,6 +50,8 @@ PHP_FUNCTION(apc_clear_cache);
 PHP_FUNCTION(apc_sma_info);
 PHP_FUNCTION(apc_store);
 PHP_FUNCTION(apc_fetch);
+PHP_FUNCTION(apc_define_constants);
+PHP_FUNCTION(apc_load_constants);
 /* }}} */
 
 /* {{{ ZEND_DECLARE_MODULE_GLOBALS(apc) */
@@ -335,29 +338,18 @@ PHP_FUNCTION(apc_sma_info)
 }
 /* }}} */
 
-/* {{{ proto int apc_store(string key, zval var [, ttl ])
- */
-PHP_FUNCTION(apc_store) {
-	zval *val;
-	char *strkey;
-	int strkey_len;
-	apc_cache_entry_t *entry;
+static int _apc_store(const char *strkey, const zval *val, const unsigned int ttl TSRMLS_DC) {
+    apc_cache_entry_t *entry;
     apc_cache_key_t key;
-    long ttl = 0L;
     time_t t;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS(), "sz|l", &strkey, &strkey_len, &val, &ttl) == FAILURE) {
-		return;
-	}
-
-
-    if (!(entry = apc_cache_make_user_entry(strkey, val, (unsigned int)ttl))) {
-        RETURN_FALSE;
+    if (!(entry = apc_cache_make_user_entry(strkey, val, ttl))) {
+        return 0;
     }
 
     if (!apc_cache_make_user_key(&key, strkey TSRMLS_CC)) {
         apc_cache_free_entry(entry);
-        RETURN_FALSE;
+        return 1;
     }
 
 #if HAVE_APACHE
@@ -371,10 +363,28 @@ PHP_FUNCTION(apc_store) {
     if (!apc_cache_user_insert(APCG(user_cache), key, entry, t)) {
         apc_cache_free_user_key(&key);
         apc_cache_free_entry(entry);
-        RETURN_FALSE;
+        return 0;
     }
 
-    RETURN_TRUE;
+    return 1;
+}
+
+/* {{{ proto int apc_store(string key, zval var [, ttl ])
+ */
+PHP_FUNCTION(apc_store) {
+	zval *val;
+	char *strkey;
+	int strkey_len;
+    long ttl = 0L;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS(), "sz|l", &strkey, &strkey_len, &val, &ttl) == FAILURE) {
+		return;
+	}
+
+    if(!strkey_len) RETURN_FALSE;
+
+    if(_apc_store(strkey, val, (unsigned int)ttl TSRMLS_CC)) RETURN_TRUE;
+    RETURN_FALSE;
 }
 /* }}} */
 
@@ -389,6 +399,8 @@ PHP_FUNCTION(apc_fetch) {
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "s", &strkey, &strkey_len) == FAILURE) {
 		return;
 	}
+
+    if(!strkey_len) RETURN_FALSE;
 
 #if HAVE_APACHE
     /* Save a syscall here under Apache.  This should actually be a SAPI call instead
@@ -423,6 +435,91 @@ PHP_FUNCTION(apc_delete) {
 		return;
 	}
 
+    if(!strkey_len) RETURN_FALSE;
+
+	if(apc_cache_user_delete(APCG(user_cache), strkey, strkey_len)) {
+        RETURN_TRUE;
+    } else {
+        RETURN_FALSE;
+    }
+}
+/* }}} */
+
+static void _apc_define_constants(zval *constants, zend_bool case_sensitive) {
+    char *const_key;
+    int const_key_len;
+    zval **entry;
+    HashPosition pos;
+
+    zend_hash_internal_pointer_reset_ex(Z_ARRVAL_P(constants), &pos);
+    while (zend_hash_get_current_data_ex(Z_ARRVAL_P(constants), (void**)&entry, &pos) == SUCCESS) {
+        zend_constant c;
+        int key_type;
+        ulong num_key;
+
+        key_type = zend_hash_get_current_key_ex(Z_ARRVAL_P(constants), &const_key, &const_key_len, &num_key, 0, &pos);
+        if(key_type != HASH_KEY_IS_STRING) {
+            continue;
+        }
+        switch(Z_TYPE_PP(entry)) {
+            case IS_LONG:
+            case IS_DOUBLE:
+            case IS_STRING:
+            case IS_BOOL:
+            case IS_RESOURCE:
+            case IS_NULL:
+                break;
+            default:
+                continue;
+        }
+        c.value = **entry;
+        zval_copy_ctor(&c.value);
+        c.flags = case_sensitive;
+        c.name = zend_strndup(const_key, const_key_len);
+        c.name_len = const_key_len;
+        zend_register_constant(&c TSRMLS_CC);
+
+        zend_hash_move_forward_ex(Z_ARRVAL_P(constants), &pos);
+    }
+}
+
+/* {{{ proto mixed apc_define_constants(string key, array constants [,bool case-sensitive])
+ */
+PHP_FUNCTION(apc_define_constants) {
+	char *strkey;
+	int strkey_len;
+    ulong num_key;
+    zval *constants = NULL;
+    zend_bool case_sensitive = 1;
+    int argc = ZEND_NUM_ARGS();
+
+	if (zend_parse_parameters(argc TSRMLS_CC, "sa|b", &strkey, &strkey_len, &constants, &case_sensitive) == FAILURE) {
+		return;
+	}
+
+    if(!strkey_len) RETURN_FALSE;
+
+    _apc_define_constants(constants, case_sensitive);
+
+    if(_apc_store(strkey, constants, 0 TSRMLS_CC)) RETURN_TRUE;
+    RETURN_FALSE;
+} /* }}} */
+
+/* {{{ proto mixed apc_load_constants(string key [, bool case-sensitive])
+ */
+PHP_FUNCTION(apc_load_constants) {
+	char *strkey;
+	int strkey_len;
+    apc_cache_entry_t* entry;
+    time_t t;
+    zend_bool case_sensitive = 1;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS(), "s|b", &strkey, &strkey_len, &case_sensitive) == FAILURE) {
+		return;
+	}
+
+    if(!strkey_len) RETURN_FALSE;
+
 #if HAVE_APACHE
     /* Save a syscall here under Apache.  This should actually be a SAPI call instead
      * but we don't have that yet.  Once that is introduced in PHP this can be cleaned up  -Rasmus */
@@ -431,7 +528,11 @@ PHP_FUNCTION(apc_delete) {
     t = time(0);
 #endif
 
-	if(apc_cache_user_delete(APCG(user_cache), strkey, strkey_len)) {
+	entry = apc_cache_user_find(APCG(user_cache), strkey, strkey_len, t);
+
+    if(entry) {
+        apc_stack_push(APCG(user_cache_stack), entry);
+        _apc_define_constants(entry->data.user.val, case_sensitive);
         RETURN_TRUE;
     } else {
         RETURN_FALSE;
@@ -447,6 +548,8 @@ function_entry apc_functions[] = {
 	PHP_FE(apc_store,               NULL)
 	PHP_FE(apc_fetch,               NULL)
 	PHP_FE(apc_delete,              NULL)
+	PHP_FE(apc_define_constants,    NULL)
+	PHP_FE(apc_load_constants,      NULL)
 	{NULL, 		NULL,				NULL}
 };
 /* }}} */
