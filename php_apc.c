@@ -170,6 +170,10 @@ PHP_FUNCTION(apc_cache_info)
     }
 
     info = apc_cache_info(APCG(cache));
+    if(!info) {
+        php_error_docref(NULL TSRMLS_CC, E_WARNING, "No APC info available.  Perhaps APC is disabled via apc.enabled?");
+        RETURN_FALSE;
+    }
 
     array_init(return_value);
     add_assoc_long(return_value, "num_slots", info->num_slots);
@@ -247,6 +251,10 @@ PHP_FUNCTION(apc_sma_info)
     }
 
     info = apc_sma_info();
+    if(!info) {
+        php_error_docref(NULL TSRMLS_CC, E_WARNING, "No APC SMA info available.  Perhaps APC is disabled via apc.enabled?");
+        RETURN_FALSE;
+    }
 
     array_init(return_value);
     add_assoc_long(return_value, "num_seg", info->num_seg);
@@ -307,7 +315,6 @@ zend_module_entry apc_module_entry = {
 #ifdef COMPILE_DL_APC
 ZEND_GET_MODULE(apc)
 #endif
-
 /* }}} */
 
 /*

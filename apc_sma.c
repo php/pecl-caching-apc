@@ -351,6 +351,10 @@ apc_sma_info_t* apc_sma_info()
     apc_sma_link_t** link;
     int i;
 
+    if (!sma_initialized) {
+        return NULL;
+    }
+
     info = (apc_sma_info_t*) apc_emalloc(sizeof(apc_sma_info_t));
     info->num_seg = sma_numseg;
     info->seg_size = sma_segsize;

@@ -235,6 +235,8 @@ void apc_cache_clear(apc_cache_t* cache)
 {
     int i;
 
+    if(!cache) return;
+
     LOCK(cache);
 
     cache->header->num_hits = 0;
@@ -427,6 +429,8 @@ apc_cache_info_t* apc_cache_info(apc_cache_t* cache)
     apc_cache_info_t* info;
     slot_t* p;
     int i;
+
+    if(!cache) return NULL;
 
     LOCK(cache);
 
