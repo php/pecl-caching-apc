@@ -629,7 +629,7 @@ ZEND_API zend_op_array* apc_shm_compile_file(zend_file_handle *file_handle,
 	/* find classes declared during compile */
     zend_hash_init_ex(&postClassTable, 100, NULL, NULL, 1, 0);
     zend_hash_copy(&postClassTable, EG(class_table), NULL,
-        NULL, sizeof(zend_function));
+        NULL, sizeof(zend_class_entry));
     apc_zend_hash_diff(&postClassTable, &preClassTable);
 
 	/* Before serializing the op tree for this file, make sure it does not

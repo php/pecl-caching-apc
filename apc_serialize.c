@@ -1046,7 +1046,9 @@ zval* apc_copy_zval(zval* nv, zval* zv, apc_malloc_t ctor)
 zval** apc_copy_zval_ptr(zval** nzvp, zval** zvp, apc_malloc_t ctor)
 {
 	if (nzvp == NULL) {
-		*nzvp = apc_copy_zval(NULL, *zvp, ctor);
+		zval *tmpzvp;
+		tmpzvp = apc_copy_zval(NULL, *zvp, ctor);
+		nzvp =  &tmpzvp;
 		return nzvp;
 	}
 	else {
@@ -1189,6 +1191,7 @@ zend_class_entry* apc_copy_zend_class_entry(zend_class_entry* nce, zend_class_en
 //		nce->parent_name = shm_strdup(zce->parent_name);
 	}
 	nce->refcount = apc_vmemcpy(zce->refcount, sizeof(zce->refcount[0]), ctor);
+	nce->refcount[0]++;
 	apc_copy_hashtable(&nce->function_table, &zce->function_table, apc_copy_zend_function, sizeof(zend_function), ctor); /* FIXME */
 	apc_copy_hashtable(&nce->default_properties, &zce->default_properties, apc_copy_zval_ptr, sizeof(void*), ctor); /* FIXME */
   count = 0;
