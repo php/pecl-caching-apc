@@ -50,8 +50,7 @@ struct segment_t {
 enum { EMPTY = -1, UNUSED = -2 };
 typedef struct bucket_t bucket_t;
 struct bucket_t {
-	char key[MAX_KEY_LEN+1];		/* bucket key (often same as filename) */
-	char filename[MAX_KEY_LEN+1];	/* name of cached file */
+	char key[MAX_KEY_LEN+1];		/* bucket key */
 	int shmid;						/* shm segment where data is stored */
 	int offset;						/* pointer to data in shm segment */
 	int length;						/* length of stored data in bytes */
@@ -311,6 +310,10 @@ int apc_cache_search(apc_cache_t* cache, const char* key)
 	bucket_t* buckets;
 	int nbuckets;
 
+	if (!key) {
+		return 0;
+	}
+
 	READLOCK(cache->lock);
 
 	buckets  = cache->buckets;
@@ -348,6 +351,10 @@ int apc_cache_retrieve(apc_cache_t* cache, const char* key, char** dataptr,
 	bucket_t* buckets;
 	int nbuckets;
 	unsigned int checksum;
+
+	if (!key) {
+		return 0;
+	}
 
 	READLOCK(cache->lock);
 
@@ -400,7 +407,7 @@ int apc_cache_retrieve(apc_cache_t* cache, const char* key, char** dataptr,
 
 /* apc_cache_insert: insert entry into cache */
 int apc_cache_insert(apc_cache_t* cache, const char* key,
-	const char* filename, const char* data, int size, int mtime)
+	const char* data, int size, int mtime)
 {
 	int i;
 	unsigned slot;		/* initial hash value */
@@ -414,6 +421,10 @@ int apc_cache_insert(apc_cache_t* cache, const char* key,
 	int segsize;
 	int offset;
 	unsigned int checksum;
+
+	if (!key) {
+		return 0;
+	}
 
 	/* compute checksum of data (before locking) */
 	checksum = DO_CHECKSUM ? apc_crc32(data, size) : 0;
@@ -468,7 +479,6 @@ int apc_cache_insert(apc_cache_t* cache, const char* key,
 
 	/* update the cache */
 	strncpy(buckets[slot].key, key, MAX_KEY_LEN);
-	strncpy(buckets[slot].filename, filename, MAX_KEY_LEN);
 	buckets[slot].shmid      = segments[i].shmid;
 	buckets[slot].offset     = offset;
 	buckets[slot].length     = size;
@@ -494,6 +504,10 @@ int apc_cache_remove(apc_cache_t* cache, const char* key)
 	int nprobe;			/* running count of cache probes */
 	bucket_t* buckets;
 	int nbuckets;
+
+	if (!key) {
+		return 0;
+	}
 
 	WRITELOCK(cache->lock);
 
@@ -527,6 +541,10 @@ int apc_cache_set_object_ttl(apc_cache_t* cache, const char* key, int ttl)
 	int nprobe;			/* running count of cache probes */
 	bucket_t* buckets;
 	int nbuckets;
+
+	if (!key) {
+		return 0;
+	}
 
 	WRITELOCK(cache->lock);
 
@@ -720,6 +738,10 @@ int apc_cache_dump_entry(apc_cache_t* cache, const char* key,
 	zend_op_array* op_array;
 	Bucket* p;
 	Bucket* q;
+
+	if (!key) {
+		return 0;
+	}
 
 	READLOCK(cache->lock);
 

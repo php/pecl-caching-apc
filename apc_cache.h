@@ -69,20 +69,21 @@ extern int apc_cache_retrieve(T cache, const char* key, char** dataptr,
  * mapping, it is removed and replaced with the new one. The key is
  * associated with the first size bytes stored in data. If the current
  * modification time of the file is supplied in mtime, it can be compared
- * subsequently in apc_cache_retrieve
+ * subsequently in apc_cache_retrieve. Returns true on success, else false
  */
-extern int apc_cache_insert(T cache, const char* key, const char* filename,
-                            const char* data, int size, int mtime);
+extern int apc_cache_insert(T cache, const char* key, const char* data,
+                            int size, int mtime);
 
 /*
- * apc_cache_remove: removes a mapping from the cache
+ * apc_cache_remove: removes a mapping from the cache. Returns true on
+ * success, else false
  */
 extern int apc_cache_remove(T cache, const char* key);
 
 /*
- * apc_cache_set_object_ttl: sets the ttl for an individual object
+ * apc_cache_set_object_ttl: sets the ttl for an individual object. Returns
+ * true on success, else false
  */
-
 extern int apc_cache_set_object_ttl(T cache, const char* key, int ttl);
 
 /*
