@@ -26,8 +26,12 @@
 #include <string.h>
 #include <stdarg.h>
 #include <errno.h>
+#include "php_config.h"
 
-#if defined(NEED_SEM_UNDO)  // Not sure where this isn't defined...
+/* If host type is linux, or any other that doesn't define semun,
+ * define it ourselves. */
+
+#if defined(__LINUX__)  
 union semun {
 	int val;                    /* value for SETVAL */
 	struct semid_ds *buf;       /* buffer for IPC_STAT, IPC_SET */
@@ -43,7 +47,7 @@ union semun {
 # define SEM_A 0222	/* write permission */
 #endif
 
-/* always use SEM_UNDO! */
+/* always use SEM_UNDO, otherwise we will hemorage semaphores */
 #define USE_SEM_UNDO
 
 #ifdef USE_SEM_UNDO
