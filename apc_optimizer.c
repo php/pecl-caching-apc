@@ -203,8 +203,17 @@ static zval* compute_result_of_constant_op(zend_op* op)
 static void rewrite_inc(zend_op* ops, Pair* p)
 {
     assert(pair_length(p) == 3);
-
-    ops[cadr(p)].opcode = ZEND_PRE_INC;
+    switch (ops[cadr(p)].opcode) {
+      case ZEND_POST_INC:
+        ops[cadr(p)].opcode = ZEND_PRE_INC;
+        break; 
+      case ZEND_POST_DEC:
+        ops[cadr(p)].opcode = ZEND_PRE_DEC;
+        break;
+      default:
+        assert(0);
+        break;
+    }
     clear_zend_op(&ops[caddr(p)]);  // don't need this anymore
 }
 
