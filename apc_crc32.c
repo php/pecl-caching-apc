@@ -83,7 +83,7 @@ static unsigned int crc32tab[] = {
 	/* 252 */  0xb7bd5c3b, 0x8c3ec470, 0xc0ba6cad, 0xfb39f4e6, 
 };
 
-/* apc_crc32: */
+/* apc_crc32: compute crc-32 checksum */
 unsigned int apc_crc32(const char* buf, int len)
 {
 	int i;
