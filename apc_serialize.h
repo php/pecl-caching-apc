@@ -23,10 +23,12 @@
 #include "zend_hash.h"
 #include <stdio.h>
 
-/* By convention all apc_serialize_ an object of the specified type to
- * the serialization buffer.  apc_deserialize_ deserializes an object of
- * specified type from the deserialization buffer.  apc_create_ allocates
- * an object of specified type and deserializes from the deserializes. */
+/* By convention all apc_serialize_* functions serialize objects of the
+ * specified type to the serialization buffer (dst). The apc_deserialize_*
+ * functions deserialize objects of the specified type from the
+ * deserialization buffer (src). The apc_create_* functions allocate
+ * objects of the specified type, then call the appropriate deserialization
+ * function. */
 
 extern void apc_init_serializer();
 extern void apc_init_deserializer(char* input, int size);

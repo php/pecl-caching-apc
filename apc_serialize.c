@@ -14,22 +14,20 @@
 
 
 #include "apc_serialize.h"
-#include "apc_nametable.h"
 #include <stdlib.h>
 #include <assert.h>
 
-#include "zend.h" // FIXME
 #include "zend_variables.h"	// for zval_dtor()
 
 enum { START_SIZE = 1, GROW_FACTOR = 2 };
 
-char* dst   = 0;		/* destination (serialization) buffer */
-int dstpos  = 0;		/* position in destination buffer */
-int dstsize = 0;		/* physical size of destination buffer */
+static char* dst   = 0;		/* destination (serialization) buffer */
+static int dstpos  = 0;		/* position in destination buffer */
+static int dstsize = 0;		/* physical size of destination buffer */
 
-char* src   = 0;		/* source (deserialization) buffer */
-int srcpos  = 0;		/* position in source buffer */
-int srcsize = 0;		/* physical size of source buffer */
+static char* src   = 0;		/* source (deserialization) buffer */
+static int srcpos  = 0;		/* position in source buffer */
+static int srcsize = 0;		/* physical size of source buffer */
 
 /* expandbuf: resize buffer to be at least minsize bytes in length */
 static void expandbuf(char** bufptr, int* cursize, int minsize)
@@ -60,8 +58,8 @@ void apc_init_deserializer(char* input, int size)
 	srcsize = size;
 }
 
-/* zend_serialize_debug: fumps information about the source/destination
- * serialization buffers */
+/* zend_serialize_debug: prints information about the source and
+ * destination serialization buffers */
 void apc_serialize_debug(FILE* out)
 {
 	fprintf(out, "src=%p, srcpos=%d, srcsize=%d\n", src, srcpos, srcsize);
@@ -132,10 +130,12 @@ int apc_load(const char* filename)
 	return 1;
 }
 
-/* By convention all apc_serialize_ an object of the specified type to
- * the serialization buffer.  apc_deserialize_ deserializes an object of
- * specified type from the deserialization buffer.  apc_create_ allocates
- * an object of specified type and deserializes from the deserializes. */
+/* By convention all apc_serialize_* functions serialize objects of the
+ * specified type to the serialization buffer (dst). The apc_deserialize_*
+ * functions deserialize objects of the specified type from the
+ * deserialization buffer (src). The apc_create_* functions allocate
+ * objects of the specified type, then call the appropriate deserialization
+ * function. */
 
 /* general */
 void apc_serialize_string(char* string);
@@ -333,8 +333,6 @@ void apc_deserialize_zend_llist(zend_llist* list)
 	char* data;
 
 	DESERIALIZE_SCALAR(&exists, char);
-	/* if we are serializing a non-existant list, we have corrupted our
-	 * cache.  */
 	assert(exists != 0); 
 
 	/* read the list parameters */
@@ -358,9 +356,10 @@ void apc_deserialize_zend_llist(zend_llist* list)
 void apc_create_zend_llist(zend_llist** list)
 {
 	char exists;
-	/* Sneak a look one byte ahead to see whether the list exists or not. If
-	 * it does, then exists is part of the structure, otherwise it was a
-	 * 'zero' place holder. */
+
+	/* Sneak a look one byte ahead to see whether the list exists or not.
+	 * If it does, then exists is part of the structure, otherwise it was
+	 * a zero-value placeholder byte. */
 	PEEK_SCALAR(&exists, char);
 	if (exists) {
 		*list = (zend_llist*) emalloc(sizeof(zend_llist));
@@ -388,13 +387,15 @@ void apc_serialize_hashtable(HashTable* ht, void* funcptr)
 	if (!exists) {
 		return;
 	}
-	/* serialize the hash meta-data */
+
+	/* Serialize the hash meta-data. */
 	SERIALIZE_SCALAR(ht->nTableSize, uint);
 	SERIALIZE_SCALAR(ht->pHashFunction, void*);
 	SERIALIZE_SCALAR(ht->pDestructor, void*);
 	SERIALIZE_SCALAR(ht->nNumOfElements, uint);
 	SERIALIZE_SCALAR(ht->persistent, int);
-	/* Iterate through the buckets of the hash, serializing as we go */
+
+	/* Iterate through the buckets of the hash, serializing as we go. */
 	p = ht->pListHead;
 	while(p != NULL) {
 		SERIALIZE_SCALAR(p->nKeyLength,uint);
@@ -429,14 +430,16 @@ void apc_deserialize_hashtable(HashTable* ht, void* funcptr, int datasize)
 	DESERIALIZE_SCALAR(&pDestructor, void*);
 	DESERIALIZE_SCALAR(&nNumOfElements,uint);
 	DESERIALIZE_SCALAR(&persistent, int);
-	/* although the hash is already allocated (we're a desrialize not a 
-	 * create), we still need to init the hash.  If this fails, something 
+	
+	/* Although the hash is already allocated (we're a deserialize, not a 
+	 * create), we still need to initialize it. If this fails, something 
 	 * very very bad happened. */
 	status = zend_hash_init(ht, nSize, pHashFunction, pDestructor, persistent);
 	assert(status != FAILURE);
-	/* luckily the number of elements in a hash is part of it's struct, so
+	
+	/* Luckily, the number of elements in a hash is part of its struct, so
 	 * we can just deserialize that many hashtable elements. */
-	for(j = 0; j < nNumOfElements; j++) {
+	for (j = 0; j < nNumOfElements; j++) {
 		DESERIALIZE_SCALAR(&nKeyLength, uint);
 		apc_create_string(&arKey);
 		deserialize_bucket(&pData);
@@ -465,9 +468,10 @@ void apc_create_hashtable(HashTable** ht, void* funcptr, int datasize)
 
 void apc_serialize_zvalue_value(zvalue_value* zv, int type)
 {
-	/* a zvalue_value is a union, and as such we first need to determine
-	 * exactly what it's type is, the serialize the appropriate structure
-	 */
+	/* A zvalue_value is a union, and as such we first need to
+	 * determine exactly what it's type is, then serialize the
+	 * appropriate structure. */
+
 	switch (type) {
 	  case IS_RESOURCE:
 	  case IS_BOOL:
@@ -502,8 +506,9 @@ void apc_serialize_zvalue_value(zvalue_value* zv, int type)
 
 void apc_deserialize_zvalue_value(zvalue_value* zv, int type)
 {
-	/* we peaked ahead in the calling routine to deserialize the type.
-	 * now we just deserialize. */
+	/* We peeked ahead in the calling routine to deserialize the
+	 * type. Now we just deserialize. */
+
 	switch(type) {
 	  case IS_RESOURCE:
 	  case IS_BOOL:
@@ -744,9 +749,11 @@ void apc_deserialize_zend_utility_values(zend_utility_values* zuv)
 void apc_serialize_znode(znode* zn)
 {
 	SERIALIZE_SCALAR(zn->op_type, int);
-	/* if a znode is a union.  We know precisely what it is, if it is
-	 * IS_CONST, otherwise it is too case dependent, so we just do
-	 * a byte copy. */
+
+	/* If the znode's op_type is IS_CONST, we know precisely what it is.
+	 * otherwise, it is too case-dependent (or inscrutable), so we do
+	 * a bitwise copy. */
+	
 	switch(zn->op_type) {
 	  case IS_CONST: 
 		apc_serialize_zval(&zn->u.constant);
@@ -760,9 +767,11 @@ void apc_serialize_znode(znode* zn)
 void apc_deserialize_znode(znode* zn)
 {
 	DESERIALIZE_SCALAR(&zn->op_type, int);
-	/* if a znode is a union.  We know precisely what it is, if it is
-     * IS_CONST, otherwise it is too case dependent, so we just do
-     * a byte copy. */
+
+	/* If the znode's op_type is IS_CONST, we know precisely what it is.
+	 * otherwise, it is too case-dependent (or inscrutable), so we do
+	 * a bitwise copy. */
+	
 	switch(zn->op_type) {
 	  case IS_CONST:
 		apc_deserialize_zval(&zn->u.constant);
@@ -810,47 +819,48 @@ void apc_serialize_zend_op_array(zend_op_array* zoa)
 	SERIALIZE_SCALAR(zoa->refcount[0], zend_uint);
 	SERIALIZE_SCALAR(zoa->last, zend_uint);
 	SERIALIZE_SCALAR(zoa->size, zend_uint);
+
 	/* If a file 'A' is included twice in a single request, the following 
-	 * situation acn occur: A is deserialized and it's functions added to
-	 * the global function table.  On it's next call, A is expired 
-	 * (either forcibly removed or expired due to an expired ttl).
-	 * Now when A is compiled, it's functions can't be added to the
-	 * global function_table (they're already present) so they are
-	 * serialized as an opcode ZEND_DECLARE_FUNCTION_OR_CLASS.  This
-	 * means that the functions will be declared at execution time.
-	 * Since they are present in the global function_table, they will 
-	 * will also be serialized.  This will cause a fatal 'failed to
-	 * redclare....' error.  We avoid this by simulating the action 
-	 * of the parser and changing all ZEND_DECLARE_FUNCTION_OR_CLASS ops
-	 * to ZEND_NOPs. */ 
+	 * situation can occur: A is deserialized and its functions added to
+	 * the global function table. On its next call, A is expired (either
+	 * forcibly removed or removed due to an expired ttl). Now when A is
+	 * compiled, its functions can't be added to the global function_table
+	 * (they are already present) so they are serialized as an opcode
+	 * ZEND_DECLARE_FUNCTION_OR_CLASS. This means that the functions will
+	 * be declared at execution time. Since they are present in the global
+	 * function_table, they will will also be serialized. This will cause
+	 * a fatal 'failed to redclare....' error.  We avoid this by simulating
+	 * the action of the parser and changing all
+	 * ZEND_DECLARE_FUNCTION_OR_CLASS opcodes to ZEND_NOPs. */ 
 	 
 	for (i = 0; i < zoa->last; i++) {
-		if(zoa->opcodes[i].opcode == ZEND_DECLARE_FUNCTION_OR_CLASS)
-		{
+		if(zoa->opcodes[i].opcode == ZEND_DECLARE_FUNCTION_OR_CLASS) {
 			HashTable *table;
+
 			switch(zoa->opcodes[i].extended_value) {
-		 case ZEND_DECLARE_FUNCTION:
-      table = CG(function_table);
-      break;
-    case ZEND_DECLARE_CLASS:
-      table = CG(class_table);
-      break;
-    default:
-      zend_error(E_COMPILE_ERROR, "Invalid binding type");
-      return;
-  	}
-		zend_hash_del(table, zoa->opcodes[i].op1.u.constant.value.str.val, zoa->opcodes[i].op1.u.constant.value.str.len);
-  	zval_dtor(&zoa->opcodes[i].op1.u.constant);
-  	zval_dtor(&zoa->opcodes[i].op2.u.constant);
-  	zoa->opcodes[i].opcode = ZEND_NOP;
-  	memset(&zoa->opcodes[i].op1, 0, sizeof(znode));
-  	memset(&zoa->opcodes[i].op2, 0, sizeof(znode));
-	zoa->opcodes[i].op1.op_type = IS_UNUSED;
-	zoa->opcodes[i].op2.op_type = IS_UNUSED;
-	}
-	
+			  case ZEND_DECLARE_FUNCTION:
+				table = CG(function_table);
+				break;
+			  case ZEND_DECLARE_CLASS:
+				table = CG(class_table);
+				break;
+			  default:
+				/* this typically results in a Zend compile error */
+				return;
+			}
+			zend_hash_del(table, zoa->opcodes[i].op1.u.constant.value.str.val,
+				zoa->opcodes[i].op1.u.constant.value.str.len);
+			zval_dtor(&zoa->opcodes[i].op1.u.constant);
+			zval_dtor(&zoa->opcodes[i].op2.u.constant);
+			zoa->opcodes[i].opcode = ZEND_NOP;
+			memset(&zoa->opcodes[i].op1, 0, sizeof(znode));
+			memset(&zoa->opcodes[i].op2, 0, sizeof(znode));
+			zoa->opcodes[i].op1.op_type = IS_UNUSED;
+			zoa->opcodes[i].op2.op_type = IS_UNUSED;
+		}
 		apc_serialize_zend_op(&zoa->opcodes[i]);
 	}
+
 	SERIALIZE_SCALAR(zoa->T, zend_uint);
 	SERIALIZE_SCALAR(zoa->last_brk_cont, zend_uint);
 	SERIALIZE_SCALAR(zoa->current_brk_cont, zend_uint);
@@ -1010,17 +1020,18 @@ void apc_create_zend_function(zend_function** zf)
 
 /* special purpose serialization functions */
 
-/* in serialize_function_table we serialize all the elements of the 
+/* In serialize_function_table we serialize all the elements of the 
  * global function_table that were inserted during this compilation.
- * we track this using both a global accumulator table acc and a 
+ * We track this using both a global accumulator table acc and a 
  * table priv which tracks changes made specifically in this file.
- * We need a priv table to handle another aspect of the situation
- * when a file is included multiple times.  Whenever a file is serialized
- * after having already been seen once during a particular request, all
- * the functions it deserialized previously are deleted from the accumulator
- * table.  If we don't do this, it won't appear to have declared any new
- * functions during the second call to this routine, and no functions will
- * be serialized. */
+ * We need a priv table to handle another aspect of the situation,
+ * when a file is included multiple times.  Whenever a file is
+ * serialized after having already been seen once during a particular
+ * request, all the functions it deserialized previously are deleted
+ * from the accumulator table. If we don't do this, it won't appear
+ * to have declared any new functions during the second call to this
+ * routine, and no functions will be serialized. */
+
 static int store_function_table(void *element, int num_args,
 	va_list args, zend_hash_key *hash_key)
 {
@@ -1053,10 +1064,11 @@ void apc_serialize_zend_function_table(HashTable* gft,
 	SERIALIZE_SCALAR(0, char);
 }
 
-/* during deserialization we deserialize functions, and add them to the
- * global_function_table, the accumulator table for that requst, and the
- * private function_table for the file being compiled.  See the note at
+/* During deserialization we deserialize functions and add them to the
+ * global function_table, the accumulator table for that requst, and the
+ * private function_table for the file being compiled. See the note at
  * the top of apc_serialize_zend_function_table for the logic. */
+
 void apc_deserialize_zend_function_table(HashTable* gft, apc_nametable_t* acc, apc_nametable_t* priv)
 {
 	zend_function* zf;
@@ -1077,17 +1089,9 @@ void apc_deserialize_zend_function_table(HashTable* gft, apc_nametable_t* acc, a
 	}
 }
 
-/* in serialize_class_table we serialize all the elements of the 
- * global class_table that were inserted during this compilation.
- * we track this using both a global accumulator table acc and a 
- * table priv which tracks changes made specifically in this file.
- * We need a priv table to handle another aspect of the situation
- * when a file is included multiple times.  Whenever a file is serialized
- * after having already been seen once during a particular request, all
- * the classs it deserialized previously are deleted from the accumulator
- * table.  If we don't do this, it won't appear to have declared any new
- * classs during the second call to this routine, and no classs will
- * be serialized. */
+/* The logic for serialize_class_table and deserialize_class_table
+ * mirror that of the corresponding function_table functions (see
+ * above), with classes in place of functions. */
 
 static int store_class_table(void *element, int num_args,
 	va_list args, zend_hash_key *hash_key)
@@ -1123,11 +1127,6 @@ void apc_serialize_zend_class_table(HashTable* gct,
 	zend_hash_apply_with_arguments(gct, store_class_table, 2, acc, priv);
 	SERIALIZE_SCALAR(0, char);
 }
-
-/* during deserialization we deserialize functions, and add them to the
- * global_function_table, the accumulator table for that requst, and the
- * private function_table for the file being compiled.  See the note at
- * the top of apc_serialize_zend_function_table for the logic. */
 
 void apc_deserialize_zend_class_table(HashTable* gct, apc_nametable_t* acc, apc_nametable_t* priv)
 {
