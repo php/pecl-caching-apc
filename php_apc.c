@@ -38,6 +38,7 @@
  * generates annoying XtOffsetOf warning because of a circular dependency order problem
  */
 #if HAVE_APACHE
+#undef XtOffsetOf
 #include "httpd.h"
 #endif
 

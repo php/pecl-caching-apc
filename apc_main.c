@@ -27,6 +27,7 @@
 #include "apc_zend.h"
 #include "SAPI.h"
 #if HAVE_APACHE
+#undef XtOffsetOf
 #include "httpd.h"
 #endif
 

@@ -24,18 +24,25 @@
 int apc_fcntl_create(const char* pathname)
 {
     int fd;
-    char *lock_path = pathname;
+    char *lock_path = NULL;
     if(pathname == NULL) {
         lock_path = malloc(strlen("/tmp/.apc.") + 6);
         snprintf(lock_path, strlen("/tmp/.apc.") + 6, "/tmp/.apc.%d", getpid());
+        fd = open(lock_path, O_RDWR|O_CREAT, 0666);
+        if(fd > 0 ) {
+            unlink(lock_path);
+            return fd;
+        } else {
+            apc_eprint("apc_fcntl_create: open(%s, O_RDWR|O_CREAT, 0666) failed:", lock_path);
+            return -1;
+        }
     }
-    fd = open(lock_path, O_RDWR|O_CREAT, 0666);
+    fd = open(pathname, O_RDWR|O_CREAT, 0666);
     if(fd > 0 ) {
-        unlink(lock_path);
+        unlink(pathname);
         return fd;
-    } else {
-        apc_eprint("apc_fcntl_create: open(%s, O_RDWR|O_CREAT, 0666) failed:", lock_path);
     }
+    apc_eprint("apc_fcntl_create: open(%s, O_RDWR|O_CREAT, 0666) failed:", pathname);
     return -1;
 }
 
