@@ -54,6 +54,6 @@ int apc_nametable_remove(apc_nametable_t* table, const char* key);
  */
 void apc_nametable_clear(apc_nametable_t* table);
 
-void apc_nametable_dump(apc_nametable_t* table)
+void apc_nametable_dump(apc_nametable_t* table);
 
 #endif
