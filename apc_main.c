@@ -75,12 +75,11 @@ static int install_class(apc_class_t cl TSRMLS_DC)
                                 (void**) &parent);
         
         if (status == FAILURE) {
-            zend_error(E_ERROR, "Class %s:  Cannot inherit from undefined class %s",
-                       cl.class_entry->name, cl.parent_name);
-            return FAILURE;
+            class_entry->parent = NULL;
         }
-
-        class_entry->parent = parent;
+        else {
+            class_entry->parent = parent;
+        }
     }
 
     status = zend_hash_add(EG(class_table),
