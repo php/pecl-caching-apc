@@ -27,6 +27,10 @@
 
 #include <regex.h>
 
+extern zend_module_entry apc_module_entry;
+
+#define apc_module_ptr &apc_module_entry
+
 ZEND_BEGIN_MODULE_GLOBALS(apc)
 	int	ttl;
 	char *cachedir;
@@ -39,4 +43,8 @@ ZEND_BEGIN_MODULE_GLOBALS(apc)
 ZEND_END_MODULE_GLOBALS(apc)
 
 #define APCG(v) (apc_globals.v)
+
+#define phpext_apc_ptr apc_module_ptr
+
+
 #endif

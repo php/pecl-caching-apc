@@ -14,6 +14,7 @@
 
 
 #include "php_apc.h"
+#include "php_globals.h"
 #include "php.h"
 
 /* declarations of functions to be exported */
