@@ -320,7 +320,7 @@ int apc_cache_search(apc_cache_t* cache, const char* key)
 		}
 		if (strcmp(buckets[slot].key, key) == 0) {
 			if (isexpired(&buckets[slot])) {
-				emptybucket(&buckets[slot]); /* FIXME */
+				/*emptybucket(&buckets[slot]);*/ /* FIXME */
 				break; /* the entry has expired */
 			}
 			UNLOCK(cache->lock);
@@ -359,7 +359,7 @@ int apc_cache_retrieve(apc_cache_t* cache, const char* key, char** dataptr,
 		}
 		if (strcmp(buckets[slot].key, key) == 0) {
 			if (isexpired(&buckets[slot])) {
-				emptybucket(&buckets[slot]); /* FIXME */
+				/*emptybucket(&buckets[slot]);*/ /* FIXME */
 				break; /* the entry has expired */
 			}
 			shmaddr = (char*) apc_smm_attach(buckets[slot].shmid);
@@ -727,7 +727,7 @@ int apc_cache_dump_entry(apc_cache_t* cache, const char* key,
 		}
 		if (strcmp(buckets[slot].key, key) == 0) {
 			if (isexpired(&buckets[slot])) {
-				emptybucket(&buckets[slot]); /* FIXME */
+				/*emptybucket(&buckets[slot]);*/ /* FIXME */
 				break; /* the entry has expired */
 			}
 			bp = &buckets[slot];
