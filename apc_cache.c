@@ -187,7 +187,7 @@ apc_cache_t* apc_cache_create(int size_hint, int gc_ttl)
     int num_slots;
     int i;
 
-    num_slots = size_hint > 0 ? size_hint*2 : 1000;
+    num_slots = size_hint > 0 ? size_hint*2 : 2000;
 
     cache = (apc_cache_t*) apc_emalloc(sizeof(apc_cache_t));
     cache_size = sizeof(header_t) + num_slots*sizeof(slot_t*);
