@@ -4,8 +4,6 @@
 #include "zend.h"
 #include "zend_hash.h"
 
-void apc_mmap_dump(apc_outputfn_t outputfn, HashTable* cache);
-
 struct mm_fl_element {
         char *cache_filename;
         int inputlen;
@@ -14,6 +12,7 @@ struct mm_fl_element {
         char *input;
 };
 
+void apc_mmap_dump(apc_outputfn_t outputfn, HashTable* cache);
 #endif
 	
 	
