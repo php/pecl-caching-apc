@@ -629,7 +629,7 @@ int apc_cache_insert(apc_cache_t* cache, const char* key,
 	offset = 0;
 	for (i = 0; i < maxseg; i++) {
 		if (segments[i].shmid == 0) { /* segment not initialized */
-			segments[i].shmid = apc_shm_create(cache->pathname, i+2, segsize);
+			segments[i].shmid = apc_shm_create(cache->pathname, i+1, segsize);
 			apc_smm_initsegment(segments[i].shmid, segsize);
 		}
 		shmaddr = apc_smm_attach(segments[i].shmid);
