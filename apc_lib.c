@@ -14,6 +14,7 @@
 
 
 #include "apc_lib.h"
+#include "apc_version.h"
 #include "php_apc.h"
 #include "zend.h"
 #include <sys/time.h>
