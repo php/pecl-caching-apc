@@ -541,7 +541,7 @@ ZEND_API zend_op_array* apc_shm_compile_file(zend_file_handle *file_handle,
 			acc_functiontable, tables[0]);
 		apc_serialize_zend_class_table(CG(class_table),
 			acc_classtable, tables[1]);
-		new_op_array = apc_copy_op_array(NULL, op_array);
+		new_op_array = apc_copy_op_array(NULL, op_array, apc_sma_malloc);
 //		refcount = (int *) apc_emalloc(sizeof(int));
 //		refcount[0] = op_array->refcount[0];
 		destroy_op_array(op_array);
