@@ -24,11 +24,9 @@
 #include "php_apc.h"
 #include "apc_fcntl.h"
 #include "apc_iface.h"
-#include "apc_lib.h"
 
 #include "zend.h"
 #include "zend_hash.h"
-#include <sys/types.h>
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
@@ -180,6 +178,10 @@ static void initcache(apc_cache_t* cache, const char* pathname,
 	for (i = 0; i < nbuckets; i++) {
 		cache->buckets[i].shmid = EMPTY;
 	}
+
+	/* create the first shared memory segment */
+	cache->segments[0].shmid  = apc_shm_create(pathname, 1, segsize);
+	apc_smm_initsegment(cache->segments[0].shmid, segsize);
 }
 
 
@@ -251,21 +253,12 @@ static unsigned int hashtwo(const char* v)
 }
 
 /* apc_cache_create: create a new cache */
-apc_cache_t* apc_cache_create(const char* pname, int nbuckets,
+apc_cache_t* apc_cache_create(const char* pathname, int nbuckets,
 	int maxseg, int segsize, int ttl)
 {
-	char* pathname;
 	apc_cache_t* cache;
 	int cachesize;
 
-	#ifdef USE_FCNTL_LOCK
-		pathname = apc_estrdup("/tmp/.apc.lock");
-	#else
-		pathname = (char *) pname;
-	#endif
-	if (apc_create_lock(pathname) < 0 ) {
-	
-	}	
 	cache = (apc_cache_t*) apc_emalloc(sizeof(apc_cache_t));
 	cachesize = computecachesize(nbuckets, maxseg);
 
@@ -274,11 +267,11 @@ apc_cache_t* apc_cache_create(const char* pname, int nbuckets,
   #ifdef USE_RWLOCK
 	cache->lock     = apc_rwl_create(pathname);
   #elif defined(USE_FCNTL_LOCK)
-  	cache->lock		= apc_flock_create(pathname);
+  	cache->lock		= apc_flock_create("/tmp/.apc.lock");
   #else
 	cache->lock     = apc_sem_create(pathname, 1, 1);
   #endif
-	cache->shmid    = apc_shm_create(pathname, 1, cachesize);
+	cache->shmid    = apc_shm_create(pathname, 0, cachesize);
 	cache->shmaddr  = apc_shm_attach(cache->shmid);
 	cache->header   = (header_t*) cache->shmaddr;
 	cache->lcache	= apc_nametable_create(nbuckets);
@@ -634,7 +627,7 @@ int apc_cache_insert(apc_cache_t* cache, const char* key,
 
 	shmaddr = 0;
 	offset = 0;
-	for (i = 0; i < maxseg ; i++) {
+	for (i = 0; i < maxseg; i++) {
 		if (segments[i].shmid == 0) { /* segment not initialized */
 			segments[i].shmid = apc_shm_create(cache->pathname, i+2, segsize);
 			apc_smm_initsegment(segments[i].shmid, segsize);

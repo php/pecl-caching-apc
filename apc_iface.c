@@ -185,12 +185,13 @@ void apc_module_shutdown()
 	/* do apc cleanup */
 	free(inputbuf);
 
-        if (APC_MMAP_MODE)
-          zend_hash_clean(&apc_mm_fl);
-
-	if (APC_SHM_MODE)
+        if (APC_MMAP_MODE) {
+          zend_hash_clean(&apc_mm_fl);	
+		}
+	if (APC_SHM_MODE) {
+		  apc_smm_cleanup();
           apc_cache_destroy(cache);
-
+	}
 	apc_nametable_clear(filetable, tabledestructor);
 	apc_nametable_destroy(filetable);
 	apc_nametable_destroy(acc_functiontable);
