@@ -153,10 +153,8 @@ PHP_RSHUTDOWN_FUNCTION(apc)
 PHP_MINFO_FUNCTION(apc)
 {
 	php_info_print_table_start();
-    php_info_print_table_header(2, "Column 1", "Column 2");
-	php_info_print_table_row(2, "1x1", "1x2");
-	php_info_print_table_row(2, "2x1", "2x2");
-	php_info_print_table_row(2, "3x1", "3x2");
+    php_info_print_table_header(2, "APC Support", "Enabled");
+	php_info_print_table_row(2, "APC Version", apc_version());
 	php_info_print_table_end();
 }
 
