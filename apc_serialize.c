@@ -14,10 +14,10 @@
 
 
 #include "apc_serialize.h"
-#include "apc_phpdeps.h"
-#include "apc_version.h"
 #include "apc_lib.h"
+#include "apc_phpdeps.h"
 #include "apc_sma.h"
+#include "apc_version.h"
 #include <stdlib.h>
 #include <assert.h>
 
@@ -228,7 +228,7 @@ static char* shm_strdup(const char* s)
 		return NULL;
 	}
 	n = strlen(s) + 1;
-	t = (char*) apc_sma_alloc(n);
+	t = (char*) apc_sma_malloc(n);
 	memcpy(t, s, n);
 	return t;
 }
@@ -240,7 +240,7 @@ static void* shm_memcpy(void* p, int n)
 	if( p == NULL) {
 		return NULL;
 	}
-	q = apc_sma_alloc(n);
+	q = apc_sma_malloc(n);
 	memcpy(q, p, n);
 	return q;
 }
