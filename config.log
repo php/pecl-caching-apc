@@ -1,0 +1,35 @@
+This file contains any messages produced by compilers while
+running configure, to aid debugging if configure makes a mistake.
+
+configure:661: checking for gcc
+configure:774: checking whether the C compiler (gcc  ) works
+configure:790: gcc -o conftest    conftest.c  1>&5
+configure:816: checking whether the C compiler (gcc  ) is a cross-compiler
+configure:821: checking whether we are using GNU C
+configure:830: gcc -E conftest.c
+configure:849: checking whether gcc accepts -g
+configure:882: checking whether gcc and cc understand -c and -o together
+configure:897: gcc -c conftest.c -o conftest.o 1>&5
+configure:898: gcc -c conftest.c -o conftest.o 1>&5
+configure:903: cc -c conftest.c 1>&5
+configure:905: cc -c conftest.c -o conftest.o 1>&5
+configure:906: cc -c conftest.c -o conftest.o 1>&5
+configure:955: checking for PHP prefix
+configure:958: checking for PHP includes
+configure:961: checking for PHP extension directory
+configure:975: checking whether to enable apc support
+configure:1161: checking for union semun
+configure:1177: gcc -c -g -O2  conftest.c 1>&5
+configure: In function `main':
+configure:1173: storage size of `x' isn't known
+configure: failed program was:
+#line 1166 "configure"
+#include "confdefs.h"
+
+#include <sys/types.h>
+#include <sys/ipc.h>
+#include <sys/sem.h>
+   
+int main() {
+union semun x;
+; return 0; }
