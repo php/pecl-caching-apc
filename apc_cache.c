@@ -180,12 +180,6 @@ static void initcache(apc_cache_t* cache, const char* pathname,
 	for (i = 0; i < nbuckets; i++) {
 		cache->buckets[i].shmid = EMPTY;
 	}
-
-	/* create the first shared memory segment */
-/*
-	cache->segments[0].shmid  = apc_shm_create(pathname, 1, segsize);
-	apc_smm_initsegment(cache->segments[0].shmid, segsize);
-*/
 }
 
 
@@ -284,7 +278,7 @@ apc_cache_t* apc_cache_create(const char* pname, int nbuckets,
   #else
 	cache->lock     = apc_sem_create(pathname, 1, 1);
   #endif
-	cache->shmid    = apc_shm_create(pathname, 0, cachesize);
+	cache->shmid    = apc_shm_create(pathname, 1, cachesize);
 	cache->shmaddr  = apc_shm_attach(cache->shmid);
 	cache->header   = (header_t*) cache->shmaddr;
 	cache->lcache	= apc_nametable_create(nbuckets);
@@ -640,9 +634,9 @@ int apc_cache_insert(apc_cache_t* cache, const char* key,
 
 	shmaddr = 0;
 	offset = 0;
-	for (i = 0; i < maxseg; i++) {
+	for (i = 0; i < maxseg ; i++) {
 		if (segments[i].shmid == 0) { /* segment not initialized */
-			segments[i].shmid = apc_shm_create(cache->pathname, i+1, segsize);
+			segments[i].shmid = apc_shm_create(cache->pathname, i+2, segsize);
 			apc_smm_initsegment(segments[i].shmid, segsize);
 		}
 		shmaddr = apc_smm_attach(segments[i].shmid);
