@@ -1,3 +1,12 @@
+#
+# To compile the utility programs:
+#
+# This must point to the directory containing libphp4.la (typically
+# the top level of your PHP source tree). PHP must also be statically
+# compiled (specified "--enable-static" when configuring PHP).
+#
+PHP_SRC_DIR = /tmp/sw/php-4.0.3pl1
+
 LTLIBRARY_NAME			= libapc.la
 LTLIBRARY_SOURCES		= php_apc.c apc_iface.c apc_cache.c apc_serialize.c apc_rwlock.c apc_smm.c apc_shm.c apc_sem.c apc_lib.c apc_crc32.c apc_fcntl.c apc_cache_mm.c apc_nametable.c
 LTLIBRARY_SHARED_NAME	= php_apc.la
