@@ -306,7 +306,7 @@ void apc_deactivate()
 /* {{{ apc_version */
 const char* apc_version()
 {
-    return "2.0b";
+    return "2.0.2";
 }
 /* }}} */
 
