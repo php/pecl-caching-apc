@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<!DOCTYPE package SYSTEM "../pear/package.dtd">
+<package>
+ <name>APC</name>
+ <summary>Alternative PHP Cache</summary>
+ <maintainers>
+  <maintainer>
+   <user>dcowgill</user>
+   <name>Daniel Cowgill</name>
+   <email>dan@mail.communityconnect.com</email>
+   <role>lead</role>
+  </maintainer>
+  <maintainer>
+   <user>gschlossnagle</user>
+   <name>George Schlossnagle</name>
+   <email>george@omniti.com</email>
+   <role>lead</role>
+  </maintainer>
+ </maintainers>
+ <description>
+APC is the Alternative PHP Cache. It was conceived of to provide a free, open, and robust framework for caching and optimizing PHP intermediate code.
+ </description>
+ <license>PHP</license>
+ <release>
+  <state>stable</state>
+  <version>2.0</version>
+  <date>TBA</date>
+  <notes>
+Complete rework.  
+  </notes>
+  <filelist>
+    <file role="doc" name="CHANGELOG" />
+    <file role="doc" name="INSTALL" />
+    <file role="doc" name="LICENSE" />
+    <file role="doc" name="NOTICE" />
+    <file role="doc" name="README.compiler" />
+    <file role="src" name="Makefile.in" />
+    <file role="src" name="apc.c" />
+    <file role="src" name="apc.h" />
+    <file role="src" name="apc_cache.c" />
+    <file role="src" name="apc_cache.h" />
+    <file role="src" name="apc_compile.c" />
+    <file role="src" name="apc_compile.h" />
+    <file role="src" name="apc_debug.c" />
+    <file role="src" name="apc_debug.h" />
+    <file role="src" name="apc_fcntl.c" />
+    <file role="src" name="apc_fcntl.h" />
+    <file role="src" name="apc_globals.h" />
+    <file role="src" name="apc_lock.h" />
+    <file role="src" name="apc_main.c" />
+    <file role="src" name="apc_main.h" />
+    <file role="src" name="apc_mmap.c" />
+    <file role="src" name="apc_optimizer.c" />
+    <file role="src" name="apc_optimizer.h" />
+    <file role="src" name="apc_pair.c" />
+    <file role="src" name="apc_pair.h" />
+    <file role="src" name="apc_php.h" />
+    <file role="src" name="apc_sem.c" />
+    <file role="src" name="apc_sem.h" />
+    <file role="src" name="apc_shm.c" />
+    <file role="src" name="apc_shm.h" />
+    <file role="src" name="apc_sma.c" />
+    <file role="src" name="apc_sma.h" />
+    <file role="src" name="apc_stack.c" />
+    <file role="src" name="apc_stack.h" />
+    <file role="src" name="apc_zend.c" />
+    <file role="src" name="apc_zend.h" />
+    <file role="src" name="config.m4" />
+    <file role="src" name="php_apc.c" />
+    <file role="src" name="php_apc.h" />
+  </filelist>
+ </release>
+</package>
+<!--
+vim:et:ts=1:sw=1
+-->
