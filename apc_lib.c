@@ -430,3 +430,9 @@ int alignword(int x)
     return sizeof(word_t) * (1 + ((x-1)/sizeof(word_t)));
 }
 
+alignword_int(int x)
+{
+    typedef union { void* p; int i; } word_t;
+    return sizeof(word_t) * (1 + ((x-1)/sizeof(word_t)));
+}
+

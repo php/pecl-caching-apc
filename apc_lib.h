@@ -65,5 +65,6 @@ extern const char* apc_get_zend_extopname(int opcode);
 
 /* architecture dependence */
 extern int alignword(int x);
+extern int alignword_int(int x);
 
 #endif

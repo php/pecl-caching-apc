@@ -284,18 +284,18 @@ void apc_deserialize_zend_class_table(HashTable* gct, apc_nametable_t* acc, apc_
 
 /* SERIALIZE_SCALAR: write a scalar value to dst */
 #define SERIALIZE_SCALAR(x, type) {							\
-	if (dstsize - dstpos < alignword(sizeof(type))) {					\
-		expandbuf(&dst, &dstsize, alignword(sizeof(type)) + dstpos);	\
+	if (dstsize - dstpos < alignword_int(sizeof(type))) {					\
+		expandbuf(&dst, &dstsize, alignword_int(sizeof(type)) + dstpos);	\
 	}														\
 	*((type*)(dst + dstpos)) = x;							\
-	dstpos += alignword(sizeof(type));									\
+	dstpos += alignword_int(sizeof(type));									\
 }
 
 /* DESERIALIZE_SCALAR: read a scalar value from src */
 #define DESERIALIZE_SCALAR(xp, type) {						\
 	assert(srcsize - srcpos >= sizeof(type));				\
 	*(xp) = *((type*)(src + srcpos));						\
-	srcpos += alignword(sizeof(type));									\
+	srcpos += alignword_int(sizeof(type));									\
 }
 
 /* PEEK_SCALAR: read a scalar value from src without advancing read pos */
@@ -306,18 +306,18 @@ void apc_deserialize_zend_class_table(HashTable* gct, apc_nametable_t* acc, apc_
 
 /* STORE_BYTES: memcpy wrapper, writes to dst buffer */
 #define STORE_BYTES(bytes, n) {								\
-	if (dstsize - dstpos < alignword(n)) {								\
-		expandbuf(&dst, &dstsize, alignword(n) + dstpos);				\
+	if (dstsize - dstpos < alignword_int(n)) {								\
+		expandbuf(&dst, &dstsize, alignword_int(n) + dstpos);				\
 	}														\
 	memcpy(dst + dstpos, (void*)bytes, n);					\
-	dstpos += alignword(n);											\
+	dstpos += alignword_int(n);											\
 }
 	
 /* LOAD_BYTES: memcpy wrapper, reads from src buffer */
 #define LOAD_BYTES(bytes, n) {								\
 	assert(srcsize - srcpos >= n);							\
 	memcpy((void*)bytes, src + srcpos, n);					\
-	srcpos += alignword(n);											\
+	srcpos += alignword_int(n);											\
 }
 
 
