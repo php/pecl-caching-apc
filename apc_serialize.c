@@ -591,14 +591,10 @@ void apc_serialize_zvalue_value(zvalue_value* zv, int type)
 		SERIALIZE_SCALAR(zv->str.len, int);
 		break;
 	  case IS_ARRAY:
-printf("+ IS_ARRAY\n");
 		apc_serialize_hashtable(zv->ht, apc_serialize_zval_ptr);
-printf("- IS_ARRAY\n");
 		break;
 	  case IS_CONSTANT_ARRAY:
-printf("+ IS_CONSTANT_ARRAY\n");
 		apc_serialize_hashtable(zv->ht, apc_serialize_zval_ptr);
-printf("- IS_CONSTANT_ARRAY\n");
 		break;
 	  case IS_OBJECT:
 		apc_serialize_zend_class_entry(zv->obj.ce);
@@ -636,14 +632,10 @@ void apc_deserialize_zvalue_value(zvalue_value* zv, int type)
 		DESERIALIZE_SCALAR(&zv->str.len, int);
 		break;
 	  case IS_ARRAY:
-printf("+ IS_ARRAY\n");
 		apc_create_hashtable(&zv->ht, apc_create_zval, sizeof(void*));
-printf("- IS_ARRAY\n");
 		break;
 	  case IS_CONSTANT_ARRAY:
-printf("+ IS_CONSTANT_ARRAY\n");
 		apc_create_hashtable(&zv->ht, apc_create_zval, sizeof(void*));
-printf("- IS_CONSTANT_ARRAY\n");
 		break;
 	  case IS_OBJECT:
 		apc_create_zend_class_entry(&zv->obj.ce);
@@ -667,7 +659,6 @@ void apc_serialize_zval_ptr(zval** zv)
 
 void apc_serialize_zval(zval* zv)
 {
-printf("writing zval: type=%d, value.str.val=x\n", zv->type, zv->value.str.val);
 	/* type is the switch for serializing zvalue_value */
 	SERIALIZE_SCALAR(zv->type, zend_uchar);
 	apc_serialize_zvalue_value(&zv->value, zv->type);
@@ -682,7 +673,6 @@ void apc_deserialize_zval(zval* zv)
 	apc_deserialize_zvalue_value(&zv->value, zv->type);
 	DESERIALIZE_SCALAR(&zv->is_ref, zend_uchar);
 	DESERIALIZE_SCALAR(&zv->refcount, zend_ushort);
-printf("read zval: type=%d, value.str.val=x\n", zv->type, zv->value.str.val);
 }
 
 void apc_create_zval(zval** zv)
@@ -952,7 +942,6 @@ void apc_deserialize_znode(znode* zn)
 
 void apc_serialize_zend_op(zend_op* zo)
 {
-printf("writing zend_op %s\n", apc_get_zend_opname(zo->opcode));
 	SERIALIZE_SCALAR(zo->opcode, zend_uchar);
 	apc_serialize_znode(&zo->result);
 	apc_serialize_znode(&zo->op1);
@@ -964,7 +953,6 @@ printf("writing zend_op %s\n", apc_get_zend_opname(zo->opcode));
 void apc_deserialize_zend_op(zend_op* zo)
 {
 	DESERIALIZE_SCALAR(&zo->opcode, zend_uchar);
-printf("reading zend_op %s\n", apc_get_zend_opname(zo->opcode));
 	apc_deserialize_znode(&zo->result);
 	apc_deserialize_znode(&zo->op1);
 	apc_deserialize_znode(&zo->op2);
