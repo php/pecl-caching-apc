@@ -63,8 +63,12 @@ struct apc_cache_entry_t {
  * gc_ttl is the maximum time a cache entry may speed on the garbage
  * collection list. This is basically a work around for the inherent
  * unreliability of our reference counting mechanism (see apc_cache_release).
+ *
+ * ttl is the maximum time a cache entry can idle in a slot in case the slot
+ * is needed.  This helps in cleaning up the cache and ensuring that entries 
+ * hit frequently stay cached and ones not hit very often eventually disappear.
  */
-extern T apc_cache_create(int size_hint, int gc_ttl);
+extern T apc_cache_create(int size_hint, int gc_ttl, int ttl);
 
 /*
  * apc_cache_destroy releases any OS resources associated with a cache object.
@@ -156,6 +160,7 @@ struct apc_cache_link_t {
     time_t mtime;
     time_t creation_time;
     time_t deletion_time;
+    time_t access_time;
     int ref_count;
     apc_cache_link_t* next;
 };
@@ -167,6 +172,7 @@ struct apc_cache_info_t {
     int num_slots;
     int num_hits;
     int num_misses;
+    int ttl;
     apc_cache_link_t* list;
     apc_cache_link_t* deleted_list;
 };
