@@ -41,6 +41,8 @@ ZEND_BEGIN_MODULE_GLOBALS(apc)
     apc_cache_t* cache;     /* the global compiler cache */
     apc_stack_t* cache_stack; /* the stack of cached executable code */
     void* compiled_filters; /* compiled filters */
+    int cache_by_default;   /* true if files should be cached unless filtered out */
+                            /* false if files should only be cached if filtered in */
 ZEND_END_MODULE_GLOBALS(apc)
 
 /* (the following declaration is defined in php_apc.c) */

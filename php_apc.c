@@ -50,6 +50,7 @@ static void php_apc_init_globals(zend_apc_globals* apc_globals TSRMLS_DC)
     apc_globals->cache = NULL;
     apc_globals->cache_stack = NULL;
     apc_globals->compiled_filters = NULL;
+    apc_globals->cache_by_default = 1;
 }
 
 #ifdef ZTS
@@ -89,6 +90,7 @@ STD_PHP_INI_ENTRY("apc.gc_ttl",         "3600", PHP_INI_SYSTEM, OnUpdateInt,    
 STD_PHP_INI_ENTRY("apc.mmap_file_mask",  NULL,  PHP_INI_SYSTEM, OnUpdateString,         mmap_file_mask, zend_apc_globals, apc_globals)
 #endif
     PHP_INI_ENTRY("apc.filters",        "",     PHP_INI_SYSTEM, OnUpdate_filters)
+STD_PHP_INI_ENTRY("apc.cache_by_default", "1",  PHP_INI_SYSTEM, OnUpdateInt,            cache_by_default, zend_apc_globals, apc_globals)
 PHP_INI_END()
 
 /* }}} */

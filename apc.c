@@ -283,9 +283,14 @@ int apc_stat_paths(const char* filename, const char* path, struct stat* buf)
 
 /* {{{ regular expression wrapper functions */
 
+typedef struct {
+    regex_t *reg;
+    unsigned char type;
+} apc_regex;
+
 void* apc_regex_compile_array(char* patterns[])
 {
-    regex_t** regs;
+    apc_regex** regs;
     int npat;
     int i;
 
@@ -299,20 +304,27 @@ void* apc_regex_compile_array(char* patterns[])
         return NULL;
 
     /* allocate the array of compiled expressions */
-    regs = (regex_t**) apc_emalloc(sizeof(regex_t*) * (npat + 1));
-    for (i = 0; i <= npat; i++)
-        regs[i] = NULL;
+    regs = (apc_regex**) apc_emalloc(sizeof(apc_regex*) * (npat + 1));
+    for (i = 0; i <= npat; i++) {
+        regs[i] = (apc_regex *) apc_emalloc(sizeof(apc_regex));
+        regs[i]->reg = NULL;
+        regs[i]->type = APC_NEGATIVE_MATCH;
+    }
 
     /* compile the expressions */
     for (i = 0; i < npat; i++) {
-        regs[i] = (regex_t*) apc_emalloc(sizeof(regex_t));
+        char *pattern = patterns[i];
+        if(pattern[0]=='+') { regs[i]->type = APC_POSITIVE_MATCH; pattern = patterns[i]+sizeof(char); }
+        else if(pattern[0]=='-') { regs[i]->type = APC_NEGATIVE_MATCH; pattern = patterns[i]+sizeof(char); }
 
-        if (regcomp(regs[i], patterns[i], REG_EXTENDED | REG_NOSUB) != 0) {
+        regs[i]->reg = (regex_t*) apc_emalloc(sizeof(regex_t));
+
+        if (regcomp(regs[i]->reg, pattern, REG_EXTENDED | REG_NOSUB) != 0) {
             apc_wprint("apc_regex_compile_array: invalid expression '%s'",
-                       patterns[i]);
+                       pattern);
 
+            apc_efree(regs[i]->reg);
             apc_efree(regs[i]);
-            regs[i] = NULL;
             apc_regex_destroy_array(regs);
 
             return NULL;
@@ -325,11 +337,12 @@ void* apc_regex_compile_array(char* patterns[])
 void apc_regex_destroy_array(void* p)
 {
     if (p != NULL) {
-        regex_t** regs = (regex_t**) p;
+        apc_regex** regs = (apc_regex**) p;
         int i;
 
-        for (i = 0; regs[i] != NULL; i++) {
-            regfree(regs[i]);
+        for (i = 0; regs[i]->reg != NULL; i++) {
+            regfree(regs[i]->reg);
+            apc_efree(regs[i]->reg);
             apc_efree(regs[i]);
         }
         apc_efree(regs);
@@ -338,16 +351,16 @@ void apc_regex_destroy_array(void* p)
 
 int apc_regex_match_array(void* p, const char* input)
 {
-    regex_t** regs;
+    apc_regex** regs;
     int i;
 
     if (!p)
         return 0;
 
-    regs = (regex_t**) p;
-    for (i = 0; regs[i] != NULL; i++)
-        if (regexec(regs[i], input, 0, NULL, 0) == 0)
-            return 1;
+    regs = (apc_regex**) p;
+    for (i = 0; regs[i]->reg != NULL; i++)
+        if (regexec(regs[i]->reg, input, 0, NULL, 0) == 0)
+            return (int)(regs[i]->type);
 
     return 0;
 }

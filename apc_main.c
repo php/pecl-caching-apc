@@ -152,9 +152,12 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
     int num_functions, num_classes;
 
     /* check our regular expression filters first */
-    if (APCG(compiled_filters) &&
-        apc_regex_match_array(APCG(compiled_filters), h->filename))
-    {
+    if (APCG(compiled_filters)) {
+        int ret = apc_regex_match_array(APCG(compiled_filters), h->filename);
+        if(ret == APC_NEGATIVE_MATCH || (ret != APC_POSITIVE_MATCH && !APCG(cache_by_default))) {
+            return old_compile_file(h, type TSRMLS_CC);
+        }
+    } else if(!APCG(cache_by_default)) {
         return old_compile_file(h, type TSRMLS_CC);
     }
 
@@ -215,7 +218,7 @@ static void my_execute(zend_op_array* op_array TSRMLS_DC)
 
 int apc_module_init()
 {
-	TSRMLS_FETCH();
+    TSRMLS_FETCH();
     /* apc initialization */
 #if APC_MMAP
     apc_sma_init(APCG(shm_segments), APCG(shm_size)*1024*1024, APCG(mmap_file_mask));
