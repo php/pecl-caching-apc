@@ -884,7 +884,7 @@ void apc_serialize_zend_utility_functions(zend_utility_functions* zuf)
 	SERIALIZE_SCALAR(zuf->message_handler, void*);
 	SERIALIZE_SCALAR(zuf->block_interruptions, void*);
 	SERIALIZE_SCALAR(zuf->unblock_interruptions, void*);
-	SERIALIZE_SCALAR(zuf->get_ini_entry, void*);
+	SERIALIZE_SCALAR(APC_ZEND_GET_INI_ENTRIES, void*);
 	SERIALIZE_SCALAR(zuf->ticks_function, void*);
 }
 
