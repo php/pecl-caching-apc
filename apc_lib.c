@@ -177,6 +177,11 @@ int apc_ropen(const char* pathname, int flags, int mode)
 
 /* zend stuff */
 
+/* Following is an array that maps opcodes to textual names. Note that a
+ * future release of the Zend engine may invalidate some or all of these
+ * names. Fortunately, this is not mission-critical functionality.
+ * Caveat emptor. */
+
 static const char* opnames[] = {
 	"ZEND_NOP",                       /* 0 */
 	"ZEND_ADD",                       /* 1 */
@@ -298,6 +303,7 @@ static const char UNKNOWN_OP[] = "(unrecognized opcode)";
 
 #define NELEMS(a) (sizeof(a) / sizeof(a[0]))
 
+/* apc_get_zend_opname: return the name for the given opcode */
 const char* apc_get_zend_opname(int opcode)
 {
 	if (opcode < 0 || opcode >= NELEMS(opnames)) {
@@ -306,6 +312,7 @@ const char* apc_get_zend_opname(int opcode)
 	return opnames[opcode];
 }
 
+/* apc_get_zend_extopname: return the name for the given extended pcode */
 const char* apc_get_zend_extopname(int opcode)
 {
 	if (opcode < 0 || opcode >= NELEMS(extopnames)) {
