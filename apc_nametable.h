@@ -18,6 +18,7 @@
 
 #define T apc_nametable_t*
 typedef struct apc_nametable_t apc_nametable_t;
+typedef void (*apc_nametable_destructor_t)(void*);
 
 /*
  * apc_nametable_create: creates a new nametable with the specified
