@@ -26,12 +26,21 @@
 #include <stdarg.h>
 #include <errno.h>
 
-#define LOCK_SEM    0x01
-#define READER_SEM  0x02
-#define WRITER_SEM  0x03
-#define WAITING_SEM 0x04
+enum {
+	LOCK_SEM    = 0x01,
+	READER_SEM  = 0x02,
+	WRITER_SEM  = 0x03,
+	WAITING_SEM = 0x04
+};
 
-/* apc_rwl_create: */
+struct apc_rwlock_t {
+	int lock;		/* for locking access to other semaphores */
+	int reader;		/* reader count (>0 if one or more readers active) */
+	int writer;		/* writer count (>0 if a writer is active) */
+	int waiting;	/* waiting writers count (>0 if writers waiting) */
+};
+
+/* apc_rwl_create: create a new lock instance */
 apc_rwlock_t* apc_rwl_create(const char* pathname)
 {
 	apc_rwlock_t* lock = (apc_rwlock_t*) apc_emalloc(sizeof(apc_rwlock_t));
@@ -43,7 +52,7 @@ apc_rwlock_t* apc_rwl_create(const char* pathname)
 	return lock;
 }
 
-/* apc_rwl_destroy: */
+/* apc_rwl_destroy: destroy a lock instance */
 void apc_rwl_destroy(apc_rwlock_t* lock)
 {
 	apc_sem_destroy(lock->lock);
@@ -53,7 +62,7 @@ void apc_rwl_destroy(apc_rwlock_t* lock)
 	apc_efree(lock);
 }
 
-/* apc_rwl_readlock: */
+/* apc_rwl_readlock: acquire a read-only (shared) lock */
 void apc_rwl_readlock(apc_rwlock_t* lock)
 {
 	apc_sem_lock(lock->lock);
@@ -84,7 +93,7 @@ void apc_rwl_readlock(apc_rwlock_t* lock)
 	apc_sem_unlock(lock->lock);
 }
 
-/* apc_rwl_writelock: */
+/* apc_rwl_writelock: acquire a write (exclusive) lock */
 void apc_rwl_writelock(apc_rwlock_t* lock)
 {
 	apc_sem_lock(lock->lock);
@@ -117,7 +126,7 @@ void apc_rwl_writelock(apc_rwlock_t* lock)
 	apc_sem_unlock(lock->lock);
 }
 
-/* apc_rwl_unlock: */
+/* apc_rwl_unlock: release any lock */
 void apc_rwl_unlock(apc_rwlock_t* lock)
 {
 	apc_sem_lock(lock->lock);
