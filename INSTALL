@@ -85,7 +85,9 @@ apc.hash_buckets
 apc.regex 
 	supported: (M,S)
 	default: NULL
-	regex is a colon delimited list of POSIX extended regex of files NOT to cache.
+	example: apc.regex="no_cache.inc:bad_file.inc"
+	regex is a colon delimited list of POSIX extended regex of files 
+	NOT to cache.
 
 apc.shm_segments 
 	supported: (S)
@@ -102,19 +104,22 @@ apc.shm_segment_size
 apc.ttl 
 	supported: (M,S)
 	default: 0
+	values: {0,1}
 	ttl sets a global ttl on all cache objects.  Objects not updated in
 	ttl seconds will be expired and delted.
 
 apc.check_mtime
 	supported: (S)
 	default: 0
+	values: {0,1}
 	specifies whether a source file should be re-compiled if it has been
 	modified since it was last compiled. This may result in a slight loss
 	of efficiency.
 
 apc.relative_includes
 	supported: (M,S)
-	default: 0
+	default: 1
+	values: {0,1}
 	specifies whether a relative paths may be passed to the PHP file
 	inclusion functions (include(), require(), include_once(), etc.).
 	This may result in a slight loss of efficiency. Note: this option
@@ -123,6 +128,7 @@ apc.relative_includes
 apc.check_compiled_source
 	supported: (M,S)
 	default: 0
+	values: {0,1}
 	specifies whether or not to check to see if the php source file you
 	are reading is actually a compiled file.  This is the so-called
 	encoder functionality.  As there does not exist a standalone compiler,
