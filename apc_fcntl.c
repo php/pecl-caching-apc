@@ -28,6 +28,13 @@ int lock_reg(int fd, int cmd, int type, off_t offset, int whence, off_t len)
   return( fcntl(fd, cmd, &lock) );
 }
 
+int apc_flock_create(const char* filename)
+{
+	int fd;
+
+	return open(filename, O_RDWR, O_CREAT);
+}
+
 int apc_unlink(char *filename)
 {
 	int fd;

@@ -22,6 +22,7 @@
 #include "apc_shm.h"
 #include "apc_smm.h"
 #include "php_apc.h"
+#include "apc_fcntl.h"
 #include "apc_iface.h"
 
 #include "zend.h"
@@ -34,6 +35,10 @@
                      * this should be more efficient in many cases, and
 					 * where it is not necessary, its extra overhead is
 					 * not significant */
+#undef USE_FCNTL_LOCKS  /* use fcntl locks instead of semaphore locks
+						  * you MUST undef USE_RWLOCK above to make this
+						  * have effect.
+						  * This is experimental */
 
 enum { MAX_KEY_LEN = 256 };			/* must be >= maximum path length */
 enum { DO_CHECKSUM = 0 };			/* if this is true, perform checksums */
@@ -98,6 +103,13 @@ struct apc_cache_t {
 # define READLOCK(lock)  apc_rwl_readlock(lock)
 # define WRITELOCK(lock) apc_rwl_writelock(lock)
 # define UNLOCK(lock)    apc_rwl_unlock(lock)
+#elif defined(USE_FCNTL_LOCKS)
+# define READLOCK(lock) \
+		lock_reg(lock, F_SETLK, F_RDLCK, 0, SEEK_SET, 0)
+# define WRITELOCK(lock) \
+		lock_reg(lock, F_SETLK, F_WRLCK, 0, SEEK_SET, 0)
+# define UNLOCK(lock) \
+		lock_reg(lock, F_SETLK, F_UNLCK, 0, SEEK_SET, 0)
 #else
 # define READLOCK(lock)  apc_sem_lock(lock)
 # define WRITELOCK(lock) apc_sem_lock(lock)
@@ -234,6 +246,8 @@ apc_cache_t* apc_cache_create(const char* pathname, int nbuckets,
 	cache->pathname = (char*) apc_estrdup(pathname);
   #ifdef USE_RWLOCK
 	cache->lock     = apc_rwl_create(pathname);
+  #elif USE_FCNTL_LOCK
+  	cache->lock = apc_flock_create("/tmp/.apc.lock");
   #else
 	cache->lock     = apc_sem_create(pathname, 1, 1);
   #endif
