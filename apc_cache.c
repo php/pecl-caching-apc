@@ -346,7 +346,7 @@ int apc_cache_insert(apc_cache_t* cache,
 
     if ((*slot = make_slot(key, value, *slot, t)) == NULL) {
         UNLOCK(cache);
-        return 0;
+        return -1;
     }
 
     UNLOCK(cache);

@@ -130,7 +130,7 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
     apc_cache_key_t key;
     apc_cache_entry_t* cache_entry;
     zend_op_array* op_array;
-    int num_functions, num_classes;
+    int num_functions, num_classes, ret;
     zend_op_array* alloc_op_array;
     apc_function_t* alloc_functions;
     apc_class_t* alloc_classes;
@@ -215,10 +215,12 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
     }
     HANDLE_UNBLOCK_INTERRUPTIONS();
 
-    if (!apc_cache_insert(APCG(cache), key, cache_entry, t)) {
+    if ((ret = apc_cache_insert(APCG(cache), key, cache_entry, t)) != 1) {
         apc_cache_free_entry(cache_entry);
-        apc_cache_expunge(APCG(cache),t);
-        apc_log(APC_WARNING, "(apc_cache_insert) unable to cache '%s': insufficient " "shared memory available", h->opened_path);
+        if(ret==-1) {
+            apc_cache_expunge(APCG(cache),t);
+            apc_log(APC_WARNING, "(apc_cache_insert) unable to cache '%s': insufficient " "shared memory available", h->opened_path);
+        }
     }
 
     return op_array;
