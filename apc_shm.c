@@ -19,6 +19,8 @@
 #include <sys/ipc.h>
 #include <sys/shm.h>
 #include <sys/stat.h>
+#include <errno.h>
+#include <string.h>
 
 #ifndef SHM_R
 # define SHM_R 0444	/* read permission */
@@ -33,6 +35,7 @@ int apc_shm_create(const char* pathname, int proj, int size)
 	int shmid;	/* shared memory id */
 	int oflag;	/* permissions on shm */
 	key_t key;	/* shm key returned by ftok */
+	extern int errno;
 
 	key = IPC_PRIVATE;
 	if (pathname != NULL) {
@@ -43,7 +46,7 @@ int apc_shm_create(const char* pathname, int proj, int size)
 
 	oflag = IPC_CREAT | SHM_R | SHM_A;
 	if ((shmid = shmget(key, size, oflag)) < 0) {
-		apc_eprint("apc_shmcreate: shmget failed:");
+		apc_eprint("apc_shmcreate: shmget(%d, %d,%d) failed: %s", key, size, oflag, strerror(errno));
 	}
 
 	return shmid;

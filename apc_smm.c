@@ -46,8 +46,8 @@ struct block_t {
  * both assume the presence of a variable shmaddr that points to the
  * beginning of the shared memory segment in question */
 
-#define BLOCKAT(offset) ((block_t*)(shmaddr + offset))
-#define OFFSET(block) (((void*)block) - shmaddr)
+#define BLOCKAT(offset) ((block_t*)((char *)shmaddr + offset))
+#define OFFSET(block) ((int)(((char*)block) - (char*)shmaddr))
 
 /* only one segment index per process */
 #define NUM_BUCKETS 97
@@ -289,7 +289,7 @@ void apc_smm_free(void* shmaddr, int offset)
 	header = (header_t*) shmaddr;
 	header->avail += cur->size;
 
-	if (((void*)prv) + prv->size == cur) {
+	if (((char *)prv) + prv->size == (char *) cur) {
 		/* cur and prv share an edge, combine them */
 		prv->size += cur->size;
 		prv->next = cur->next;
@@ -297,7 +297,7 @@ void apc_smm_free(void* shmaddr, int offset)
 	}
 
 	nxt = BLOCKAT(cur->next);
-	if (((void*)cur) + cur->size == nxt) {
+	if (((char *)cur) + cur->size == (char *) nxt) {
 		/* cur and nxt shared an edge, combine them */
 		cur->size += nxt->size;
 		cur->next = nxt->next;

@@ -35,7 +35,7 @@
                      * this should be more efficient in many cases, and
 					 * where it is not necessary, its extra overhead is
 					 * not significant */
-#undef USE_FCNTL_LOCKS  /* use fcntl locks instead of semaphore locks
+#undef USE_FCNTL_LOCK  /* use fcntl locks instead of semaphore locks
 						  * you MUST undef USE_RWLOCK above to make this
 						  * have effect.
 						  * This is experimental */
@@ -103,7 +103,7 @@ struct apc_cache_t {
 # define READLOCK(lock)  apc_rwl_readlock(lock)
 # define WRITELOCK(lock) apc_rwl_writelock(lock)
 # define UNLOCK(lock)    apc_rwl_unlock(lock)
-#elif defined(USE_FCNTL_LOCKS)
+#elif defined(USE_FCNTL_LOCK)
 # define READLOCK(lock) \
 		lock_reg(lock, F_SETLK, F_RDLCK, 0, SEEK_SET, 0)
 # define WRITELOCK(lock) \
@@ -116,7 +116,7 @@ struct apc_cache_t {
 # define UNLOCK(lock)    apc_sem_unlock(lock)
 #endif
 
-enum { MAGIC_INIT = 0xD1A5B8E2 };	/* magic initialization value */
+#define MAGIC_INIT  0xC1A5 	/* magic initialization value */
 
 /* computecachesize: compute size of cache, given nbuckets and maxseg */
 static int computecachesize(int nbuckets, int maxseg)
@@ -246,7 +246,7 @@ apc_cache_t* apc_cache_create(const char* pathname, int nbuckets,
 	cache->pathname = (char*) apc_estrdup(pathname);
   #ifdef USE_RWLOCK
 	cache->lock     = apc_rwl_create(pathname);
-  #elif USE_FCNTL_LOCK
+  #elif defined(USE_FCNTL_LOCK)
   	cache->lock = apc_flock_create("/tmp/.apc.lock");
   #else
 	cache->lock     = apc_sem_create(pathname, 1, 1);
@@ -259,8 +259,8 @@ apc_cache_t* apc_cache_create(const char* pathname, int nbuckets,
 	 * to the beginning of buckets and of segments, respectively, in
 	 * shared memory */
 
-	cache->segments = (segment_t*) (cache->shmaddr + sizeof(header_t));
-	cache->buckets =  (bucket_t*)  (cache->shmaddr + sizeof(header_t) +
+	cache->segments = (segment_t*) ((char *)cache->shmaddr + sizeof(header_t));
+	cache->buckets =  (bucket_t*)  ((char *) cache->shmaddr + sizeof(header_t) +
 	                                maxseg*sizeof(segment_t));
 
 	/* instruct the OS to destroy the shm segment as soon as no processes
@@ -832,7 +832,7 @@ int apc_cache_dump_entry(apc_cache_t* cache, const char* key,
 	dummy = apc_nametable_create(97);
 
 	/* deserialize bucket and see what's inside */
-	apc_init_deserializer(apc_smm_attach(bp->shmid) + bp->offset, bp->length);
+	apc_init_deserializer((void *) ((char *)apc_smm_attach(bp->shmid) + bp->offset), bp->length);
 	apc_deserialize_magic();
 	apc_deserialize_zend_function_table(&function_table, dummy, dummy);
 	apc_deserialize_zend_class_table(&class_table, dummy, dummy);

@@ -14,6 +14,8 @@
 
 
 #include "apc_fcntl.h"
+#include <errno.h>
+#include <string.h>
 
 /* lock_reg fcntl wrapper */
 int lock_reg(int fd, int cmd, int type, off_t offset, int whence, off_t len)
@@ -31,8 +33,9 @@ int lock_reg(int fd, int cmd, int type, off_t offset, int whence, off_t len)
 int apc_flock_create(const char* filename)
 {
 	int fd;
+	int errno;
 
-	return open(filename, O_RDWR, O_CREAT);
+	return open(filename, O_RDWR|O_CREAT, 0666);
 }
 
 int apc_unlink(char *filename)
