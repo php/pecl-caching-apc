@@ -1,5 +1,15 @@
 #ifndef INCLUDED_APC_FCNTL
 #define INCLUDED_APC_FCNTL
+#include <sys/time.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <errno.h>
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <fcntl.h>
 
 /* lockreg: fcntl wrapper */
 static int lockreg(int fd, int cmd, int type, off_t offset,
@@ -15,22 +25,13 @@ static int lockreg(int fd, int cmd, int type, off_t offset,
 	return fcntl(fd, cmd, &lock);
 }
 
-void apc_fcntl_readlock(int fd)
-{
-	lockreg(fd, F_SETLF, F_RDLCK);
-}
+void apc_fcntl_readlock(int fd);
 
-void apc_fcntl_readlockwait(int fd)
-{
-}
+void apc_fcntl_readlockwait(int fd);
 
-void apc_fcntl_writelock(int fd)
-{
-}
+void apc_fcntl_writelock(int fd);
 
-void apc_fcntl_writelockwait(int fd)
-{
-}
+void apc_fcntl_writelockwait(int fd);
 
 
 /* simple fcntl wrappers */
@@ -45,3 +46,4 @@ void apc_fcntl_writelockwait(int fd)
 						lock_reg(fd, F_SETLKW, F_WRLCK, offset, whence, len)
 #define un_lock(fd, offset, whence, len) \
 						lock_reg(fd, F_SETLK, F_UNLCK, offset, whence, len)
+#endif
