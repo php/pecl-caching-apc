@@ -393,7 +393,7 @@ int apc_deserialize_magic(void)
 
 	apc_create_string(&tmp);
 	retval = strcmp(tmp,APC_MAGIC_HEADER);
-	free(tmp);
+	efree(tmp);
 	return retval;
 }
 /* type: zend_llist */
