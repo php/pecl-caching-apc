@@ -35,5 +35,9 @@
 #endif
 #endif
 
+#if ZEND_EXTENSION_API_NO >= 20010710
+# define APC_MUST_DEFINE_START_OP
+#endif
+
 #endif
 
