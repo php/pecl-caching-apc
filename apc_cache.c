@@ -773,39 +773,8 @@ int apc_cache_dump_entry(apc_cache_t* cache, const char* key,
 	/* begin second row of outer table */
 	outputfn("<tr>\n");
 
-	/* display functions in the entry */
-	outputfn("<td valign=top>");
-	outputfn("<table border=1 cellpadding=2 cellspacing=1>\n");
-	outputfn("<tr>\n");
-	outputfn("<td bgcolor=#dde4ff>Functions</td>\n");
-	p = function_table.pListHead;
-	while (p) {
-		zend_function* zf = (zend_function*) p->pData;
-		outputfn("<tr>\n");
-		outputfn("<td bgcolor=#eeeeee>%s</td>\n",
-			zf->common.function_name);
-		p = p->pListNext;
-	}
-	outputfn("</table>\n");
-	outputfn("</td>\n");
-
-	/* display classes in the entry */
-	outputfn("<td valign=top>");
-	outputfn("<table border=1 cellpadding=2 cellspacing=1>\n");
-	outputfn("<tr>\n");
-	outputfn("<td bgcolor=#dde4ff>Classes</td>\n");
-	p = class_table.pListHead;
-	while (p) {
-		zend_class_entry* zc = (zend_class_entry*) p->pData;
-		outputfn("<tr>\n");
-		outputfn("<td bgcolor=#eeeeee>%s</td>\n", zc->name);
-		p = p->pListNext;
-	}
-	outputfn("</table>\n");
-	outputfn("</td>\n");
-
 	/* display opcodes in the entry */
-	outputfn("<td valign=top align=right>");
+	outputfn("<td valign=top>");
 	outputfn("<table border=1 cellpadding=2 cellspacing=1>\n");
 	outputfn("<tr>\n");
 	outputfn("<td colspan=3 bgcolor=#dde4ff>OpCodes</td>\n");
@@ -836,6 +805,37 @@ int apc_cache_dump_entry(apc_cache_t* cache, const char* key,
 
 		/* print the line number of the opcode */
 		outputfn("<td bgcolor=#eeeeee>%u</td>\n", op_array->opcodes[i].lineno);
+	}
+	outputfn("</table>\n");
+	outputfn("</td>\n");
+
+	/* display functions in the entry */
+	outputfn("<td valign=top>");
+	outputfn("<table border=1 cellpadding=2 cellspacing=1>\n");
+	outputfn("<tr>\n");
+	outputfn("<td bgcolor=#dde4ff>Functions</td>\n");
+	p = function_table.pListHead;
+	while (p) {
+		zend_function* zf = (zend_function*) p->pData;
+		outputfn("<tr>\n");
+		outputfn("<td bgcolor=#eeeeee>%s</td>\n",
+			zf->common.function_name);
+		p = p->pListNext;
+	}
+	outputfn("</table>\n");
+	outputfn("</td>\n");
+
+	/* display classes in the entry */
+	outputfn("<td valign=top>");
+	outputfn("<table border=1 cellpadding=2 cellspacing=1>\n");
+	outputfn("<tr>\n");
+	outputfn("<td bgcolor=#dde4ff>Classes</td>\n");
+	p = class_table.pListHead;
+	while (p) {
+		zend_class_entry* zc = (zend_class_entry*) p->pData;
+		outputfn("<tr>\n");
+		outputfn("<td bgcolor=#eeeeee>%s</td>\n", zc->name);
+		p = p->pListNext;
 	}
 	outputfn("</table>\n");
 	outputfn("</td>\n");
