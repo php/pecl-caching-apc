@@ -1,0 +1,76 @@
+This document describes how to use the APC mmap version as a pre-compiler/
+loader.  Many people have likened this concept to an 'encoder' a la the
+Zend Encoder.  I refuse to call APC setup an encoder, choosing instead the
+term compiler, as it really does no 'encoding' in the sense that it does
+not obfuscate the compiled code at all.  It should be an easy excercise
+to write a tool to take an APC compiled file and turn into php code.  To
+paraphrase Bruce Schneier, using APC to protect your code is a method
+that make work against your kid sister, but not against anyone willing to 
+invest resources into decompiling it.
+
+What does a compiler bring you?
+A compiler allows you to store the compiled apc objects as files, which can
+then be moved to different (but similair platform) systems, where they
+will be used in place of (or in preference to) uncompiled php files.  As
+noted above, while this may be a convenient method of distributing code,
+as noted above this is not a secure method.  The compiled php op-tree
+contains more than enough information to recover equivalent php code.
+
+How does it work?
+First lets overview how php works.  When you run php on a file, it
+compiles that file, and executes it.  As it is executing the compiled file,
+it compiles and execues any include when it encounters it's 
+ZEND_INCLUDE_OR_EVAL opcode.  This is a depth-first recursive process.
+When a php interpreter running APC-mmap is called to compile a file, it
+first looks to see if it has already mmap()'d that file.  If it has not, it
+then looks to see if a compiled version of the file already exists.  If so,
+it mmap()s the file, deserializes the contents and executes them (thus skipping the ocmpile step.)  If the file does not exist in a compiled form, the
+file is parsed and compiled with the standard php routines, and  the
+compiled file is written to disk.  An important note about this logic is that
+if a compiled version of a file exists, the 'original' uncompiled file
+will never be used.  We can take advantage of this behaviour by simply
+putting compiled files 'where they belong' and completely omitting the
+uncompiled files.
+
+How do I implement this?
+APC-mmap writes files under the specified apc.cachedir (or /tmp if one is 
+omitted)  by concatenating apc_cachefir, the filename passed to php and _apc.
+For example if your cachedir is /cache, your file is referenced as 
+/opt/apache/htdocs/index.php, the cache file will be:
+/cache/opt/apache/htdocs/index.php_apc.
+On the destination system, install APC-mmap, and create a cachedir, and
+place all the serialized files you wish under the new cachedir.  For example
+if on the destinations sytem, you want to install the serialized version of
+the above file and your new cachedir is /dest-cache/, then place the above
+index.php_apc in
+/dest-cache/opt/apache/htdocs/index.php
+
+One wrinkle is that if you set apc.relative_includes=1 and include paths
+and remove your source files, your install will break.  The reason is that 
+relative_includes means that when a file is looked at, it must actually be foundon the fs (so that you can distinguish it from any other potentially
+identically named files in your include path.  Remember that since we don't
+want to set apc_relative_includes=1, files may end up in a place you don't 
+expect them (for example if apc.relative_includes=0 and inside index.php you 
+include with include("includes/test.inc"); , the resultant cache file will
+be /cache/includes/test.inc_apc.)  The solution?  My recomendation is to
+always fully qualify your path names, and turn off both relative_includes
+and include_path.  Not only does this simplify this type of setup, but it in 
+general reduces a decent amount of overhead in general.  To place the _apc 
+files in the same directory as their ncompiled counterparts (or where there 
+uncompiled counterparts would be, if you decide to remove them!), set 
+apc.cachedir="/", apc.relative_includes=0 and fully qualify your paths.
+If you really want to turn on relative_includes, you can just touch
+empty files wherever your source files should be - for apc.relative_includes
+to work, a file just needs to exist, the content is unimportant.
+
+Gotchas/FAQ:
+* Don't forget your includes.  Every file gets its own file, they aren't
+lumped into one big file.
+* If your compiled file matches an apc.regex exclusion and the compiled
+file will never be used.
+* apc_rm() works.  You may want to remove write permisions on your files to 
+prevent accidental removal, especially if they don't have accompanying source.
+* APC is not an obfuscator.  If you distribute compiled code thinking that in
+anyway it makes it less unreverseable, you have noone to blame but yourself.
+* setting apc.check_mtime=1 is a bad idea (your source files don't exist!)
+* setting apc.relative_inlcudes=1 is a bad idea.

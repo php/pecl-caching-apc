@@ -1,7 +1,15 @@
 APC Change Log
 -------------------------------
+
+1.0.7:
++ partially fixed for Solaris [gws 01.29.2001]
++ fixed mtime support for relative includes [gws 01.29.2001]
++ code cleanup [yg,ta,gws 01.29.2001]
+
 1.0.6:
 + support for mtime in mmap [yg,gws 01.27.2001]
++ fixed indexed-array initialization bug [djc,gws 01.27.2001]
+
 1.0.5:
 + support for relative include paths [djc,gws 01.19.2001]
 + class member array support fixed [djc 01.18.2001]
