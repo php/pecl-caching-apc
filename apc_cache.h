@@ -71,6 +71,6 @@ extern void apc_cache_unlock(apc_cache_t* cache);
 /*
  * apc_cache_dump: display information about a cache
  */
-extern void apc_cache_dump(apc_outputfn_t outputfn, apc_cache_t* cache);
+extern void apc_cache_dump(apc_cache_t* cache, apc_outputfn_t outputfn);
 
 #endif
