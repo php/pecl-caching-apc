@@ -41,6 +41,7 @@ ZEND_BEGIN_MODULE_GLOBALS(apc)
 	int shm_segments;		/* max no. of segments for object storage (shm) */
 	int shm_segment_size;	/* max segment size for object storage (shm) */
 	int check_mtime;		/* check modification time of files? (shm) */
+	int relative_includes; /* provide generic support for relative includes? */
 ZEND_END_MODULE_GLOBALS(apc)
 
 #define APCG(v) (apc_globals.v)

@@ -114,23 +114,20 @@ static PHP_INI_MH(set_regex)
 }
 
 /* set the check_mtime flag in apc_globals (used in the shm impl.) */
-static PHP_INI_MH(set_check_mtime)
-{
-	if (new_value == NULL) {
-		APCG(check_mtime) = 0;
-	}
-	else {
-		APCG(check_mtime) = atoi(new_value);
-	}
-	return SUCCESS;
-}
 
 PHP_INI_BEGIN()
 	PHP_INI_ENTRY("apc.ttl",         NULL, PHP_INI_ALL, set_ttl)
 	PHP_INI_ENTRY("apc.cachedir",    NULL, PHP_INI_ALL, set_cachedir)
 	PHP_INI_ENTRY("apc.regex",       NULL, PHP_INI_ALL, set_regex)
-	PHP_INI_ENTRY("apc.check_mtime", NULL, PHP_INI_ALL, set_check_mtime)
 
+	/* Flag to always check file modification time */
+	STD_PHP_INI_ENTRY("apc.check_mtime", "0", PHP_INI_ALL, 
+		OnUpdateInt, check_mtime, zend_apc_globals, apc_globals)
+
+	/* file to provide generic support for relative includes */
+	STD_PHP_INI_ENTRY("apc.relative_includes", "0", PHP_INI_ALL,     
+    OnUpdateInt, relative_includes, zend_apc_globals, apc_globals)
+	
 	/* Set no. of buckets in the shared cache index. Ignored under mmap. */
 	STD_PHP_INI_ENTRY("apc.hash_buckets", "1024", PHP_INI_ALL, 
 		OnUpdateInt, hash_buckets, zend_apc_globals, apc_globals)
