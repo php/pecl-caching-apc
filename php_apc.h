@@ -32,14 +32,15 @@ extern zend_module_entry apc_module_entry;
 #define apc_module_ptr &apc_module_entry
 
 ZEND_BEGIN_MODULE_GLOBALS(apc)
-	int	ttl;  /* global ttl for all cache objects */
-	char *cachedir; /* directory for compiled objects (mmap) */
-	char *regex_text; /* regex for matching items not to cache */
-	regex_t regex; /* compile regex_text */
-	int nmatches; /* number of regexes */
-	int hash_buckets; /* number of hash buckets in master index (shm) */
-	int shm_segments; /* max number of segments for object storage (shm) */
-	int shm_segment_size; /* max segment size for object storage (shm) */
+	int	ttl;				/* default ttl for all cache objects */
+	char *cachedir;			/* directory for compiled objects (mmap) */
+	char *regex_text;		/* regex for filtering items from cache */
+	regex_t regex;			/* compiled regex_text */
+	int nmatches;			/* no. of regex filters */
+	int hash_buckets;		/* no. of hash buckets in shared index (shm) */
+	int shm_segments;		/* max no. of segments for object storage (shm) */
+	int shm_segment_size;	/* max segment size for object storage (shm) */
+	int check_mtime;		/* check modification time of files? (shm) */
 ZEND_END_MODULE_GLOBALS(apc)
 
 #define APCG(v) (apc_globals.v)

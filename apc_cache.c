@@ -57,7 +57,8 @@ struct bucket_t {
 	int lastaccess;				/* time of last access (unix timestamp) */
 	int hitcount;				/* number of hits to this bucket */
 	int createtime;				/* time of creation (Unix timestamp) */
-	int ttl;					/* private ttl */
+	int ttl;					/* private time-to-live */
+	int mtime;					/* modification time of the source file */
 	unsigned int checksum;		/* checksum of stored data */
 };
 
@@ -111,10 +112,14 @@ static int computecachesize(int nbuckets, int maxseg)
 }
 
 /* isexpired: return true if bucket has expired */
-static int isexpired(bucket_t* b)
+static int isexpired(bucket_t* b, int mtime)
 {
-	/* a time-to-live of zero means "never expire" */
-	return b->ttl != 0 && time(0) > b->createtime + b->ttl;
+	/* if the time-to-live of this entry has been exceeded, or if the
+	 * file modification time has increased, the entry is expired.
+	 * note that a time-to-live of zero means "never expire" */
+
+	return (b->ttl != 0 && time(0) > b->createtime + b->ttl) ||
+	       (mtime > b->mtime);
 }
 
 /* initcache: perform full initialization of the cache. should execute once
@@ -319,8 +324,7 @@ int apc_cache_search(apc_cache_t* cache, const char* key)
 			continue;
 		}
 		if (strcmp(buckets[slot].key, key) == 0) {
-			if (isexpired(&buckets[slot])) {
-				/*emptybucket(&buckets[slot]);*/ /* FIXME */
+			if (isexpired(&buckets[slot], 0)) {
 				break; /* the entry has expired */
 			}
 			UNLOCK(cache->lock);
@@ -334,7 +338,7 @@ int apc_cache_search(apc_cache_t* cache, const char* key)
 
 /* apc_cache_retrieve: retrieve entry from cache */
 int apc_cache_retrieve(apc_cache_t* cache, const char* key, char** dataptr,
-	int* length, int* maxsize)
+	int* length, int* maxsize, int mtime)
 {
 	unsigned slot;		/* initial hash value */
 	unsigned k;			/* second hash value, for open-addressing */
@@ -358,8 +362,7 @@ int apc_cache_retrieve(apc_cache_t* cache, const char* key, char** dataptr,
 			continue;
 		}
 		if (strcmp(buckets[slot].key, key) == 0) {
-			if (isexpired(&buckets[slot])) {
-				/*emptybucket(&buckets[slot]);*/ /* FIXME */
+			if (isexpired(&buckets[slot], mtime)) {
 				break; /* the entry has expired */
 			}
 			shmaddr = (char*) apc_smm_attach(buckets[slot].shmid);
@@ -396,7 +399,7 @@ int apc_cache_retrieve(apc_cache_t* cache, const char* key, char** dataptr,
 
 /* apc_cache_insert: insert entry into cache */
 int apc_cache_insert(apc_cache_t* cache, const char* key,
-	const char* data, int size)
+	const char* data, int size, int mtime)
 {
 	int i;
 	unsigned slot;		/* initial hash value */
@@ -432,7 +435,7 @@ int apc_cache_insert(apc_cache_t* cache, const char* key,
 			emptybucket(&buckets[slot]);
 			break;	/* overwrite existing entry */
 		}
-		if (isexpired(&buckets[slot])) {
+		if (isexpired(&buckets[slot], 0)) {
 			emptybucket(&buckets[slot]);
 			break;	/* this entry has expired, overwrite it */
 		}
@@ -472,6 +475,7 @@ int apc_cache_insert(apc_cache_t* cache, const char* key,
 	buckets[slot].hitcount   = 0;
 	buckets[slot].checksum   = checksum;
 	buckets[slot].ttl		 = cache->header->ttl;
+	buckets[slot].mtime      = mtime;
 	
 	/* store data in segment and update its record */
 	memcpy(shmaddr + offset, data, size);
@@ -598,7 +602,7 @@ void apc_cache_dump(apc_cache_t* cache, const char* linkurl,
 	outputfn("<td bgcolor=#eeeeee>hit rate</td>\n");
 	outputfn("<td bgcolor=#eeeeee>%.2f</td>\n", hitrate);
 	outputfn("<tr>\n");
-	outputfn("<td bgcolor=#eeeeee>Regex Exclude Text</td>\n");
+	outputfn("<td bgcolor=#eeeeee>cache filter</td>\n");
 	outputfn("<td bgcolor=#eeeeee>%s</td>\n", APCG(regex_text)? APCG(regex_text): "(none)");
 	outputfn("<tr>\n");
 	outputfn("<td colspan=2 bgcolor=#ffffff>local information</td>\n");
@@ -619,16 +623,20 @@ void apc_cache_dump(apc_cache_t* cache, const char* linkurl,
 	/* display bucket info */
 	outputfn("<table border=1 cellpadding=2 cellspacing=1>\n");
 	outputfn("<tr><form method=post action=%s>\n", linkurl);
-	outputfn("<td colspan=9 bgcolor=#dde4ff>Bucket Data</td>\n");
+	outputfn("<td colspan=%d bgcolor=#dde4ff>Bucket Data</td>\n",
+		(linkurl != 0) ? 10 : 9);
 	outputfn("<tr>\n");
 	outputfn("<td bgcolor=#ffffff>Index</td>\n");
-	outputfn("<td bgcolor=#ffffff>Delete</td>\n");
+	if (linkurl != 0) {
+		outputfn("<td bgcolor=#ffffff>Delete</td>\n");
+	}
 	outputfn("<td bgcolor=#ffffff>Key</td>\n");
 	outputfn("<td bgcolor=#ffffff>Offset</td>\n");
 	outputfn("<td bgcolor=#ffffff>Length (B)</td>\n");
 	outputfn("<td bgcolor=#ffffff>Last Access</td>\n");
 	outputfn("<td bgcolor=#ffffff>Hits</td>\n");
 	outputfn("<td bgcolor=#ffffff>Expire Time</td>\n");
+	outputfn("<td bgcolor=#ffffff>Modification Time</td>\n");
 	outputfn("<td bgcolor=#ffffff>Checksum</td>\n");
 
 	for (i = 0; i < cache->header->nbuckets; i++) {
@@ -649,14 +657,15 @@ void apc_cache_dump(apc_cache_t* cache, const char* linkurl,
 		}
         else {
             outputfn("<td bgcolor=#eeeeee>%s</td>\n", bucket->key);
-            outputfn("<td bgcolor=#eeeeee>&nbsp</td>\n");
         }
 
 		outputfn("<td bgcolor=#eeeeee>%d</td>\n", bucket->offset);
 		outputfn("<td bgcolor=#eeeeee>%d</td>\n", bucket->length);
 		outputfn("<td bgcolor=#eeeeee>%d</td>\n", bucket->lastaccess);
 		outputfn("<td bgcolor=#eeeeee>%d</td>\n", bucket->hitcount);
-		outputfn("<td bgcolor=#eeeeee>%d</td>\n", bucket->createtime + bucket->ttl);
+		outputfn("<td bgcolor=#eeeeee>%d</td>\n",
+			(bucket->ttl != 0) ? bucket->createtime + bucket->ttl : 0);
+		outputfn("<td bgcolor=#eeeeee>%d</td>\n", bucket->mtime);
 		outputfn("<td bgcolor=#eeeeee>%u</td>\n", bucket->checksum);
 	}
 
@@ -725,8 +734,7 @@ int apc_cache_dump_entry(apc_cache_t* cache, const char* key,
 			continue;
 		}
 		if (strcmp(buckets[slot].key, key) == 0) {
-			if (isexpired(&buckets[slot])) {
-				/*emptybucket(&buckets[slot]);*/ /* FIXME */
+			if (isexpired(&buckets[slot], 0)) {
 				break; /* the entry has expired */
 			}
 			bp = &buckets[slot];
@@ -750,7 +758,7 @@ int apc_cache_dump_entry(apc_cache_t* cache, const char* key,
 	outputfn("<td colspan=3 valign=top>");
 	outputfn("<table border=1 cellpadding=2 cellspacing=1>\n");
 	outputfn("<tr>\n");
-	outputfn("<td colspan=8 bgcolor=#dde4ff>Bucket Data</td>\n");
+	outputfn("<td colspan=9 bgcolor=#dde4ff>Bucket Data</td>\n");
 	outputfn("<tr>\n");
 	outputfn("<td bgcolor=#ffffff>Key</td>\n");
 	outputfn("<td bgcolor=#ffffff>Offset</td>\n");
@@ -758,6 +766,7 @@ int apc_cache_dump_entry(apc_cache_t* cache, const char* key,
 	outputfn("<td bgcolor=#ffffff>Last Access</td>\n");
 	outputfn("<td bgcolor=#ffffff>Hits</td>\n");
 	outputfn("<td bgcolor=#ffffff>Expire Time</td>\n");
+	outputfn("<td bgcolor=#ffffff>Modification Time</td>\n");
 	outputfn("<td bgcolor=#ffffff>Checksum</td>\n");
 	outputfn("<tr>\n");
 	outputfn("<td bgcolor=#eeeeee>%s</td>\n", bp->key);
@@ -765,7 +774,9 @@ int apc_cache_dump_entry(apc_cache_t* cache, const char* key,
 	outputfn("<td bgcolor=#eeeeee>%d</td>\n", bp->length);
 	outputfn("<td bgcolor=#eeeeee>%d</td>\n", bp->lastaccess);
 	outputfn("<td bgcolor=#eeeeee>%d</td>\n", bp->hitcount);
-	outputfn("<td bgcolor=#eeeeee>%d</td>\n", bp->createtime + bp->ttl);
+	outputfn("<td bgcolor=#eeeeee>%d</td>\n",
+			(bp->ttl != 0) ? bp->createtime + bp->ttl : 0);
+	outputfn("<td bgcolor=#eeeeee>%d</td>\n", bp->mtime);
 	outputfn("<td bgcolor=#eeeeee>%u</td>\n", bp->checksum);
 	outputfn("</table>\n");
 	outputfn("</td>\n");

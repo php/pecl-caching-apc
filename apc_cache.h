@@ -56,18 +56,22 @@ extern int apc_cache_search(T cache, const char* key);
  * otherwise stores associated data in *dataptr, expanding array as necessary.
  * *length will be set to the length of data stored in dataptr. *maxsize must
  * contain the current size of the *dataptr array; it will be set to the new
- * size of *dataptr if it is expanded
+ * size of *dataptr if it is expanded. The current modification time of the
+ * file may be optionally supplied, and if it is greater than the old time
+ * the entry is expired (set mtime to zero to disable this check)
  */
 extern int apc_cache_retrieve(T cache, const char* key, char** dataptr,
-                              int* length, int* maxsize);
+                              int* length, int* maxsize, int mtime);
 
 /*
  * apc_cache_insert: adds a new mapping to cache. If the key already has a
  * mapping, it is removed and replaced with the new one. The key is
- * associated with the first size bytes stored in data
+ * associated with the first size bytes stored in data. If the current
+ * modification time of the file is supplied in mtime, it can be compared
+ * subsequently in apc_cache_retrieve
  */
 extern int apc_cache_insert(T cache, const char* key, const char* data,
-                            int size);
+                            int size, int mtime);
 
 /*
  * apc_cache_remove: removes a mapping from the cache

@@ -71,21 +71,25 @@ ZEND_GET_MODULE(apc)
 /* set the global ttl for all cache objects */
 static PHP_INI_MH(set_ttl)
 {
-  if(new_value==NULL)
-    APCG(ttl) = 0;
-  else
-    APCG(ttl) = atoi(new_value);
-  return SUCCESS;
+	if (new_value==NULL) {
+		APCG(ttl) = 0;
+	}
+	else {
+		APCG(ttl) = atoi(new_value);
+	}
+	return SUCCESS;
 }
 
 /* set the directory for compiled files for the mmap implementation.  
  * has no effect if running shm implementation. */
 static PHP_INI_MH(set_cachedir)
 {
-	if(new_value == NULL)
+	if (new_value == NULL) {
 		APCG(cachedir) = NULL;
-	else
+	}
+	else {
 		APCG(cachedir) = new_value;
+	}
 	return SUCCESS;
 }
 
@@ -96,34 +100,42 @@ static PHP_INI_MH(set_regex)
 		return SUCCESS;
 	}
 
-	if(regcomp(&APCG(regex), new_value, REG_EXTENDED|REG_ICASE) == 0)
-	{
+	if (regcomp(&APCG(regex), new_value, REG_EXTENDED | REG_ICASE) == 0) {
 		APCG(regex_text) = new_value;
 		APCG(nmatches) = 1;
 		return SUCCESS;
 	}
-	else
-		return FAILURE;
-}
-		
-PHP_INI_BEGIN()
-	PHP_INI_ENTRY("apc.ttl", NULL, PHP_INI_ALL, 
-		set_ttl)
-	PHP_INI_ENTRY("apc.cachedir", NULL, PHP_INI_ALL,  set_cachedir)
-	PHP_INI_ENTRY("apc.regex", NULL, PHP_INI_ALL,  set_regex)
 
-	/* set number of hash_buckets in the master index for shm
-	 * implementation.  Ignored under mmap. */
+	return FAILURE;
+}
+
+/* set the check_mtime flag in apc_globals (used in the shm impl.) */
+static PHP_INI_MH(set_check_mtime)
+{
+	if (new_value == NULL) {
+		APCG(check_mtime) = 0;
+	}
+	else {
+		APCG(check_mtime) = atoi(new_value);
+	}
+	return SUCCESS;
+}
+
+PHP_INI_BEGIN()
+	PHP_INI_ENTRY("apc.ttl",         NULL, PHP_INI_ALL, set_ttl)
+	PHP_INI_ENTRY("apc.cachedir",    NULL, PHP_INI_ALL, set_cachedir)
+	PHP_INI_ENTRY("apc.regex",       NULL, PHP_INI_ALL, set_regex)
+	PHP_INI_ENTRY("apc.check_mtime", NULL, PHP_INI_ALL, set_check_mtime)
+
+	/* Set no. of buckets in the shared cache index. Ignored under mmap. */
 	STD_PHP_INI_ENTRY("apc.hash_buckets", "1024", PHP_INI_ALL, 
 		OnUpdateInt, hash_buckets, zend_apc_globals, apc_globals)
 
-	/* set size of shm segments in for shm implementation.  
-	 * Ignored under mmap. */
+	/* Set size of shared memory segments. Ignored under mmap. */
 	STD_PHP_INI_ENTRY("apc.shm_segment_size", "33554431", PHP_INI_ALL, 
 		OnUpdateInt, shm_segment_size, zend_apc_globals, apc_globals)
 
-  /* set number of shm segments in for shm implementation.  
-   * Ignored under mmap. */
+	/* Set maximum no. of shared memory segments. Ignored under mmap. */
 	STD_PHP_INI_ENTRY("apc.shm_segments", "10", PHP_INI_ALL, 
 		OnUpdateInt, shm_segments, zend_apc_globals, apc_globals)
 PHP_INI_END()
@@ -181,7 +193,7 @@ PHP_RSHUTDOWN_FUNCTION(apc)
 PHP_MINFO_FUNCTION(apc)
 {
 	php_info_print_table_start();
-  php_info_print_table_header(2, "APC Support", "Enabled");
+	php_info_print_table_header(2, "APC Support", "Enabled");
 	php_info_print_table_row(2, "APC Version", apc_version());
 	php_info_print_table_end();
 }
