@@ -231,13 +231,13 @@ apc_cache_t* apc_cache_create(const char* pathname, int nbuckets, int ttl)
 
 	/* per-process initialization */
 	cache->pathname = (char*) apc_estrdup(pathname);
-  #ifdef USE_RWLOCK
+#ifdef USE_RWLOCK
 	cache->lock     = apc_rwl_create(pathname);
-  #elif defined(USE_FCNTL_LOCK)
+#elif defined(USE_FCNTL_LOCK)
   	cache->lock		= apc_flock_create("/tmp/.apc.lock");
-  #else
+#else
 	cache->lock     = apc_sem_create(pathname, 1, 1);
-  #endif
+#endif
 	cache->shmaddr  = apc_sma_malloc(cachesize);
 	cache->header   = (header_t*) cache->shmaddr;
 	cache->lcache	= apc_nametable_create(nbuckets);
