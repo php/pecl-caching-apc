@@ -897,7 +897,7 @@ void apc_deserialize_zend_utility_functions(zend_utility_functions* zuf)
 	DESERIALIZE_SCALAR(&zuf->message_handler, void*);
 	DESERIALIZE_SCALAR(&zuf->block_interruptions, void*);
 	DESERIALIZE_SCALAR(&zuf->unblock_interruptions, void*);
-	DESERIALIZE_SCALAR(&zuf->get_ini_entry, void*);
+	DESERIALIZE_SCALAR(&APC_ZEND_GET_INI_ENTRIES, void*);
 	DESERIALIZE_SCALAR(&zuf->ticks_function, void*);
 }
 
