@@ -90,6 +90,10 @@ static PHP_INI_MH(set_cachedir)
 /* set a POSIX extended regex to match for NOT serializing objects */
 static PHP_INI_MH(set_regex)
 {
+	if (APCG(regex) == 0) {
+		return SUCCESS;
+	}
+
 	if(regcomp(&APCG(regex), new_value, REG_EXTENDED|REG_ICASE) == 0)
 	{
 		APCG(regex_text) = new_value;
