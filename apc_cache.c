@@ -119,8 +119,8 @@ struct lbucket_t {
 
 #define MAGIC_INIT  0xC1A5 	/* magic initialization value */
 
-/* computecachesize: compute size of cache, given nbuckets and maxseg */
-static int computecachesize(int nbuckets, int maxseg)
+/* computecachesize: compute size of cache, given nbuckets */
+static int computecachesize(int nbuckets)
 {
 	return sizeof(header_t) + nbuckets*sizeof(bucket_t);
 }
@@ -139,13 +139,13 @@ static int isexpired(bucket_t* b, int mtime)
 /* initcache: perform full initialization of the cache. should execute once
  * for all processes (not for each process) */
 static void initcache(apc_cache_t* cache, const char* pathname,
-	int nbuckets, int maxseg, int segsize, int ttl)
+                      int nbuckets, int ttl)
 {
 	int cachesize;	/* total size of the cache */
 	header_t* header;
 	int i;
 
-	cachesize = computecachesize(nbuckets, maxseg);
+	cachesize = computecachesize(nbuckets);
 
 	memset(cache->shmaddr, 0, cachesize);
 	header = cache->header;
@@ -217,14 +217,13 @@ static unsigned int hashtwo(const char* v)
 }
 
 /* apc_cache_create: create a new cache */
-apc_cache_t* apc_cache_create(const char* pathname, int nbuckets,
-	int maxseg, int segsize, int ttl)
+apc_cache_t* apc_cache_create(const char* pathname, int nbuckets, int ttl)
 {
 	apc_cache_t* cache;
 	int cachesize;
 
 	cache = (apc_cache_t*) apc_emalloc(sizeof(apc_cache_t));
-	cachesize = computecachesize(nbuckets, maxseg);
+	cachesize = computecachesize(nbuckets);
 
 	/* per-process initialization */
 	cache->pathname = (char*) apc_estrdup(pathname);
@@ -249,7 +248,7 @@ apc_cache_t* apc_cache_create(const char* pathname, int nbuckets,
 		WRITELOCK(cache->lock);
 		if (cache->header->magic != MAGIC_INIT) {
 			/* cache not initialized (check twice to avoid race cond.) */
-			initcache(cache, pathname, nbuckets, maxseg, segsize, ttl);
+			initcache(cache, pathname, nbuckets, ttl);
 		}
 		UNLOCK(cache->lock);
 	}
