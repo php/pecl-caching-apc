@@ -23,11 +23,12 @@ APC is the Alternative PHP Cache. It was conceived of to provide a free, open, a
  <license>PHP</license>
  <release>
   <state>stable</state>
-  <version>2.0</version>
+  <version>2.0.1</version>
   <date>2003-07-01</date>
   <notes>
-Complete rework.  
+Win32 support added.  
   </notes>
+ </release>
   <filelist>
     <file role="doc" name="CHANGELOG" />
     <file role="doc" name="INSTALL" />
@@ -35,6 +36,7 @@ Complete rework.
     <file role="doc" name="NOTICE" />
     <file role="src" name="Makefile.in" />
     <file role="src" name="apc.c" />
+    <file role="src" name="apc.dsp" />
     <file role="src" name="apc.h" />
     <file role="src" name="apc_cache.c" />
     <file role="src" name="apc_cache.h" />
@@ -68,7 +70,16 @@ Complete rework.
     <file role="src" name="php_apc.c" />
     <file role="src" name="php_apc.h" />
   </filelist>
- </release>
+  <changelog>
+     <release>
+      <state>stable</state>
+      <version>2.0</version>
+      <date>2003-07-01</date>
+      <notes>
+Complete rework.  
+      </notes>
+     </release>
+  </changelog>
 </package>
 <!--
 vim:et:ts=1:sw=1

@@ -19,9 +19,15 @@
 #include "apc_shm.h"
 #include "apc.h"
 #include <sys/types.h>
+#ifdef PHP_WIN32
+/* shm functions are available in TSRM */
+#include <tsrm/tsrm_win32.h>
+#define key_t long
+#else
 #include <sys/ipc.h>
 #include <sys/shm.h>
 #include <sys/stat.h>
+#endif
 
 #ifndef SHM_R
 # define SHM_R 0444 /* read permission */
@@ -37,11 +43,14 @@ int apc_shm_create(const char* pathname, int proj, int size)
     key_t key;  /* shm key returned by ftok */
 
     key = IPC_PRIVATE;
+#ifndef PHP_WIN32
+	/* no ftok yet for win32 */
     if (pathname != NULL) {
         if ((key = ftok(pathname, proj)) < 0) {
             apc_eprint("apc_shm_create: ftok failed:");
         }
     }
+#endif
 
     oflag = IPC_CREAT | SHM_R | SHM_A;
     if ((shmid = shmget(key, size, oflag)) < 0) {

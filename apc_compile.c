@@ -277,6 +277,8 @@ static zend_op* my_copy_zend_op(zend_op* dst, zend_op* src, apc_malloc_t allocat
 /* {{{ my_copy_function */
 static zend_function* my_copy_function(zend_function* dst, zend_function* src, apc_malloc_t allocate)
 {
+	TSRMLS_FETCH();
+
     assert(src != NULL);
 
     CHECK(dst = my_bitwise_copy_function(dst, src, allocate));
@@ -290,7 +292,7 @@ static zend_function* my_copy_function(zend_function* dst, zend_function* src, a
     case ZEND_EVAL_CODE:
         CHECK(apc_copy_op_array(&dst->op_array,
                                 &src->op_array,
-                                allocate));
+                                allocate TSRMLS_CC));
         break;
 
     default:
@@ -474,7 +476,7 @@ static HashTable* my_copy_static_variables(zend_op_array* src, apc_malloc_t allo
 /* }}} */
 
 /* {{{ apc_copy_op_array */
-zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_malloc_t allocate)
+zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_malloc_t allocate TSRMLS_DC)
 {
     int i;
 
@@ -533,7 +535,7 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_mal
 /* }}} */
 
 /* {{{ apc_copy_new_functions */
-apc_function_t* apc_copy_new_functions(int old_count, apc_malloc_t allocate)
+apc_function_t* apc_copy_new_functions(int old_count, apc_malloc_t allocate TSRMLS_DC)
 {
     apc_function_t* array;
     int new_count;              /* number of new functions in table */
@@ -584,7 +586,7 @@ apc_function_t* apc_copy_new_functions(int old_count, apc_malloc_t allocate)
 /* }}} */
 
 /* {{{ apc_copy_new_classes */
-apc_class_t* apc_copy_new_classes(zend_op_array* op_array, int old_count, apc_malloc_t allocate)
+apc_class_t* apc_copy_new_classes(zend_op_array* op_array, int old_count, apc_malloc_t allocate TSRMLS_DC)
 {
     apc_class_t* array;
     int new_count;              /* number of new classs in table */

@@ -127,7 +127,8 @@ extern void apc_cache_release(T cache, apc_cache_entry_t* entry);
  */
 extern int apc_cache_make_key(apc_cache_key_t* key,
                               const char* filename,
-                              const char* include_path);
+                              const char* include_path
+							  TSRMLS_DC);
 
 /*
  * apc_cache_make_entry creates an apc_cache_entry_t object given a filename

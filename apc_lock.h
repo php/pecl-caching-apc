@@ -18,9 +18,17 @@
 
 #include "apc_sem.h"
 #include "apc_fcntl.h"
+#ifndef PHP_WIN32
 #include "config.h"
+#endif
 
-#ifdef APC_SEM_LOCKS
+#ifdef TSRM_LOCKS
+/* quick & dirty: use TSRM mutex locks for now */
+#define apc_lck_create(a,b,c) (int)tsrm_mutex_alloc()
+#define apc_lck_destroy(a)    tsrm_mutex_free((MUTEX_T)a)
+#define apc_lck_lock(a)       tsrm_mutex_lock((MUTEX_T)a)
+#define apc_lck_unlock(a)     tsrm_mutex_unlock((MUTEX_T)a)
+#elif defined(APC_SEM_LOCKS)
 #define apc_lck_create(a,b,c) apc_sem_create(NULL,(b),(c))
 #define apc_lck_destroy(a)    apc_sem_destroy(a)
 #define apc_lck_lock(a)       apc_sem_lock(a)

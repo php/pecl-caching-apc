@@ -37,7 +37,9 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#ifndef PHP_WIN32
 #include "config.h"
+#endif
 
 /* log levels constants (see apc_log) */
 enum { APC_DEBUG, APC_NOTICE, APC_WARNING, APC_ERROR };

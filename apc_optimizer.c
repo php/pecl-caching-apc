@@ -169,6 +169,7 @@ static zval* compute_result_of_constant_op(zend_op* op)
 {
     zval* result = 0;
     int (*binary_op)(zval*, zval*, zval* TSRMLS_DC) = 0;
+	TSRMLS_FETCH();
 
     // TODO: add cases for other deterministic binary ops!
     // TODO: extend to this work with the few unary ops
@@ -202,7 +203,7 @@ static zval* compute_result_of_constant_op(zend_op* op)
 
     if (binary_op) {
         ALLOC_INIT_ZVAL(result);
-        binary_op(result, &op->op1.u.constant, &op->op2.u.constant);
+        binary_op(result, &op->op1.u.constant, &op->op2.u.constant TSRMLS_CC);
         return result;
     }
     

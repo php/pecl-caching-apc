@@ -324,7 +324,8 @@ void apc_cache_release(apc_cache_t* cache, apc_cache_entry_t* entry)
 /* {{{ apc_cache_make_key */
 int apc_cache_make_key(apc_cache_key_t* key,
                        const char* filename,
-                       const char* include_path)
+                       const char* include_path
+					   TSRMLS_DC)
 {
     struct stat buf, *tmp_buf=NULL;
 
@@ -334,7 +335,7 @@ int apc_cache_make_key(apc_cache_key_t* key,
         return 0;
 
     if(!strcmp(SG(request_info).path_translated, filename)) {
-        tmp_buf = sapi_get_stat();  /* Apache has already done this stat() for us */
+        tmp_buf = sapi_get_stat(TSRMLS_C);  /* Apache has already done this stat() for us */
     }
     if(tmp_buf) buf = *tmp_buf;
     else if (stat(filename, &buf) != 0 &&

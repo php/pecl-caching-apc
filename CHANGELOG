@@ -1,3 +1,6 @@
+CVS:
+- Win32 support added [smc 2003-07-19]
+
 2.0:
 - ground-up rewrite sharing none of the original source code [djc 2003-02-10]
 

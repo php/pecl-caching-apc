@@ -16,6 +16,7 @@
 
 /* $Id$ */
 
+#include "apc_php.h"
 #include "apc_main.h"
 #include "apc.h"
 #include "apc_cache.h"
@@ -28,16 +29,16 @@
 /* {{{ module variables */
 
 /* pointer to the original Zend engine compile_file function */
-static ZEND_API zend_op_array* (*old_compile_file)
+static zend_op_array* (*old_compile_file)
     (zend_file_handle*, int TSRMLS_DC);
 
 /* pointer to the original Zend engine execute function */
-static ZEND_API void (*old_execute)(zend_op_array* TSRMLS_DC);
+static void (*old_execute)(zend_op_array* TSRMLS_DC);
 
 /* }}} */
 
 /* {{{ install_function */
-static int install_function(apc_function_t fn)
+static int install_function(apc_function_t fn TSRMLS_DC)
 {
     int status =
         zend_hash_add(EG(function_table),
@@ -56,7 +57,7 @@ static int install_function(apc_function_t fn)
 /* }}} */
 
 /* {{{ install_class */
-static int install_class(apc_class_t cl)
+static int install_class(apc_class_t cl TSRMLS_DC)
 {
     zend_class_entry* class_entry = cl.class_entry;
     zend_class_entry* parent;
@@ -99,7 +100,7 @@ static int install_class(apc_class_t cl)
 /* }}} */
 
 /* {{{ cached_compile */
-static zend_op_array* cached_compile()
+static zend_op_array* cached_compile(TSRMLS_D)
 {
     apc_cache_entry_t* cache_entry;
     int i;
@@ -109,13 +110,13 @@ static zend_op_array* cached_compile()
 
     if (cache_entry->functions) {
         for (i = 0; cache_entry->functions[i].function != NULL; i++) {
-            install_function(cache_entry->functions[i]);
+            install_function(cache_entry->functions[i] TSRMLS_CC);
         }
     }
 
     if (cache_entry->classes) {
         for (i = 0; cache_entry->classes[i].class_entry != NULL; i++) {
-            install_class(cache_entry->classes[i]);
+            install_class(cache_entry->classes[i] TSRMLS_CC);
         }
     }
 
@@ -131,6 +132,7 @@ static void cache_compile_results(apc_cache_key_t key,
                                   apc_class_t* classes)
 {
     apc_cache_entry_t* cache_entry;
+	TSRMLS_FETCH();
 
     /* Abort if any component could not be allocated */
     if (!op_array || !functions || !classes) {
@@ -148,7 +150,7 @@ static void cache_compile_results(apc_cache_key_t key,
 
 /* {{{ my_compile_file
    Overrides zend_compile_file */
-static ZEND_API zend_op_array* my_compile_file(zend_file_handle* h,
+static zend_op_array* my_compile_file(zend_file_handle* h,
                                                int type TSRMLS_DC)
 {
     apc_cache_key_t key;
@@ -164,7 +166,7 @@ static ZEND_API zend_op_array* my_compile_file(zend_file_handle* h,
     }
 
     /* try to create a cache key; if we fail, give up on caching */
-    if (!apc_cache_make_key(&key, h->filename, PG(include_path))) {
+    if (!apc_cache_make_key(&key, h->filename, PG(include_path) TSRMLS_CC)) {
         return old_compile_file(h, type TSRMLS_CC);
     }
     
@@ -173,7 +175,7 @@ static ZEND_API zend_op_array* my_compile_file(zend_file_handle* h,
     if (cache_entry != NULL) {
         zend_llist_add_element(&CG(open_files), h); /* XXX kludge */
         apc_stack_push(APCG(cache_stack), cache_entry);
-        return cached_compile();
+        return cached_compile(TSRMLS_C);
     }
 
     /* remember how many functions and classes existed before compilation */
@@ -190,18 +192,18 @@ static ZEND_API zend_op_array* my_compile_file(zend_file_handle* h,
     cache_compile_results(
         key,
         h->opened_path,
-        apc_copy_op_array(NULL, op_array, apc_sma_malloc),
-        apc_copy_new_functions(num_functions, apc_sma_malloc),
-        apc_copy_new_classes(op_array, num_classes, apc_sma_malloc));
+        apc_copy_op_array(NULL, op_array, apc_sma_malloc TSRMLS_CC),
+        apc_copy_new_functions(num_functions, apc_sma_malloc TSRMLS_CC),
+        apc_copy_new_classes(op_array, num_classes, apc_sma_malloc TSRMLS_CC));
 
     return op_array;
 }
 /* }}} */
 
 /* {{{ my_execute */
-static ZEND_API void my_execute(zend_op_array* op_array TSRMLS_DC)
+static void my_execute(zend_op_array* op_array TSRMLS_DC)
 {
-    old_execute(op_array);
+    old_execute(op_array TSRMLS_CC);
 
     if (apc_stack_size(APCG(cache_stack)) > 0) {
         apc_cache_entry_t* cache_entry =
@@ -220,6 +222,7 @@ static ZEND_API void my_execute(zend_op_array* op_array TSRMLS_DC)
 
 int apc_module_init()
 {
+	TSRMLS_FETCH();
     /* apc initialization */
 #if APC_MMAP
     apc_sma_init(APCG(shm_segments), APCG(shm_size)*1024*1024, APCG(mmap_file_mask));
@@ -238,7 +241,10 @@ int apc_module_init()
     old_execute = zend_execute;
     zend_execute = my_execute;
     
+#if 0
+	/* startup output is not good for stuff like fastcgi */
     apc_log(APC_NOTICE, "APC version %s -- startup complete", apc_version());
+#endif
 
     APCG(initialized) = 1;
     return 0;
@@ -246,6 +252,7 @@ int apc_module_init()
 
 int apc_module_shutdown()
 {
+	TSRMLS_FETCH();
     if (!APCG(initialized))
         return 0;
 
@@ -270,6 +277,7 @@ int apc_module_shutdown()
 
 int apc_request_init()
 {
+	TSRMLS_FETCH();
     apc_stack_clear(APCG(cache_stack));
     return 0;
 }
@@ -284,6 +292,7 @@ int apc_request_shutdown()
 /* {{{ apc_deactivate */
 void apc_deactivate()
 {
+	TSRMLS_FETCH();
     /* The execution stack was unwound, which prevented us from decrementing
      * the reference counts on active cache entries in `my_execute`.
      */
