@@ -838,18 +838,37 @@ void apc_serialize_zend_op_array(zend_op_array* zoa)
 			HashTable *table;
 
 			switch(zoa->opcodes[i].extended_value) {
-			  case ZEND_DECLARE_FUNCTION:
+			  case ZEND_DECLARE_FUNCTION: {
+				zend_function *function;
 				table = CG(function_table);
+				zend_hash_find(table , 
+					zoa->opcodes[i].op1.u.constant.value.str.val, 
+					zoa->opcodes[i].op1.u.constant.value.str.len, 
+					(void *) &function);
+				zend_hash_add(table, 
+					zoa->opcodes[i].op2.u.constant.value.str.val, 
+					zoa->opcodes[i].op2.u.constant.value.str.len+1, 
+					function, sizeof(zend_function), NULL);
+				}
 				break;
-			  case ZEND_DECLARE_CLASS:
+			  case ZEND_DECLARE_CLASS: {
+				zend_class_entry *ce;
 				table = CG(class_table);
+				zend_hash_find(table, 
+					zoa->opcodes[i].op1.u.constant.value.str.val, 
+					zoa->opcodes[i].op1.u.constant.value.str.len, 
+					(void **) &ce);
+				zend_hash_add(table, 
+					zoa->opcodes[i].op2.u.constant.value.str.val, 
+					zoa->opcodes[i].op2.u.constant.value.str.len+1, 
+					ce, sizeof(zend_class_entry), NULL);
+				}
 				break;
 			  default:
+				/* We should handle ZEND_DECLARE_INHERITED_CLASS here */
 				/* this typically results in a Zend compile error */
 				return;
 			}
-			zend_hash_del(table, zoa->opcodes[i].op1.u.constant.value.str.val,
-				zoa->opcodes[i].op1.u.constant.value.str.len);
 			zval_dtor(&zoa->opcodes[i].op1.u.constant);
 			zval_dtor(&zoa->opcodes[i].op2.u.constant);
 			zoa->opcodes[i].opcode = ZEND_NOP;
