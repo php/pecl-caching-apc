@@ -22,6 +22,7 @@ PHP_FUNCTION(apcinfo);
 PHP_FUNCTION(apc_rm);
 PHP_FUNCTION(apc_reset_cache);
 PHP_FUNCTION(apc_set_my_ttl);
+PHP_FUNCTION(apc_dump_cache_object);
 
 /* list of exported functions */
 function_entry apc_functions[] = {
@@ -29,6 +30,7 @@ function_entry apc_functions[] = {
 	PHP_FE(apc_rm, NULL)
 	PHP_FE(apc_reset_cache, NULL)
 	PHP_FE(apc_set_my_ttl, NULL)
+	PHP_FE(apc_dump_cache_object, NULL)
 	{NULL, NULL, NULL}
 };
 
@@ -197,7 +199,24 @@ PHP_GSHUTDOWN_FUNCTION(apc)
 /* generates an html page with cache statistics */
 PHP_FUNCTION(apcinfo)
 {
-	apc_module_info();
+	zval** param;
+
+	switch(ZEND_NUM_ARGS()) {
+	  case 0:
+		apc_module_info(0);
+		break;
+	  case 1:
+		if (zend_get_parameters_ex(1, &param) == FAILURE) {
+			RETURN_FALSE;
+		}
+		convert_to_string_ex(param);
+		apc_module_info((*param)->value.str.val);
+		break;
+	  default:
+		WRONG_PARAM_COUNT;
+		break;
+	}
+
 	RETURN_NULL();
 }
 
@@ -242,13 +261,35 @@ PHP_FUNCTION(apc_reset_cache)
  * seconds.  Only supported under shm implementation. */
 PHP_FUNCTION(apc_set_my_ttl)
 {
-	pval **num;
-	if(ZEND_NUM_ARGS() !=  1 || zend_get_parameters_ex(1, &num) == FAILURE) 
+	pval **param;
+
+	if(ZEND_NUM_ARGS() !=  1 || zend_get_parameters_ex(1, &param) == FAILURE) 
 	{
 		WRONG_PARAM_COUNT;
 	}
-	convert_to_long_ex(num);
-	apc_set_object_ttl(zend_get_executed_filename(ELS_C), num);
+	convert_to_long_ex(param);
+	apc_set_object_ttl(zend_get_executed_filename(ELS_C), (*param)->value.lval);
+	RETURN_TRUE;
+}
+
+/* takes a string. displays information about the cache entry with the
+ * same name.  */
+PHP_FUNCTION(apc_dump_cache_object)
+{
+	zval** param;
+
+	if(ZEND_NUM_ARGS() != 1 || zend_get_parameters_ex(1, &param) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+
+	convert_to_string_ex(param);
+
+	if (apc_dump_cache_object((*param)->value.str.val, zend_printf) < 0) {
+		zend_printf("<b>error:</b> entry '%s' not found<br>\n",
+			(*param)->value.str.val);
+		RETURN_FALSE;
+	}
+
 	RETURN_TRUE;
 }
 

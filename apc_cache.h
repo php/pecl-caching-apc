@@ -83,7 +83,15 @@ extern int apc_cache_set_object_ttl(T cache, const char* key, int ttl);
 /*
  * apc_cache_dump: display information about a cache
  */
-extern void apc_cache_dump(T cache, apc_outputfn_t outputfn);
+extern void apc_cache_dump(T cache, const char* linkurl,
+                           apc_outputfn_t outputfn);
+
+/*
+ * apc_cache_dump_entry: display information about a specified entry
+ * in the cache. Returns 0 if the entry was found, else non-zero.
+ */
+extern int apc_cache_dump_entry(T cache, const char* key,
+                                apc_outputfn_t outputfn);
 
 #undef T
 #endif

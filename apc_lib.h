@@ -48,4 +48,11 @@ extern double apc_timerreport(void);
 
 extern int apc_ropen(const char *pathname, int flags, int mode);
 
+
+/* zend-related */
+
+extern const char* apc_get_zend_opname(int opcode);
+extern const char* apc_get_zend_extopname(int opcode);
+
+
 #endif

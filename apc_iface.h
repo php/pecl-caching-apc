@@ -39,10 +39,14 @@ extern void apc_request_init(void);
 extern void apc_request_shutdown(void);
 
 /*
- * apc_module_info: display information about the apc module to
- * the page
+ * apc_module_info: displayis HTML information about the apc module to
+ * the page. If url is not null, each cache entry in the output will
+ * be linked to the url, with the entry filename attached. Thus, if
+ * url is "x.html?PAGE=", the entry with filename "/web/y.html" will be
+ * linked to "x.html?PAGE=/web/y.html". If url is null, cache entries
+ * will not be linked
  */
-extern void apc_module_info(void);
+extern void apc_module_info(const char* url);
 
 /*
  * apc_version: returns version string
@@ -72,5 +76,11 @@ extern void apc_reset_cache(void);
  * object.
  */
 extern void apc_set_object_ttl(const char* name, int ttl);
+
+/*
+ * apc_dump_cache_object: display information about a specified
+ * cache object. returns 0 on success, else non-zero.
+ */
+extern int apc_dump_cache_object(const char* name, apc_outputfn_t outputfn);
 
 #endif
