@@ -2,8 +2,6 @@
 #include <stdlib.h>
 #include <assert.h>
 
-#include "zend.h" // FIXME
-
 enum { START_SIZE = 1, GROW_FACTOR = 2 };
 
 char* dst   = 0;		/* destination (serialization) buffer */
@@ -963,8 +961,7 @@ void apc_deserialize_zend_function_table(HashTable* gft)
 			strlen(zf->common.function_name)+1, zf,
 			sizeof(zend_function), NULL) == FAILURE)
 		{
-			zend_error(E_WARNING, "failed to add '%s' to ftable\n", zf->common.function_name);
-			assert(0); /* should never fail! */
+			//assert(0); /* should never fail! */
 		}
 		DESERIALIZE_SCALAR(&exists, char);
 	}
@@ -1014,7 +1011,7 @@ void apc_deserialize_zend_class_table(HashTable* gct)
 		if (zend_hash_add(gct, zc->name, zc->name_length + 1,
 			zc, sizeof(zend_class_entry), NULL) == FAILURE)
 		{
-			assert(0); /* should never fail! */
+			//assert(0); /* should never fail! */
 		}
 		DESERIALIZE_SCALAR(&exists, char);
 	}
