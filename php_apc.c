@@ -68,15 +68,12 @@ static PHP_INI_MH(set_cachedir)
 
 static PHP_INI_MH(set_regex)
 {
-	if(new_value == NULL)
 	{
-		APCG(regex) = NULL;
-		return SUCCESS;
-	}
-	else
-	{
-		if(regcomp(APCG(regex), new_value, REG_EXTENDED|REG_ICASE) == 0)
+		if(regcomp(&APCG(regex), new_value, REG_EXTENDED|REG_ICASE) == 0)
+		{
+			APCG(nmatches) = 1;
 			return SUCCESS;
+		}
 		else
 			return FAILURE;
 	}
@@ -100,12 +97,16 @@ static int printlog(const char* fmt, ...)
 	zend_error(E_WARNING, fmt, args);
 	va_end(args);
 }
+static void apc_init_globals(void)
+{
+	APCG(nmatches) = 0;
+}
 
 /* module functions */
 
-
 PHP_MINIT_FUNCTION(apc)
 {
+	apc_init_globals();
 	REGISTER_INI_ENTRIES();
 	apc_module_init();
 	apc_seterrorfn(printlog);
