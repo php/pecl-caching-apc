@@ -81,18 +81,12 @@ static unsigned int hash(apc_cache_key_t key)
 /* }}} */
 
 /* {{{ make_slot */
-slot_t* make_slot(apc_cache_key_t key, apc_cache_entry_t* value, slot_t* next)
+slot_t* make_slot(apc_cache_key_t key, apc_cache_entry_t* value, slot_t* next, time_t t)
 {
     time_t t;
     slot_t* p = apc_sma_malloc(sizeof(slot_t));
     if (!p) return NULL;
-#if HAVE_APACHE
-    /* Save a syscall here under Apache.  This should actually be a SAPI call instead
-     * but we don't have that yet.  Once that is introduced in PHP this can be cleaned up  -Rasmus */
-    t = ((request_rec *)SG(server_context))->request_time;
-#else
-    t = time(0);
-#endif
+
     p->key = key;
     p->value = value;
     p->next = next;
@@ -275,15 +269,15 @@ int apc_cache_insert(apc_cache_t* cache,
     process_pending_removals(cache);
 
     slot = &cache->slots[hash(key) % cache->num_slots];
-    if(*slot) {
+
 #if HAVE_APACHE
-        /* Save a syscall here under Apache.  This should actually be a SAPI call instead
-         * but we don't have that yet.  Once that is introduced in PHP this can be cleaned up  -Rasmus */
-        t = ((request_rec *)SG(server_context))->request_time;
+    /* Save a syscall here under Apache.  This should actually be a SAPI call instead
+     * but we don't have that yet.  Once that is introduced in PHP this can be cleaned up  -Rasmus */
+    t = ((request_rec *)SG(server_context))->request_time;
 #else
-        t = time(0);
+    t = time(0);
 #endif
-    }
+
     while (*slot) {
         if (key_equals((*slot)->key, key)) {
             if ((*slot)->key.mtime < key.mtime) {
@@ -299,7 +293,7 @@ int apc_cache_insert(apc_cache_t* cache,
         slot = &(*slot)->next;
     }
 
-    if ((*slot = make_slot(key, value, *slot)) == NULL) {
+    if ((*slot = make_slot(key, value, *slot, t)) == NULL) {
         UNLOCK(cache);
         return 0;
     }

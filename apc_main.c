@@ -117,30 +117,6 @@ static zend_op_array* cached_compile(TSRMLS_D)
 }
 /* }}} */
 
-/* {{{ cache_compile_results */
-static void cache_compile_results(apc_cache_key_t key,
-                                  const char* filename,
-                                  zend_op_array* op_array,
-                                  apc_function_t* functions,
-                                  apc_class_t* classes)
-{
-    apc_cache_entry_t* cache_entry;
-	TSRMLS_FETCH();
-
-    /* Abort if any component could not be allocated */
-    if (!op_array || !functions || !classes) {
-        apc_log(APC_WARNING, "unable to cache '%s': insufficient "
-                "shared memory available", filename);
-        return;
-    }
-
-    cache_entry = apc_cache_make_entry(filename, op_array, functions, classes);
-    if (!apc_cache_insert(APCG(cache), key, cache_entry)) {
-        apc_cache_free_entry(cache_entry);
-    }
-}
-/* }}} */
-
 /* {{{ my_compile_file
    Overrides zend_compile_file */
 static zend_op_array* my_compile_file(zend_file_handle* h,
@@ -150,6 +126,9 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
     apc_cache_entry_t* cache_entry;
     zend_op_array* op_array;
     int num_functions, num_classes;
+    zend_op_array* alloc_op_array;
+    apc_function_t* alloc_functions;
+    apc_class_t* alloc_classes;
 
     /* check our regular expression filters first */
     if (APCG(compiled_filters)) {
@@ -184,13 +163,28 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
         return NULL;
     }
 
+    if(!(alloc_op_array = apc_copy_op_array(NULL, op_array, apc_sma_malloc, apc_sma_free TSRMLS_CC))) {
+        apc_log(APC_WARNING, "(apc_copy_op_array) unable to cache '%s': insufficient " "shared memory available", h->opened_path);
+        return op_array;
+    }
+    
+    if(!(alloc_functions = apc_copy_new_functions(num_functions, apc_sma_malloc, apc_sma_free TSRMLS_CC))) {
+        apc_log(APC_WARNING, "(apc_copy_new_functions) unable to cache '%s': insufficient " "shared memory available", h->opened_path);
+        apc_free_op_array(alloc_op_array, apc_sma_free);
+        return op_array;
+    }
+    if(!(alloc_classes = apc_copy_new_classes(op_array, num_classes, apc_sma_malloc, apc_sma_free TSRMLS_CC))) {
+        apc_log(APC_WARNING, "(apc_copy_new_classes) unable to cache '%s': insufficient " "shared memory available", h->opened_path);
+        apc_free_op_array(alloc_op_array, apc_sma_free);
+        apc_free_functions(alloc_functions, apc_sma_free);
+        return op_array;
+    }
+
     /* cache the compiler results */
-    cache_compile_results(
-        key,
-        h->opened_path,
-        apc_copy_op_array(NULL, op_array, apc_sma_malloc TSRMLS_CC),
-        apc_copy_new_functions(num_functions, apc_sma_malloc TSRMLS_CC),
-        apc_copy_new_classes(op_array, num_classes, apc_sma_malloc TSRMLS_CC));
+    cache_entry = apc_cache_make_entry(h->opened_path, alloc_op_array, alloc_functions, alloc_classes);
+    if (!apc_cache_insert(APCG(cache), key, cache_entry)) {
+        apc_cache_free_entry(cache_entry);
+    }
 
     return op_array;
 }

@@ -21,7 +21,7 @@
 #include "apc_zend.h"
 #include "apc_optimizer.h"
 
-typedef void* (*ht_copy_fun_t)(void*, void*, apc_malloc_t);
+typedef void* (*ht_copy_fun_t)(void*, void*, apc_malloc_t, apc_free_t);
 typedef void  (*ht_free_fun_t)(void*, apc_free_t);
 
 #define CHECK(p) { if ((p) == NULL) return NULL; }
@@ -37,15 +37,15 @@ static zend_function* my_bitwise_copy_function(zend_function*, zend_function*, a
  * (passed as the second argument). They also optionally allocate space for
  * the destination data structure if the first argument is null.
  */
-static zval** my_copy_zval_ptr(zval**, zval**, apc_malloc_t);
-static zval* my_copy_zval(zval*, zval*, apc_malloc_t);
-static znode* my_copy_znode(znode*, znode*, apc_malloc_t);
-static zend_op* my_copy_zend_op(zend_op*, zend_op*, apc_malloc_t);
-static zend_function* my_copy_function(zend_function*, zend_function*, apc_malloc_t);
-static zend_function_entry* my_copy_function_entry(zend_function_entry*, zend_function_entry*, apc_malloc_t);
-static zend_class_entry* my_copy_class_entry(zend_class_entry*, zend_class_entry*, apc_malloc_t);
-static HashTable* my_copy_hashtable(HashTable*, HashTable*, ht_copy_fun_t, int, apc_malloc_t);
-static HashTable* my_copy_static_variables(zend_op_array* src, apc_malloc_t allocate);
+static zval** my_copy_zval_ptr(zval**, zval**, apc_malloc_t, apc_free_t);
+static zval* my_copy_zval(zval*, zval*, apc_malloc_t, apc_free_t);
+static znode* my_copy_znode(znode*, znode*, apc_malloc_t, apc_free_t);
+static zend_op* my_copy_zend_op(zend_op*, zend_op*, apc_malloc_t, apc_free_t);
+static zend_function* my_copy_function(zend_function*, zend_function*, apc_malloc_t, apc_free_t);
+static zend_function_entry* my_copy_function_entry(zend_function_entry*, zend_function_entry*, apc_malloc_t, apc_free_t);
+static zend_class_entry* my_copy_class_entry(zend_class_entry*, zend_class_entry*, apc_malloc_t, apc_free_t);
+static HashTable* my_copy_hashtable(HashTable*, HashTable*, ht_copy_fun_t, ht_free_fun_t, int, apc_malloc_t, apc_free_t);
+static HashTable* my_copy_static_variables(zend_op_array* src, apc_malloc_t allocate, apc_free_t deallocate);
 
 /*
  * The "destroy" functions free the memory associated with a particular data
@@ -169,22 +169,28 @@ static zend_function* my_bitwise_copy_function(zend_function* dst, zend_function
 /* }}} */
 
 /* {{{ my_copy_zval_ptr */
-static zval** my_copy_zval_ptr(zval** dst, zval** src, apc_malloc_t allocate)
+static zval** my_copy_zval_ptr(zval** dst, zval** src, apc_malloc_t allocate, apc_free_t deallocate)
 {
+    int local_dst_alloc = 0;
+
     assert(src != NULL);
 
     if (!dst) {
         CHECK(dst = (zval**) allocate(sizeof(zval*)));
+        local_dst_alloc = 1;
     }
 
-    CHECK(dst[0] = (zval*) allocate(sizeof(zval)));
-    my_copy_zval(*dst, *src, allocate);
+    if(!(dst[0] = (zval*) allocate(sizeof(zval)))) {
+        if(local_dst_alloc) deallocate(dst);
+        return NULL;
+    }
+    my_copy_zval(*dst, *src, allocate, deallocate);
     return dst;
 }
 /* }}} */
 
 /* {{{ my_copy_zval */
-static zval* my_copy_zval(zval* dst, zval* src, apc_malloc_t allocate)
+static zval* my_copy_zval(zval* dst, zval* src, apc_malloc_t allocate, apc_free_t deallocate)
 {
     assert(dst != NULL);
     assert(src != NULL);
@@ -214,20 +220,23 @@ static zval* my_copy_zval(zval* dst, zval* src, apc_malloc_t allocate)
             my_copy_hashtable(NULL,
                               src->value.ht,
                               (ht_copy_fun_t) my_copy_zval_ptr,
+                              (ht_free_fun_t) my_free_zval_ptr,
                               1,
-                              allocate));
+                              allocate, deallocate));
         break;
 
     case IS_OBJECT:
         CHECK(dst->value.obj.ce =
-            my_copy_class_entry(NULL, src->value.obj.ce, allocate));
+            my_copy_class_entry(NULL, src->value.obj.ce, allocate, deallocate));
 
-        CHECK(dst->value.obj.properties =
-            my_copy_hashtable(NULL,
+        if(!(dst->value.obj.properties = my_copy_hashtable(NULL,
                               src->value.obj.properties,
                               (ht_copy_fun_t) my_copy_zval_ptr,
+                              (ht_free_fun_t) my_free_zval_ptr,
                               1,
-                              allocate));
+                              allocate, deallocate))) {
+            my_destroy_class_entry(dst->value.obj.ce, deallocate);
+        }
         break;
 
     default:
@@ -239,7 +248,7 @@ static zval* my_copy_zval(zval* dst, zval* src, apc_malloc_t allocate)
 /* }}} */
 
 /* {{{ my_copy_znode */
-static znode* my_copy_znode(znode* dst, znode* src, apc_malloc_t allocate)
+static znode* my_copy_znode(znode* dst, znode* src, apc_malloc_t allocate, apc_free_t deallocate)
 {
     assert(dst != NULL);
     assert(src != NULL);
@@ -252,7 +261,7 @@ static znode* my_copy_znode(znode* dst, znode* src, apc_malloc_t allocate)
            dst ->op_type == IS_UNUSED);
 
     if (src->op_type == IS_CONST) {
-        my_copy_zval(&dst->u.constant, &src->u.constant, allocate);
+        my_copy_zval(&dst->u.constant, &src->u.constant, allocate, deallocate);
     }
 
     return dst;
@@ -260,27 +269,29 @@ static znode* my_copy_znode(znode* dst, znode* src, apc_malloc_t allocate)
 /* }}} */
 
 /* {{{ my_copy_zend_op */
-static zend_op* my_copy_zend_op(zend_op* dst, zend_op* src, apc_malloc_t allocate)
+static zend_op* my_copy_zend_op(zend_op* dst, zend_op* src, apc_malloc_t allocate, apc_free_t deallocate)
 {
     assert(dst != NULL);
     assert(src != NULL);
 
     memcpy(dst, src, sizeof(src[0]));
-    my_copy_znode(&dst->result, &src->result, allocate);
-    my_copy_znode(&dst->op1, &src->op1, allocate);
-    my_copy_znode(&dst->op2, &src->op2, allocate);
+    my_copy_znode(&dst->result, &src->result, allocate, deallocate);
+    my_copy_znode(&dst->op1, &src->op1, allocate, deallocate);
+    my_copy_znode(&dst->op2, &src->op2, allocate, deallocate);
 
     return dst;
 }
 /* }}} */
 
 /* {{{ my_copy_function */
-static zend_function* my_copy_function(zend_function* dst, zend_function* src, apc_malloc_t allocate)
+static zend_function* my_copy_function(zend_function* dst, zend_function* src, apc_malloc_t allocate, apc_free_t deallocate)
 {
+    int local_dst_alloc = 0;
 	TSRMLS_FETCH();
 
     assert(src != NULL);
 
+    if(!dst) local_dst_alloc = 1;
     CHECK(dst = my_bitwise_copy_function(dst, src, allocate));
 
     switch (src->type) {
@@ -292,9 +303,12 @@ static zend_function* my_copy_function(zend_function* dst, zend_function* src, a
         
     case ZEND_USER_FUNCTION:
     case ZEND_EVAL_CODE:
-        CHECK(apc_copy_op_array(&dst->op_array,
+        if(!apc_copy_op_array(&dst->op_array,
                                 &src->op_array,
-                                allocate TSRMLS_CC));
+                                allocate, deallocate TSRMLS_CC)) {
+            if(local_dst_alloc) deallocate(dst);
+            return NULL;
+        }
         break;
 
     default:
@@ -306,25 +320,34 @@ static zend_function* my_copy_function(zend_function* dst, zend_function* src, a
 /* }}} */
 
 /* {{{ my_copy_function_entry */
-static zend_function_entry* my_copy_function_entry(zend_function_entry* dst, zend_function_entry* src, apc_malloc_t allocate)
+static zend_function_entry* my_copy_function_entry(zend_function_entry* dst, zend_function_entry* src, apc_malloc_t allocate, apc_free_t deallocate)
 {
+    int local_dst_alloc = 0;
     assert(src != NULL);
 
     if (!dst) {
         CHECK(dst = (zend_function_entry*) allocate(sizeof(src[0])));
+        local_dst_alloc = 1;
     }
 
     /* Start with a bitwise copy */
     memcpy(dst, src, sizeof(src[0]));
 
     if (src->fname) {
-        CHECK(dst->fname = apc_xstrdup(src->fname, allocate));
+        if(!(dst->fname = apc_xstrdup(src->fname, allocate))) {
+            if(local_dst_alloc) deallocate(dst);
+            return NULL;
+        }
     }
 
     if (src->func_arg_types) {
-        CHECK(dst->func_arg_types = apc_xmemcpy(src->func_arg_types,
+        if(!(dst->func_arg_types = apc_xmemcpy(src->func_arg_types,
                                                 src->func_arg_types[0]+1,
-                                                allocate));
+                                                allocate))) {
+            if(src->fname) deallocate(dst->fname);
+            if(local_dst_alloc) deallocate(dst);
+            return NULL;
+        }
     }
 
     return dst;
@@ -332,50 +355,91 @@ static zend_function_entry* my_copy_function_entry(zend_function_entry* dst, zen
 /* }}} */
 
 /* {{{ my_copy_class_entry */
-static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_entry* src, apc_malloc_t allocate)
+static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_entry* src, apc_malloc_t allocate, apc_free_t deallocate)
 {
+    int local_dst_alloc = 0;
+
     assert(src != NULL);
 
     if (!dst) {
         CHECK(dst = (zend_class_entry*) allocate(sizeof(src[0])));
+        local_dst_alloc = 1;
     }
 
     /* Start with a bitwise copy */
     memcpy(dst, src, sizeof(src[0]));
 
     if (src->name) {
-        CHECK(dst->name = apc_xstrdup(src->name, allocate));
+        if(!(dst->name = apc_xstrdup(src->name, allocate))) {
+            if(local_dst_alloc) deallocate(dst);
+            return NULL;
+        }
     }
 
-    CHECK(dst->refcount = apc_xmemcpy(src->refcount,
+    if(!(dst->refcount = apc_xmemcpy(src->refcount,
                                       sizeof(src->refcount[0]),
-                                      allocate));
+                                      allocate))) {
+        if(src->name) deallocate(dst->name);
+        if(local_dst_alloc) deallocate(dst);
+        return NULL;
+    }
 
-    CHECK(my_copy_hashtable(&dst->function_table,
+    if(!(my_copy_hashtable(&dst->function_table,
                             &src->function_table,
                             (ht_copy_fun_t) my_copy_function,
+                            (ht_free_fun_t) my_free_function,
                             0,
-                            allocate));
+                            allocate, deallocate))) {
+        if(src->name) deallocate(dst->name);
+        deallocate(dst->refcount);
+        if(local_dst_alloc) deallocate(dst);
+        return NULL;
+    }
 
-    CHECK(my_copy_hashtable(&dst->default_properties,
+    if(!(my_copy_hashtable(&dst->default_properties,
                             &src->default_properties,
                             (ht_copy_fun_t) my_copy_zval_ptr,
+                            (ht_free_fun_t) my_free_zval_ptr,
                             1,
-                            allocate));
+                            allocate,deallocate))) {
+        if(src->name) deallocate(dst->name);
+        deallocate(dst->refcount);
+        my_destroy_hashtable(&dst->function_table, (ht_free_fun_t)my_free_function, deallocate);
+        if(local_dst_alloc) deallocate(dst);
+        return NULL;
+    }
 
     if (src->builtin_functions) {
         int i, n;
 
         for (n = 0; src->builtin_functions[n].fname != NULL; n++) {}
 
-        CHECK(dst->builtin_functions =
+        if(!(dst->builtin_functions =
             (zend_function_entry*)
-                allocate((n + 1) * sizeof(zend_function_entry)));
+                allocate((n + 1) * sizeof(zend_function_entry)))) {
+            if(src->name) deallocate(dst->name);
+            deallocate(dst->refcount);
+            my_destroy_hashtable(&dst->function_table, (ht_free_fun_t)my_free_function, deallocate);
+            my_destroy_hashtable(&dst->default_properties, (ht_free_fun_t)my_free_zval_ptr, deallocate);
+            if(local_dst_alloc) deallocate(dst);
+            return NULL;
+        }
+
 
         for (i = 0; i < n; i++) {
-            my_copy_function_entry(&dst->builtin_functions[i],
+            if(!my_copy_function_entry(&dst->builtin_functions[i],
                                    &src->builtin_functions[i],
-                                   allocate);
+                                   allocate, deallocate)) {
+                int ii;
+
+                for(ii=i-1; i>=0; i--) my_destroy_function_entry(&dst->builtin_functions[ii], deallocate);
+                if(src->name) deallocate(dst->name);
+                deallocate(dst->refcount);
+                my_destroy_hashtable(&dst->function_table, (ht_free_fun_t)my_free_function, deallocate);
+                my_destroy_hashtable(&dst->default_properties, (ht_free_fun_t)my_free_zval_ptr, deallocate);
+                if(local_dst_alloc) deallocate(dst);
+                return NULL;
+            }
         }
 
         dst->builtin_functions[n].fname = NULL;
@@ -389,24 +453,30 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
 static HashTable* my_copy_hashtable(HashTable* dst,
                                     HashTable* src,
                                     ht_copy_fun_t copy_fn,
+                                    ht_free_fun_t free_fn,
                                     int holds_ptrs,
-                                    apc_malloc_t allocate)
+                                    apc_malloc_t allocate, apc_free_t deallocate)
 {
     Bucket* curr = NULL;
     Bucket* prev = NULL;
     Bucket* newp = NULL;
     int first = 1;
+    int local_dst_alloc = 0;
 
     assert(src != NULL);
 
     if (!dst) {
         CHECK(dst = (HashTable*) allocate(sizeof(src[0])));
+        local_dst_alloc = 1;
     }
 
     memcpy(dst, src, sizeof(src[0]));
 
     /* allocate buckets for the new hashtable */
-    CHECK(dst->arBuckets = allocate(dst->nTableSize * sizeof(Bucket*)));
+    if(!(dst->arBuckets = allocate(dst->nTableSize * sizeof(Bucket*)))) {
+        if(local_dst_alloc) deallocate(dst);
+        return NULL;
+    }
     memset(dst->arBuckets, 0, dst->nTableSize * sizeof(Bucket*));
     dst->pInternalPointer = NULL;
 
@@ -414,10 +484,20 @@ static HashTable* my_copy_hashtable(HashTable* dst,
         int n = curr->h % dst->nTableSize;
 
         /* create a copy of the bucket 'curr' */
-        CHECK(newp =
+        if(!(newp =
             (Bucket*) apc_xmemcpy(curr,
                                   sizeof(Bucket) + curr->nKeyLength - 1,
-                                  allocate));
+                                  allocate))) {
+            curr = curr->pListLast;
+            while(curr) {
+                int nn = curr->h % dst->nTableSize;
+                if(dst->arBuckets[nn]) deallocate(dst->arBuckets[nn]);
+                curr = curr->pListLast;
+            }
+            deallocate(dst->arBuckets);
+            if(local_dst_alloc) deallocate(dst);
+            return NULL;
+        }
 
         /* insert 'newp' into the linked list at its hashed index */
         if (dst->arBuckets[n]) {
@@ -432,7 +512,22 @@ static HashTable* my_copy_hashtable(HashTable* dst,
         dst->arBuckets[n] = newp;
 
         /* copy the bucket data using our 'copy_fn' callback function */
-        CHECK(newp->pData = copy_fn(NULL, curr->pData, allocate));
+        if(!(newp->pData = copy_fn(NULL, curr->pData, allocate, deallocate))) {
+
+            deallocate(newp);
+            curr = curr->pListLast;
+            while(curr) {
+                int nn = curr->h % dst->nTableSize;
+                if(dst->arBuckets[nn]) {
+                    if(free_fn && dst->arBuckets[nn]->pData) free_fn(dst->arBuckets[nn]->pData, deallocate);
+                    deallocate(dst->arBuckets[nn]);
+                }
+                curr = curr->pListLast;
+            }
+            deallocate(dst->arBuckets);
+            if(local_dst_alloc) deallocate(dst);
+            return NULL;
+        }
 
         if (holds_ptrs) {
             memcpy(&newp->pDataPtr, newp->pData, sizeof(void*));
@@ -463,7 +558,7 @@ static HashTable* my_copy_hashtable(HashTable* dst,
 /* }}} */
 
 /* {{{ my_copy_static_variables */
-static HashTable* my_copy_static_variables(zend_op_array* src, apc_malloc_t allocate)
+static HashTable* my_copy_static_variables(zend_op_array* src, apc_malloc_t allocate, apc_free_t deallocate)
 { 
     if (src->static_variables == NULL) {
         return NULL;
@@ -472,20 +567,23 @@ static HashTable* my_copy_static_variables(zend_op_array* src, apc_malloc_t allo
     return my_copy_hashtable(NULL,
                              src->static_variables,
                              (ht_copy_fun_t) my_copy_zval_ptr,
+                             (ht_free_fun_t) my_free_zval_ptr,
                              1,
-                             allocate);
+                             allocate, deallocate);
 }
 /* }}} */
 
 /* {{{ apc_copy_op_array */
-zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_malloc_t allocate TSRMLS_DC)
+zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_malloc_t allocate, apc_free_t deallocate TSRMLS_DC)
 {
     int i;
+    int local_dst_alloc = 0;
 
     assert(src != NULL);
 
     if (!dst) {
         CHECK(dst = (zend_op_array*) allocate(sizeof(src[0])));
+        local_dst_alloc = 1;
     }
     if(APCG(optimization)) {
         apc_optimize_op_array(src);
@@ -496,40 +594,90 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_mal
 
     /* copy the arg types array (if set) */
     if (src->arg_types) {
-        CHECK(dst->arg_types =
-            apc_xmemcpy(src->arg_types,
+        if(!(dst->arg_types = apc_xmemcpy(src->arg_types,
                         sizeof(src->arg_types[0]) * (src->arg_types[0]+1),
-                        allocate));
+                        allocate))) {
+            if(local_dst_alloc) deallocate(dst);
+            return NULL;
+        }
     }
 
     if (src->function_name) {
-        CHECK(dst->function_name = apc_xstrdup(src->function_name, allocate));
+        if(!(dst->function_name = apc_xstrdup(src->function_name, allocate))) {
+            if(src->arg_types) deallocate(dst->arg_types);
+            if(local_dst_alloc) deallocate(dst);
+            return NULL;
+        }
     }
     if (src->filename) {
-        CHECK(dst->filename = apc_xstrdup(src->filename, allocate));
+        if(!(dst->filename = apc_xstrdup(src->filename, allocate))) {
+            if(src->arg_types) deallocate(dst->arg_types);
+            if(src->function_name) deallocate(dst->function_name);
+            if(local_dst_alloc) deallocate(dst);
+            return NULL;
+        }
     }
 
-    CHECK(dst->refcount = apc_xmemcpy(src->refcount,
+    if(!(dst->refcount = apc_xmemcpy(src->refcount,
                                       sizeof(src->refcount[0]),
-                                      allocate));
+                                      allocate))) {
+        if(src->arg_types) deallocate(dst->arg_types);
+        if(src->function_name) deallocate(dst->function_name);
+        if(src->filename) deallocate(dst->filename);
+        if(local_dst_alloc) deallocate(dst);
+        return NULL;
+    }
 
     /* deep-copy the opcodes */
-    CHECK(dst->opcodes = (zend_op*) allocate(sizeof(zend_op) * src->last));
+    if(!(dst->opcodes = (zend_op*) allocate(sizeof(zend_op) * src->last))) {
+        if(src->arg_types) deallocate(dst->arg_types);
+        if(src->function_name) deallocate(dst->function_name);
+        if(src->filename) deallocate(dst->filename);
+        deallocate(dst->refcount);
+        if(local_dst_alloc) deallocate(dst);
+        return NULL;
+    }
     for (i = 0; i < src->last; i++) {
-        CHECK(my_copy_zend_op(dst->opcodes+i, src->opcodes+i, allocate));
+        if(!(my_copy_zend_op(dst->opcodes+i, src->opcodes+i, allocate, deallocate))) {
+            int ii;
+            for(ii = i-1; i>=0; ii--) my_destroy_zend_op(dst->opcodes+ii, deallocate);
+            if(src->arg_types) deallocate(dst->arg_types);
+            if(src->function_name) deallocate(dst->function_name);
+            if(src->filename) deallocate(dst->filename);
+            deallocate(dst->refcount);
+            if(local_dst_alloc) deallocate(dst);
+            return NULL; 
+        }
     }
 
     /* copy the break-continue array */
     if (src->brk_cont_array) {
-        CHECK(dst->brk_cont_array =
+        if(!(dst->brk_cont_array =
             apc_xmemcpy(src->brk_cont_array,
                         sizeof(src->brk_cont_array[0]) * src->last_brk_cont,
-                        allocate));
+                        allocate))) {
+            for(i=0; i < src->last; i++) my_destroy_zend_op(dst->opcodes+i, deallocate);
+            if(src->arg_types) deallocate(dst->arg_types);
+            if(src->function_name) deallocate(dst->function_name);
+            if(src->filename) deallocate(dst->filename);
+            deallocate(dst->refcount);
+            if(local_dst_alloc) deallocate(dst);
+            return NULL;
+        }
     }
 
     /* copy the table of static variables */
     if (src->static_variables) {
-        CHECK(dst->static_variables = my_copy_static_variables(src, allocate));
+        if(!(dst->static_variables = my_copy_static_variables(src, allocate, deallocate))) {
+            if(src->brk_cont_array) deallocate(dst->brk_cont_array);
+            for(i=0; i < src->last; i++) my_destroy_zend_op(dst->opcodes+i, deallocate);
+            if(src->arg_types) deallocate(dst->arg_types);
+            if(src->function_name) deallocate(dst->function_name);
+            if(src->filename) deallocate(dst->filename);
+            deallocate(dst->refcount);
+            if(local_dst_alloc) deallocate(dst);
+            return NULL;
+        }
     }
 
     return dst;
@@ -537,7 +685,7 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_mal
 /* }}} */
 
 /* {{{ apc_copy_new_functions */
-apc_function_t* apc_copy_new_functions(int old_count, apc_malloc_t allocate TSRMLS_DC)
+apc_function_t* apc_copy_new_functions(int old_count, apc_malloc_t allocate, apc_free_t deallocate TSRMLS_DC)
 {
     apc_function_t* array;
     int new_count;              /* number of new functions in table */
@@ -576,9 +724,26 @@ apc_function_t* apc_copy_new_functions(int old_count, apc_malloc_t allocate TSRM
 
         zend_hash_get_current_data(CG(function_table), (void**) &fun);
 
-        CHECK(array[i].name = apc_xmemcpy(key, (int) key_size, allocate));
+        if(!(array[i].name = apc_xmemcpy(key, (int) key_size, allocate))) {
+            int ii;
+            for(ii=i-1; ii>=0; ii--) {
+                deallocate(array[ii].name);
+                my_free_function(array[ii].function, deallocate);
+            }
+            deallocate(array);
+            return NULL;
+        }
         array[i].name_len = (int) key_size-1;
-        CHECK(array[i].function = my_copy_function(NULL, fun, allocate));
+        if(!(array[i].function = my_copy_function(NULL, fun, allocate, deallocate))) {
+            int ii;
+            deallocate(array[i].name);
+            for(ii=i-1; ii>=0; ii--) {
+                deallocate(array[ii].name);
+                my_free_function(array[ii].function, deallocate);
+            }
+            deallocate(array);
+            return NULL;
+        }
         zend_hash_move_forward(CG(function_table));
     }
 
@@ -588,7 +753,7 @@ apc_function_t* apc_copy_new_functions(int old_count, apc_malloc_t allocate TSRM
 /* }}} */
 
 /* {{{ apc_copy_new_classes */
-apc_class_t* apc_copy_new_classes(zend_op_array* op_array, int old_count, apc_malloc_t allocate TSRMLS_DC)
+apc_class_t* apc_copy_new_classes(zend_op_array* op_array, int old_count, apc_malloc_t allocate, apc_free_t deallocate TSRMLS_DC)
 {
     apc_class_t* array;
     int new_count;              /* number of new classs in table */
@@ -629,9 +794,30 @@ apc_class_t* apc_copy_new_classes(zend_op_array* op_array, int old_count, apc_ma
 
         zend_hash_get_current_data(CG(class_table), (void**) &elem);
 
-        CHECK(array[i].name = apc_xmemcpy(key, (int) key_size, allocate));
+        if(!(array[i].name = apc_xmemcpy(key, (int) key_size, allocate))) {
+            int ii;
+
+            for(ii=i-1; ii>=0; ii--) {
+                deallocate(array[ii].name);
+                my_destroy_class_entry(array[ii].class_entry, deallocate);
+                deallocate(array[ii].class_entry);
+            }
+            deallocate(array);
+            return NULL;
+        }
         array[i].name_len = (int) key_size-1;
-        CHECK(array[i].class_entry = my_copy_class_entry(NULL, elem, allocate));
+        if(!(array[i].class_entry = my_copy_class_entry(NULL, elem, allocate, deallocate))) {
+            int ii;
+            
+            deallocate(array[i].name);
+            for(ii=i-1; ii>=0; ii--) {
+                deallocate(array[ii].name);
+                my_destroy_class_entry(array[ii].class_entry, deallocate);
+                deallocate(array[ii].class_entry);
+            }
+            deallocate(array);
+            return NULL;
+        }
 
         /*
          * If the class has a pointer to its parent class, save the parent
@@ -642,8 +828,20 @@ apc_class_t* apc_copy_new_classes(zend_op_array* op_array, int old_count, apc_ma
          */
 
         if (elem->parent) {
-            CHECK(array[i].parent_name =
-                apc_xstrdup(elem->parent->name, allocate));
+            if(!(array[i].parent_name =
+                apc_xstrdup(elem->parent->name, allocate))) {
+                int ii;
+                 
+                for(ii=i; ii>=0; ii--) {
+                    deallocate(array[ii].name);
+                    my_destroy_class_entry(array[ii].class_entry, deallocate);
+                    deallocate(array[ii].class_entry);
+                    if(ii==i) continue;
+                    if(array[ii].parent_name) deallocate(array[ii].parent_name);
+                }
+                deallocate(array);
+                return NULL;
+            }
             array[i].is_derived = 1;
         }
         else {
@@ -909,7 +1107,7 @@ zend_op_array* apc_copy_op_array_for_execution(zend_op_array* src)
 {
     zend_op_array* dst = (zend_op_array*) emalloc(sizeof(src[0]));
     memcpy(dst, src, sizeof(src[0]));
-    dst->static_variables = my_copy_static_variables(src, apc_php_malloc);
+    dst->static_variables = my_copy_static_variables(src, apc_php_malloc, apc_php_free);
     /*check_op_array_integrity(dst);*/
     return dst;
 }
@@ -920,7 +1118,7 @@ zend_function* apc_copy_function_for_execution(zend_function* src)
 {
     zend_function* dst = (zend_function*) emalloc(sizeof(src[0]));
     memcpy(dst, src, sizeof(src[0]));
-    dst->op_array.static_variables = my_copy_static_variables(&dst->op_array, apc_php_malloc);
+    dst->op_array.static_variables = my_copy_static_variables(&dst->op_array, apc_php_malloc, apc_php_free);
     /*check_op_array_integrity(&dst->op_array);*/
     return dst;
 }
@@ -944,8 +1142,9 @@ zend_class_entry* apc_copy_class_entry_for_execution(zend_class_entry* src, int 
     my_copy_hashtable(&dst->default_properties,
                       &src->default_properties,
                       (ht_copy_fun_t) my_copy_zval_ptr,
+                      (ht_free_fun_t) my_free_zval_ptr,
                       1,
-                      apc_php_malloc);
+                      apc_php_malloc, apc_php_free);
 
     /* For derived classes, we must also copy the function hashtable (although
      * we can merely bitwise copy the functions it contains) */
@@ -953,8 +1152,9 @@ zend_class_entry* apc_copy_class_entry_for_execution(zend_class_entry* src, int 
     my_copy_hashtable(&dst->function_table,
                       &src->function_table,
                       (ht_copy_fun_t) apc_copy_function_for_execution_ex,
+                      NULL,
                       0,
-                      apc_php_malloc);
+                      apc_php_malloc, apc_php_free);
 
     return dst;
 }
