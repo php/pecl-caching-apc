@@ -220,7 +220,7 @@ static void call_inherit(char *key, void *data)
     }
 }
 
-static void shm_strdup(const char* s)
+static char* shm_strdup(const char* s)
 {
 	int		n;
 	char*	t;
@@ -231,7 +231,7 @@ static void shm_strdup(const char* s)
 	return t;
 }
 
-static void shm_memcpy(void* p, int n)
+static void* shm_memcpy(void* p, int n)
 {
 	void*	q;
 
