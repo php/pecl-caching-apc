@@ -65,6 +65,10 @@ void* apc_shm_attach(int shmid)
 	if ((int)(shmaddr = shmat(shmid, 0, 0)) == -1) {
 		apc_eprint("apc_shm_attach: shmat failed:");
 	}
+	/* This is not a typo.  we set the shmid for removal immediately 
+	 * after setting it.  This won't cause the segment to disappear 
+	 * until it has no one attached to it.  Otherwise we can leak 
+	 * shm segments. */
 	apc_shm_destroy(shmid);
 	return shmaddr;
 }
