@@ -907,7 +907,7 @@ void apc_serialize_zend_op_array(zend_op_array* zoa)
 			  default:
 				/* We should handle ZEND_DECLARE_INHERITED_CLASS here */
 				/* this typically results in a Zend compile error */
-				return;
+				break;
 			}
 			zval_dtor(&zoa->opcodes[i].op1.u.constant);
 			zval_dtor(&zoa->opcodes[i].op2.u.constant);
