@@ -313,6 +313,59 @@ int apc_cache_retrieve(apc_cache_t* cache, const char* key, char** dataptr,
 	return 0;
 }
 
+/* apc_cache_retrieve_nl: */
+int apc_cache_retrieve_nl(apc_cache_t* cache, const char* key,
+	char** dataptr, int* length)
+{
+	unsigned slot;		/* initial hash value */
+	unsigned k;			/* second hash value, for open-addressing */
+	int nprobe;			/* running count of cache probes */
+	char* shmaddr;		/* attached addr of data segment */
+	bucket_t* buckets;
+	int nbuckets;
+	unsigned int checksum;
+	int curtime;
+
+	buckets  = cache->buckets;
+	nbuckets = cache->header->nbuckets;
+
+	slot = hash(key) % nbuckets;
+	k = hashtwo(key) % nbuckets;
+
+	nprobe = 0;
+	while (buckets[slot].shmid != EMPTY && nprobe++ < nbuckets) {
+		if (buckets[slot].shmid == UNUSED) {
+			continue;
+		}
+		if (strcmp(buckets[slot].key, key) == 0) {
+			if ((curtime = time(0)) > buckets[slot].expiretime) {
+				break; /* the entry has expired */
+			}
+			shmaddr = (char*) apc_smm_attach(buckets[slot].shmid);
+			*dataptr = shmaddr + buckets[slot].offset;
+			*length  = buckets[slot].length;
+
+			/* update the cache */
+			cache->header->hits++;
+			buckets[slot].lastaccess = curtime;
+			buckets[slot].hitcount++;
+			checksum = buckets[slot].checksum;
+
+			/* compare checksums */
+			if (checksum != apc_crc32(*dataptr, *length)) {
+				apc_eprint("checksum failed! data length is %d\n", *length);
+				return 0; /* return failure */
+			}
+
+			/* we're done */
+			return 1;
+		}
+		slot = (slot+k) % nbuckets;
+	}
+	cache->header->misses++;
+	return 0;
+}
+
 /* apc_cache_insert: */
 int apc_cache_insert(apc_cache_t* cache, const char* key,
 	const char* data, int size)
@@ -429,6 +482,25 @@ int apc_cache_remove(apc_cache_t* cache, const char* key)
 	apc_rwl_unlock(cache->lock);
 	return 0;	/* not found */
 }
+
+/* apc_cache_readlock: acquire a shared read-only lock on a cache */
+void apc_cache_readlock(apc_cache_t* cache)
+{
+	apc_rwl_readlock(cache->lock);
+}
+
+/* apc_cache_writelock: acquire an exclusive lock on a cache */
+void apc_cache_writelock(apc_cache_t* cache)
+{
+	apc_rwl_writelock(cache->lock);
+}
+
+/* apc_cache_readlock: acquire a read-only lock on a cache */
+void apc_cache_unlock(apc_cache_t* cache)
+{
+	apc_rwl_unlock(cache->lock);
+}
+
 
 /* apc_cache_dump: */
 void apc_cache_dump(apc_outputfn_t outputfn, apc_cache_t* cache)
