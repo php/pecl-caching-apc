@@ -63,19 +63,19 @@ extern zend_apc_globals apc_globals;
 char VERSION_STRING[100];
 
 /* pointer to the previous compile_file function */
-static ZEND_API zend_op_array* (*old_compile_file)(zend_file_handle*, int CLS_DC);
+static ZEND_API zend_op_array* (*old_compile_file)(zend_file_handle*, int APC_CLS_DC);
 
 /* out compile_file function */
-static ZEND_API zend_op_array* apc_compile_file(zend_file_handle*, int CLS_DC);
-static ZEND_API zend_op_array* apc_shm_compile_file(zend_file_handle*, int CLS_DC);
-static ZEND_API zend_op_array* apc_shmdirect_compile_file(zend_file_handle*, int CLS_DC);
-static ZEND_API zend_op_array* apc_mmap_compile_file(zend_file_handle*, int CLS_DC);
+static ZEND_API zend_op_array* apc_compile_file(zend_file_handle*, int APC_CLS_DC);
+static ZEND_API zend_op_array* apc_shm_compile_file(zend_file_handle*, int APC_CLS_DC);
+static ZEND_API zend_op_array* apc_shmdirect_compile_file(zend_file_handle*, int APC_CLS_DC);
+static ZEND_API zend_op_array* apc_mmap_compile_file(zend_file_handle*, int APC_CLS_DC);
 
 /* pointer to the previous execute function */
-static ZEND_API void (*old_execute)(zend_op_array* op_array ELS_DC);
+static ZEND_API void (*old_execute)(zend_op_array* op_array APC_ELS_DC);
 
 /* our execute function */
-static ZEND_API void apc_execute(zend_op_array* op_array ELS_DC);
+static ZEND_API void apc_execute(zend_op_array* op_array APC_ELS_DC);
 
 enum {
 	FILE_TABLE_SIZE          = 97,	/* buckets in file table */
@@ -484,13 +484,13 @@ static void apc_store_all(apc_cache_t *cache, const char* key,
 }
 
 /* apc_execute: replacement for zend_compile_file to allow for refcount reset*/
-static ZEND_API void apc_execute(zend_op_array* op_array ELS_DC)
+static ZEND_API void apc_execute(zend_op_array* op_array APC_ELS_DC)
 {
 	int i;
 //	for(i = 0; i < op_array->last; i++) {
 //		dump_zend_op(&op_array->opcodes[i]);
 //	}
-	old_execute(op_array ELS_DC);
+	old_execute(op_array APC_ELS_DC);
 //	for(i = 0; i < op_array->last; i++) {
 //		dump_zend_op(&op_array->opcodes[i]);
 //	}
@@ -505,30 +505,30 @@ static ZEND_API void apc_execute(zend_op_array* op_array ELS_DC)
 
 /* apc_compile_file: replacement for zend_compile_file */
 ZEND_API zend_op_array* apc_compile_file(zend_file_handle *file_handle,
-	int type CLS_DC)
+	int type APC_CLS_DC)
 {
     if (APC_OFF_MODE)
-        return old_compile_file(file_handle, type CLS_CC);
+        return old_compile_file(file_handle, type APC_CLS_CC);
 
     /* hack to allow included urls to be handled unmolested */
     if(!strncasecmp(file_handle->filename, "http://", 7)) { 
-        return old_compile_file(file_handle, type CLS_CC);
+        return old_compile_file(file_handle, type APC_CLS_CC);
     }
 
     if (APC_SHM_MODE)
-        return apc_shm_compile_file(file_handle, type CLS_DC);
+        return apc_shm_compile_file(file_handle, type APC_CLS_DC);
 	if (APC_SHMDIRECT_MODE)
-        return apc_shmdirect_compile_file(file_handle, type CLS_DC);
+        return apc_shmdirect_compile_file(file_handle, type APC_CLS_DC);
     if (APC_MMAP_MODE)
-        return apc_mmap_compile_file(file_handle, type CLS_DC);
+        return apc_mmap_compile_file(file_handle, type APC_CLS_DC);
 
     /* Should not happen -> But to be sure something is called call the original compiler */
-    return old_compile_file(file_handle, type CLS_CC);
+    return old_compile_file(file_handle, type APC_CLS_CC);
 }
 
 /* apc_compile_file: replacement for zend_compile_file */
 ZEND_API zend_op_array* apc_shmdirect_compile_file(zend_file_handle *file_handle,
-	int type CLS_DC)
+	int type APC_CLS_DC)
 {
 	const char* key;			/* key into the cache index */
 	zend_op_array* op_array;	/* the instruction sequence for the file */
@@ -551,7 +551,7 @@ ZEND_API zend_op_array* apc_shmdirect_compile_file(zend_file_handle *file_handle
 		/* We can't create a valid cache key for this file. The only/best
 		 * recourse is to compile the file and return immediately. */
 
-		return old_compile_file(file_handle, type CLS_CC);
+		return old_compile_file(file_handle, type APC_CLS_CC);
 	}
 
 	if (APCG(check_mtime)) {
@@ -593,7 +593,7 @@ ZEND_API zend_op_array* apc_shmdirect_compile_file(zend_file_handle *file_handle
 	zend_hash_copy(&preClassTable, EG(class_table), NULL,
 		NULL, sizeof(zend_class_entry));
 	/* compile */
-	op_array = old_compile_file(file_handle, type CLS_CC);
+	op_array = old_compile_file(file_handle, type APC_CLS_CC);
 	if (!op_array) {
 		return NULL;
 	}
@@ -630,7 +630,7 @@ ZEND_API zend_op_array* apc_shmdirect_compile_file(zend_file_handle *file_handle
 }
 
 ZEND_API zend_op_array* apc_shm_compile_file(zend_file_handle *file_handle,
-	int type CLS_DC)
+	int type APC_CLS_DC)
 {
 	const char* key;			/* key into the cache index */
 	zend_op_array* op_array;	/* the instruction sequence for the file */
@@ -650,7 +650,7 @@ ZEND_API zend_op_array* apc_shm_compile_file(zend_file_handle *file_handle,
 		/* We can't create a valid cache key for this file. The only/best
 		 * recourse is to compile the file and return immediately. */
 
-		return old_compile_file(file_handle, type CLS_CC);
+		return old_compile_file(file_handle, type APC_CLS_CC);
 	}
 
 	if (APCG(check_mtime)) {
@@ -726,7 +726,7 @@ ZEND_API zend_op_array* apc_shm_compile_file(zend_file_handle *file_handle,
 
     }
 	
-	op_array = old_compile_file(file_handle, type CLS_CC);
+	op_array = old_compile_file(file_handle, type APC_CLS_CC);
 	if (!op_array) {
 		return NULL;
 	}
@@ -817,7 +817,7 @@ int apc_mmap_rm(const char *filename)
 
 /* apc_mmap_compile_file: replacement for zend_compile_file */
 ZEND_API zend_op_array* apc_mmap_compile_file(zend_file_handle *file_handle,
-	int type CLS_DC)
+	int type APC_CLS_DC)
 {
 	char* buf;
 	char* cache_filename;
@@ -840,7 +840,7 @@ ZEND_API zend_op_array* apc_mmap_compile_file(zend_file_handle *file_handle,
 		relative_name = apc_rstat(file_handle->filename, PG(include_path), 
 			&srcstatbuf);
 		if(realpath(relative_name, realname) == NULL) {
-			return old_compile_file(file_handle, type CLS_CC);
+			return old_compile_file(file_handle, type APC_CLS_CC);
 		}
 		else {
 			filename = realname;
@@ -858,7 +858,7 @@ ZEND_API zend_op_array* apc_mmap_compile_file(zend_file_handle *file_handle,
 	/* if the requested file matches our exclusioin regex, bypass the cache completely */
 	if(apc_regexec(filename) == 0)
 	{
-		op_array = old_compile_file(file_handle, type CLS_CC);
+		op_array = old_compile_file(file_handle, type APC_CLS_CC);
 		return op_array;
 	}
 	cache_filename = apc_generate_cache_filename(filename);
@@ -948,7 +948,7 @@ ZEND_API zend_op_array* apc_mmap_compile_file(zend_file_handle *file_handle,
 				if(in_elem->input == (caddr_t) -1)
 				{
 					apc_dprint("Failed to mmap %s\n",in_elem->cache_filename);
-					op_array = old_compile_file(file_handle, type CLS_CC);
+					op_array = old_compile_file(file_handle, type APC_CLS_CC);
 					return op_array;
 				}
 				close(fd);
@@ -1034,7 +1034,7 @@ ZEND_API zend_op_array* apc_mmap_compile_file(zend_file_handle *file_handle,
         	        return op_array;
         		}
     				else {
-							if((op_array = old_compile_file(file_handle, type CLS_CC))==NULL) 
+							if((op_array = old_compile_file(file_handle, type APC_CLS_CC))==NULL) 
 							{
 								unlink(my_cache_filename);
     	          free(my_cache_filename);
@@ -1078,7 +1078,7 @@ ZEND_API zend_op_array* apc_mmap_compile_file(zend_file_handle *file_handle,
 	}
 	if( (fd = open(cache_filename, O_RDONLY)) < 0)
 	{
-		return old_compile_file(file_handle, type CLS_CC);
+		return old_compile_file(file_handle, type APC_CLS_CC);
 	}
   	stat(cache_filename,&statbuf);
 		in_elem = (struct mm_fl_element*) malloc(sizeof(struct mm_fl_element));
@@ -1096,7 +1096,7 @@ ZEND_API zend_op_array* apc_mmap_compile_file(zend_file_handle *file_handle,
 	if((mmapaddr = (char *)mmap(0, in_elem->inputlen, PROT_READ,
                                MAP_SHARED, fd, 0)) == (caddr_t)-1 )
 	{
-		return old_compile_file(file_handle, type CLS_CC);
+		return old_compile_file(file_handle, type APC_CLS_CC);
 	}
 	close(fd);
 	in_elem->input = mmapaddr;

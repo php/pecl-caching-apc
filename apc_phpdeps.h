@@ -37,6 +37,13 @@
 
 #if ZEND_EXTENSION_API_NO >= 20010710
 # define APC_MUST_DEFINE_START_OP
+# define APC_CLS_DC TSRMLS_DC
+# define APC_CLS_CC TSRMLS_CC
+# define APC_ELS_DC TSRMLS_DC
+#else
+# define APC_CLS_DC CLS_DC
+# define APC_CLS_CC CLS_CC
+# define APC_ELS_DC ELS_DC
 #endif
 
 #endif
