@@ -367,6 +367,7 @@ int apc_load(const char* filename)
 /* general */
 void apc_serialize_string(char* string);
 void apc_create_string(char** string);
+void apc_serialize_zstring(char* string, int len);
 void apc_serialize_arg_types(zend_uchar* arg_types);
 void apc_create_arg_types(zend_uchar** arg_types);
 
@@ -499,8 +500,17 @@ void apc_create_string(char** string)
 	(*string)[len] = '\0';
 }
 
-
-/* type: arg_types (a special case of zend_uchar[]) */
+void apc_serialize_zstring(char* string, int len)
+{
+  /* by convention, mark null strings with a length of -1 */
+  if (len == 0) {
+    SERIALIZE_SCALAR(-1, int);
+    return;
+  }
+  len = strlen(string);
+  SERIALIZE_SCALAR(len, int);
+  STORE_BYTES(string, len);
+}
 
 void apc_serialize_arg_types(zend_uchar* arg_types)
 {
@@ -645,7 +655,7 @@ void apc_serialize_hashtable(HashTable* ht, void* funcptr)
 	while(p != NULL) {
 		SERIALIZE_SCALAR(p->h, ulong);
 		SERIALIZE_SCALAR(p->nKeyLength,uint);
-		apc_serialize_string(p->arKey);
+		apc_serialize_zstring(p->arKey, p->nKeyLength);
 		serialize_bucket(p->pData); 
 		p = p->pListNext;
 	}
@@ -753,7 +763,7 @@ void apc_serialize_zvalue_value(zvalue_value* zv, int type)
 	  case IS_CONSTANT:
 	  case IS_STRING:
 	  case FLAG_IS_BC:
-		apc_serialize_string(zv->str.val);
+		apc_serialize_zstring(zv->str.val, zv->str.len);
 		SERIALIZE_SCALAR(zv->str.len, int);
 		break;
 	  case IS_ARRAY:
@@ -905,7 +915,7 @@ void apc_serialize_zend_class_entry(zend_class_entry* zce)
 	int count, i, exists;
 
 	SERIALIZE_SCALAR(zce->type, char);
-	apc_serialize_string(zce->name);
+	apc_serialize_zstring(zce->name, zce->name_length);
 	SERIALIZE_SCALAR(zce->name_length, uint);
 
 	/* Serialize the name of this class's parent class (if it has one)
@@ -915,7 +925,7 @@ void apc_serialize_zend_class_entry(zend_class_entry* zce)
  	exists = (zce->parent != NULL) ? 1 : 0;
     SERIALIZE_SCALAR(exists, char);
 	if (exists) {
-		apc_serialize_string(zce->parent->name);
+		apc_serialize_zstring(zce->parent->name, zce->parent->name_length);
 	}
 
 	SERIALIZE_SCALAR(zce->refcount[0], int);
