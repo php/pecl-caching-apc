@@ -221,9 +221,11 @@ static void rewrite_inc(zend_op* ops, Pair* p)
     switch (ops[cadr(p)].opcode) {
       case ZEND_POST_INC:
         ops[cadr(p)].opcode = ZEND_PRE_INC;
+        ops[cadr(p)].result.u.EA.type |= EXT_TYPE_UNUSED;
         break; 
       case ZEND_POST_DEC:
         ops[cadr(p)].opcode = ZEND_PRE_DEC;
+        ops[cadr(p)].result.u.EA.type |= EXT_TYPE_UNUSED;
         break;
       default:
         assert(0);
@@ -696,17 +698,15 @@ zend_op_array* apc_optimize_op_array(zend_op_array* op_array)
     jumps = build_jump_array(op_array);
     for (i = 0; i < op_array->last; i++) {
         Pair* p;
-        /*  
-         * For some reason, this actually slows code down.
-         *
+		
         if ((p = peephole_inc(op_array->opcodes, i, op_array->last))) {
             if (!are_branch_targets(cdr(p), jumps)) {
                 rewrite_inc(op_array->opcodes, p);
             }
             RESTART_PEEPHOLE_LOOP;
         }
-        */
-        if ((p = peephole_print(op_array->opcodes, i, op_array->last))) {
+        
+		if ((p = peephole_print(op_array->opcodes, i, op_array->last))) {
             if (!are_branch_targets(cdr(p), jumps)) {
                 rewrite_print(op_array->opcodes, p);
             }
