@@ -375,57 +375,79 @@ static void *apc_zmalloc(int size)
 }
 
 	
+struct o_f_c {
+	zend_op_array* op_array;
+	HashTable* function_table;
+	HashTable* class_table;
+};
+
 /* apc_retrieve_op_array:  retrieves a op_array from shm and does fixup */
 static zend_op_array* apc_retrieve_op_array(apc_cache_t *cache, const char* key, int mtime)
 {
     zend_op_array** new_op_array;
     zend_op_array* op_array;
     zend_op *opcodes;
-    char *opkey;
+    HashTable** new_function_table;
+    HashTable** new_class_table;
+	struct o_f_c **cache_entry;
     int size, length;
    
     op_array = (zend_op_array*) emalloc(sizeof(zend_op_array));
     new_op_array = (zend_op_array**) apc_emalloc(sizeof(zend_op_array*));
-
-    opkey = (char *)apc_emalloc(strlen(key) + 4);
-    snprintf(opkey, strlen(key) + 4, "op:%s", key);
+    new_function_table = (HashTable**) apc_emalloc(sizeof(HashTable*));
+    new_class_table = (HashTable**) apc_emalloc(sizeof(HashTable*));
+	cache_entry = (struct o_f_c**) apc_emalloc(sizeof(struct o_f_c*));
 
     length = 0;
-    size = sizeof(zend_op_array*);
+    size = sizeof(struct o_f_c*);
 
-    if (apc_cache_retrieve(cache, opkey, (char**) &new_op_array, &length,
+    if (apc_cache_retrieve(cache, key, (char**) &cache_entry, &length,
         &size, mtime) != 1)
     {
         return 0;  // FIXME
     }
-    assert(length == sizeof(zend_op_array*)); // FIXME
-    apc_efree(opkey);
-    memcpy(op_array, *new_op_array, sizeof(zend_op_array));
+    assert(length == sizeof(struct o_f_c*)); // FIXME
+
+    memcpy(op_array, (*cache_entry)->op_array, sizeof(zend_op_array));
     /* re-allocate opcodes in process memory */
     opcodes = (zend_op*) emalloc(sizeof(zend_op)*op_array->last);
     memcpy(opcodes, op_array->opcodes,
         sizeof(zend_op)*op_array->last);
     apc_fixup_opcodes(opcodes, op_array->last, apc_zmalloc);
     op_array->opcodes = opcodes;
-    apc_efree(new_op_array);
-    return op_array;
+
+    zend_hash_copy(EG(function_table), (*cache_entry)->function_table, NULL,
+        NULL, sizeof(zend_function));
+
+	// fixup new_class_table
+//	zend_hash_display(*new_class_table);
+// Don't need to do fixup, I think
+//	apc_fixup_class_table(*new_class_table, apc_emalloc);
+//	zend_hash_display(*new_class_table);
+    zend_hash_copy(EG(class_table), (*cache_entry)->class_table, NULL,
+       NULL, sizeof(zend_class_entry));
+
+	return op_array;
 }
 
-static void apc_store_op_array(apc_cache_t *cache, const char* key, 
-						zend_op_array* op_array, int mtime)
+
+static void apc_store_all(apc_cache_t *cache, const char* key, 
+						zend_op_array* op_array, HashTable *funcs, 
+						HashTable *classes, int mtime)
 {
     char* opkey;
     zend_op* opcodes;
 	zend_op_array *new_op_array;
+    HashTable* new_function_table;
+    char *funckey;
+    HashTable* new_class_table;
+    char *classkey;
+	struct o_f_c* cache_entry;
 
+	cache_entry = (struct o_f_c*) apc_sma_malloc(sizeof(struct o_f_c));
     new_op_array = apc_copy_op_array(NULL, op_array, apc_sma_malloc,
         APC_ZEND_OP_ARRAY_OP);
     destroy_op_array(op_array);
-    opkey = apc_emalloc(strlen(key) + 4);
-    snprintf(opkey, strlen(key) + 4, "op:%s", key);
-    apc_cache_insert(cache, opkey, (const char*) &new_op_array,
-                    sizeof(zend_op_array*), mtime);
-    apc_efree(opkey);
     memcpy(op_array, new_op_array, sizeof(zend_op_array));
     /* re-allocate opcodes in process memory */
     opcodes = (zend_op*) emalloc(sizeof(zend_op)*new_op_array->last);
@@ -433,87 +455,16 @@ static void apc_store_op_array(apc_cache_t *cache, const char* key,
         sizeof(zend_op)*new_op_array->last);
     apc_fixup_opcodes(opcodes, op_array->last, apc_zmalloc);
     op_array->opcodes = opcodes;
-}
-
-static void apc_reinstantiate_g_f_t(apc_cache_t *cache, const char* key, int mtime)
-{
-    HashTable** new_function_table;
-    char *funckey;
-    int size, length;
-
-    funckey = (char *) apc_emalloc(strlen(key) +6);
-    snprintf(funckey, strlen(key) +6, "func:%s", key);
-    length = 0;
-    size = sizeof(HashTable*);
-    new_function_table = (HashTable**) apc_emalloc(sizeof(HashTable*));
-    if (apc_cache_retrieve(cache, funckey, (char**) &new_function_table,
-        &length, &size, mtime) != 1)
-    {
-        assert(0); //FIXME
-    }
-    assert(length == sizeof(HashTable*));  // FIXME
-    zend_hash_copy(EG(function_table), *new_function_table, NULL,
-        NULL, sizeof(zend_function));
-    apc_efree(funckey);
-    apc_efree(new_function_table);
-}
-
-static void apc_reinstantiate_g_c_t(apc_cache_t *cache, const char* key, int mtime)
-{
-    HashTable** new_class_table;
-    char *classkey;
-    int size, length;
-
-    classkey = (char *) apc_emalloc(strlen(key) +7);
-    snprintf(classkey, strlen(key) +7, "class:%s", key);
-    length = 0;
-    size = sizeof(HashTable*);
-    new_class_table = (HashTable**) apc_emalloc(sizeof(HashTable*));
-    if (apc_cache_retrieve(cache, classkey, (char**) &new_class_table,
-        &length, &size, mtime) != 1)
-    {
-        assert(0); //FIXME
-    }
-    assert(length == sizeof(HashTable*));  // FIXME
-	// fixup new_class_table
-//	zend_hash_display(*new_class_table);
-// Don't need to do fixup, I think
-//	apc_fixup_class_table(*new_class_table, apc_emalloc);
-//	zend_hash_display(*new_class_table);
-    zend_hash_copy(EG(class_table), *new_class_table, NULL,
-       NULL, sizeof(zend_class_entry));
-    apc_efree(classkey);
-    apc_efree(new_class_table);
-}
-
-static void apc_store_g_f_t(apc_cache_t *cache, const char* key, HashTable* diffhash, int mtime)
-{
-    HashTable* new_function_table;
-    char *funckey;
-
-    funckey = apc_emalloc(strlen(key) + 6);
-    snprintf(funckey, strlen(key) + 6, "func:%s", key);
-    new_function_table = apc_copy_hashtable(NULL, diffhash,
+    new_function_table = apc_copy_hashtable(NULL, funcs,
         apc_copy_zend_function, sizeof(zend_function),
         apc_sma_malloc);
-    apc_cache_insert(cache, funckey, (const char*) &new_function_table,
-        sizeof(HashTable*), mtime);
-    apc_efree(funckey);
-}
-
-static void apc_store_g_c_t(apc_cache_t *cache, const char* key, HashTable* diffhash, int mtime)
-{
-    HashTable* new_class_table;
-    char *classkey;
-
-    classkey = apc_emalloc(strlen(key) + 7);
-    snprintf(classkey, strlen(key) + 7, "class:%s", key);
-    new_class_table = apc_copy_hashtable(NULL, diffhash,
+    new_class_table = apc_copy_hashtable(NULL, classes,
         apc_copy_zend_class_entry, sizeof(zend_class_entry),
         apc_sma_malloc);
-    apc_cache_insert(cache, classkey, (const char*) &new_class_table,
-        sizeof(HashTable*), mtime);
-    apc_efree(classkey);
+	cache_entry->op_array = new_op_array;
+	cache_entry->function_table = new_function_table;
+	cache_entry->class_table = new_class_table;
+	apc_cache_insert(cache, key, (const char*) &cache_entry, sizeof(struct o_f_c*), mtime);
 }
 
 /* apc_execute: replacement for zend_compile_file to allow for refcount reset*/
@@ -614,11 +565,6 @@ ZEND_API zend_op_array* apc_shmdirect_compile_file(zend_file_handle *file_handle
 	if((op_array = apc_retrieve_op_array(cache, key, mtime)) != NULL)
 	{
 		zend_llist_add_element(&CG(open_files), file_handle); /*  FIXME */
-
-		/* retrieve function_table */
-		apc_reinstantiate_g_f_t(cache, key, mtime);
-		apc_reinstantiate_g_c_t(cache, key, mtime);
-
 		return op_array;
 	}
 
@@ -661,9 +607,7 @@ ZEND_API zend_op_array* apc_shmdirect_compile_file(zend_file_handle *file_handle
 
 		/* make a new op_array, destroy the old one, and insert
 		 * into the cache */
-		apc_store_op_array(cache, key, op_array, mtime);
-		apc_store_g_f_t(cache, key, &postFuncTable, mtime);
-		apc_store_g_c_t(cache, key, &postClassTable, mtime);
+		apc_store_all(cache, key, op_array, &postFuncTable, &postClassTable, mtime);
 	}
 	
 	return op_array;
