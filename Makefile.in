@@ -13,7 +13,8 @@ LTLIBRARY_SOURCES =     apc.c \
 			apc_sma.c \
 			apc_stack.c \
 			apc_zend.c \
-			php_apc.c
+			php_apc.c \
+			apc_mmap.c
 
 LTLIBRARY_SHARED_NAME = apc.la
 LTLIBRARY_SHARED_LIBADD = $(APC_LIBADD)

@@ -212,7 +212,11 @@ void apc_sma_init(int numseg, int segsize)
     }
     sma_initialized = 1;
 
+#if APC_ANONYMOUS_MMAP
+    sma_numseg = 1;
+#else
     sma_numseg = numseg > 0 ? numseg : DEFAULT_NUMSEG;
+#endif
     sma_segsize = segsize > 0 ? segsize : DEFAULT_SEGSIZE;
 
     sma_segments = (int*) apc_emalloc(sma_numseg*sizeof(int));
@@ -225,8 +229,13 @@ void apc_sma_init(int numseg, int segsize)
         block_t*    block;
         void*       shmaddr;
 
+#if APC_ANONYMOUS_MMAP
+        sma_segments[i] = sma_segsize;
+        sma_shmaddrs[i] = apc_mmap(sma_segsize);
+#else
         sma_segments[i] = apc_shm_create(NULL, i, sma_segsize);
         sma_shmaddrs[i] = apc_shm_attach(sma_segments[i]);
+#endif
         shmaddr = sma_shmaddrs[i];
     
         header = (header_t*) shmaddr;
@@ -253,7 +262,11 @@ void apc_sma_cleanup()
     assert(sma_initialized);
 
     for (i = 0; i < sma_numseg; i++) {
+#if APC_ANONYMOUS_MMAP
+        apc_unmap(sma_shmaddrs[i], sma_segments[i]);
+#else
         apc_shm_detach(sma_shmaddrs[i]);
+#endif
     }
     apc_sem_destroy(sma_lock);
     sma_initialized = 0;

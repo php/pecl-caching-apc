@@ -27,5 +27,12 @@ if test "$PHP_APC" != "no"; then
  else
    AC_DEFINE(HAVE_SEMUN, 0, [ ])
  fi
+
+PHP_ARG_ENABLE(anon-mmap, for Anonymous MMAP support,
+[  --enable-anon-mmap           Use anonymous mmap instead of ipc shm])
+if test "$PHP_ANON_MMAP" != "no"; then
+   AC_DEFINE(APC_ANONYMOUS_MMAP, 1, [ ])
+fi
+
 fi
 
