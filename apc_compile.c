@@ -1159,6 +1159,7 @@ zend_function* apc_copy_function_for_execution(zend_function* src)
 /* {{{ apc_copy_function_for_execution_ex */
 zend_function* apc_copy_function_for_execution_ex(void *dummy, zend_function* src)
 {
+	if(src->type==ZEND_INTERNAL_FUNCTION || src->type==ZEND_OVERLOADED_FUNCTION) return src;
     return apc_copy_function_for_execution(src);
 }
 /* }}} */
