@@ -184,7 +184,7 @@ PHP_FUNCTION(apc_cache_info)
     char *cache_type;
     int ct_len;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS(), "|s", &cache_type, &ct_len) == FAILURE) {
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|s", &cache_type, &ct_len) == FAILURE) {
 		return;
 	}
 
@@ -274,7 +274,7 @@ PHP_FUNCTION(apc_clear_cache)
     char *cache_type;
     int ct_len;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS(), "|s", &cache_type, &ct_len) == FAILURE) {
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|s", &cache_type, &ct_len) == FAILURE) {
 		return;
 	}
 
@@ -338,7 +338,7 @@ PHP_FUNCTION(apc_sma_info)
 }
 /* }}} */
 
-static int _apc_store(const char *strkey, const zval *val, const unsigned int ttl TSRMLS_DC) {
+static int _apc_store(char *strkey, const zval *val, const unsigned int ttl TSRMLS_DC) {
     apc_cache_entry_t *entry;
     apc_cache_key_t key;
     time_t t;
@@ -377,7 +377,7 @@ PHP_FUNCTION(apc_store) {
 	int strkey_len;
     long ttl = 0L;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS(), "sz|l", &strkey, &strkey_len, &val, &ttl) == FAILURE) {
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sz|l", &strkey, &strkey_len, &val, &ttl) == FAILURE) {
 		return;
 	}
 
@@ -396,7 +396,7 @@ PHP_FUNCTION(apc_fetch) {
     apc_cache_entry_t* entry;
     time_t t;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS(), "s", &strkey, &strkey_len) == FAILURE) {
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &strkey, &strkey_len) == FAILURE) {
 		return;
 	}
 
@@ -431,7 +431,7 @@ PHP_FUNCTION(apc_delete) {
 	int strkey_len;
     time_t t;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS(), "s", &strkey, &strkey_len) == FAILURE) {
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &strkey, &strkey_len) == FAILURE) {
 		return;
 	}
 
@@ -514,7 +514,7 @@ PHP_FUNCTION(apc_load_constants) {
     time_t t;
     zend_bool case_sensitive = 1;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS(), "s|b", &strkey, &strkey_len, &case_sensitive) == FAILURE) {
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|b", &strkey, &strkey_len, &case_sensitive) == FAILURE) {
 		return;
 	}
 
