@@ -18,6 +18,7 @@
 #include "apc_smm.h"
 #include "apc_rwlock.h"
 #include "apc_crc32.h"
+#include "php_apc.h"
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
@@ -27,6 +28,8 @@
 enum { EMPTY = -1, UNUSED = -2 };
 enum { DO_CHECKSUM = 0 };			/* if this is true, perform checksums */
 enum { NEVER_EXPIRE = 1 << 31 };	/* 2^31 is almost never */
+
+extern zend_apc_globals apc_globals;
 
 typedef struct segment_t segment_t;
 struct segment_t {
@@ -589,6 +592,9 @@ void apc_cache_dump(apc_cache_t* cache, apc_outputfn_t outputfn)
 	outputfn("<td bgcolor=#eeeeee>hit rate</td>\n");
 	outputfn("<td bgcolor=#eeeeee>%.2f</td>\n", hitrate);
 	outputfn("<tr>\n");
+	outputfn("<td bgcolor=#eeeeee>Regex Exclude Text</td>\n");
+        outputfn("<td bgcolor=#eeeeee>%s</td>\n", APCG(regex_text)? APCG(regex_text): "(none)");
+        outputfn("<tr>\n");
 	outputfn("<td colspan=2 bgcolor=#ffffff>local information</td>\n");
 	outputfn("<tr>\n");
 	outputfn("<td bgcolor=#eeeeee>shared memory ID</td>\n");
