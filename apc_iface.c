@@ -296,7 +296,7 @@ int apc_rm(const char* filename)
   if (APC_MMAP_MODE)
     return apc_mmap_rm(filename);
 
-  if (APC_SHM_MODE)
+  if (APC_SHM_MODE || APC_SHMDIRECT_MODE)
     return apc_shm_rm(cache, generate_key(filename, NULL));
 
   return -1;
@@ -304,7 +304,7 @@ int apc_rm(const char* filename)
 
 void apc_reset_cache(void)
 {
-   if (APC_SHM_MODE)
+   if (APC_SHM_MODE || APC_SHMDIRECT_MODE)
 	apc_cache_clear(cache);
 }
 
