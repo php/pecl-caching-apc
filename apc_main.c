@@ -201,6 +201,17 @@ static void my_execute(zend_op_array* op_array TSRMLS_DC)
 {
     old_execute(op_array TSRMLS_CC);
 
+/* Delaying the pop and release here to keep the cache entries on
+ * the stack in case we get interrupted before request shutdown.
+ * In the case of an interruption our module shutdown function may
+ * need to clean everything up, and in order for it to remove the
+ * function and class entries we may have added over the course of
+ * this request we need to keep all our cache entries around.
+ * This should mean we don't even need to override zend_execute with
+ * this function anymore, so if this works well this entire function
+ * should just go away.   -Rasmus
+ */
+#if 0
     if (apc_stack_size(APCG(cache_stack)) > 0) {
         apc_cache_entry_t* cache_entry =
             (apc_cache_entry_t*) apc_stack_top(APCG(cache_stack));
@@ -211,6 +222,7 @@ static void my_execute(zend_op_array* op_array TSRMLS_DC)
             apc_cache_release(APCG(cache), cache_entry);
         }
     }
+#endif
 }
 /* }}} */
 
@@ -257,6 +269,32 @@ int apc_module_shutdown()
     
     /* restore compilation */
     zend_compile_file = old_compile_file;
+
+    /* 
+     * In case we got interrupted by a SIGTERM or something else during execution
+     * we may have cache entries left on the stack that we need to check to make
+     * sure that any functions or classes these may have added to the global function
+     * and class tables are removed before we blow away the memory that hold them
+     */
+    while (apc_stack_size(APCG(cache_stack)) > 0) {
+        int i;
+        apc_cache_entry_t* cache_entry = (apc_cache_entry_t*) apc_stack_pop(APCG(cache_stack));
+        if (cache_entry->functions) {
+            for (i = 0; cache_entry->functions[i].function != NULL; i++) {
+                zend_hash_del(EG(function_table),
+                cache_entry->functions[i].name,
+                cache_entry->functions[i].name_len+1);
+            }
+        }
+        if (cache_entry->classes) {
+            for (i = 0; cache_entry->classes[i].class_entry != NULL; i++) {
+                zend_hash_del(EG(class_table),
+                cache_entry->classes[i].name,
+                cache_entry->classes[i].name_len+1);
+            }
+        }
+        apc_cache_free_entry(cache_entry);
+    }
 
     /* apc cleanup */
     apc_stack_destroy(APCG(cache_stack));
