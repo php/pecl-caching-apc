@@ -109,9 +109,18 @@ static unsigned int string_nhash_8(const char *s, size_t len)
 /* {{{ make_slot */
 slot_t* make_slot(apc_cache_key_t key, apc_cache_entry_t* value, slot_t* next, time_t t)
 {
+    char *identifier;
     slot_t* p = apc_sma_malloc(sizeof(slot_t));
     if (!p) return NULL;
 
+    if(value->type == APC_CACHE_ENTRY_USER) {
+        identifier = (char*) apc_xstrdup(key.data.user.identifier, apc_sma_malloc);
+        if (!identifier) {
+            apc_sma_free(p);
+            return NULL;
+        }
+        key.data.user.identifier = identifier;
+    }
     p->key = key;
     p->value = value;
     p->next = next;
@@ -126,6 +135,7 @@ slot_t* make_slot(apc_cache_key_t key, apc_cache_entry_t* value, slot_t* next, t
 /* {{{ free_slot */
 static void free_slot(slot_t* slot)
 {
+    apc_sma_free(slot->key.data.user.identifier);
     apc_cache_free_entry(slot->value);
     apc_sma_free(slot);
 }
@@ -544,14 +554,14 @@ int apc_cache_make_file_key(apc_cache_key_t* key,
 /* }}} */
 
 /* {{{ apc_cache_make_user_key */
-int apc_cache_make_user_key(apc_cache_key_t* key, const char* identifier, const time_t t)
+int apc_cache_make_user_key(apc_cache_key_t* key, char* identifier, const time_t t)
 {
     assert(key != NULL);
 
     if (!identifier)
         return 0;
 
-    key->data.user.identifier = apc_xstrdup(identifier, apc_sma_malloc);
+    key->data.user.identifier = identifier;
     key->mtime = t;
     return 1;
 }
