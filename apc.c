@@ -150,10 +150,10 @@ void apc_wprint(const char* fmt, ...)
 
 void apc_dprint(const char* fmt, ...)
 {
-#ifdef APC_DEBUG
+#ifdef APC_DBG
     va_list args;
     va_start(args, fmt);
-    my_log(APC_DEBUG, fmt, args);
+    my_log(APC_DBG, fmt, args);
     va_end(args);
 #endif
 }

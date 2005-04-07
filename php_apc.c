@@ -142,6 +142,10 @@ static PHP_MINIT_FUNCTION(apc)
 
     REGISTER_INI_ENTRIES();
 
+    /* Disable APC in cli mode */
+    if(!strcmp(sapi_module.name, "cli")) 
+        APCG(enabled) = 0;
+
     if (APCG(enabled))
         apc_module_init();
 
@@ -346,6 +350,8 @@ static int _apc_store(char *strkey, const zval *val, const unsigned int ttl TSRM
     time_t t;
 
     if (!(entry = apc_cache_make_user_entry(strkey, val, ttl))) {
+        apc_cache_expunge(APCG(cache),t);
+        apc_cache_expunge(APCG(user_cache),t);
         return 0;
     }
 
@@ -359,12 +365,16 @@ static int _apc_store(char *strkey, const zval *val, const unsigned int ttl TSRM
 
     if (!apc_cache_make_user_key(&key, strkey, t)) {
         apc_cache_free_entry(entry);
+        apc_cache_expunge(APCG(cache),t);
+        apc_cache_expunge(APCG(user_cache),t);
         return 1;
     }
 
     if (!apc_cache_user_insert(APCG(user_cache), key, entry, t)) {
         apc_cache_free_user_key(&key);
         apc_cache_free_entry(entry);
+        apc_cache_expunge(APCG(cache),t);
+        apc_cache_expunge(APCG(user_cache),t);
         return 0;
     }
 
@@ -389,6 +399,10 @@ PHP_FUNCTION(apc_store) {
     RETURN_FALSE;
 }
 /* }}} */
+
+void *apc_erealloc_wrapper(void *ptr, size_t size) {
+    return _erealloc(ptr, size, 0);
+}
 
 /* {{{ proto mixed apc_fetch(string key)
  */
@@ -447,7 +461,7 @@ PHP_FUNCTION(apc_delete) {
 }
 /* }}} */
 
-static void _apc_define_constants(zval *constants, zend_bool case_sensitive) {
+static void _apc_define_constants(zval *constants, zend_bool case_sensitive TSRMLS_DC) {
     char *const_key;
     int const_key_len;
     zval **entry;
@@ -490,7 +504,6 @@ static void _apc_define_constants(zval *constants, zend_bool case_sensitive) {
 PHP_FUNCTION(apc_define_constants) {
 	char *strkey;
 	int strkey_len;
-    ulong num_key;
     zval *constants = NULL;
     zend_bool case_sensitive = 1;
     int argc = ZEND_NUM_ARGS();

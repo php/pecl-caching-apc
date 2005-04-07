@@ -2,10 +2,10 @@
    +----------------------------------------------------------------------+
    | Copyright (c) 2002 by Community Connect Inc. All rights reserved.    |
    +----------------------------------------------------------------------+
-   | This source file is subject to version 3.0 of the PHP license,      |
+   | This source file is subject to version 3.0 of the PHP license,       |
    | that is bundled with this package in the file LICENSE, and is        |
    | available at through the world-wide-web at                           |
-   | http://www.php.net/license/3_0.txt.                                 |
+   | http://www.php.net/license/3_0.txt.                                  |
    | If you did not receive a copy of the PHP license and are unable to   |
    | obtain it through the world-wide-web, please send a note to          |
    | license@php.net so we can mail you a copy immediately.               |
@@ -56,7 +56,7 @@ extern zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, 
 extern zend_class_entry* apc_copy_class_entry(zend_class_entry* dst, zend_class_entry* src, apc_malloc_t allocate, apc_free_t deallocate);
 extern apc_function_t* apc_copy_new_functions(int old_count, apc_malloc_t allocate, apc_free_t deallocate TSRMLS_DC);
 extern apc_class_t* apc_copy_new_classes(zend_op_array* op_array, int old_count, apc_malloc_t allocate, apc_free_t deallocate TSRMLS_DC);
-extern zval* apc_copy_zval(zval* dst, const zval* src, apc_malloc_t allocate, apc_free_t deallocate TSRMLS_DC);
+extern zval* apc_copy_zval(zval* dst, const zval* src, apc_malloc_t allocate, apc_free_t deallocate);
 
 /*
  * Deallocation functions corresponding to the copy functions above.

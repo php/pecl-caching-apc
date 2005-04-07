@@ -208,10 +208,11 @@ static zval* my_copy_zval(zval* dst, const zval* src, apc_malloc_t allocate, apc
     case IS_CONSTANT:
     case IS_STRING:
     case FLAG_IS_BC:
-        if (src->value.str.val)
+        if (src->value.str.val) {
             CHECK(dst->value.str.val = apc_xmemcpy(src->value.str.val,
                                                    src->value.str.len+1,
                                                    allocate));
+        }
         break;
     
     case IS_ARRAY:
@@ -444,7 +445,6 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
                 return NULL;
             }
         }
-
         dst->builtin_functions[n].fname = NULL;
     }
 
@@ -577,7 +577,7 @@ static HashTable* my_copy_static_variables(zend_op_array* src, apc_malloc_t allo
 /* }}} */
 
 /* {{{ apc_copy_zval */
-zval* apc_copy_zval(zval* dst, const zval* src, apc_malloc_t allocate, apc_free_t deallocate TSRMLS_DC)
+zval* apc_copy_zval(zval* dst, const zval* src, apc_malloc_t allocate, apc_free_t deallocate)
 {
     int local_dst_alloc = 0;
     assert(src != NULL);
@@ -1159,7 +1159,7 @@ zend_function* apc_copy_function_for_execution(zend_function* src)
 /* {{{ apc_copy_function_for_execution_ex */
 zend_function* apc_copy_function_for_execution_ex(void *dummy, zend_function* src)
 {
-	if(src->type==ZEND_INTERNAL_FUNCTION || src->type==ZEND_OVERLOADED_FUNCTION) return src;
+    if(src->type==ZEND_INTERNAL_FUNCTION || src->type==ZEND_OVERLOADED_FUNCTION) return src;
     return apc_copy_function_for_execution(src);
 }
 /* }}} */

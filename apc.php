@@ -2,7 +2,7 @@
 function redir($arg="") {
 	$port = getenv('SERVER_PORT');
 	$host = getenv('HTTP_HOST');
-	$self = $_SERVER['PHP_SELF'];
+	$self = getenv('PHP_SELF');
 	if($port==443) $url = "https://";
 	else $url = "http://";
 	$url .= $host;

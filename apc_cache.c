@@ -136,8 +136,9 @@ slot_t* make_slot(apc_cache_key_t key, apc_cache_entry_t* value, slot_t* next, t
 /* {{{ free_slot */
 static void free_slot(slot_t* slot)
 {
-    if(slot->value->type == APC_CACHE_ENTRY_USER)
+    if(slot->value->type == APC_CACHE_ENTRY_USER) {
         apc_sma_free(slot->key.data.user.identifier);
+    }
     apc_cache_free_entry(slot->value);
     apc_sma_free(slot);
 }
@@ -304,19 +305,44 @@ void apc_cache_clear(apc_cache_t* cache)
 void apc_cache_expunge(apc_cache_t* cache, time_t t)
 {
     int i;
-    slot_t *p;
+    slot_t **p;
 
+    /*
+     * We don't do any cache cleanup here unless the ttl for the cache
+     * has been set.  For the user cache that is slightly confusing since
+     * we have the individual entry ttl's we can look at, but that would be
+     * too much work.  So if you want the user cache expunged, set a high
+     * default apc.user_ttl and still provide a specific ttl for each entry
+     * on insert
+     */
     if(!cache || (cache && !cache->ttl)) return;
 
+    php_error_docref(NULL TSRMLS_CC, E_WARNING, "expunge called");
     LOCK(cache);
     for (i = 0; i < cache->num_slots; i++) {
-        p = cache->slots[i];
-        while(p) {
-            if(p->access_time < (t - cache->ttl)) {
-                remove_slot(cache, &p);
+        p = &cache->slots[i];
+        while(*p) {
+            /* 
+             * For the user cache we look at the individual entry ttl values
+             * and if not set fall back to the default ttl for the user cache
+             */
+            if((*p)->value->type == APC_CACHE_ENTRY_USER) {
+                if((*p)->value->data.user.ttl) {
+                    if((*p)->creation_time + (*p)->value->data.user.ttl < t) {
+                        remove_slot(cache, p);
+                        continue;
+                    }
+                } else if(cache->ttl) {
+                    if((*p)->creation_time + cache->ttl < t) {
+                        remove_slot(cache, p);
+                        continue;
+                    }
+                }
+            } else if((*p)->access_time < (t - cache->ttl)) {
+                remove_slot(cache, p);
                 continue;
             }
-            p = p->next;
+            p = &(*p)->next;
         }
     }
     UNLOCK(cache);
@@ -342,8 +368,7 @@ int apc_cache_insert(apc_cache_t* cache,
 
     while (*slot) {
         if (key_equals((*slot)->key.data.file, key.data.file)) {
-            /* If existing slot for the same device+inode has a different
-               mtime, remove it and insert the new version */
+            /* If existing slot for the same device+inode is different, remove it and insert the new version */
             if ((*slot)->key.mtime != key.mtime) {
                 remove_slot(cache, slot);
                 break;

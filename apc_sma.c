@@ -87,7 +87,7 @@ static int sma_allocate(void* shmaddr, int size)
 
     /* Realsize must be aligned to a word boundary on some architectures. */
     realsize = alignword(max(size + alignword(sizeof(int)), sizeof(block_t)));
-    
+   
     /*
      * Set realsize to the smallest power of 2 greater than or equal to
      * realsize. This increases the likelihood that neighboring blocks can be
@@ -317,8 +317,8 @@ void* apc_sma_malloc(size_t n)
         off = sma_allocate(sma_shmaddrs[i], n);
         if (off != -1) {
             void* p = (void *)(((char *)(sma_shmaddrs[i])) + off);
-            sma_lastseg = i;
             UNLOCK(sma_lock);
+            sma_lastseg = i;
             return p;
         }
     }
@@ -458,6 +458,7 @@ int apc_sma_get_avail_mem()
 }
 /* }}} */
 
+#if 0
 /* {{{ apc_sma_check_integrity */
 void apc_sma_check_integrity()
 {
@@ -481,6 +482,7 @@ void apc_sma_check_integrity()
     }
 }
 /* }}} */
+#endif
 
 /*
  * Local variables:

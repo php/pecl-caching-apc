@@ -193,6 +193,7 @@ extern apc_cache_entry_t* apc_cache_make_file_entry(const char* filename,
 extern apc_cache_entry_t* apc_cache_make_user_entry(const char* info, const zval *val, const unsigned int ttl);
 
 extern int apc_cache_make_user_key(apc_cache_key_t* key, char* identifier, const time_t t);
+extern int apc_cache_free_user_key(apc_cache_key_t* key);
 
 /*
  * Frees all memory associated with an object returned by apc_cache_make_entry
@@ -243,6 +244,7 @@ struct apc_cache_info_t {
 
 extern apc_cache_info_t* apc_cache_info(T cache);
 extern void apc_cache_free_info(apc_cache_info_t* info);
+extern void apc_cache_expunge(apc_cache_t* cache, time_t t);
 
 #undef T
 #endif

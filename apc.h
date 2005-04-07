@@ -37,14 +37,12 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#ifdef HAVE_CONFIG_H
+#ifndef PHP_WIN32
 #include "config.h"
 #endif
 
-#include "php.h"
-
 /* log levels constants (see apc_log) */
-enum { APC_DEBUG, APC_NOTICE, APC_WARNING, APC_ERROR };
+enum { APC_DBG, APC_NOTICE, APC_WARNING, APC_ERROR };
 
 /* typedefs for extensible memory allocators */
 typedef void* (*apc_malloc_t)(size_t);
