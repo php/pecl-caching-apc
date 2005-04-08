@@ -317,7 +317,6 @@ void apc_cache_expunge(apc_cache_t* cache, time_t t)
      */
     if(!cache || (cache && !cache->ttl)) return;
 
-    php_error_docref(NULL TSRMLS_CC, E_WARNING, "expunge called");
     LOCK(cache);
     for (i = 0; i < cache->num_slots; i++) {
         p = &cache->slots[i];
