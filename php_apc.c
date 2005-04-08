@@ -55,8 +55,7 @@ PHP_FUNCTION(apc_load_constants);
 /* }}} */
 
 /* {{{ ZEND_DECLARE_MODULE_GLOBALS(apc) */
-
-PHPAPI ZEND_DECLARE_MODULE_GLOBALS(apc)
+ZEND_DECLARE_MODULE_GLOBALS(apc)
 
 static void php_apc_init_globals(zend_apc_globals* apc_globals TSRMLS_DC)
 {
@@ -96,10 +95,10 @@ static PHP_INI_MH(OnUpdate_filters)
 }
 
 PHP_INI_BEGIN()
-STD_PHP_INI_ENTRY("apc.enabled",        "1",    PHP_INI_SYSTEM, OnUpdateInt,            enabled,        zend_apc_globals, apc_globals)
+STD_PHP_INI_BOOLEAN("apc.enabled",      "1",    PHP_INI_SYSTEM, OnUpdateInt,            enabled,        zend_apc_globals, apc_globals)
 STD_PHP_INI_ENTRY("apc.shm_segments",   "1",    PHP_INI_SYSTEM, OnUpdateInt,            shm_segments,   zend_apc_globals, apc_globals)
 STD_PHP_INI_ENTRY("apc.shm_size",       "30",   PHP_INI_SYSTEM, OnUpdateInt,            shm_size,       zend_apc_globals, apc_globals)
-STD_PHP_INI_ENTRY("apc.optimization",   "0",    PHP_INI_SYSTEM, OnUpdateInt,            optimization,   zend_apc_globals, apc_globals)
+STD_PHP_INI_BOOLEAN("apc.optimization", "0",    PHP_INI_SYSTEM, OnUpdateInt,            optimization,   zend_apc_globals, apc_globals)
 STD_PHP_INI_ENTRY("apc.num_files_hint", "1000", PHP_INI_SYSTEM, OnUpdateInt,            num_files_hint, zend_apc_globals, apc_globals)
 STD_PHP_INI_ENTRY("apc.user_entries_hint", "100", PHP_INI_SYSTEM, OnUpdateInt,          user_entries_hint, zend_apc_globals, apc_globals)
 STD_PHP_INI_ENTRY("apc.gc_ttl",         "3600", PHP_INI_SYSTEM, OnUpdateInt,            gc_ttl,         zend_apc_globals, apc_globals)
@@ -109,8 +108,8 @@ STD_PHP_INI_ENTRY("apc.user_ttl",       "0",    PHP_INI_SYSTEM, OnUpdateInt,    
 STD_PHP_INI_ENTRY("apc.mmap_file_mask",  NULL,  PHP_INI_SYSTEM, OnUpdateString,         mmap_file_mask, zend_apc_globals, apc_globals)
 #endif
     PHP_INI_ENTRY("apc.filters",        "",     PHP_INI_SYSTEM, OnUpdate_filters)
-STD_PHP_INI_ENTRY("apc.cache_by_default", "1",  PHP_INI_SYSTEM, OnUpdateInt,            cache_by_default, zend_apc_globals, apc_globals)
-STD_PHP_INI_ENTRY("apc.slam_defense", "0",      PHP_INI_SYSTEM, OnUpdateInt,            slam_defense,   zend_apc_globals, apc_globals)
+STD_PHP_INI_BOOLEAN("apc.cache_by_default", "1",  PHP_INI_SYSTEM, OnUpdateInt,          cache_by_default, zend_apc_globals, apc_globals)
+STD_PHP_INI_BOOLEAN("apc.slam_defense", "0",      PHP_INI_SYSTEM, OnUpdateInt,          slam_defense,   zend_apc_globals, apc_globals)
 PHP_INI_END()
 
 /* }}} */
