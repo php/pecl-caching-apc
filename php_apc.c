@@ -348,12 +348,6 @@ static int _apc_store(char *strkey, const zval *val, const unsigned int ttl TSRM
     apc_cache_key_t key;
     time_t t;
 
-    if (!(entry = apc_cache_make_user_entry(strkey, val, ttl))) {
-        apc_cache_expunge(APCG(cache),t);
-        apc_cache_expunge(APCG(user_cache),t);
-        return 0;
-    }
-
 #if HAVE_APACHE
     /* Save a syscall here under Apache.  This should actually be a SAPI call instead
      * but we don't have that yet.  Once that is introduced in PHP this can be cleaned up  -Rasmus */
@@ -361,6 +355,12 @@ static int _apc_store(char *strkey, const zval *val, const unsigned int ttl TSRM
 #else
     t = time(0);
 #endif
+
+    if (!(entry = apc_cache_make_user_entry(strkey, val, ttl))) {
+        apc_cache_expunge(APCG(cache),t);
+        apc_cache_expunge(APCG(user_cache),t);
+        return 0;
+    }
 
     if (!apc_cache_make_user_key(&key, strkey, t)) {
         apc_cache_free_entry(entry);
