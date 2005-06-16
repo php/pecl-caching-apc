@@ -587,9 +587,6 @@ int apc_cache_make_file_key(apc_cache_key_t* key,
      * For example if apc.slam_defense is set to 66 then 2/3 of the attempts
      * to cache an uncached file will be ignored.
      */
-    if(APCG(slam_defense) && (int)(100.0*rand()/(RAND_MAX+1.0)) < APCG(slam_defense)) 
-        return 0;
-
     key->data.file.device = buf.st_dev;
     key->data.file.inode  = buf.st_ino;
 

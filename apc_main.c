@@ -178,6 +178,8 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
     if (op_array == NULL) {
         return NULL;
     }
+    if(APCG(slam_defense) && (int)(100.0*rand()/(RAND_MAX+1.0)) < APCG(slam_defense))
+      return op_array;
 
     HANDLE_BLOCK_INTERRUPTIONS();
     if(!(alloc_op_array = apc_copy_op_array(NULL, op_array, apc_sma_malloc, apc_sma_free TSRMLS_CC))) {
