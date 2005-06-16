@@ -178,6 +178,16 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
     if (op_array == NULL) {
         return NULL;
     }
+    /*
+     * Basically this will cause a file only to be cached on a percentage 
+     * of the attempts.  This is to avoid cache slams when starting up a
+     * very busy server or when modifying files on a very busy live server.
+     * There is no point having many processes all trying to cache the same
+     * file at the same time.  By introducing a chance of being cached
+     * we theoretically cut the cache slam problem by the given percentage.
+     * For example if apc.slam_defense is set to 66 then 2/3 of the attempts
+     * to cache an uncached file will be ignored.
+     */
     if(APCG(slam_defense) && (int)(100.0*rand()/(RAND_MAX+1.0)) < APCG(slam_defense))
       return op_array;
 
