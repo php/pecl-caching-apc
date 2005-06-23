@@ -617,6 +617,25 @@ cleanup:
 }
 /* }}} */
 
+/* {{{ my_copy_property_info_for_execution */
+static zend_property_info* my_copy_property_info_for_execution(zend_property_info* dst, zend_property_info* src, apc_malloc_t allocate, apc_free_t deallocate)
+{
+    int local_dst_alloc = 0;
+    
+    assert(src != NULL);
+
+    if (!dst) {
+        CHECK(dst = (zend_property_info*) allocate(sizeof(*src)));
+        local_dst_alloc = 1;
+    }
+
+    /* We need only a shallow copy */
+    memcpy(dst, src, sizeof(*src));
+
+    return dst;
+}
+/* }}} */
+
 /* {{{ my_copy_arg_info_array */
 static zend_arg_info* my_copy_arg_info_array(zend_arg_info* dst, zend_arg_info* src, uint num_args, apc_malloc_t allocate, apc_free_t deallocate)
 {
@@ -1902,16 +1921,6 @@ zend_class_entry* apc_copy_class_entry_for_execution(zend_class_entry* src, int 
                       1,
                       apc_php_malloc, apc_php_free);
 
-#ifdef __DEBUG_APC__
-    fprintf(stderr, "About to copy static_members...\n");
-#endif
-    dst->static_members = my_copy_hashtable(NULL,
-                      src->static_members,
-                      (ht_copy_fun_t) my_copy_zval_ptr,
-                      (ht_free_fun_t) my_free_zval_ptr,
-                      1,
-                      apc_php_malloc, apc_php_free);
-
     /* For derived classes, we must also copy the function hashtable (although
      * we can merely bitwise copy the functions it contains) */
 
@@ -1928,14 +1937,33 @@ zend_class_entry* apc_copy_class_entry_for_execution(zend_class_entry* src, int 
     my_fixup_hashtable(&dst->function_table, (ht_fixup_fun_t)my_fixup_function_for_execution, src, dst);
 
     /* zend_do_inheritance merges properties_info.
-     * TODO: figure out whether we really need to deep-copy.
+     * Need only shallow copying as it doesn't hold the pointers.
      */
     my_copy_hashtable(&dst->properties_info,
                       &src->properties_info,
-                      (ht_copy_fun_t) my_copy_property_info,
+                      (ht_copy_fun_t) my_copy_property_info_for_execution,
                       NULL,
                       0,
                       apc_php_malloc, apc_php_free);
+
+    /* if inheritance results in a hash_del, it might result in
+     * a pefree() of the pointers here. Deep copying required. 
+     */
+
+    my_copy_hashtable(&dst->constants_table,
+                      &src->constants_table,
+                      (ht_copy_fun_t) my_copy_zval_ptr,
+                      NULL,
+                      1,
+                      apc_php_malloc, apc_php_free);
+
+    dst->static_members = my_copy_hashtable(NULL,
+                      src->static_members,
+                      (ht_copy_fun_t) my_copy_zval_ptr,
+                      (ht_free_fun_t) my_free_zval_ptr,
+                      1,
+                      apc_php_malloc, apc_php_free);
+
 #endif
 
     return dst;
@@ -1962,6 +1990,8 @@ static void my_fixup_function(Bucket *p, zend_class_entry *src, zend_class_entry
     
         /* Fixing up the default functions for objects here since
          * we need to compare with the newly allocated functions
+         * TODO: confirm if flags ZEND_ACC_CTOR and _DTOR etc can 
+         * be used instead of a strcmp.
          */
         SET_IF_SAME_NAME(constructor);
         SET_IF_SAME_NAME(destructor);
