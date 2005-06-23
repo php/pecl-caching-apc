@@ -58,6 +58,7 @@ if(!$cache_info = @apc_cache_info($mode)) {
 }
 $ttl = $cache_info['ttl'];
 $sma_info = apc_sma_info();
+
 ?>
 <html>
   <head>
@@ -153,9 +154,20 @@ if(isset($_GET['sort'])) {
 <table border="0" cellpadding="3" cellspacing="1" width="600" bgcolor="#000000" align="center">
 <tr valign="baseline" bgcolor="#cccccc"><td bgcolor="#ccccff" ><b>num_seg</b></td><td align="left"><?php echo $sma_info['num_seg']; ?></td></tr>
 <tr valign="baseline" bgcolor="#cccccc"><td bgcolor="#ccccff" ><b>seg_size</b></td><td align="left"><?php echo $sma_info['seg_size']; ?></td></tr>
+<tr valign="baseline" bgcolor="#cccccc"><td bgcolor="#ccccff" ><b>used</b></td><td align="left"><?php echo $sma_info['seg_size']-$sma_info['avail_mem']; ?></td></tr>
 <tr valign="baseline" bgcolor="#cccccc"><td bgcolor="#ccccff" ><b>avail_mem</b></td><td align="left"><?php echo $sma_info['avail_mem']; ?></td></tr>
 </table><br />
-
+<table border="0" cellpadding="3" cellspacing="1" width="600" bgcolor="#000000" align="center">
+<tr valign="middle" bgcolor="#9999cc"><td align="right"><b>Free Shared Memory Segment Offset</b></td><td align="right"><b>Bytes</b></td></tr>
+<?php
+$free = $sma_info['block_lists'][0];
+foreach($free as $chunk) {
+	echo <<<EOC
+<tr valign="baseline" bgcolor="#cccccc"><td bgcolor="#ccccff" align="right">{$chunk['offset']}</td><td align="right">{$chunk['size']}</td></tr>
+EOC;
+}
+?>
+</table><br />
 <table border="0" cellpadding="3" cellspacing="1" width="600" bgcolor="#000000" align="center">
 <tr valign="baseline" bgcolor="#cccccc"><td bgcolor="#ccccff" ><b>num_slots</b></td><td align="left"><?php echo $cache_info['num_slots']; ?></td></tr>
 <tr valign="baseline" bgcolor="#cccccc"><td bgcolor="#ccccff" ><b>TTL</b></td><td align="left"><?php echo $ttl; ?></td></tr>

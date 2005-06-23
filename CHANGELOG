@@ -1,8 +1,6 @@
-[ this changelog is no longer maintained and doesn't reflect all the changes
-  since the version 2.0 rewrite ]
-
-CVS:
-- Win32 support added [smc 2003-07-19]
+3.0:
+- PHP 5.1 support [arunc,gopalv,rasmus 2005-06-23]
+- Major Inheritance bug fix [arunc,gopalv 2005-06-23]
 
 2.0:
 - ground-up rewrite sharing none of the original source code [djc 2003-02-10]

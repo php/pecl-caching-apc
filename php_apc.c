@@ -1,19 +1,30 @@
-/* 
-   +----------------------------------------------------------------------+
-   | Copyright (c) 2002 by Community Connect Inc. All rights reserved.    |
-   +----------------------------------------------------------------------+
-   | This source file is subject to version 3.0 of the PHP license,       |
-   | that is bundled with this package in the file LICENSE, and is        |
-   | available at through the world-wide-web at                           |
-   | http://www.php.net/license/3_0.txt.                                  |
-   | If you did not receive a copy of the PHP license and are unable to   |
-   | obtain it through the world-wide-web, please send a note to          |
-   | license@php.net so we can mail you a copy immediately.               |
-   +----------------------------------------------------------------------+
-   | Authors: Daniel Cowgill <dcowgill@communityconnect.com>              |
-   |          Rasmus Lerdorf <rasmus@php.net>                             |
-   +----------------------------------------------------------------------+
-*/
+/*
+  +----------------------------------------------------------------------+
+  | APC                                                                  |
+  +----------------------------------------------------------------------+
+  | Copyright (c) 2005 The PHP Group                                     |
+  +----------------------------------------------------------------------+
+  | This source file is subject to version 3.0 of the PHP license,       |
+  | that is bundled with this package in the file LICENSE, and is        |
+  | available through the world-wide-web at the following url:           |
+  | http://www.php.net/license/3_0.txt.                                  |
+  | If you did not receive a copy of the PHP license and are unable to   |
+  | obtain it through the world-wide-web, please send a note to          |
+  | license@php.net so we can mail you a copy immediately.               |
+  +----------------------------------------------------------------------+
+  | Authors: Daniel Cowgill <dcowgill@communityconnect.com>              |
+  |          Rasmus Lerdorf <rasmus@php.net>                             |
+  +----------------------------------------------------------------------+
+
+   This software was contributed to PHP by Community Connect Inc. in 2002
+   and revised in 2005 by Yahoo! Inc. to add support for PHP 5.1.
+   Future revisions and derivatives of this source code must acknowledge
+   Community Connect Inc. as the original contributor of this module by
+   leaving this note intact in the source code.
+
+   All other licensing and usage conditions are those of the PHP Group.
+
+ */
 
 /* $Id$ */
 
@@ -34,15 +45,12 @@
 #include "zend_extensions.h"
 #include "ext/standard/info.h"
 #include "SAPI.h"
-/* 
- * Temporary Apache include until we move to the new SAPI call
- * generates annoying XtOffsetOf warning because of a circular dependency order problem
- */
+#if PHP_API_VERSION <= 20020918
 #if HAVE_APACHE
 #undef XtOffsetOf
 #include "httpd.h"
 #endif
-
+#endif
 
 /* {{{ PHP_FUNCTION declarations */
 PHP_FUNCTION(apc_cache_info);
@@ -93,6 +101,10 @@ static PHP_INI_MH(OnUpdate_filters)
     APCG(filters) = apc_tokenize(new_value, ',');
     return SUCCESS;
 }
+
+#ifdef ZEND_ENGINE_2
+#define OnUpdateInt OnUpdateLong
+#endif
 
 PHP_INI_BEGIN()
 STD_PHP_INI_BOOLEAN("apc.enabled",      "1",    PHP_INI_SYSTEM, OnUpdateInt,            enabled,        zend_apc_globals, apc_globals)
@@ -343,18 +355,23 @@ PHP_FUNCTION(apc_sma_info)
 }
 /* }}} */
 
+/* {{{ _apc_store */
 static int _apc_store(char *strkey, const zval *val, const unsigned int ttl TSRMLS_DC) {
     apc_cache_entry_t *entry;
     apc_cache_key_t key;
     time_t t;
 
+#if PHP_API_VERSION <= 20020918
 #if HAVE_APACHE
-    /* Save a syscall here under Apache.  This should actually be a SAPI call instead
-     * but we don't have that yet.  Once that is introduced in PHP this can be cleaned up  -Rasmus */
     t = ((request_rec *)SG(server_context))->request_time;
 #else
     t = time(0);
 #endif
+#else
+    t = sapi_get_request_time(TSRMLS_C);
+#endif
+
+    if(!APCG(enabled)) return 0;
 
     if (!(entry = apc_cache_make_user_entry(strkey, val, ttl))) {
         apc_cache_expunge(APCG(cache),t);
@@ -366,7 +383,7 @@ static int _apc_store(char *strkey, const zval *val, const unsigned int ttl TSRM
         apc_cache_free_entry(entry);
         apc_cache_expunge(APCG(cache),t);
         apc_cache_expunge(APCG(user_cache),t);
-        return 1;
+        return 0;
     }
 
     if (!apc_cache_user_insert(APCG(user_cache), key, entry, t)) {
@@ -379,6 +396,7 @@ static int _apc_store(char *strkey, const zval *val, const unsigned int ttl TSRM
 
     return 1;
 }
+/* }}} */
 
 /* {{{ proto int apc_store(string key, zval var [, ttl ])
  */
@@ -417,12 +435,16 @@ PHP_FUNCTION(apc_fetch) {
 
     if(!strkey_len) RETURN_FALSE;
 
+    if(!APCG(enabled)) RETURN_FALSE;
+
+#if PHP_API_VERSION <= 20020918
 #if HAVE_APACHE
-    /* Save a syscall here under Apache.  This should actually be a SAPI call instead
-     * but we don't have that yet.  Once that is introduced in PHP this can be cleaned up  -Rasmus */
     t = ((request_rec *)SG(server_context))->request_time;
-#else
+#else 
     t = time(0);
+#endif
+#else
+    t = sapi_get_request_time(TSRMLS_C);
 #endif
 
 	entry = apc_cache_user_find(APCG(user_cache), strkey, strkey_len, t);
@@ -444,13 +466,14 @@ PHP_FUNCTION(apc_fetch) {
 PHP_FUNCTION(apc_delete) {
 	char *strkey;
 	int strkey_len;
-    time_t t;
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &strkey, &strkey_len) == FAILURE) {
 		return;
 	}
 
     if(!strkey_len) RETURN_FALSE;
+
+    if(!APCG(enabled)) RETURN_FALSE;
 
 	if(apc_cache_user_delete(APCG(user_cache), strkey, strkey_len)) {
         RETURN_TRUE;
@@ -534,12 +557,16 @@ PHP_FUNCTION(apc_load_constants) {
 
     if(!strkey_len) RETURN_FALSE;
 
+    if(!APCG(enabled)) RETURN_FALSE;
+
+#if PHP_API_VERSION <= 20020918
 #if HAVE_APACHE
-    /* Save a syscall here under Apache.  This should actually be a SAPI call instead
-     * but we don't have that yet.  Once that is introduced in PHP this can be cleaned up  -Rasmus */
     t = ((request_rec *)SG(server_context))->request_time;
-#else
+#else 
     t = time(0);
+#endif
+#else 
+    t = sapi_get_request_time(TSRMLS_C);
 #endif
 
 	entry = apc_cache_user_find(APCG(user_cache), strkey, strkey_len, t);

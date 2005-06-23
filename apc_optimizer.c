@@ -1,19 +1,32 @@
 /*
-   +----------------------------------------------------------------------+
-   | Copyright (c) 2002 by Community Connect Inc. All rights reserved.    |
-   +----------------------------------------------------------------------+
-   | This source file is subject to version 3.0 of the PHP license,       |
-   | that is bundled with this package in the file LICENSE, and is        |
-   | available at through the world-wide-web at                           |
-   | http://www.php.net/license/3_0.txt.                                  |
-   | If you did not receive a copy of the PHP license and are unable to   |
-   | obtain it through the world-wide-web, please send a note to          |
-   | license@php.net so we can mail you a copy immediately.               |
-   +----------------------------------------------------------------------+
-   | Authors: Daniel Cowgill <dcowgill@communityconnect.com>              |
-   |          George Schlossnagle <george@omniti.com>                     |
-   +----------------------------------------------------------------------+
-*/
+  +----------------------------------------------------------------------+
+  | APC                                                                  |
+  +----------------------------------------------------------------------+
+  | Copyright (c) 2005 The PHP Group                                     |
+  +----------------------------------------------------------------------+
+  | This source file is subject to version 3.0 of the PHP license,       |
+  | that is bundled with this package in the file LICENSE, and is        |
+  | available through the world-wide-web at the following url:           |
+  | http://www.php.net/license/3_0.txt.                                  |
+  | If you did not receive a copy of the PHP license and are unable to   |
+  | obtain it through the world-wide-web, please send a note to          |
+  | license@php.net so we can mail you a copy immediately.               |
+  +----------------------------------------------------------------------+
+  | Authors: Daniel Cowgill <dcowgill@communityconnect.com>              |
+  |          George Schlossnagle <george@omniti.com>                     |
+  +----------------------------------------------------------------------+
+
+   This software was contributed to PHP by Community Connect Inc. in 2002
+   and revised in 2005 by Yahoo! Inc. to add support for PHP 5.1.
+   Future revisions and derivatives of this source code must acknowledge
+   Community Connect Inc. as the original contributor of this module by
+   leaving this note intact in the source code.
+
+   All other licensing and usage conditions are those of the PHP Group.
+
+ */
+
+/* $Id$ */
 
 #include "apc_php.h"
 #include "apc_pair.h"
@@ -71,7 +84,9 @@ static void change_branch_target(zend_op* op, int old, int new)
       case ZEND_JMPNZ:
       case ZEND_JMPZ_EX:
       case ZEND_JMPNZ_EX:
+#ifndef ZEND_ENGINE_2
       case ZEND_JMP_NO_CTOR:
+#endif
       case ZEND_FE_FETCH:
         assert(op->op2.u.opline_num == old);
         op->op2.u.opline_num = new;
@@ -101,7 +116,9 @@ static int is_branch_op(int opcode)
       case ZEND_JMPNZ:
       case ZEND_JMPZ_EX:
       case ZEND_JMPNZ_EX:
+#ifndef ZEND_ENGINE_2
       case ZEND_JMP_NO_CTOR:
+#endif
       case ZEND_FE_FETCH:
       case ZEND_JMPZNZ:
         return 1;
@@ -436,7 +453,9 @@ static Pair* extract_branch_targets(zend_op_array* op_array, int i)
       case ZEND_JMPNZ:
       case ZEND_JMPZ_EX:
       case ZEND_JMPNZ_EX:
+#ifndef ZEND_ENGINE_2
       case ZEND_JMP_NO_CTOR:
+#endif
       case ZEND_FE_FETCH:
         return cons(op->op2.u.opline_num, 0);
       case ZEND_JMPZNZ:
@@ -562,7 +581,12 @@ static Pair* peephole_post_inc(zend_op* ops, int i, int num_ops)
         zend_op* incr_op = &ops[j];
         zend_op* free_op = &ops[k];
 
-        if (load_op->op2.u.fetch_type == ZEND_FETCH_LOCAL   &&
+        if (
+#ifdef ZEND_ENGINE_2
+            load_op->op2.u.EA.type == ZEND_FETCH_LOCAL   &&
+#else
+            load_op->op2.u.fetch_type == ZEND_FETCH_LOCAL   &&
+#endif
             load_op->op1.u.constant.type == IS_STRING       &&
             load_op->op1.op_type == IS_CONST                &&
             load_op->result.op_type != IS_CONST             &&
@@ -607,7 +631,12 @@ static Pair* peephole_inc(zend_op* ops, int i, int num_ops)
         zend_op* incr_op = &ops[j];
         zend_op* free_op = &ops[k];
 
-        if (load_op->op2.u.fetch_type == ZEND_FETCH_LOCAL   &&
+        if (
+#ifdef ZEND_ENGINE_2
+            load_op->op2.u.EA.type == ZEND_FETCH_LOCAL   &&
+#else
+            load_op->op2.u.fetch_type == ZEND_FETCH_LOCAL   &&
+#endif
             load_op->op1.u.constant.type == IS_STRING       &&
             load_op->op1.op_type == IS_CONST                &&
             load_op->result.op_type != IS_CONST             &&
@@ -688,7 +717,7 @@ static Pair* peephole_constant_fold(zend_op* ops, int i, int num_ops)
 static Pair* peephole_add_string(zend_op* ops, int i, int num_ops)
 {
     int j;      /* next op after i */
-    Pair *p = NULL;
+/*    Pair *p = NULL;*/
     
     j = next_op(ops, i, num_ops);
     if (j == num_ops) {

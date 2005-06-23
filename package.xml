@@ -16,6 +16,12 @@
    <email>george@omniti.com</email>
    <role>lead</role>
   </maintainer>
+  <maintainer>
+   <user>rasmus</user>
+   <name>Rasmus Lerdorf</name>
+   <email>rasmus@php.net</email>
+   <role>lead</role>
+  </maintainer>
  </maintainers>
  <description>
 APC is the Alternative PHP Cache. It was conceived of to provide a free, open, and robust framework for caching and optimizing PHP intermediate code.
@@ -23,10 +29,10 @@ APC is the Alternative PHP Cache. It was conceived of to provide a free, open, a
  <license>PHP</license>
  <release>
   <state>stable</state>
-  <version>2.0.3</version>
-  <date>2004-03-25</date>
+  <version>3.0.0</version>
+  <date>2005-06-23</date>
   <notes>
-Additional fix for redeclared class errors.  Fix for 64 bit systems.
+PHP-5.1 Support and numerous fixed
   </notes>
  </release>
   <filelist>

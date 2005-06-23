@@ -1,18 +1,32 @@
-/* 
-   +----------------------------------------------------------------------+
-   | Copyright (c) 2002 by Community Connect Inc. All rights reserved.    |
-   +----------------------------------------------------------------------+
-   | This source file is subject to version 3.0 of the PHP license,      |
-   | that is bundled with this package in the file LICENSE, and is        |
-   | available at through the world-wide-web at                           |
-   | http://www.php.net/license/3_0.txt.                                 |
-   | If you did not receive a copy of the PHP license and are unable to   |
-   | obtain it through the world-wide-web, please send a note to          |
-   | license@php.net so we can mail you a copy immediately.               |
-   +----------------------------------------------------------------------+
-   | Authors: Daniel Cowgill <dcowgill@communityconnect.com>              |
-   +----------------------------------------------------------------------+
-*/
+/*
+  +----------------------------------------------------------------------+
+  | APC                                                                  |
+  +----------------------------------------------------------------------+
+  | Copyright (c) 2005 The PHP Group                                     |
+  +----------------------------------------------------------------------+
+  | This source file is subject to version 3.0 of the PHP license,       |
+  | that is bundled with this package in the file LICENSE, and is        |
+  | available through the world-wide-web at the following url:           |
+  | http://www.php.net/license/3_0.txt.                                  |
+  | If you did not receive a copy of the PHP license and are unable to   |
+  | obtain it through the world-wide-web, please send a note to          |
+  | license@php.net so we can mail you a copy immediately.               |
+  +----------------------------------------------------------------------+
+  | Authors: Daniel Cowgill <dcowgill@communityconnect.com>              |
+  |          Rasmus Lerdorf <rasmus@php.net>                             |
+  |          Arun C. Murthy <arunc@yahoo-inc.com>                        |
+  |          Gopal Vijayaraghavan <gopalv@yahoo-inc.com>                 |
+  +----------------------------------------------------------------------+
+
+   This software was contributed to PHP by Community Connect Inc. in 2002
+   and revised in 2005 by Yahoo! Inc. to add support for PHP 5.1.
+   Future revisions and derivatives of this source code must acknowledge
+   Community Connect Inc. as the original contributor of this module by
+   leaving this note intact in the source code.
+
+   All other licensing and usage conditions are those of the PHP Group.
+
+ */
 
 /* $Id$ */
 
@@ -26,9 +40,11 @@
 #include "apc_stack.h"
 #include "apc_zend.h"
 #include "SAPI.h"
+#if PHP_API_VERSION <= 20020918
 #if HAVE_APACHE
 #undef XtOffsetOf
 #include "httpd.h"
+#endif
 #endif
 
 /* {{{ module variables */
@@ -64,32 +80,88 @@ static int install_class(apc_class_t cl TSRMLS_DC)
     zend_class_entry* class_entry = cl.class_entry;
     zend_class_entry* parent;
     int status;
+#ifdef ZEND_ENGINE_2    
+    /*
+     * XXX: We need to free this somewhere...
+     */
+    zend_class_entry** allocated_ce = apc_php_malloc(sizeof(zend_class_entry*));    
 
+    if(!allocated_ce) {
+#ifdef __DEBUG_APC__
+        fprintf(stderr, "Failed to allocate memory for the allocated_ce!\n");
+#endif
+        return FAILURE;
+    }
+
+    *allocated_ce = 
+#endif        
     class_entry =
         apc_copy_class_entry_for_execution(cl.class_entry,
                                            cl.is_derived);
 
+
     /* restore parent class pointer for compile-time inheritance */
     if (cl.parent_name != NULL) {
+#ifdef ZEND_ENGINE_2    
+        zend_class_entry** parent_ptr = NULL;
+        /*
+         * zend_lookup_class has to be due to presence of __autoload, 
+         * just looking up the EG(class_table) is not enough in php5!
+         * Aside: Do NOT pass *strlen(cl.parent_name)+1* because 
+         * zend_lookup_class does it internally anyway!
+         */
+        status = zend_lookup_class(cl.parent_name,
+                                    strlen(cl.parent_name),
+                                    &parent_ptr);
+#else
         status = zend_hash_find(EG(class_table),
                                 cl.parent_name,
                                 strlen(cl.parent_name)+1,
                                 (void**) &parent);
+#endif
+#ifdef __DEBUG_APC__
+        my_zend_hash_display(EG(class_table), "\t");
+        fprintf(stderr, "<zend_hash_find> for %s got <%s, %d> and returned: %d\n", class_entry->name, cl.parent_name, strlen(cl.parent_name)+1, status);
+#endif
         
         if (status == FAILURE) {
             class_entry->parent = NULL;
         }
         else {
+#ifdef ZEND_ENGINE_2            
+            parent = *parent_ptr;
+#endif 
             class_entry->parent = parent;
+#ifdef ZEND_ENGINE_2            
+#ifdef __DEBUG_APC__
+            fprintf(stderr, "<install_class> for <%s, %p>, parent: <%s, %p> --> %d\n", class_entry->name, class_entry, cl.parent_name, parent, status);
+#endif 
+            zend_do_inheritance(class_entry, parent);
+#endif            
         }
+
+
     }
 
+#ifdef ZEND_ENGINE_2                           
+    status = zend_hash_add(EG(class_table),
+                           cl.name,
+                           cl.name_len+1,
+                           allocated_ce,
+                           sizeof(zend_class_entry*),
+                           NULL);
+#ifdef __DEBUG_APC__
+        fprintf(stderr, "<zend_hash_add> <%s, %d> %d\n", cl.name, cl.name_len+1, status);
+#endif
+#else                           
     status = zend_hash_add(EG(class_table),
                            cl.name,
                            cl.name_len+1,
                            class_entry,
                            sizeof(zend_class_entry),
                            NULL);
+#endif                           
+    
     return status;
 }
 /* }}} */
@@ -143,12 +215,14 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
         return old_compile_file(h, type TSRMLS_CC);
     }
 
+#if PHP_API_VERSION <= 20020918
 #if HAVE_APACHE
-    /* Save a syscall here under Apache.  This should actually be a SAPI call instead
-     * but we don't have that yet.  Once that is introduced in PHP this can be cleaned up  -Rasmus */
     t = ((request_rec *)SG(server_context))->request_time;
-#else
+#else 
     t = time(0);
+#endif
+#else 
+    t = sapi_get_request_time(TSRMLS_C);
 #endif
 
     /* try to create a cache key; if we fail, give up on caching */
@@ -352,7 +426,7 @@ void apc_deactivate()
 /* {{{ apc_version */
 const char* apc_version()
 {
-    return "2.1.0";
+    return "3.0.0";
 }
 /* }}} */
 
