@@ -1990,15 +1990,20 @@ static void my_fixup_function(Bucket *p, zend_class_entry *src, zend_class_entry
     
         /* Fixing up the default functions for objects here since
          * we need to compare with the newly allocated functions
-         * TODO: confirm if flags ZEND_ACC_CTOR and _DTOR etc can 
-         * be used instead of a strcmp.
+         *
+         * caveat: a sub-class method can have the same name as the
+         * parent's constructor and create problems.
          */
-        SET_IF_SAME_NAME(constructor);
-        SET_IF_SAME_NAME(destructor);
-        SET_IF_SAME_NAME(clone);
-        SET_IF_SAME_NAME(__get);
-        SET_IF_SAME_NAME(__set);
-        SET_IF_SAME_NAME(__call);
+        
+        if(zf->common.fn_flags & ZEND_ACC_CTOR) dst->constructor = zf;
+        else if(zf->common.fn_flags & ZEND_ACC_DTOR) dst->destructor = zf;
+        else if(zf->common.fn_flags & ZEND_ACC_CLONE) dst->clone = zf;
+        else
+        {
+            SET_IF_SAME_NAME(__get);
+            SET_IF_SAME_NAME(__set);
+            SET_IF_SAME_NAME(__call);
+        }
         zf->common.scope = dst;
     }
     else
