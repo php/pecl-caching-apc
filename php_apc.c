@@ -107,10 +107,10 @@ static PHP_INI_MH(OnUpdate_filters)
 #endif
 
 PHP_INI_BEGIN()
-STD_PHP_INI_BOOLEAN("apc.enabled",      "1",    PHP_INI_SYSTEM, OnUpdateInt,            enabled,        zend_apc_globals, apc_globals)
+STD_PHP_INI_BOOLEAN("apc.enabled",      "1",    PHP_INI_ALL, OnUpdateInt,               enabled,        zend_apc_globals, apc_globals)
 STD_PHP_INI_ENTRY("apc.shm_segments",   "1",    PHP_INI_SYSTEM, OnUpdateInt,            shm_segments,   zend_apc_globals, apc_globals)
 STD_PHP_INI_ENTRY("apc.shm_size",       "30",   PHP_INI_SYSTEM, OnUpdateInt,            shm_size,       zend_apc_globals, apc_globals)
-STD_PHP_INI_BOOLEAN("apc.optimization", "0",    PHP_INI_SYSTEM, OnUpdateInt,            optimization,   zend_apc_globals, apc_globals)
+STD_PHP_INI_BOOLEAN("apc.optimization", "0",    PHP_INI_ALL, OnUpdateInt,               optimization,   zend_apc_globals, apc_globals)
 STD_PHP_INI_ENTRY("apc.num_files_hint", "1000", PHP_INI_SYSTEM, OnUpdateInt,            num_files_hint, zend_apc_globals, apc_globals)
 STD_PHP_INI_ENTRY("apc.user_entries_hint", "100", PHP_INI_SYSTEM, OnUpdateInt,          user_entries_hint, zend_apc_globals, apc_globals)
 STD_PHP_INI_ENTRY("apc.gc_ttl",         "3600", PHP_INI_SYSTEM, OnUpdateInt,            gc_ttl,         zend_apc_globals, apc_globals)
@@ -178,7 +178,7 @@ static PHP_MSHUTDOWN_FUNCTION(apc)
 static PHP_RINIT_FUNCTION(apc)
 {
     if(APCG(enabled))
-        apc_request_init();
+        apc_request_init(TSRMLS_C);
 	return SUCCESS;
 }
 /* }}} */
@@ -429,13 +429,13 @@ PHP_FUNCTION(apc_fetch) {
     apc_cache_entry_t* entry;
     time_t t;
 
+    if(!APCG(enabled)) RETURN_FALSE;
+
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &strkey, &strkey_len) == FAILURE) {
 		return;
 	}
 
     if(!strkey_len) RETURN_FALSE;
-
-    if(!APCG(enabled)) RETURN_FALSE;
 
 #if PHP_API_VERSION <= 20020918
 #if HAVE_APACHE
@@ -467,13 +467,13 @@ PHP_FUNCTION(apc_delete) {
 	char *strkey;
 	int strkey_len;
 
+    if(!APCG(enabled)) RETURN_FALSE;
+
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &strkey, &strkey_len) == FAILURE) {
 		return;
 	}
 
     if(!strkey_len) RETURN_FALSE;
-
-    if(!APCG(enabled)) RETURN_FALSE;
 
 	if(apc_cache_user_delete(APCG(user_cache), strkey, strkey_len)) {
         RETURN_TRUE;
@@ -551,13 +551,13 @@ PHP_FUNCTION(apc_load_constants) {
     time_t t;
     zend_bool case_sensitive = 1;
 
+    if(!APCG(enabled)) RETURN_FALSE;
+
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|b", &strkey, &strkey_len, &case_sensitive) == FAILURE) {
 		return;
 	}
 
     if(!strkey_len) RETURN_FALSE;
-
-    if(!APCG(enabled)) RETURN_FALSE;
 
 #if PHP_API_VERSION <= 20020918
 #if HAVE_APACHE

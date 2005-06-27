@@ -205,7 +205,9 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
     apc_class_t* alloc_classes;
     time_t t;
 
-    /* check our regular expression filters first */
+    if (!APCG(enabled)) return old_compile_file(h, type TSRMLS_CC);
+
+    /* check our regular expression filters */
     if (APCG(compiled_filters)) {
         int ret = apc_regex_match_array(APCG(compiled_filters), h->filename);
         if(ret == APC_NEGATIVE_MATCH || (ret != APC_POSITIVE_MATCH && !APCG(cache_by_default))) {
@@ -387,7 +389,7 @@ int apc_module_shutdown()
 
 /* {{{ request init and shutdown */
 
-int apc_request_init()
+int apc_request_init(TSRMLS_D)
 {
 	TSRMLS_FETCH();
     apc_stack_clear(APCG(cache_stack));
