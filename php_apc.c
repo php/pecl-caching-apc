@@ -418,7 +418,7 @@ PHP_FUNCTION(apc_store) {
 /* }}} */
 
 void *apc_erealloc_wrapper(void *ptr, size_t size) {
-    return _erealloc(ptr, size, 0);
+    return _erealloc(ptr, size, 0 ZEND_FILE_LINE_CC ZEND_FILE_LINE_EMPTY_CC);
 }
 
 /* {{{ proto mixed apc_fetch(string key)

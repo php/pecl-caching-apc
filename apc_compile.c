@@ -583,7 +583,7 @@ static zend_property_info* my_copy_property_info(zend_property_info* dst, zend_p
     memcpy(dst, src, sizeof(*src));
 
     dst->name = NULL;
-#ifdef ZEND_ENGINE_2
+#if defined(ZEND_ENGINE_2) && PHP_MINOR_VERSION > 0
     dst->doc_comment = NULL;
 #endif
 
@@ -598,7 +598,7 @@ static zend_property_info* my_copy_property_info(zend_property_info* dst, zend_p
         }
     }
 
-#ifdef ZEND_ENGINE_2
+#if defined(ZEND_ENGINE_2) && PHP_MINOR_VERSION > 0
     if (src->doc_comment) {
         if( !(dst->doc_comment =
                     apc_xmemcpy(src->doc_comment, src->doc_comment_len+1, allocate))) {
@@ -611,7 +611,9 @@ static zend_property_info* my_copy_property_info(zend_property_info* dst, zend_p
 
 cleanup:
     if(dst->name) deallocate(dst->name);
+#if defined(ZEND_ENGINE_2) && PHP_MINOR_VERSION > 0
     if(dst->doc_comment) deallocate(dst->doc_comment);
+#endif
     if(local_dst_alloc) deallocate(dst);
     return NULL;
 }
@@ -763,7 +765,11 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
                             (ht_free_fun_t) my_free_function,
                             0,
                             allocate, deallocate,
+#ifdef ZEND_ENGINE_2
                             (ht_check_copy_fun_t) my_check_copy_function,
+#else
+                            NULL,
+#endif
                             src))) {
         goto cleanup;
     }
@@ -1625,7 +1631,9 @@ static void my_destroy_property_info(zend_property_info* src, apc_free_t dealloc
     assert(src != NULL);
 
     deallocate(src->name);
+#if defined(ZEND_ENGINE_2) && PHP_MINOR_VERSION > 0
     if(src->doc_comment) deallocate(src->doc_comment);
+#endif
 }
 /* }}} */
 
