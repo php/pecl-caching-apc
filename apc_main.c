@@ -391,7 +391,6 @@ int apc_module_shutdown()
 
 int apc_request_init(TSRMLS_D)
 {
-	TSRMLS_FETCH();
     apc_stack_clear(APCG(cache_stack));
     apc_stack_clear(APCG(user_cache_stack));
     return 0;
