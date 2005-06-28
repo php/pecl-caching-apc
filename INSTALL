@@ -132,7 +132,7 @@ These instructions assume your PHP installation is located in /usr/local/php.
     phpize creates a configure script. The only option you need to specify is
     the location of your php-config script:
 
-        ./configure --with-enable-apc
+        ./configure --enable-apc
 
     php-config should be located in the same directory as phpize.
 
