@@ -39,6 +39,7 @@
 #if HAVE_SEMUN
 /* we have semun, no need to define */
 #else
+#undef HAVE_SEMUN
 union semun {
     int val;                  /* value for SETVAL */
     struct semid_ds *buf;     /* buffer for IPC_STAT, IPC_SET */
