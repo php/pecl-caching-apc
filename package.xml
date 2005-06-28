@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1" ?>
 <!DOCTYPE package SYSTEM "../pear/package.dtd">
 <package>
+ <dep type="php" rel="ge" version="4.3.0" optional="no"/>
  <name>APC</name>
  <summary>Alternative PHP Cache</summary>
  <maintainers>
@@ -23,8 +24,8 @@
    <role>lead</role>
   </maintainer>
  </maintainers>
- <description>
-APC is the Alternative PHP Cache. It was conceived of to provide a free, open, and robust framework for caching and optimizing PHP intermediate code.
+ <description> 
+ APC is the Alternative PHP Cache. It was conceived of to provide a free, open, and robust framework for caching and optimizing PHP intermediate code.
  </description>
  <license>PHP</license>
  <release>
@@ -32,7 +33,7 @@ APC is the Alternative PHP Cache. It was conceived of to provide a free, open, a
   <version>3.0.0</version>
   <date>2005-06-23</date>
   <notes>
-PHP-5.1 Support and numerous fixed
+PHP-5.1 Support and numerous fixes
   </notes>
  </release>
   <filelist>
@@ -40,7 +41,6 @@ PHP-5.1 Support and numerous fixed
     <file role="doc" name="INSTALL" />
     <file role="doc" name="LICENSE" />
     <file role="doc" name="NOTICE" />
-    <file role="src" name="Makefile.in" />
     <file role="src" name="apc.c" />
     <file role="src" name="apc.dsp" />
     <file role="src" name="apc.h" />
