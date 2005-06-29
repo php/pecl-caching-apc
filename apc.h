@@ -52,8 +52,8 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#ifndef PHP_WIN32
-#include "config.h"
+#ifdef HAVE_CONFIG_H
+#include <config.h>
 #endif
 
 /* log levels constants (see apc_log) */
