@@ -789,8 +789,69 @@ static Pair* peephole_needless_bool(zend_op* ops, int i, int num_ops)
 
 /* }}} */
 
-/* {{{ apc_optimize_op_array */
+#ifdef ZEND_ENGINE_2_1
+/* we need these unless the apc optimizer is installed as op_array_handler */
+/* {{{ apc_restore_opline_num */
+static void apc_restore_opline_num(zend_op_array *op_array)
+{
+    zend_op *opline, *end;
+    opline = op_array->opcodes;
+    end = opline + op_array->last;
 
+    while (opline < end) {
+        switch (opline->opcode) {
+            case ZEND_JMP:
+                opline->op1.u.opline_num = opline->op1.u.jmp_addr - op_array->opcodes;
+                break;
+            case ZEND_JMPZ:
+            case ZEND_JMPNZ:
+            case ZEND_JMPZ_EX:
+            case ZEND_JMPNZ_EX:
+                opline->op2.u.opline_num = opline->op2.u.jmp_addr - op_array->opcodes;
+                break;
+        }
+        opline++;
+    }
+}
+/* }}} */
+#endif
+
+/* {{{ apc_do_pass_two */
+static void apc_do_pass_two(zend_op_array *op_array)
+{
+    zend_op *opline, *end;
+    opline = op_array->opcodes;
+    end = opline + op_array->last;
+
+    while (opline < end) {
+        if (opline->op1.op_type == IS_CONST) {
+            opline->op1.u.constant.is_ref = 1;
+            opline->op1.u.constant.refcount = 2; /* Make sure is_ref won't be reset */
+        }
+        if (opline->op2.op_type == IS_CONST) {
+            opline->op2.u.constant.is_ref = 1;
+            opline->op2.u.constant.refcount = 2;
+        }
+#ifdef ZEND_ENGINE_2_1
+        switch (opline->opcode) {
+            case ZEND_JMP:
+                opline->op1.u.jmp_addr = &op_array->opcodes[opline->op1.u.opline_num];
+                break;
+            case ZEND_JMPZ:
+            case ZEND_JMPNZ:
+            case ZEND_JMPZ_EX:
+            case ZEND_JMPNZ_EX:
+                opline->op2.u.jmp_addr = &op_array->opcodes[opline->op2.u.opline_num];
+                break;
+        }
+        ZEND_VM_SET_OPCODE_HANDLER(opline);
+#endif
+        opline++;
+    }
+}
+/* }}} */
+
+/* {{{ apc_optimize_op_array */
 zend_op_array* apc_optimize_op_array(zend_op_array* op_array)
 {
 #define RESTART_PEEPHOLE_LOOP { pair_destroy(p); i = -1; continue; }
@@ -818,6 +879,9 @@ zend_op_array* apc_optimize_op_array(zend_op_array* op_array)
     if (!op_array->opcodes) {
         return op_array;
     }
+#ifdef ZEND_ENGINE_2_1
+    apc_restore_opline_num(op_array);
+#endif
     convert_switch(op_array);
     jump_array_size = op_array->last;
     jumps = build_jump_array(op_array);
@@ -837,7 +901,8 @@ zend_op_array* apc_optimize_op_array(zend_op_array* op_array)
 
     op_array->last = compress_ops(op_array, jumps);
     destroy_jump_array(jumps, jump_array_size);
-    
+    apc_do_pass_two(op_array); 
+
     return op_array;
 
 #undef OPTIMIZE1

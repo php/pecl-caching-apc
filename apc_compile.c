@@ -426,6 +426,9 @@ static znode* my_copy_znode(znode* dst, znode* src, apc_malloc_t allocate, apc_f
 
     assert(dst ->op_type == IS_CONST ||
            dst ->op_type == IS_VAR ||
+#ifdef IS_CV
+           dst ->op_type == IS_CV ||
+#endif
            dst ->op_type == IS_TMP_VAR ||
            dst ->op_type == IS_UNUSED);
 
@@ -1664,7 +1667,7 @@ static void my_destroy_arg_info(zend_arg_info* src, apc_free_t deallocate)
 /* {{{ my_destroy_class_entry */
 static void my_destroy_class_entry(zend_class_entry* src, apc_free_t deallocate)
 {
-    int i;
+    uint i;
 
     assert(src != NULL);
 
