@@ -37,7 +37,7 @@ Default to mmap and add a better error message for shmget failures
   </notes>
  </release>
   <configureoptions>
-    <configureoption name="--enable-apc-mmap" default="autodetect" prompt="Use mmap instead of shmget"/>
+    <configureoption name="enable-apc-mmap" default="yes" prompt="Use mmap instead of shmget (usually a good idea)"/>
   </configureoptions>
   <filelist>
     <file role="doc" name="CHANGELOG" />
