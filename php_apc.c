@@ -538,7 +538,7 @@ PHP_FUNCTION(apc_define_constants) {
 
     if(!strkey_len) RETURN_FALSE;
 
-    _apc_define_constants(constants, case_sensitive);
+    _apc_define_constants(constants, case_sensitive TSRMLS_CC);
 
     if(_apc_store(strkey, constants, 0 TSRMLS_CC)) RETURN_TRUE;
     RETURN_FALSE;
@@ -575,7 +575,7 @@ PHP_FUNCTION(apc_load_constants) {
 
     if(entry) {
         apc_stack_push(APCG(user_cache_stack), entry);
-        _apc_define_constants(entry->data.user.val, case_sensitive);
+        _apc_define_constants(entry->data.user.val, case_sensitive TSRMLS_CC);
         RETURN_TRUE;
     } else {
         RETURN_FALSE;

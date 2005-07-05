@@ -114,7 +114,7 @@ static int install_class(apc_class_t cl TSRMLS_DC)
          */
         status = zend_lookup_class(cl.parent_name,
                                     strlen(cl.parent_name),
-                                    &parent_ptr);
+                                    &parent_ptr TSRMLS_CC);
 #else
         status = zend_hash_find(EG(class_table),
                                 cl.parent_name,
@@ -138,7 +138,7 @@ static int install_class(apc_class_t cl TSRMLS_DC)
 #ifdef __DEBUG_APC__
             fprintf(stderr, "<install_class> for <%s, %p>, parent: <%s, %p> --> %d\n", class_entry->name, class_entry, cl.parent_name, parent, status);
 #endif 
-            zend_do_inheritance(class_entry, parent);
+            zend_do_inheritance(class_entry, parent TSRMLS_CC);
 #endif            
         }
 
