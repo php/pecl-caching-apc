@@ -42,8 +42,10 @@
 #include "SAPI.h"
 #if PHP_API_VERSION <= 20020918
 #if HAVE_APACHE
+#ifdef APC_PHP4_STAT
 #undef XtOffsetOf
 #include "httpd.h"
+#endif
 #endif
 #endif
 
@@ -218,7 +220,7 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
     }
 
 #if PHP_API_VERSION <= 20020918
-#if HAVE_APACHE
+#if HAVE_APACHE && defined(APC_PHP4_STAT)
     t = ((request_rec *)SG(server_context))->request_time;
 #else 
     t = time(0);

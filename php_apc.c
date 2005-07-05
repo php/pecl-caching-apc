@@ -47,8 +47,10 @@
 #include "SAPI.h"
 #if PHP_API_VERSION <= 20020918
 #if HAVE_APACHE
+#ifdef APC_PHP4_STAT
 #undef XtOffsetOf
 #include "httpd.h"
+#endif
 #endif
 #endif
 
@@ -362,7 +364,7 @@ static int _apc_store(char *strkey, const zval *val, const unsigned int ttl TSRM
     time_t t;
 
 #if PHP_API_VERSION <= 20020918
-#if HAVE_APACHE
+#if HAVE_APACHE && defined(APC_PHP4_STAT)
     t = ((request_rec *)SG(server_context))->request_time;
 #else
     t = time(0);
@@ -438,7 +440,7 @@ PHP_FUNCTION(apc_fetch) {
     if(!strkey_len) RETURN_FALSE;
 
 #if PHP_API_VERSION <= 20020918
-#if HAVE_APACHE
+#if HAVE_APACHE && defined(APC_PHP4_STAT)
     t = ((request_rec *)SG(server_context))->request_time;
 #else 
     t = time(0);
@@ -560,7 +562,7 @@ PHP_FUNCTION(apc_load_constants) {
     if(!strkey_len) RETURN_FALSE;
 
 #if PHP_API_VERSION <= 20020918
-#if HAVE_APACHE
+#if HAVE_APACHE && defined(APC_PHP4_STAT)
     t = ((request_rec *)SG(server_context))->request_time;
 #else 
     t = time(0);
