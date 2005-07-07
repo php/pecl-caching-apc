@@ -30,10 +30,10 @@
  <license>PHP</license>
  <release>
   <state>stable</state>
-  <version>3.0.2</version>
-  <date>2005-07-05</date>
+  <version>3.0.3</version>
+  <date>2005-07-07</date>
   <notes>
-Default to mmap and add a better error message for shmget failures
+Fix compile problem against PHP 5.0.x
   </notes>
  </release>
   <configureoptions>
@@ -118,6 +118,14 @@ Fixed non-existant class bug.
     <date>2005-07-05</date>
     <notes>
     PHP4 build fix
+    </notes>
+   </release>
+   <release>
+    <state>stable</state>
+    <version>3.0.2</version>
+    <date>2005-07-05</date>
+    <notes>
+Default to mmap and add a better error message for shmget failures
     </notes>
    </release>
   </changelog>
