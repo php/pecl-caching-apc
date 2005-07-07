@@ -363,7 +363,7 @@ static int _apc_store(char *strkey, const zval *val, const unsigned int ttl TSRM
     apc_cache_key_t key;
     time_t t;
 
-#if PHP_API_VERSION <= 20020918
+#if PHP_API_VERSION <= 20041225
 #if HAVE_APACHE && defined(APC_PHP4_STAT)
     t = ((request_rec *)SG(server_context))->request_time;
 #else
@@ -439,7 +439,7 @@ PHP_FUNCTION(apc_fetch) {
 
     if(!strkey_len) RETURN_FALSE;
 
-#if PHP_API_VERSION <= 20020918
+#if PHP_API_VERSION <= 20041225
 #if HAVE_APACHE && defined(APC_PHP4_STAT)
     t = ((request_rec *)SG(server_context))->request_time;
 #else 
@@ -561,7 +561,7 @@ PHP_FUNCTION(apc_load_constants) {
 
     if(!strkey_len) RETURN_FALSE;
 
-#if PHP_API_VERSION <= 20020918
+#if PHP_API_VERSION <= 20041225
 #if HAVE_APACHE && defined(APC_PHP4_STAT)
     t = ((request_rec *)SG(server_context))->request_time;
 #else 
