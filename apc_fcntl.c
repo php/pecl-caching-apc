@@ -45,8 +45,8 @@ int apc_fcntl_create(const char* pathname)
             free(lock_path);
             return fd;
         } else {
-            free(lock_path);
             apc_eprint("apc_fcntl_create: open(%s, O_RDWR|O_CREAT, 0666) failed:", lock_path);
+            free(lock_path);
             return -1;
         }
     }
