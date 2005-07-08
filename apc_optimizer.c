@@ -191,35 +191,9 @@ static zval* compute_result_of_constant_op(zend_op* op)
     int (*binary_op)(zval*, zval*, zval* TSRMLS_DC) = 0;
 	TSRMLS_FETCH();
 
-    // TODO: add cases for other deterministic binary ops!
     // TODO: extend to this work with the few unary ops
 
-    switch (op->opcode) {
-      case ZEND_ADD:
-        binary_op = add_function;
-        break;
-      case ZEND_SUB:
-        binary_op = sub_function;
-        break;
-      case ZEND_MUL:
-        binary_op = mul_function;
-        break;
-      case ZEND_DIV:
-        binary_op = div_function;
-        break;
-      case ZEND_MOD:
-        binary_op = mod_function;
-        break;
-      case ZEND_SL:
-        binary_op = shift_left_function;
-        break;
-      case ZEND_SR:
-        binary_op = shift_right_function;
-        break;
-      case ZEND_CONCAT:
-        binary_op = concat_function;
-        break;
-    }
+	binary_op = get_binary_op(op->opcode);
 
     if (binary_op) {
         ALLOC_INIT_ZVAL(result);
