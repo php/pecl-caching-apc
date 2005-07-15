@@ -424,13 +424,18 @@ static znode* my_copy_znode(znode* dst, znode* src, apc_malloc_t allocate, apc_f
 
     memcpy(dst, src, sizeof(src[0]));
 
+#ifdef IS_CV
     assert(dst ->op_type == IS_CONST ||
            dst ->op_type == IS_VAR ||
-#ifdef IS_CV
            dst ->op_type == IS_CV ||
-#endif
            dst ->op_type == IS_TMP_VAR ||
            dst ->op_type == IS_UNUSED);
+else
+    assert(dst ->op_type == IS_CONST ||
+           dst ->op_type == IS_VAR ||
+           dst ->op_type == IS_TMP_VAR ||
+           dst ->op_type == IS_UNUSED);
+#endif
 
     if (src->op_type == IS_CONST) {
         if(!my_copy_zval(&dst->u.constant, &src->u.constant, allocate, deallocate)) {
