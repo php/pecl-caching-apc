@@ -430,7 +430,7 @@ static znode* my_copy_znode(znode* dst, znode* src, apc_malloc_t allocate, apc_f
            dst ->op_type == IS_CV ||
            dst ->op_type == IS_TMP_VAR ||
            dst ->op_type == IS_UNUSED);
-else
+#else
     assert(dst ->op_type == IS_CONST ||
            dst ->op_type == IS_VAR ||
            dst ->op_type == IS_TMP_VAR ||
