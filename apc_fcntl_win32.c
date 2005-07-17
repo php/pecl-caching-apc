@@ -12,11 +12,7 @@
   | obtain it through the world-wide-web, please send a note to          |
   | license@php.net so we can mail you a copy immediately.               |
   +----------------------------------------------------------------------+
-  | Authors: Daniel Cowgill <dcowgill@communityconnect.com>              |
-  |          George Schlossnagle <george@omniti.com>                     |
-  |          Rasmus Lerdorf <rasmus@php.net>                             |
-  |          Arun C. Murthy <arunc@yahoo-inc.com>                        |
-  |          Gopal Vijayaraghavan <gopalv@yahoo-inc.com>                 |
+  | Authors: George Schlossnagle <george@omniti.com>                     |
   +----------------------------------------------------------------------+
 
    This software was contributed to PHP by Community Connect Inc. in 2002
@@ -31,29 +27,64 @@
 
 /* $Id$ */
 
-#ifndef APC_PHP_H
-#define APC_PHP_H
+#include "apc_fcntl.h"
+#include "apc.h"
+#include <php.h>
+#include <win32/flock.h>
+#include <io.h>
+#include <fcntl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
-/*
- * The purpose of this header file is to include all PHP and Zend headers that
- * are typically needed elsewhere in APC. This makes it easy to insure that
- * all required headers are available.
- */
+int apc_fcntl_create(const char* pathname)
+{
+	char *lock_file;
+	HANDLE fd;
+	static int i=0;
+	
+	spprintf(&lock_file, 0, "/tmp/apc.lock.%d", i++);
+	
+	fd = CreateFile(lock_file,
+        GENERIC_READ | GENERIC_WRITE,
+        FILE_SHARE_READ | FILE_SHARE_WRITE,
+        NULL,
+        OPEN_ALWAYS,
+        FILE_ATTRIBUTE_NORMAL,
+        NULL);
+        
 
-#include "php.h"
-#include "zend.h"
-#include "zend_API.h"
-#include "zend_compile.h"
-#include "zend_hash.h"
+	if (fd == INVALID_HANDLE_VALUE) {
+		apc_eprint("apc_fcntl_create: could not open %s", lock_file);
+		efree(lock_file);
+		return -1;
+	}
+	
+	efree(lock_file);
+	return (int)fd;
+}
 
-#if PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION >= 1
-#define ZEND_ENGINE_2_1
-#endif
-#ifdef ZEND_ENGINE_2_1
-#include "zend_vm.h"
-#endif
+void apc_fcntl_destroy(int fd)
+{
+	CloseHandle((HANDLE)fd);
+}
 
-#endif
+void apc_fcntl_lock(int fd)
+{
+	OVERLAPPED offset =	{0, 0, 0, 0, NULL};
+	
+	if (!LockFileEx((HANDLE)fd, LOCKFILE_EXCLUSIVE_LOCK|LOCKFILE_FAIL_IMMEDIATELY, 0, 1, 0, &offset)) {
+		apc_eprint("apc_fcntl_lock failed errno:%d", GetLastError());
+	}
+}
+
+void apc_fcntl_unlock(int fd)
+{
+	OVERLAPPED offset =	{0, 0, 0, 0, NULL};
+
+	if (!UnlockFileEx((HANDLE)fd, 0, 1, 0, &offset)) {
+		apc_eprint("apc_fcntl_unlock failed errno:%d", GetLastError());
+	}
+}
 
 /*
  * Local variables:

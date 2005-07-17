@@ -50,7 +50,9 @@
 /* UNIX headers (needed for struct stat) */
 #include <sys/types.h>
 #include <sys/stat.h>
+#ifndef PHP_WIN32
 #include <unistd.h>
+#endif
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>

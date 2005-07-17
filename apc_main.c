@@ -244,6 +244,7 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
 #if PHP_API_VERSION > 20020918
         h->handle.stream.handle = h->handle.stream.closer = NULL;
 #endif
+        h->type = ZEND_HANDLE_FILENAME;
         zend_hash_add(&EG(included_files), h->opened_path, strlen(h->opened_path)+1, (void *)&dummy, sizeof(int), NULL);
         zend_llist_add_element(&CG(open_files), h); /* XXX kludge */
         apc_stack_push(APCG(cache_stack), cache_entry);

@@ -28,14 +28,6 @@
 
 /* $Id$ */
 
-#ifdef PHP_WIN32
-/* XXX lame hack, for some reason, the ini entries are all messed
-   up if PHP_EXPORTS is not defined, however, this should *not*
-   be defined in extensions, and if defined for the project, core_globals_id
-   is not properly imported (used by the PG macro) */
-#define PHP_EXPORTS
-#endif
-
 #include "php_apc.h"
 #include "apc_cache.h"
 #include "apc_main.h"

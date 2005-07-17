@@ -67,7 +67,7 @@ ZEND_BEGIN_MODULE_GLOBALS(apc)
 ZEND_END_MODULE_GLOBALS(apc)
 
 /* (the following declaration is defined in php_apc.c) */
-PHPAPI ZEND_EXTERN_MODULE_GLOBALS(apc)
+ZEND_EXTERN_MODULE_GLOBALS(apc)
 
 #ifdef ZTS
 # define APCG(v) TSRMG(apc_globals_id, zend_apc_globals *, v)

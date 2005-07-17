@@ -36,6 +36,11 @@
 
 #define NELEMS(a) (sizeof(a)/sizeof((a)[0]))
 
+/* MSC specific defines */
+#if defined(_MSC_VER)
+#define snprintf _snprintf
+#endif
+
 /* {{{ memory allocation wrappers */
 
 void* apc_emalloc(size_t n)

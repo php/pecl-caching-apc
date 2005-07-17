@@ -1704,7 +1704,9 @@ static void my_destroy_class_entry(zend_class_entry* src, apc_free_t deallocate)
     }
 
 #ifdef ZEND_ENGINE_2
+#ifndef _MSC_VER
 #warning "TODO: my_destroy_class_entry leaks memory in ZEND_ENGINE_2!"
+#endif
 #endif
 }
 /* }}} */
@@ -1767,7 +1769,9 @@ static void my_destroy_op_array(zend_op_array* src, apc_free_t deallocate)
     }
     
 #ifdef ZEND_ENGINE_2
+#ifndef _MSC_VER
 #warning "TODO: my_destroy_op_array leaks memory of vars & try-catch in ZEND_ENGINE_2!"
+#endif
     if (src->doc_comment) {
         deallocate(src->doc_comment);
     }
