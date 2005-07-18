@@ -30,6 +30,11 @@ and then re-run your configure script.
 This optimization saves a stat syscall on the main script file.  In PHP5 this
 optimization is automatic and doesn't need any special build flags.
 
+The second thing you are going to want to do to save another syscall is to 
+compile using the --with-apxs configure switch.  This should work for both
+Apache1 and Apache2.  Point it directly at your apxs2 script for Apache2.
+eg. --with-apxs=/usr/local/bin/apxs2
+
 +---------------------+
 | QUICK INSTALL (DSO) |
 +---------------------+
