@@ -58,6 +58,8 @@
 #include <config.h>
 #endif
 
+#include "php.h"
+
 /* log levels constants (see apc_log) */
 enum { APC_DBG, APC_NOTICE, APC_WARNING, APC_ERROR };
 
@@ -85,6 +87,12 @@ extern char* apc_substr(const char* s, int start, int length);
 extern char** apc_tokenize(const char* s, char delim);
 
 /* filesystem functions */
+#ifndef PHP_WIN32
+#define apc_stat(f, b) stat(f, b)
+#else
+#define apc_stat(f, b) apc_win32_stat(f, b TSRMLS_CC)
+extern int apc_win32_stat(const char *path, struct stat *buf TSRMLS_DC);
+#endif
 extern int apc_stat_paths(const char* filename, const char* path, struct stat*);
 
 /* regular expression wrapper functions */

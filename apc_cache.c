@@ -35,9 +35,6 @@
 #include "apc_sma.h"
 #include "apc_globals.h"
 #include "SAPI.h"
-#ifdef PHP_WIN32
-#include "ext/standard/md5.h"
-#endif
 
 /* TODO: rehash when load factor exceeds threshold */
 
@@ -570,11 +567,6 @@ int apc_cache_make_file_key(apc_cache_key_t* key,
 					   TSRMLS_DC)
 {
     struct stat buf, *tmp_buf=NULL;
-#ifdef PHP_WIN32
-    unsigned char digest[16];
-    PHP_MD5_CTX context;
-    int *int_digest;
-#endif
 		
     assert(key != NULL);
 
@@ -592,7 +584,7 @@ int apc_cache_make_file_key(apc_cache_key_t* key,
     if(tmp_buf) { 
 		buf = *tmp_buf;
     } else {
-        if (stat(filename, &buf) != 0 && apc_stat_paths(filename, include_path, &buf) != 0) {
+        if (apc_stat(filename, &buf) != 0 && apc_stat_paths(filename, include_path, &buf) != 0) {
 #ifdef __DEBUG_APC__
             fprintf(stderr,"Stat failed %s - bailing (%s) (%d)\n",filename,SG(request_info).path_translated,foo);
 #endif
@@ -630,17 +622,8 @@ int apc_cache_make_file_key(apc_cache_key_t* key,
      * For example if apc.slam_defense is set to 66 then 2/3 of the attempts
      * to cache an uncached file will be ignored.
      */
-#ifndef PHP_WIN32     
     key->data.file.device = buf.st_dev;
     key->data.file.inode  = buf.st_ino;
-#else
-    key->data.file.device = filename[0];
-    PHP_MD5Init(&context);
-    PHP_MD5Update(&context, filename, strlen(filename));
-    PHP_MD5Final(digest, &context);
-    int_digest = (int *)&(digest[12]);
-    key->data.file.inode  = *int_digest;
-#endif
     /* 
      * If working with content management systems that like to munge the mtime, 
      * it might be appropriate to key off of the ctime to be immune to systems

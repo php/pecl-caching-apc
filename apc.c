@@ -33,13 +33,9 @@
 
 #include "apc.h"
 #include <regex.h>      /* for POSIX regular expressions */
+#include "php.h"
 
 #define NELEMS(a) (sizeof(a)/sizeof((a)[0]))
-
-/* MSC specific defines */
-#if defined(_MSC_VER)
-#define snprintf _snprintf
-#endif
 
 /* {{{ memory allocation wrappers */
 
@@ -268,23 +264,44 @@ char** apc_tokenize(const char* s, char delim)
 
 /* {{{ filesystem functions */
 
+#ifdef PHP_WIN32
+int apc_win32_stat(const char *path, struct stat *buf TSRMLS_DC)
+{
+    char rpath[MAXPATHLEN];
+    BY_HANDLE_FILE_INFORMATION fi;
+    HANDLE f;
+    
+    if (VCWD_STAT(path, buf)) {
+        return -1;
+    }
+
+    VCWD_REALPATH(path, rpath);
+    f = CreateFile(rpath, 0, 0, NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS | FILE_ATTRIBUTE_READONLY, NULL);
+    GetFileInformationByHandle(f, &fi);
+    buf->st_ino = (ino_t)fi.nFileIndexLow;
+    CloseHandle (f);
+    return 0;
+}
+#endif
+
 int apc_stat_paths(const char* filename, const char* path, struct stat* buf)
 {
     char filepath[1024];
     char** paths;
     int found = 0;
     int i;
+    TSRMLS_FETCH();
 
     assert(filename && buf);
 
-    paths = apc_tokenize(path, ':');    /* TODO - on windows, it's ';' */
+    paths = apc_tokenize(path, DEFAULT_DIR_SEPARATOR);
     if (!paths)
         return -1;
 
     /* for each directory in paths, look for filename inside */
     for (i = 0; paths[i]; i++) {
         snprintf(filepath, sizeof(filepath), "%s/%s", paths[i], filename);
-        if (stat(filepath, buf) == 0) {
+        if (apc_stat(filepath, buf) == 0) {
             found = 1;
             break;
         }
