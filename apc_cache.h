@@ -47,8 +47,8 @@ typedef struct apc_cache_t apc_cache_t; /* opaque cache type */
 
 typedef union _apc_cache_key_data_t {
     struct {
-        int device;             /* the filesystem device */
-        int inode;              /* the filesystem inode */
+        dev_t device;             /* the filesystem device */
+        ino_t inode;              /* the filesystem inode */
     } file;
     struct {
         char *identifier;
@@ -217,8 +217,8 @@ extern void apc_cache_free_entry(apc_cache_entry_t* entry);
 typedef union _apc_cache_link_data_t {
     struct {
         char *filename;
-        int device;
-        int inode;
+        dev_t device;
+        ino_t inode;
     } file;
     struct {
         char *info;

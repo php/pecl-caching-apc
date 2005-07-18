@@ -33,12 +33,14 @@
   <version>3.0.4</version>
   <date>2005-07-??</date>
   <notes>
-Add win32 support from xuefer and Edin.
+Add win32 support from Edin.
+Add --with-apxs switch to work around problem when loading APC into Apache binary compiled with LFS switches
 Minor fixes.
   </notes>
  </release>
   <configureoptions>
     <configureoption name="enable-apc-mmap" default="yes" prompt="Use mmap instead of shmget (usually a good idea)"/>
+    <configureoption name="with-apxs" default="yes" prompt="Use apxs to set compile flags (if using apc with Apache)?"/>
   </configureoptions>
   <filelist>
     <file role="doc" name="CHANGELOG" />

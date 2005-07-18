@@ -578,17 +578,26 @@ int apc_cache_make_file_key(apc_cache_key_t* key,
 		
     assert(key != NULL);
 
-    if (!filename || !SG(request_info).path_translated)
+    if (!filename || !SG(request_info).path_translated) {
+#ifdef __DEBUG_APC__
+		fprintf(stderr,"No filename and no path_translated - bailing\n");
+#endif
         return 0;
+	}
+
 
     if(!strcmp(SG(request_info).path_translated, filename)) {
         tmp_buf = sapi_get_stat(TSRMLS_C);  /* Apache has already done this stat() for us */
     }
-    if(tmp_buf) buf = *tmp_buf;
-    else if (stat(filename, &buf) != 0 &&
-        apc_stat_paths(filename, include_path, &buf) != 0)
-    {
-        return 0;
+    if(tmp_buf) { 
+		buf = *tmp_buf;
+    } else {
+        if (stat(filename, &buf) != 0 && apc_stat_paths(filename, include_path, &buf) != 0) {
+#ifdef __DEBUG_APC__
+            fprintf(stderr,"Stat failed %s - bailing (%s) (%d)\n",filename,SG(request_info).path_translated,foo);
+#endif
+            return 0;
+        }
     }
 
     /*
@@ -602,7 +611,12 @@ int apc_cache_make_file_key(apc_cache_key_t* key,
      * mechanisms to push files onto live web servers, but adding this
      * tiny safety is easier than educating the world.
      */
-    if(t - buf.st_mtime < 2) return 0;
+    if(t - buf.st_mtime < 2) { 
+#ifdef __DEBUG_APC__
+		fprintf(stderr,"File is too new %s (%d - %d) - bailing\n",filename,t,buf.st_mtime);
+#endif
+		return 0;
+	}
 
     /*
      * This is an even bigger hack than the above.

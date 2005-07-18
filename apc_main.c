@@ -207,15 +207,26 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
     apc_class_t* alloc_classes;
     time_t t;
 
-    if (!APCG(enabled)) return old_compile_file(h, type TSRMLS_CC);
+    if (!APCG(enabled)) {
+#ifdef __DEBUG_APC__
+		fprintf(stderr,"APC disabled - no caching on this request\n");
+#endif
+		return old_compile_file(h, type TSRMLS_CC);
+	}
 
     /* check our regular expression filters */
     if (APCG(compiled_filters)) {
         int ret = apc_regex_match_array(APCG(compiled_filters), h->filename);
         if(ret == APC_NEGATIVE_MATCH || (ret != APC_POSITIVE_MATCH && !APCG(cache_by_default))) {
+#ifdef __DEBUG_APC__
+			fprintf(stderr,"negative regex match found - no caching on this request\n");
+#endif
             return old_compile_file(h, type TSRMLS_CC);
         }
     } else if(!APCG(cache_by_default)) {
+#ifdef __DEBUG_APC__
+		fprintf(stderr,"cache_by_default is off - no caching on this request\n");
+#endif
         return old_compile_file(h, type TSRMLS_CC);
     }
 
@@ -231,6 +242,9 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
 
     /* try to create a cache key; if we fail, give up on caching */
     if (!apc_cache_make_file_key(&key, h->filename, PG(include_path), t TSRMLS_CC)) {
+#ifdef __DEBUG_APC__
+		fprintf(stderr,"Unable to create a cache key - no caching on this request\n");
+#endif
         return old_compile_file(h, type TSRMLS_CC);
     }
     
