@@ -72,7 +72,7 @@ void apc_fcntl_lock(int fd)
 {
 	OVERLAPPED offset =	{0, 0, 0, 0, NULL};
 	
-	if (!LockFileEx((HANDLE)fd, LOCKFILE_EXCLUSIVE_LOCK|LOCKFILE_FAIL_IMMEDIATELY, 0, 1, 0, &offset)) {
+	if (!LockFileEx((HANDLE)fd, LOCKFILE_EXCLUSIVE_LOCK, 0, 1, 0, &offset)) {
 		apc_eprint("apc_fcntl_lock failed errno:%d", GetLastError());
 	}
 }
