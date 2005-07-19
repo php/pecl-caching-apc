@@ -443,7 +443,7 @@ void apc_deactivate()
 /* {{{ apc_version */
 const char* apc_version()
 {
-    return "3.0.4";
+    return "3.0.5-dev";
 }
 /* }}} */
 

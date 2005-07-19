@@ -30,12 +30,9 @@
  <license>PHP</license>
  <release>
   <state>stable</state>
-  <version>3.0.4</version>
-  <date>2005-07-18</date>
+  <version>3.0.5-dev</version>
+  <date>2005-07-??</date>
   <notes>
-Add win32 support from Edin.
-Add --with-apxs switch to work around problem when loading APC into Apache binary compiled with LFS switches
-A couple of other minor fixes.
   </notes>
  </release>
   <configureoptions>
@@ -138,6 +135,16 @@ Default to mmap and add a better error message for shmget failures
   <date>2005-07-07</date>
   <notes>
 Fix compile problem against PHP 5.0.x
+  </notes>
+ </release>
+ <release>
+  <state>stable</state>
+  <version>3.0.4</version>
+  <date>2005-07-18</date>
+  <notes>
+Add win32 support from Edin.
+Add --with-apxs switch to work around problem when loading APC into Apache binary compiled with LFS switches
+A couple of other minor fixes.
   </notes>
  </release>
   </changelog>
