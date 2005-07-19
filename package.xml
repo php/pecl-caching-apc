@@ -31,16 +31,16 @@
  <release>
   <state>stable</state>
   <version>3.0.4</version>
-  <date>2005-07-??</date>
+  <date>2005-07-18</date>
   <notes>
 Add win32 support from Edin.
 Add --with-apxs switch to work around problem when loading APC into Apache binary compiled with LFS switches
-Minor fixes.
+A couple of other minor fixes.
   </notes>
  </release>
   <configureoptions>
     <configureoption name="enable-apc-mmap" default="yes" prompt="Use mmap instead of shmget (usually a good idea)"/>
-    <configureoption name="with-apxs" default="yes" prompt="Use apxs to set compile flags (if using apc with Apache)?"/>
+    <configureoption name="with-apxs" default="yes" prompt="Use apxs to set compile flags (if using APC with Apache)?"/>
   </configureoptions>
   <filelist>
     <file role="doc" name="CHANGELOG" />
