@@ -237,7 +237,7 @@ function menu() {
 <input type="hidden" name="last_mode" value="opcode" />
 <?php endif;?>
 <?php if(isset($_GET['sort'])) { ?>
-<input type="hidden" name="sort" value="<?php echo htmlspecialchars($_GET['sort'])?>" />
+<input type="hidden" name="sort" value="<?php echo htmlspecialchars((string)$_GET['sort'])?>" />
 </form>
 <?php } ?>
 <?
@@ -269,7 +269,7 @@ EOB;
 </div>
 <br />
 <?
-if(isset($_GET['action']) && $_GET['action']!='Clear Cache') $action = '&action='.$_GET['action'];
+if(isset($_GET['action']) && $_GET['action']!='Clear Cache') $action = '&action='.htmlspecialchars((string)$_GET['action']);
 else $action='';
 if($mode=='user')
      $name_sort = '<a href="'.getenv('SCRIPT_NAME') . '?sort=field'.$action.'">User Entry</a>';
