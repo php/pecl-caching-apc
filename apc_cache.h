@@ -251,6 +251,7 @@ struct apc_cache_info_t {
     int ttl;
     apc_cache_link_t* list;
     apc_cache_link_t* deleted_list;
+    time_t start_time;
 };
 /* }}} */
 

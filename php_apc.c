@@ -125,7 +125,7 @@ static PHP_MINFO_FUNCTION(apc)
 {
 	php_info_print_table_start();
 	php_info_print_table_row(2, "APC Support", APCG(enabled) ? "enabled" : "disabled");
-	php_info_print_table_row(2, "Version", apc_version());
+	php_info_print_table_row(2, "Version", APC_VERSION);
 #if APC_MMAP
 	php_info_print_table_row(2, "MMAP Support", "Enabled");
 	php_info_print_table_row(2, "MMAP File Mask", APCG(mmap_file_mask));
@@ -142,17 +142,18 @@ static PHP_MINFO_FUNCTION(apc)
 /* {{{ PHP_MINIT_FUNCTION(apc) */
 static PHP_MINIT_FUNCTION(apc)
 {
-	ZEND_INIT_MODULE_GLOBALS(apc, php_apc_init_globals,
-                             php_apc_shutdown_globals);
+	ZEND_INIT_MODULE_GLOBALS(apc, php_apc_init_globals, php_apc_shutdown_globals);
 
     REGISTER_INI_ENTRIES();
 
     /* Disable APC in cli mode */
-    if(!strcmp(sapi_module.name, "cli")) 
+    if(!strcmp(sapi_module.name, "cli")) {
         APCG(enabled) = 0;
+	}
 
-    if (APCG(enabled))
+    if (APCG(enabled)) {
         apc_module_init();
+	}
 
 	return SUCCESS;
 }
@@ -161,8 +162,9 @@ static PHP_MINIT_FUNCTION(apc)
 /* {{{ PHP_MSHUTDOWN_FUNCTION(apc) */
 static PHP_MSHUTDOWN_FUNCTION(apc)
 {
-    if(APCG(enabled))
+    if(APCG(enabled)) {
         apc_module_shutdown();
+    }
     UNREGISTER_INI_ENTRIES();
 	return SUCCESS;
 }
@@ -171,8 +173,9 @@ static PHP_MSHUTDOWN_FUNCTION(apc)
 /* {{{ PHP_RINIT_FUNCTION(apc) */
 static PHP_RINIT_FUNCTION(apc)
 {
-    if(APCG(enabled))
+    if(APCG(enabled)) {
         apc_request_init(TSRMLS_C);
+    }
 	return SUCCESS;
 }
 /* }}} */
@@ -180,8 +183,9 @@ static PHP_RINIT_FUNCTION(apc)
 /* {{{ PHP_RSHUTDOWN_FUNCTION(apc) */
 static PHP_RSHUTDOWN_FUNCTION(apc)
 {
-    if(APCG(enabled))
+    if(APCG(enabled)) {
         apc_request_shutdown();
+    }
 	return SUCCESS;
 }
 /* }}} */
@@ -217,6 +221,8 @@ PHP_FUNCTION(apc_cache_info)
     add_assoc_long(return_value, "ttl", info->ttl);
     add_assoc_long(return_value, "num_hits", info->num_hits);
     add_assoc_long(return_value, "num_misses", info->num_misses);
+    add_assoc_string(return_value, "version", APC_VERSION, 1);
+    add_assoc_long(return_value, "start_time", info->start_time);
 
     ALLOC_INIT_ZVAL(list);
     array_init(list);
@@ -600,7 +606,7 @@ zend_module_entry apc_module_entry = {
 	PHP_RINIT(apc),
 	PHP_RSHUTDOWN(apc),
 	PHP_MINFO(apc),
-	NO_VERSION_YET,
+	APC_VERSION,
 	STANDARD_MODULE_PROPERTIES
 };
 

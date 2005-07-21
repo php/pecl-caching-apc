@@ -440,13 +440,6 @@ void apc_deactivate()
 }
 /* }}} */
 
-/* {{{ apc_version */
-const char* apc_version()
-{
-    return "3.0.5-dev";
-}
-/* }}} */
-
 /*
  * Local variables:
  * tab-width: 4

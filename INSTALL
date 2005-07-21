@@ -1,21 +1,8 @@
 Installation Instructions for APC
 ---------------------------------
 
-APC has been successfully compiled on the following platforms:
-
-    o Linux (RH 6.2/7.2/7.3/8, Debian)
-    o FreeBSD
-    o OpenBSD
-    o MacOS 10.2 (statically compiled)
-
-...and has been tested with the following PHP versions:
-
-    o 4.2.2
-    o 4.2.3
-    o 4.3.0 - 4.3.9
-    
-Versions prior to 4.2.2 have been officially deprecated by the PHP group, and
-therefore aren't supported by APC either.
+This version of APC should work on every version of PHP from 4.3.0 to 
+PHP 5.1.x.  
 
 PHP 4 Optimization
 ------------------
@@ -39,12 +26,13 @@ eg. --with-apxs=/usr/local/bin/apxs2
 | QUICK INSTALL (DSO) |
 +---------------------+
 
-These instructions assume your PHP installation is located in /usr/local/php.
+These instructions assume your PHP installation is located in /usr/local/php and you
+want Apache optimizations (--with-apxs).
 
 $ gunzip -c apc_x.y.tar.gz | tar xf -
 $ cd apc_x.y
 $ /usr/local/php/bin/phpize
-$ ./configure --enable-apc
+$ ./configure --enable-apc --enable-apc-mmap --with-apxs --with-php-config=/usr/local/php/bin/php-config
 $ make
 $ make install
 
@@ -144,8 +132,7 @@ These instructions assume your PHP installation is located in /usr/local/php.
     php-config should be located in the same directory as phpize.
 
     If you prefer to use mmap instead of the default IPC shared memory support,
-    add --enable-mmap to your configure line.  If you don't understand the 
-    difference between the two, stick with the default.
+    add --enable-apc-mmap to your configure line. 
 
 	If you prefer to use sysv IPC semaphores over the safer fcntl() locks, add
 	--enable-sem to your configure line.  If you don't have a problem
@@ -193,9 +180,6 @@ These instructions assume your PHP installation is located in /usr/local/php.
     errors. On BSD-based platforms, it is typical for APC to be unable to
     allocate the default-sized shared memory segment. See below for hints on
     raising your system's shared memory limitations.
-
-If all else fails, ask for help on the APC mailing list. Visit
-http://apc.communityconnect.com/ for more information.
 
 +-----------------+
 | CONFIGURING APC |
