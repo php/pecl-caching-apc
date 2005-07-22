@@ -201,7 +201,7 @@ $MY_SELF_WO_SORT=
 
 $cache=apc_cache_info();
 
-if(!admin_password || $admin_password=='password')
+if(!$admin_password || $admin_password=='password')
 	$sure_msg = "You need to set a password at the top of apcgui.php before this will work";
 else
 	$sure_msg = "Are you sure?";
