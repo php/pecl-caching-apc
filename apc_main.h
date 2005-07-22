@@ -38,7 +38,7 @@
  * This module provides the primary interface between PHP and APC.
  */
 
-extern int apc_module_init();
+extern int apc_module_init(int module_number);
 extern int apc_module_shutdown();
 extern int apc_request_init(TSRMLS_D);
 extern int apc_request_shutdown();

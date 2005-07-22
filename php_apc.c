@@ -152,7 +152,7 @@ static PHP_MINIT_FUNCTION(apc)
     }
 
     if (APCG(enabled)) {
-        apc_module_init();
+        apc_module_init(module_number);
     }
 
 	return SUCCESS;

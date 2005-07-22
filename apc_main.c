@@ -52,9 +52,19 @@
 /* {{{ module variables */
 
 /* pointer to the original Zend engine compile_file function */
-static zend_op_array* (*old_compile_file)
-    (zend_file_handle*, int TSRMLS_DC);
+typedef zend_op_array* (zend_compile_t)(zend_file_handle*, int TSRMLS_DC);
+static zend_compile_t *old_compile_file;
 
+/* }}} */
+
+/* {{{ get/set old_compile_file (to interact with other extensions that need the compile hook) */
+static zend_compile_t* set_compile_hook(zend_compile_t *ptr)
+{
+    zend_compile_t *retval = old_compile_file;
+
+    if (ptr != NULL) old_compile_file = ptr;
+    return retval;
+}
 /* }}} */
 
 /* {{{ install_function */
@@ -332,7 +342,7 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
 
 /* {{{ module init and shutdown */
 
-int apc_module_init()
+int apc_module_init(int module_number)
 {
     TSRMLS_FETCH();
     /* apc initialization */
@@ -350,7 +360,8 @@ int apc_module_init()
     /* override compilation */
     old_compile_file = zend_compile_file;
     zend_compile_file = my_compile_file;
-    
+	REGISTER_LONG_CONSTANT("\000apc_magic", (long)&set_compile_hook, CONST_PERSISTENT | CONST_CS);
+
     APCG(initialized) = 1;
     return 0;
 }
