@@ -7,7 +7,13 @@ $admin_password = 'password';  // Change this to enable the Clear Cache Command
 $PHP_SELF= isset($_SERVER['PHP_SELF']) ? htmlentities(strip_tags($_SERVER['PHP_SELF'],'')) : '';
 $time = time();
 $cache_mode = 'opcode';
-
+/*
+class foobar {
+	var $banana = "<font color=yellow>banana</font>";
+}
+$foobar = new foobar();
+apc_store('foobar',$foobar);
+*/
 // check validity of input variables
 $vardom=array(
 	'CC'	=> '/^[01]$/',
@@ -303,7 +309,7 @@ $MY_SELF_WO_SORT=
 	"&COUNT=".$MYREQUEST['COUNT'];
 
 if(!$admin_password || $admin_password=='password')
-	$sure_msg = "You need to set a password at the top of apcgui.php before this will work";
+	$sure_msg = "You need to set a password at the top of apc.php before this will work";
 else
 	$sure_msg = "Are you sure?";
 
@@ -331,26 +337,28 @@ EOB;
 				{
 					$value=sprintf("%s (%.2f%%)",$value,$value*100/$cache['num_hits']);
 				}
+				if ($k == 'deletion_time') {
+					if(!$entry['deletion_time']) $value = "None";
+				}
 				echo
 					"<tr class=tr-$m>",
 					"<td class=td-0>",ucwords(preg_replace("/_/"," ",$k)),"</td>",
-					"<td class=td-last>",preg_match("/time/",$k) ? date("d.m.Y H:i:s",$value) : $value,"</td>",
+					"<td class=td-last>",(preg_match("/time/",$k) && $value!='None') ? date("d.m.Y H:i:s",$value) : $value,"</td>",
 					"</tr>";
 				$m=1-$m;
 			}
 			if($fieldkey=='info') {
 				if($admin_password!='password') {
-					echo 
-					"<tr class=tr-$m>",
-					"<td class=td-0>Stored Value</td>",
-					"<td class=td-last>".apc_fetch($entry[$fieldkey])."</td>",
-					"</tr>";
+					echo "<tr class=tr-$m><td class=td-0>Stored Value</td><td class=td-last><pre>";
+					$output = var_export(apc_fetch($entry[$fieldkey]),true);
+					echo htmlspecialchars($output);
+					echo "</pre></td></tr>\n";
 				} else {
 					echo
 					"<tr class=tr-$m>",
 					"<td class=td-0>Stored Value</td>",
 					"<td class=td-last>Set your apc.php password to see the user values here</td>",
-					"</tr>";
+					"</tr>\n";
 				}
 			}
 		}
