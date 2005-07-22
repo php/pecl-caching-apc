@@ -95,7 +95,7 @@ if (isset($MYREQUEST['IMG']))
 
 		$x=$y=$size/2;
 
-		fill_arc($image,$x,$y,$size,0,$a*360/$s,$col_black,$col_green,bsize($s));
+		fill_arc($image,$x,$y,$size,0,$a*360/$s,$col_black,$col_green,bsize($a));
 		fill_arc($image,$x,$y,$size,0+$a*360/$s,360,$col_black,$col_red,bsize($s-$a));
 	}
 	else
@@ -419,6 +419,8 @@ EOB;
 		
 }
 ?>
+
+<!-- <?php echo "\nAPC GUI by Ralf Becker\n$VERSION"?> -->
 </body>
 </html>
 <?
