@@ -334,6 +334,8 @@ else
 	$mem_used = $mem_size-$mem_avail;
 	$seg_size = bsize($mem['seg_size']);
 	$req_rate = sprintf("%.2f",($cache['num_hits']+$cache['num_misses'])/($time-$cache['start_time']));
+	$apcversion = phpversion('apc');
+	$phpversion = phpversion();
 	echo <<< EOB
 		<ol class=menu>
 		<li><a href="$MY_SELF&OB=0">Refresh Data</a></li>
@@ -344,8 +346,16 @@ else
 		
 		<div class="info div1"><h2>General Cache Information</h2>
 		<table cellspacing=0><tbody>
-		<tr class=tr-0><td class=td-0>APC Host</td><td>$SERVER_NAME</td></tr>
-		<tr class=tr-1><td class=td-0>Server Software</td><td>$SERVER_SOFTWARE</td></tr>
+		<tr class=tr-0><td class=td-0>APC Version</td><td>$apcversion</td></tr>
+		<tr class=tr-1><td class=td-0>PHP Version</td><td>$phpversion</td></tr>
+EOB;
+
+	if($SERVER_NAME)
+		echo "<tr class=tr-0><td class=td-0>APC Host</td><td>$SERVER_NAME</td></tr>\n";
+	if($SERVER_SOFTWARE)
+		echo "<tr class=tr-1><td class=td-0>Server Software</td><td>$SERVER_SOFTWARE</td></tr>\n";
+
+	echo <<<EOB
 		<tr class=tr-0><td class=td-0>Hits</td><td>{$cache['num_hits']}</td></tr>
 		<tr class=tr-1><td class=td-0>Misses</td><td>{$cache['num_misses']}</td></tr>
 		<tr class=tr-0><td class=td-0>Request Rate</td><td>$req_rate requests/second</td></tr>
