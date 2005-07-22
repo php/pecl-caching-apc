@@ -65,7 +65,7 @@ struct header_t {
     int num_hits;               /* total successful hits in cache */
     int num_misses;             /* total unsuccessful hits in cache */
     slot_t* deleted_list;       /* linked list of to-be-deleted slots */
-	time_t start_time;          /* time the above counters were reset */
+    time_t start_time;          /* time the above counters were reset */
 };
 /* }}} */
 
@@ -276,7 +276,7 @@ apc_cache_t* apc_cache_create(int size_hint, int gc_ttl, int ttl)
     cache->header->num_hits = 0;
     cache->header->num_misses = 0;
     cache->header->deleted_list = NULL;
-	cache->header->start_time = time(NULL);
+    cache->header->start_time = time(NULL);
 
     cache->slots = (slot_t**) (((char*) cache->shmaddr) + sizeof(header_t));
     cache->num_slots = num_slots;
@@ -311,7 +311,7 @@ void apc_cache_clear(apc_cache_t* cache)
 
     cache->header->num_hits = 0;
     cache->header->num_misses = 0;
-	cache->header->start_time = time(NULL);
+    cache->header->start_time = time(NULL);
 
     for (i = 0; i < cache->num_slots; i++) {
         slot_t* p = cache->slots[i];
@@ -762,7 +762,7 @@ apc_cache_info_t* apc_cache_info(apc_cache_t* cache)
     info->num_misses = cache->header->num_misses;
     info->list = NULL;
     info->deleted_list = NULL;
-	info->start_time = cache->header->start_time;
+    info->start_time = cache->header->start_time;
 
     /* For each hashtable slot */
     for (i = 0; i < info->num_slots; i++) {
