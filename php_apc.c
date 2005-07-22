@@ -221,7 +221,6 @@ PHP_FUNCTION(apc_cache_info)
     add_assoc_long(return_value, "ttl", info->ttl);
     add_assoc_long(return_value, "num_hits", info->num_hits);
     add_assoc_long(return_value, "num_misses", info->num_misses);
-    add_assoc_string(return_value, "version", APC_VERSION, 1);
     add_assoc_long(return_value, "start_time", info->start_time);
 
     ALLOC_INIT_ZVAL(list);

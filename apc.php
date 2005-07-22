@@ -190,12 +190,13 @@ $mins = (int)($delta/60) - $hours*60 - $days*24*60;
 $secs = $delta - $hours*3600 - $days*24*3600 - $mins*60;
 if($days==1) $days = "1 day"; elseif($days) $days .= " days"; else $days='';
 
-$data = array('uptime'=>sprintf("%s %d:%02d:%02d",$days,$hours,$mins,$secs),
+$data = array('PHP version'=>phpversion(),
+              'uptime'=>sprintf("%s %d:%02d:%02d",$days,$hours,$mins,$secs),
               'num_seg' =>$sma_info['num_seg'],
               'seg_size'=>$sma_info['seg_size'],
               'used'=>($sma_info['seg_size']-$sma_info['avail_mem']),
               'avail_mem'=>$sma_info['avail_mem']);
-box_start("APC Version ".$cache_info['version']);
+box_start("APC Version ".phpversion('apc'));
 box_rows($data);
 
 $data = array('num_slots'=>$cache_info['num_slots'],
