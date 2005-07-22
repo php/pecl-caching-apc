@@ -419,7 +419,6 @@ EOB;
 		
 }
 ?>
-<div class=version><?=$VERSION?></div>
 </body>
 </html>
 <?
