@@ -1,324 +1,556 @@
 <?php
-$ff = $saf = $msie = null;
-if(stristr(getenv("HTTP_USER_AGENT"),'firefox')) $ff=true;
-if(stristr(getenv("HTTP_USER_AGENT"),'safari')) $saf=true;
-if(stristr(getenv("HTTP_USER_AGENT"),'msie')) $msie=true;
+$VERSION='$Id$';
 
-function redir($arg="") {
-	$port = getenv('SERVER_PORT');
-	$host = htmlspecialchars(getenv('HTTP_HOST'));
-	$self = htmlspecialchars(getenv('PHP_SELF'));
-	if($port==443) $url = "https://";
-	else $url = "http://";
-	$url .= $host;
-	if($port!=80) $url .= ":$port";
-	$url .= $self;
-	if($arg) $url.="?$arg";
-	header("Location: $url");
+$admin_password = 'password';  // Change this to enable the Clear Cache Command
+
+// rewrite $PHP_SELF to block XSS attacks
+$PHP_SELF= isset($_SERVER['PHP_SELF']) ? htmlentities(strip_tags($_SERVER['PHP_SELF'],'')) : '';
+$time = time();
+$cache_mode = 'opcode';
+
+// check validity of input variables
+$vardom=array(
+	'CC'	=> '/^[01]$/',
+	'COUNT'	=> '/^\d+$/',
+	'IMG'	=> '/^[12]$/',
+	'OB'	=> '/^[012]$/',
+	'SCOPE'	=> '/^[AD]$/',
+	'SH'	=> '/^[a-z0-9]+$/',
+	'SORT1'	=> '/^[HSMCDT]$/',
+	'SORT2'	=> '/^[DA]$/',
+);
+
+if (empty($_REQUEST)) {
+	if (!empty($_GET) && !empty($_POST)) {
+		$_REQUEST = array_merge($_GET, $_POST);
+	} else if (!empty($_GET)) {
+		$_REQUEST = $_GET;
+	} else if (!empty($_POST)) {
+		$_REQUEST = $_POST;
+	} else {
+		$_REQUEST = array();
+	}
+}
+
+foreach($vardom as $var => $dom)
+{
+	if (!isset($_REQUEST[$var])) {
+		$MYREQUEST[$var]=NULL;
+		continue;
+	} if (!is_array($_REQUEST[$var]) && preg_match($dom,$_REQUEST[$var]))
+		$MYREQUEST[$var]=$_REQUEST[$var];
+	else
+		$MYREQUEST[$var]=$_REQUEST[$var]=NULL;
+}
+
+if (isset($MYREQUEST['OB']) && $MYREQUEST['OB']) {
+	if($MYREQUEST['OB']==2) {
+		$cache_mode='user'; $fieldname='info';	$fieldheading='User Entry Label'; $OB=2; $fieldkey='info';
+	} else {
+		$cache_mode='opcode'; $fieldname='filename'; $fieldheading='Script Filename'; $OB=1; $fieldkey='inode';
+	}
+}
+
+if(!$cache=@apc_cache_info($cache_mode)) {
+	echo "No cache info available.  APC does not appear to be running.";
+	exit;
+} 
+$mem=apc_sma_info();
+
+// don't cache this page
+//
+header("Cache-Control: no-store, no-cache, must-revalidate");  // HTTP/1.1
+header("Cache-Control: post-check=0, pre-check=0", false);
+header("Pragma: no-cache");                          // HTTP/1.0
+
+// create graphics
+//
+function graphics_avail()
+{
+	return extension_loaded('gd');
+}
+if (isset($MYREQUEST['IMG']))
+{
+	if (!graphics_avail()) {
+		exit(0);
+	}
+
+	function fill_arc($im, $centerX, $centerY, $diameter, $start, $end, $color1,$color2,$text='')
+	{
+		$r=$diameter/2;
+		$w=deg2rad((360+$start+($end-$start)/2)%360);
+		
+		imagefilledarc($im, $centerX, $centerY, $diameter, $diameter, $start, $end, $color2, IMG_ARC_PIE);
+		
+		if ($text)
+			imagestring($im,4,$centerX + $r*cos($w)/2, $centerY + $r*sin($w)/2,$text,$color1);
+	} 
+	
+	function fill_box($im, $x, $y, $w, $h, $color1, $color2,$text='')
+	{
+		$x1=$x+$w-1;
+		$y1=$y+$h-1;
+
+		imagefilledrectangle($im, $x, $y1, $x1, $y, $color2);
+
+		if ($text)
+			imagestring($im,4,$x+5,$y1-16,$text,$color1);
+	}
+
+	$size=200;
+
+	$image = imagecreate($size+10, $size+10);
+	$col_white = imagecolorallocate($image, 255, 255, 255);
+	$col_red   = imagecolorallocate($image, 200,  80,  30);
+	$col_green = imagecolorallocate($image, 100, 255, 100);
+	$col_black = imagecolorallocate($image,   0,   0,   0);
+	imagecolortransparent($image,$col_white);
+
+	if ($MYREQUEST['IMG']==1)
+	{
+		$s=$mem['num_seg']*$mem['seg_size'];
+		$a=$mem['avail_mem'];
+
+		$x=$y=$size/2;
+
+		fill_arc($image,$x,$y,$size,0,$a*360/$s,$col_black,$col_green,bsize($a));
+		fill_arc($image,$x,$y,$size,0+$a*360/$s,360,$col_black,$col_red,bsize($s-$a));
+	}
+	else
+	{
+		$s=$cache['num_hits']+$cache['num_misses'];
+		$a=$cache['num_hits'];
+		
+		fill_box($image, 30,$size,50,-$a*($size-21)/$s,$col_black,$col_green,sprintf("%.1f%%",$cache['num_hits']*100/$s));
+		fill_box($image,130,$size,50,-max(4,($s-$a)*($size-21)/$s),$col_black,$col_red,sprintf("%.1f%%",$cache['num_misses']*100/$s));
+	}
+	header("Content-type: image/png");
+	imagepng($image);
 	exit;
 }
-if(isset($_GET['action'])) {
-    switch($_GET['action']) {
-      case 'Top 25': 
-		$limit=25;
-		if(isset($_GET['last_mode']) && $_GET['last_mode']=='user') { $mode='user'; $field = 'info'; }
-		else { $mode='opcode'; $field = 'filename'; }
-		break;
-      case 'Top 100': 
-		$limit=100; 
-		if(isset($_GET['last_mode']) && $_GET['last_mode']=='user') { $mode='user'; $field = 'info'; }
-		else { $mode='opcode'; $field = 'filename'; }
-		break;
-      case 'All': 
-		$limit=0;
-		if(isset($_GET['last_mode']) && $_GET['last_mode']=='user') { $mode='user'; $field = 'info'; }
-		else { $mode='opcode'; $field = 'filename'; }
-		break;
-	  case 'User Cache': 
-		$limit=25; 
-		$mode='user'; $field = 'info';
-		break;
-	  case 'Opcode Cache':
-		$limit=25;
-		$mode='opcode'; $field = 'filename';
-		break;
-    }
-} else {
-    $limit = 25; 
-	$mode = 'opcode';
-	$field = 'filename';
+
+// pretty printer for byte values
+//
+function bsize($s)
+{
+	foreach (array('','K','M','G') as $i => $k)
+	{
+		if ($s < 1024) break;
+		$s/=1024;
+	}
+	return sprintf("%.1f %sBytes",$s,$k);
 }
 
-if(!$cache_info = @apc_cache_info($mode)) {
-	echo "No cache info available.  Did you disable it in your apc.ini file?";
-	exit;
-}
-$ttl = $cache_info['ttl'];
-$sma_info = apc_sma_info();
-if($ff) $bg = "#cccccc"; else $bg = "#ffffff";
-if($msie) $right_float_width = "10em";
-else $right_float_width = "auto";
-if($saf) $left_float_style = "display: table; width: 80%;";
-else $left_float_style = "";
+// sortable table header in "scripts for this host" view
+function sortheader($key,$name,$extra='')
+{
+	global $MYREQUEST, $MY_SELF_WO_SORT;
+	
+	if ($MYREQUEST['SORT1']==$key)
+		$MYREQUEST['SORT2'] = $MYREQUEST['SORT2']=='A' ? 'D' : 'A';
 
-// Colours: #9999cc, #ccccff and #cccccc
+	return "<a class=sortable href=\"$MY_SELF_WO_SORT$extra&SORT1=$key&SORT2=".$MYREQUEST['SORT2']."\">$name</a>";
+
+}
+
 ?>
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html>
-  <head>
-    <title>APC Info</title>
-    <meta http-equiv="Pragma" content="no-cache">
+<head><title>APC INFO</title>
 <style><!--
-fieldset { border: #000000 solid 1px; background: <?php echo $bg?>; -moz-border-radius: 8px; border-radius: 8px;  }
-legend { background: #9999cc; border: #000000 solid 1px; padding: 1px 10px }
-table { border-spacing: 0; }
-th { text-align: left; background: <?php echo $bg?>; border-bottom: #000000 dotted 1px; }
-th.heading { border-bottom: #000000 solid 2px; text-align: right; }
-th.lheading { border-bottom: #000000 solid 2px; text-align: left; }
-th.left { text-align: right; right-padding: 10px; }
-td { text-align: right; background: <?php echo $bg?>; padding-left: 10px; border-bottom: #000000 dotted 1px; }
-td.section { text-align: center; background: #9999cc; border: #000000 solid 1px; padding-left: 0px; }
-td.clear { border: 0px; font-size: small;}
-td.name { text-align: left; border-bottom: #000000 dotted 1px; padding-left: 0px; }
-td.value { text-align: right; border-bottom: #000000 dotted 1px; padding-left: 0px; }
-td.heading { border-bottom: #000000 solid 2px; }
-div.right { float: right; width: <?php echo $right_float_width ?>;}
-div.left { margin: 0 0 0 0; <?php echo $left_float_style; ?> }
-div.container { }
+body { background:white; font-size:100.01%; margin:0; padding:0; }
+body,p,td,th,input,submit { font-family:arial,helvetica,sans-serif; }
+* html body   {font-size:0.8em}
+* html p      {font-size:0.8em}
+* html td     {font-size:0.8em}
+* html th     {font-size:0.8em}
+* html input  {font-size:0.8em}
+* html submit {font-size:0.8em}
+td { vertical-align:top }
+a { color:black; font-weight:none; text-decoration:none; }
+a:hover { text-decoration:underline; }
+div.content { padding:1em 1em 1em 1em; position:absolute; width:97%; z-index:100; }
+h1.apc { background:rgb(153,153,204);; margin:0; padding:0.5em 1em 0.5em 1em; }
+* html h1.apc { margin-bottom:-7px; }
+h1.apc div.logo span.logo {
+	background:rgb(119,123,180); #white;
+	color:black; #rgb(153,153,204);
+	border-right: solid black 1px;
+	border-bottom: solid black 1px;
+	font-style:italic;
+	font-size:1em;
+	padding-left:1.2em;
+	padding-right:1.2em;
+	text-align:right;
+	}
+h1.apc div.logo span.name { color:white; font-size:0.7em; padding:0 0.8em 0 2em; }
+h1.apc div.nameinfo { color:white; display:inline; font-size:0.4em; margin-left: 3em; }
+h1.apc div.copy { color:black; font-size:0.4em; position:absolute; right:1em; }
+hr.apc {
+	background:white;
+	border-bottom:solid rgb(102,102,153) 1px;
+	border-style:none;
+	border-top:solid rgb(102,102,153) 10px;
+	height:12px;
+	margin:0;
+	margin-top:1px;
+	padding:0;
+}
+
+ol,menu { margin:1em 0 0 0; padding:0.2em; }
+ol.menu li { display:inline; margin-left:2em; }
+ol.menu a {
+	background:rgb(153,153,204);
+	border:solid rgb(102,102,153) 2px;
+	color:white;
+	font-weight:bold;
+	margin-right:1em;
+	padding:0.1em 0.5em 0.1em 0.5em;
+	text-decoration:none;
+	}
+ol.menu a:hover { text-decoration:underline; }
+div.info {
+	background:rgb(204,204,204);
+	border:solid rgb(204,204,204) 1px;
+	margin-bottom:1em;
+	}
+div.info h2 {
+	background:rgb(204,204,204);
+	color:black;
+	font-size:1em;
+	margin:0;
+	padding:0.1em 1em 0.1em 1em;
+	}
+div.info table {
+	border:solid rgb(204,204,204) 1px;
+	border-spacing:0;
+	width:100%;
+	}
+div.info table th {
+	background:rgb(204,204,204);
+	color:white;
+	margin:0;
+	padding:0.1em 1em 0.1em 1em;
+	}
+div.info table th a.sortable { color:black; }
+div.info table tr.tr-0 { background:rgb(238,238,238); }
+div.info table tr.tr-1 { background:rgb(221,221,221); }
+div.info table td { padding:0.3em 1em 0.3em 1em; }
+div.info table td.td-0 { border-right:solid rgb(102,102,153) 1px; white-space:nowrap; }
+div.info table td.td-n { border-right:solid rgb(102,102,153) 1px; }
+
+div.graph { background:rgb(204,204,204); border:solid rgb(204,204,204) 1px; margin-bottom:1em }
+div.graph h2 { background:rgb(204,204,204);; color:black; font-size:1em; margin:0; padding:0.1em 1em 0.1em 1em; }
+div.graph table { border:solid rgb(204,204,204) 1px; color:black; font-weight:bold; width:100%; }
+div.graph table td.td-0 { background:rgb(238,238,238); }
+div.graph table td.td-1 { background:rgb(221,221,221); }
+div.graph table td { padding:0.2em 1em 0.2em 1em; }
+
+div.div1,div.div2 { margin-bottom:1em; width:35em; }
+div.div3 { position:absolute; left:37em; top:1em; right:1em; }
+
+div.sorting { margin:1.5em 0em 2em 2em }
+.center { text-align:center }
+.right { position:absolute;right:1em }
+input {
+	background:rgb(153,153,204);
+	border:solid rgb(102,102,153) 2px;
+	color:white;
+	font-weight:bold;
+	margin-right:1em;
+	padding:0.1em 0.5em 0.1em 0.5em;
+	}
 //-->
 </style>
-
-  </head>
-
-  <body>
+</head>
+<body>
+<h1 class=apc><div class=logo><span class=logo>APC</span></div>
+<div class=nameinfo>Opcode Cache</div>
+</div></h1>
+<hr class=apc>
 <?php
 
-function box_start($title,$float='right') {
+$scope_list=array(
+	'A' => 'cache_list',
+	'D' => 'deleted_list'
+);
+
+if (isset($MYREQUEST['CC']) && $MYREQUEST['CC'])
+{
+	global $admin_password;
+
+	if($admin_password && $admin_password!='password') 
+		apc_clear_cache();
+}
+
+
+if (!isset($MYREQUEST['SCOPE'])) $MYREQUEST['SCOPE']="A";
+if (!isset($MYREQUEST['SORT1'])) $MYREQUEST['SORT1']="H";
+if (!isset($MYREQUEST['SORT2'])) $MYREQUEST['SORT2']="D";
+if (!isset($MYREQUEST['COUNT'])) $MYREQUEST['COUNT']=10;
+if (!isset($scope_list[$MYREQUEST['SCOPE']])) $MYREQUEST['SCOPE']='A';
+
+
+$MY_SELF=
+	"$PHP_SELF".
+	"?SCOPE=".$MYREQUEST['SCOPE'].
+	"&SORT1=".$MYREQUEST['SORT1'].
+	"&SORT2=".$MYREQUEST['SORT2'].
+	"&COUNT=".$MYREQUEST['COUNT'];
+$MY_SELF_WO_SORT=
+	"$PHP_SELF".
+	"?SCOPE=".$MYREQUEST['SCOPE'].
+	"&COUNT=".$MYREQUEST['COUNT'];
+
+if(!$admin_password || $admin_password=='password')
+	$sure_msg = "You need to set a password at the top of apcgui.php before this will work";
+else
+	$sure_msg = "Are you sure?";
+
+if (isset($MYREQUEST['SH']) && $MYREQUEST['SH'])
+{
+	echo <<< EOB
+		<ol class=menu>
+		<li><a href="$MY_SELF&OB=0">View host stats</a></li>
+		<li><a href="$MY_SELF&OB=1">Cache Entries</a></li>
+		<li><a href="$MY_SELF&OB=2">User Cache</a></li>
+		</ol>
+		<div class=content>
+		
+		<div class="info"><table cellspacing=0><tbody>
+		<tr><th>Attribute</th><th>Value</th></tr>
+EOB;
+	$m=0;
+	foreach($scope_list as $j => $list)
+		foreach($cache[$list] as $i => $entry)
+		{
+			if (md5($entry[$fieldkey])!=$MYREQUEST['SH']) continue;
+			foreach($entry as $k => $value)
+			{
+				if ($k == "num_hits")
+				{
+					$value=sprintf("%s (%.2f%%)",$value,$value*100/$cache['num_hits']);
+				}
+				echo
+					"<tr class=tr-$m>",
+					"<td class=td-0>",ucwords(preg_replace("/_/"," ",$k)),"</td>",
+					"<td class=td-last>",preg_match("/time/",$k) ? date("d.m.Y H:i:s",$value) : $value,"</td>",
+					"</tr>";
+				$m=1-$m;
+			}
+			if($fieldkey=='info') {
+				if($admin_password!='password') {
+					echo 
+					"<tr class=tr-$m>",
+					"<td class=td-0>Stored Value</td>",
+					"<td class=td-last>".apc_fetch($entry[$fieldkey])."</td>",
+					"</tr>";
+				} else {
+					echo
+					"<tr class=tr-$m>",
+					"<td class=td-0>Stored Value</td>",
+					"<td class=td-last>Set your apc.php password to see the user values here</td>",
+					"</tr>";
+				}
+			}
+		}
+
+	echo
+		"</tbody></table>\n",
+		"</div>",
+		
+		"</div>";
+	
+}
+else
+if (isset($MYREQUEST['OB']) && $MYREQUEST['OB'])
+{
+
 	echo <<<EOB
-<div class="$float">
-<fieldset>
-<legend>$title</legend>
-<table>
+		<ol class=menu>
+		<li><a href="$MY_SELF&OB=$OB">Refresh Data</a></li>
+		<li><a href="$MY_SELF&OB=0">View host stats</a></li>
+		<li><a href="$MY_SELF&OB=2">User Cache</a></li>
+		<li><a class="right" href="$MY_SELF&CC=1" onClick="javascipt:return confirm('$sure_msg');">Clear Cache</a></li>
+		</ol>
+		<div class=sorting><form>Scope:
+		<input type=hidden name=OB value=$OB>
+		<select name=SCOPE>
+EOB;
+	echo 
+		"<option value=A",$MYREQUEST['SCOPE']=='A' ? " selected":"",">Active</option>",
+		"<option value=D",$MYREQUEST['SCOPE']=='D' ? " selected":"",">Deleted</option>",
+		"</select>",
+		", Sorting:<select name=SORT1>",
+		"<option value=H",$MYREQUEST['SORT1']=='H' ? " selected":"",">Hits</option>",
+		"<option value=S",$MYREQUEST['SORT1']=='S' ? " selected":"",">$fieldheading</option>",
+		"<option value=M",$MYREQUEST['SORT1']=='M' ? " selected":"",">Last modified</option>",
+		"<option value=C",$MYREQUEST['SORT1']=='C' ? " selected":"",">Created at</option>",
+		"<option value=D",$MYREQUEST['SORT1']=='D' ? " selected":"",">Deleted at</option>";
+	if($fieldname=='info') echo
+		"<option value=D",$MYREQUEST['SORT1']=='T' ? " selected":"",">Timeout</option>";
+	echo 
+		"</select>",
+		"<select name=SORT2>",
+		"<option value=D",$MYREQUEST['SORT2']=='D' ? " selected":"",">DESC</option>",
+		"<option value=A",$MYREQUEST['SORT2']=='A' ? " selected":"",">ASC</option>",
+		"</select>",
+		"<select name=COUNT>",
+		"<option value=10 ",$MYREQUEST['COUNT']=='10' ? " selected":"",">Top 10</option>",
+		"<option value=20 ",$MYREQUEST['COUNT']=='20' ? " selected":"",">Top 20</option>",
+		"<option value=50 ",$MYREQUEST['COUNT']=='50' ? " selected":"",">Top 50</option>",
+		"<option value=100",$MYREQUEST['COUNT']=='100'? " selected":"",">Top 100</option>",
+		"<option value=150",$MYREQUEST['COUNT']=='150'? " selected":"",">Top 150</option>",
+		"<option value=200",$MYREQUEST['COUNT']=='200'? " selected":"",">Top 200</option>",
+		"<option value=500",$MYREQUEST['COUNT']=='500'? " selected":"",">Top 500</option>",
+		"<option value=-1", $MYREQUEST['COUNT']=='-1' ? " selected":"",">All</option>",
+		"</select>",
+		'&nbsp;<input type=submit value="GO!">',
+		"</form></div>",
+		
+		"<div class=content>\n",
+		
+		'<div class="info"><table cellspacing=0><tbody>',
+		"<tr>",
+		"<th>",sortheader('S',$fieldheading,"&OB=$OB"),"</th>",
+		"<th>",sortheader('H','Hits',"&OB=$OB"),"</th>",
+		"<th>",sortheader('M','Last modified',"&OB=$OB"),"</th>",
+		"<th>",sortheader('C','Created at',"&OB=$OB"),"</th>";
+	if($fieldname=='info') echo
+		"<th>",sortheader('T','Timeout',"&OB=$OB"),"</th>";
+	echo
+		"<th>",sortheader('D','Deleted at',"&OB=$OB"),"</th></tr>";
 
+	foreach($cache[$scope_list[$MYREQUEST['SCOPE']]] as $i => $entry)
+	{
+		switch($MYREQUEST['SORT1'])
+		{
+			case "H": $k=sprintf("%015d-",$entry['num_hits']); 		break;
+			case "M": $k=sprintf("%015d-",$entry['mtime']);			break;
+			case "C": $k=sprintf("%015d-",$entry['creation_time']);	break;
+			case "T": $k=sprintf("%015d-",$entry['ttl']);			break;
+			case "D": $k=sprintf("%015d-",$entry['deletion_time']);	break;
+			case "S": $k='';										break;
+		}
+		$list[$k.$entry['filename']]=$entry;
+	}
+	if (isset($list) && is_array($list))
+	{
+		switch ($MYREQUEST['SORT2'])
+		{
+			case "A":	krsort($list);	break;
+			case "D":	ksort($list);	break;
+		}
+		$i=0;
+		foreach($list as $k => $entry)
+		{
+			echo
+				"<tr class=tr-",$i%2,">",
+				"<td class=td-0><a href=\"$MY_SELF&OB=$OB&SH=",md5($entry[$fieldkey]),"\">",$entry[$fieldname],"</a></td>",
+				'<td class="td-n center">',$entry['num_hits'],"</td>",
+				'<td class="td-n center">',date("d.m.Y H:i:s",$entry['mtime']),"</td>",
+				'<td class="td-n center">',date("d.m.Y H:i:s",$entry['creation_time']),"</td>";
+			if($fieldname=='info') {
+				if($entry['ttl']) echo '<td class="td-n center">'.$entry['ttl']." seconds</td>";
+				else echo '<td class="td-n center">None</td>';
+			}
+			echo
+				'<td class="td-last center">',$entry['deletion_time'] ? date("d.m.Y H:i:s",$entry['deletion_time']) : '-','</td>',
+				'</tr>';
+			$i++;
+			if (isset($MYREQUEST['COUNT']) && $MYREQUEST['COUNT']!=-1 && $i >= $MYREQUEST['COUNT']) break;
+		}
+	}
+	else
+	{
+		echo '<tr class=tr-0><td class="center" colspan=5><i>No data</i></td></tr>';
+	}
+	echo <<< EOB
+		</tbody></table>
+		</div>
+		
+		</div>
 EOB;
 }
-
-function box_section_title($title) {
-	echo "<tr><td colspan=\"2\" class=\"clear\">&nbsp;</td>\n";
-	echo "</tr><tr><td colspan=\"2\" class=\"section\">$title</td></tr>\n";
-	echo "<tr><td colspan=\"2\" class=\"clear\">&nbsp;</td>\n";
-}
-
-function box_rows($data,$headings="",$style="") {
-	$th = $td = '';
-	if(is_array($style)) foreach($style as $name=>$val) {
-		$$name = " class=\"$val\"";
-	} 
-	if(is_array($headings)) {
-		echo "<tr><th class=\"lheading\">".$headings[0]."</th><td class=\"heading\">".$headings[1]."</td></tr>\n";
-	}
-	foreach($data as $key=>$val) {
-    	echo "<tr><th$th>$key</th><td$td>$val</td></tr>\n";
-	}
-}
-
-function box_end() {
-echo <<<EOB
-</table>
-</fieldset>
-</div>
+else
+{
+	$mem_size = $mem['num_seg']*$mem['seg_size'];
+	$mem_avail= $mem['avail_mem'];
+	$mem_used = $mem_size-$mem_avail;
+	$seg_size = bsize($mem['seg_size']);
+	$req_rate = sprintf("%.2f",($cache['num_hits']+$cache['num_misses'])/($time-$cache['start_time']));
+	$apcversion = phpversion('apc');
+	$phpversion = phpversion();
+	$i=0;
+	echo <<< EOB
+		<ol class=menu>
+		<li><a href="$MY_SELF&OB=0">Refresh Data</a></li>
+		<li><a href="$MY_SELF&OB=1">Cache Entries</a></li>
+		<li><a class="right" href="$MY_SELF&CC=1" onClick="javascipt:return confirm('$sure_msg');">Clear Cache</a></li>
+		</ol>
+		<div class=content>
+		
+		<div class="info div1"><h2>General Cache Information</h2>
+		<table cellspacing=0><tbody>
+		<tr class=tr-0><td class=td-0>APC Version</td><td>$apcversion</td></tr>
+		<tr class=tr-1><td class=td-0>PHP Version</td><td>$phpversion</td></tr>
 EOB;
-}
 
-function hit_sort( $a, $b ) {
-	global $field;
+	if(!empty($_SERVER['SERVER_NAME']))
+		echo "<tr class=tr-0><td class=td-0>APC Host</td><td>{$_SERVER['SERVER_NAME']}</td></tr>\n";
+	if(!empty($_SERVER['SERVER_SOFTWARE']))
+		echo "<tr class=tr-1><td class=td-0>Server Software</td><td>{$_SERVER['SERVER_SOFTWARE']}</td></tr>\n";
 
-    if ( $a['num_hits'] == $b['num_hits'] ) {
-		return strcmp( strtolower( $a[$field] ), strtolower( $b[$field] ) );
-	}
+	echo <<<EOB
+		<tr class=tr-0><td class=td-0>Hits</td><td>{$cache['num_hits']}</td></tr>
+		<tr class=tr-1><td class=td-0>Misses</td><td>{$cache['num_misses']}</td></tr>
+		<tr class=tr-0><td class=td-0>Request Rate</td><td>$req_rate requests/second</td></tr>
+		<tr class=tr-1><td class=td-0>Shared Memory</td><td>{$mem['num_seg']} Segment(s) with $seg_size</td></tr>
+		</tbody></table>
+		</div>
 
-    return ($a['num_hits'] > $b['num_hits']) ? -1 : 1;
-}
-
-function field_sort( $a, $b ) {
-	global $field;
-
-	if( $a[$field] == $b[$field]) {
-    	return ($a['num_hits'] > $b['num_hits']) ? -1 : 1;
-	}
-	return strcmp( strtolower( $a[$field] ), strtolower( $b[$field] ) );
-}
-
-function mtime_sort( $a, $b ) {
-	global $field;
-
-    if ( $a['mtime'] == $b['mtime'] ) {
-		return strcmp( strtolower( $a[$field] ), strtolower( $b[$field] ) );
-	}
-
-    return ($a['mtime'] > $b['mtime']) ? -1 : 1;
-}
-
-function atime_sort( $a, $b ) {
-	global $field;
-
-    if ( $a['access_time'] == $b['access_time'] ) {
-		return strcmp( strtolower( $a[$field] ), strtolower( $b[$field] ) );
-	}
-
-    return ($a['access_time'] > $b['access_time']) ? -1 : 1;
-}
-
-if(isset($_GET['sort'])) {
-  switch($_GET['sort']) {
-    case 'field':
-	usort( $cache_info['cache_list'], 'field_sort' );
-	break;
-    case 'mtime':
-	usort( $cache_info['cache_list'], 'mtime_sort' );
-	break;
-    case 'atime':
-	usort( $cache_info['cache_list'], 'atime_sort' );
-	break;
-    default:
-	usort( $cache_info['cache_list'], 'hit_sort' );
-	break;
-  }
-} else usort( $cache_info['cache_list'], 'hit_sort' );
-
-$delta = time() - $cache_info['start_time'];
-$days = (int)($delta/86400);
-$hours = (int)($delta/3600) - $days*24;
-$mins = (int)($delta/60) - $hours*60 - $days*24*60;
-$secs = $delta - $hours*3600 - $days*24*3600 - $mins*60;
-if($days==1) $days = "1 day"; elseif($days) $days .= " days"; else $days='';
-
-$data = array('PHP version'=>phpversion(),
-              'uptime'=>sprintf("%s %d:%02d:%02d",$days,$hours,$mins,$secs),
-              'num_seg' =>$sma_info['num_seg'],
-              'seg_size'=>$sma_info['seg_size'],
-              'used'=>($sma_info['seg_size']-$sma_info['avail_mem']),
-              'avail_mem'=>$sma_info['avail_mem']);
-box_start("APC Version ".phpversion('apc'));
-box_rows($data);
-
-$data = array('num_slots'=>$cache_info['num_slots'],
-              'TTL'=>$ttl,
-              'num_hits'=>$cache_info['num_hits'],
-              'num_misses'=>$cache_info['num_misses'],
-              'req/sec'=>sprintf("%.2f",($cache_info['num_hits']+$cache_info['num_misses'])/$delta),
-              'cached_files'=>count($cache_info['cache_list']),
-              'deleted_list'=>count( $cache_info['deleted_list']));
-box_rows($data);
-box_section_title("Advice");
-if($sma_info['num_seg']>1) $advice = "This web interface doesn't support multiple segments. Set apc.shm_segments to 1";
-else if(count($cache_info['cache_list']) > 3/4*$cache_info['num_slots'] && $cache_info['num_hits'] > 5000) {
-  $advice = "You may want to increase apc.num_files_hint to ". (count($cache_info['cache_list'])*2) ." for better performance.";
-}
-else if(($sma_info['avail_mem']/$sma_info['seg_size'])<0.10) {
-  $advice = "You are running low on shared memory.  It might be a good idea to increase apc.shm_size a bit.";
-}
-else if(((count($cache_info['cache_list']) / $cache_info['num_slots'])<0.10) && ($cache_info['num_hits'] > 5000)) {
-  $advice = "You can lower your apc.num_files_hint to ".(count($cache_info['cache_list'])*2)." for better performance.";
-} 
-else $advice = "No problems detected";
-
-echo "<tr><td colspan=\"2\" rowspan=\"2\" class=\"clear\" style=\"text-align: left;\">".wordwrap($advice,25,"<br />")."</td>\n";
-
-box_end();
-function menu() {
-  global $mode;
-?>
-<form action="<?php echo getenv('SCRIPT_NAME')?>" method="GET">
-<input type="submit" name="action" value="Top 25" />
-<input type="submit" name="action" value="Top 100" />
-<input type="submit" name="action" value="All" />
-<?php if($mode=='user'):?>
-<input type="submit" name="action" value="Opcode Cache" />
-<input type="hidden" name="last_mode" value="user" />
-<?php else:?>
-<input type="submit" name="action" value="User Cache" />
-<input type="hidden" name="last_mode" value="opcode" />
-<?php endif;?>
-<?php if(isset($_GET['sort'])) { ?>
-<input type="hidden" name="sort" value="<?php echo htmlspecialchars((string)$_GET['sort'])?>" />
-</form>
-<?php } ?>
-<?
-}
-?>
-
-<div class="left">
-<fieldset>
-<legend>Cache Usage <?php echo sprintf("%.2f",100*(($sma_info['seg_size']-$sma_info['avail_mem'])/$sma_info['seg_size'])).'%'?></legend>
-<?php
-  $ptr = 0;
-  $free = $sma_info['block_lists'][0];  // Only 1 segment supported for now
-  foreach($free as $block) {
-    if($block['offset']!=$ptr) {
-      // Used block
-      $size = sprintf("%.4f",(($block['offset']-$ptr)/($sma_info['seg_size']))*99);
-echo <<<EOB
-<div style="width: $size%; background: #000000; float:left; ">&nbsp;</div>
+		<div class="info div2"><h2>Runtime Settings</h2><table cellspacing=0><tbody>
 EOB;
-    }
-    $size = sprintf("%.4f",($block['size']/($sma_info['seg_size']))*99);
-echo <<<EOB
-<div style="width: $size%; background: #00ff00; float:left; ">&nbsp;</div>
-EOB;
-    $ptr = $block['offset']+$block['size']; 
-  }
-?>
-</fieldset>
-</div>
-<br />
-<?
-if(isset($_GET['action']) && $_GET['action']!='Clear Cache') $action = '&action='.htmlspecialchars((string)$_GET['action']);
-else $action='';
-if($mode=='user')
-     $name_sort = '<a href="'.getenv('SCRIPT_NAME') . '?sort=field'.$action.'">User Entry</a>';
-else $name_sort = '<a href="'.getenv('SCRIPT_NAME') . '?sort=field'.$action.'">File Name (inode)</a>';
-$mtime_sort = '<a href="'.getenv('SCRIPT_NAME') . '?sort=mtime'.$action.'">Last Modified</a>';
-$atime_sort = '<a href="'.getenv('SCRIPT_NAME') . '?sort=atime'.$action.'">Last Accessed</a>';
-$hit_sort = '<a href="'.getenv('SCRIPT_NAME') . '?sort=hit'.$action.'">Hits (ref count)</a>';
-?>
-<div class="left">
-<fieldset>
-<legend>Cached Files</legend>
-<div style="text-align: right; margin: -10px 0 0 0; float: right;">
-<?php menu() ?>
-</div>
-<br />
-<table width="100%">
-<tr>
-<th class="lheading"><?php echo $name_sort?></th>
-<th class="heading"><?php echo $mtime_sort?></th>
-<th class="heading"><?php echo $atime_sort?></th>
-<th class="heading"><?php echo $hit_sort?></th>
-</tr>
 
-<?php $cnt=0; foreach ( $cache_info['cache_list'] as $file ) { 
-  $now = time();
-  $atime = $file['access_time'];
-  if($ttl && ($atime < ($now-$ttl))) $col = "#ffffcc";
-  else $col = "#ccccff";
+	$j = 0;
+	foreach (ini_get_all('apc') as $k => $v) {
+		echo "<tr class=tr-$j><td class=td-0>",$k,"</td><td>",$v['local_value'],"</td></tr>\n";
+		$j = 1 - $j;
+	}
+
+	echo <<< EOB
+		</tbody></table>
+		</div>
+		
+		<div class="graph div3"><h2>Hoststatus Diagrams</h2>
+		<table cellspacing=0><tbody>
+		<tr>
+		<td class=td-0>Memory Usage</td>
+		<td class=td-1>Hits & Misses</td>
+		</tr>
+EOB;
+	echo
+		graphics_avail() ? 
+			  "<tr><td class=td-0><img alt=\"\" src=\"$PHP_SELF?IMG=1&$time\"></td><td class=td-1><img alt=\"\" src=\"$PHP_SELF?IMG=2&$time\"></td></tr>\n"
+			: "",
+		"<tr>\n",
+		"<td class=td-0>Free: ",bsize($mem_avail).sprintf(" (%.1f%%)",$mem_avail*100/$mem_size),"</td>\n",
+		"<td class=td-1>Hits: ",$cache['num_hits'].sprintf(" (%.1f%%)",$cache['num_hits']*100/($cache['num_hits']+$cache['num_misses'])),"</td>\n",
+		"</tr>\n",
+		"<tr>\n",
+		"<td class=td-0>Used: ",bsize($mem_used ).sprintf(" (%.1f%%)",$mem_used *100/$mem_size),"</td>\n",
+		"<td class=td-1>Misses: ",$cache['num_misses'].sprintf(" (%.1f%%)",$cache['num_misses']*100/($cache['num_hits']+$cache['num_misses'])),"</td>\n";
+	echo <<< EOB
+		</tr>
+		</tbody></table>
+		</div>
+
+		</div>
+EOB;
+		
+}
 ?>
-<tr valign="baseline" bgcolor="#cccccc">
-  <?php if($mode=='user'):?>
-  <td class="name" bgcolor="<?php echo $col;?>"><?php echo $file[$field]; ?></td>
-  <td class="value"><?php echo strftime("%x %X",$file['mtime'])?></td>
-  <td class="value"><?php echo strftime("%x %X",$atime)?></td>
-  <td class="value"><?php echo $file['num_hits'].' ('.$file['ref_count'].')'; ?></td>
-  <?php else:?>
-  <td class="name" bgcolor="<?php echo $col?>"><?php echo $file[$field].' ('.$file['inode'].')'; ?></td>
-  <td class="value"><?php echo strftime("%x %X",$file['mtime'])?></td>
-  <td class="value"><?php echo strftime("%x %X",$atime)?></td>
-  <td class="value"><?php echo $file['num_hits'].' ('.$file['ref_count'].')'; ?></td>
-  <?php endif;?>
-</tr>
-<?php $cnt++; if($limit && $cnt>$limit) break; } ?>
-</table>
-</fieldset>
-</div>
-<br />
+
+<!-- <?php echo "\nBy R.Becker\n$VERSION\n"?> -->
 </body>
 </html>
