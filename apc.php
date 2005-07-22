@@ -1,4 +1,5 @@
 <?php
+$ff = $saf = $msie = null;
 if(stristr(getenv("HTTP_USER_AGENT"),'firefox')) $ff=true;
 if(stristr(getenv("HTTP_USER_AGENT"),'safari')) $saf=true;
 if(stristr(getenv("HTTP_USER_AGENT"),'msie')) $msie=true;
@@ -108,6 +109,7 @@ function box_section_title($title) {
 }
 
 function box_rows($data,$headings="",$style="") {
+	$th = $td = '';
 	if(is_array($style)) foreach($style as $name=>$val) {
 		$$name = " class=\"$val\"";
 	} 
