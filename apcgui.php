@@ -6,6 +6,7 @@ $admin_password = 'password';  // Change this to enable the Clear Cache Command
 
 // rewrite $PHP_SELF to block XSS attacks
 $PHP_SELF=htmlentities(strip_tags($_SERVER['PHP_SELF'],''));
+$time = time();
 
 // check validity of input variables
 $vardom=array(
@@ -47,12 +48,14 @@ if (isset($MYREQUEST['IMG']))
 		$r=$diameter/2;
 		$w=deg2rad((360+$start+($end-$start)/2)%360);
 		
-		imagearc($im, $centerX, $centerY, $diameter, $diameter, $start, $end, $color2);
+		imagefilledarc($im, $centerX, $centerY, $diameter, $diameter, $start, $end, $color2, IMG_ARC_EDGED);
+/*
 		imageline($im, $centerX, $centerY, $centerX + cos(deg2rad($start)) * $r, $centerY + sin(deg2rad($start)) * $r, $color2);
 		imageline($im, $centerX, $centerY, $centerX + cos(deg2rad($start+1)) * $r, $centerY + sin(deg2rad($start)) * $r, $color2);
 		imageline($im, $centerX, $centerY, $centerX + cos(deg2rad($end-1))   * $r, $centerY + sin(deg2rad($end))   * $r, $color2);
 		imageline($im, $centerX, $centerY, $centerX + cos(deg2rad($end))   * $r, $centerY + sin(deg2rad($end))   * $r, $color2);
 		imagefill($im,$centerX + $r*cos($w)/2, $centerY + $r*sin($w)/2, $color2);
+*/
 		
 		if ($text)
 			imagestring($im,4,$centerX + $r*cos($w)/2, $centerY + $r*sin($w)/2,$text,$color1);
@@ -62,13 +65,15 @@ if (isset($MYREQUEST['IMG']))
 	{
 		$x1=$x+$w-1;
 		$y1=$y+$h-1;
-		
+
+/* Probably want an imagefilledrectangle call here instead
+		imagefilledrectangle($im, $x, $y, $x1, $y1, $color2);
+*/
 		imageline($im, $x, $y, $x1,$y,  $color2);
 		imageline($im, $x1,$y, $x1,$y1, $color2);
 		imageline($im, $x1,$y1,$x, $y1, $color2);
 		imageline($im, $x, $y1,$x, $y,  $color2);
 		imagefill ($im,$x+$w/2,$y+$h/2,$color2);
-
 		if ($text)
 			imagestring($im,4,$x+5,$y1-16,$text,$color1);
 	}
@@ -328,7 +333,7 @@ else
 	$mem_avail= $mem['avail_mem'];
 	$mem_used = $mem_size-$mem_avail;
 	$seg_size = bsize($mem['seg_size']);
-	$req_rate = sprintf("%.2f",($cache['num_hits']+$cache['num_misses'])/(time()-$cache['start_time']));
+	$req_rate = sprintf("%.2f",($cache['num_hits']+$cache['num_misses'])/($time-$cache['start_time']));
 	echo <<< EOB
 		<ol class=menu>
 		<li><a href="$MY_SELF&OB=0">Refresh Data</a></li>
@@ -371,7 +376,7 @@ EOB;
 		}
 		if (preg_match("/\"module_apc\"/",$v)) $found=1;
 	}
-	
+
 	echo <<< EOB
 		</tbody></table>
 		</div>
@@ -385,7 +390,7 @@ EOB;
 EOB;
 	echo
 		graphics_avail() ? 
-			  "<tr><td class=td-0><img alt=\"\" src=\"$PHP_SELF?IMG=1\"></td><td class=td-1><img alt=\"\" src=\"$PHP_SELF?IMG=2\"></td></tr>\n"
+			  "<tr><td class=td-0><img alt=\"\" src=\"$PHP_SELF?IMG=1&$time\"></td><td class=td-1><img alt=\"\" src=\"$PHP_SELF?IMG=2&$time\"></td></tr>\n"
 			: "",
 		"<tr>\n",
 		"<td class=td-0>Free: ",bsize($mem_avail).sprintf(" (%.1f%%)",$mem_avail*100/$mem_size),"</td>\n",
