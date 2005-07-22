@@ -2,6 +2,7 @@
 $VERSION='$Id$';
 
 $SKIN='pecl'; // ('pecl' or 'classic')
+$admin_password = 'password';  // Change this to enable the Clear Cache Command
 
 // rewrite $PHP_SELF to block XSS attacks
 $PHP_SELF=htmlentities(strip_tags($_SERVER['PHP_SELF'],''));
@@ -150,7 +151,10 @@ $scope_list=array(
 
 if (isset($MYREQUEST['CC']) && $MYREQUEST['CC'])
 {
-	apc_clear_cache();
+	global $admin_password;
+
+	if($admin_password && $admin_password!='password') 
+		apc_clear_cache();
 }
 
 
@@ -173,6 +177,11 @@ $MY_SELF_WO_SORT=
 	"&COUNT=".$MYREQUEST['COUNT'];
 
 $cache=apc_cache_info();
+
+if(!admin_password || $admin_password=='password')
+	$sure_msg = "You need to set a password at the top of apcgui.php before this will work";
+else
+	$sure_msg = "Are you sure?";
 
 if (isset($MYREQUEST['SH']) && $MYREQUEST['SH'])
 {
@@ -216,15 +225,17 @@ if (isset($MYREQUEST['SH']) && $MYREQUEST['SH'])
 else
 if (isset($MYREQUEST['OB']) && $MYREQUEST['OB'])
 {
-	echo
-		"<ol class=menu>",
-		"<li><a href=\"$MY_SELF&OB=1\">Refresh Data</a></li>",
-		"<li><a href=\"$MY_SELF&OB=0\">View host stats</a></li>",
-		"<li><a class=\"right\" href=\"$MY_SELF&CC=1\" onClick=\"javascipt:return confirm('Are you shure?');\">Clear Cache</a></li>",
-		"</ol>\n",
-		"<div class=sorting><form>Scope:",
-		"<input type=hidden name=OB value=1>",
-		"<select name=SCOPE>",
+	echo <<<EOB
+		<ol class=menu>
+		<li><a href="$MY_SELF&OB=1">Refresh Data</a></li>
+		<li><a href="$MY_SELF&OB=0">View host stats</a></li>
+		<li><a class="right" href="$MY_SELF&CC=1" onClick="javascipt:return confirm('$sure_msg');">Clear Cache</a></li>
+		</ol>
+		<div class=sorting><form>Scope:
+		<input type=hidden name=OB value=1>
+		<select name=SCOPE>
+EOB;
+	echo 
 		"<option value=A",$MYREQUEST['SCOPE']=='A' ? " selected":"",">Active</option>",
 		"<option value=D",$MYREQUEST['SCOPE']=='D' ? " selected":"",">Deleted</option>",
 		"</select>",
@@ -316,26 +327,28 @@ else
 	$mem_size=$mem['num_seg']*$mem['seg_size'];
 	$mem_avail=$mem['avail_mem'];
 	$mem_used=$mem_size-$mem_avail;
+	$seg_size=bsize($mem['seg_size']);
 
-	echo
-		"<ol class=menu>",
-		"<li><a href=\"$MY_SELF&OB=0\">Refresh Data</a></li>",
-		"<li><a href=\"$MY_SELF&OB=1\">Scripts for this host</a></li>",
-		"<li><a class=\"right\" href=\"$MY_SELF&CC=1\" onClick=\"javascipt:return confirm('Are you shure?');\">Clear Cache</a></li>",
-		"</ol>\n",
-		"<div class=content>\n",
+	echo <<< EOB
+		<ol class=menu>
+		<li><a href="$MY_SELF&OB=0">Refresh Data</a></li>
+		<li><a href="$MY_SELF&OB=1">Scripts for this host</a></li>
+		<li><a class="right" href="$MY_SELF&CC=1" onClick="javascipt:return confirm('$sure_msg');">Clear Cache</a></li>
+		</ol>
+		<div class=content>
 		
-		"<div class=\"info div1\"><h2>General Cache Information</h2>\n",
-		"<table cellspacing=0><tbody>\n",
-		"<tr class=tr-0><td class=td-0>APC Host</td><td>$SERVER_NAME</td></tr>\n",
-		"<tr class=tr-1><td class=td-0>Server Software</td><td>$SERVER_SOFTWARE</td></tr>\n",
-		"<tr class=tr-0><td class=td-0>Hits</td><td>",$cache['num_hits'],"</td></tr>\n",
-		"<tr class=tr-1><td class=td-0>Misses</td><td>",$cache['num_misses'],"</td></tr>\n",
-		"<tr class=tr-0><td class=td-0>Shared Memory</td><td>",$mem['num_seg']." Segment(s) with ".bsize($mem['seg_size']),"</td></tr>\n",
-		"</tbody></table>\n",
-		"</div>\n",
+		<div class="info div1"><h2>General Cache Information</h2>
+		<table cellspacing=0><tbody>
+		<tr class=tr-0><td class=td-0>APC Host</td><td>$SERVER_NAME</td></tr>
+		<tr class=tr-1><td class=td-0>Server Software</td><td>$SERVER_SOFTWARE</td></tr>
+		<tr class=tr-0><td class=td-0>Hits</td><td>{$cache['num_hits']}</td></tr>
+		<tr class=tr-1><td class=td-0>Misses</td><td>{$cache['num_misses']}</td></tr>
+		<tr class=tr-0><td class=td-0>Shared Memory</td><td>{$mem['num_seg']} Segment(s) with $seg_size</td></tr>
+		</tbody></table>
+		</div>
 
-		"<div class=\"info div2\"><h2>Runtime Settings</h2><table cellspacing=0><tbody>";
+		<div class="info div2"><h2>Runtime Settings</h2><table cellspacing=0><tbody>
+EOB;
 
 	ob_start();
 	phpinfo();
@@ -358,16 +371,18 @@ else
 		if (preg_match("/\"module_apc\"/",$v)) $found=1;
 	}
 	
-	echo
-		"</tbody></table>\n",
-		"</div>\n",
+	echo <<< EOB
+		</tbody></table>
+		</div>
 		
-		"<div class=\"graph div3\"><h2>Hoststatus Diagrams</h2>\n",
-		"<table cellspacing=0><tbody>\n",
-		"<tr>\n",
-		"<td class=td-0>Memory Usage</td>\n",
-		"<td class=td-1>Hits & Misses</td>\n",
-		"</tr>\n",
+		<div class="graph div3"><h2>Hoststatus Diagrams</h2>
+		<table cellspacing=0><tbody>
+		<tr>
+		<td class=td-0>Memory Usage</td>
+		<td class=td-1>Hits & Misses</td>
+		</tr>
+EOB;
+	echo
 		graphics_avail() ? 
 			  "<tr><td class=td-0><img alt=\"\" src=\"$PHP_SELF?IMG=1\"></td><td class=td-1><img alt=\"\" src=\"$PHP_SELF?IMG=2\"></td></tr>\n"
 			: "",
@@ -377,12 +392,14 @@ else
 		"</tr>\n",
 		"<tr>\n",
 		"<td class=td-0>Used: ",bsize($mem_used ).sprintf(" (%.1f%%)",$mem_used *100/$mem_size),"</td>\n",
-		"<td class=td-1>Misses: ",$cache['num_misses'].sprintf(" (%.1f%%)",$cache['num_misses']*100/($cache['num_hits']+$cache['num_misses'])),"</td>\n",
-		"</tr>\n",
-		"</tbody></table>\n",
-		"</div>\n",
+		"<td class=td-1>Misses: ",$cache['num_misses'].sprintf(" (%.1f%%)",$cache['num_misses']*100/($cache['num_hits']+$cache['num_misses'])),"</td>\n";
+	echo <<< EOB
+		</tr>
+		</tbody></table>
+		</div>
 
-		"</div>\n";
+		</div>
+EOB;
 		
 }
 ?>
