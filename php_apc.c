@@ -149,11 +149,11 @@ static PHP_MINIT_FUNCTION(apc)
     /* Disable APC in cli mode */
     if(!strcmp(sapi_module.name, "cli")) {
         APCG(enabled) = 0;
-	}
+    }
 
     if (APCG(enabled)) {
         apc_module_init();
-	}
+    }
 
 	return SUCCESS;
 }
