@@ -1,11 +1,11 @@
-<?
+<?php
 $VERSION='$Id$';
 
 $SKIN='pecl'; // ('pecl' or 'classic')
 $admin_password = 'password';  // Change this to enable the Clear Cache Command
 
 // rewrite $PHP_SELF to block XSS attacks
-$PHP_SELF=htmlentities(strip_tags($_SERVER['PHP_SELF'],''));
+$PHP_SELF= isset($_SERVER['PHP_SELF']) ? htmlentities(strip_tags($_SERVER['PHP_SELF'],'')) : '';
 $time = time();
 
 // check validity of input variables
@@ -19,14 +19,28 @@ $vardom=array(
 	'SORT1'	=> '/^[HSMCD]$/',
 	'SORT2'	=> '/^[DA]$/',
 );
+
+if (empty($_REQUEST)) {
+	if (!empty($_GET) && !empty($_POST)) {
+		$_REQUEST = array_merge($_GET, $_POST);
+	} else if (!empty($_GET)) {
+		$_REQUEST = $_GET;
+	} else if (!empty($_POST)) {
+		$_REQUEST = $_POST;
+	} else {
+		$_REQUEST = array();
+	}
+}
+
 foreach($vardom as $var => $dom)
 {
-	if (!isset($_REQUEST[$var]))
+	if (!isset($_REQUEST[$var])) {
+		$MYREQUEST[$var]=NULL;
 		continue;
-	if (preg_match($dom,$_REQUEST[$var]) && !is_array($_REQUEST[$var]))
+	} if (!is_array($_REQUEST[$var]) && preg_match($dom,$_REQUEST[$var]))
 		$MYREQUEST[$var]=$_REQUEST[$var];
 	else
-		$_REQUEST[$var]='';
+		$MYREQUEST[$var]=$_REQUEST[$var]=NULL;
 }
 
 // don't cache this page
@@ -39,7 +53,7 @@ header("Pragma: no-cache");                          // HTTP/1.0
 //
 function graphics_avail()
 {
-	return function_exists('imagecreate');
+	return extension_loaded('gd');
 }
 if (isset($MYREQUEST['IMG']))
 {
@@ -140,14 +154,14 @@ function sortheader($key,$name,$extra='')
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html>
 <head><title>APC PHP/GUI</title>
-<link rel="stylesheet" href="./apcgui-<?=$SKIN?>.css">
+<link rel="stylesheet" href="./apcgui-<?php echo $SKIN?>.css">
 <head>
 <body>
 <h1 class=apc><div class=logo><span class=logo>APC</span> <span class=name>{ PHP/GUI }</span></div>
 <div class=nameinfo>Alternative PHP Cache</div>
 <div class=copy>&copy; 2005 <a href=mailto:beckerr@fh-trier.de>R.Becker</a></div></h1>
 <hr class=apc>
-<?
+<?php
 
 $scope_list=array(
 	'A' => 'cache_list',
@@ -294,12 +308,12 @@ EOB;
 	{
 		function strcmp_desc($a, $b)
 		{
-			return -strcmp($a,$b);
+			return strcmp($a,$b);
 		}
 		switch ($MYREQUEST['SORT2'])
 		{
-			case "A":	uksort($list,"strcmp");					break;
-			case "D":	uksort($list,"strcmp_desc");			break;
+			case "A":	krsort($list);	break;
+			case "D":	ksort($list);	break;
 		}
 		$i=0;
 		foreach($list as $k => $entry)
@@ -420,9 +434,6 @@ EOB;
 }
 ?>
 
-<!-- <?php echo "\nAPC GUI by Ralf Becker\n$VERSION"?> -->
+<!-- <?php echo "$VERSION"?> -->
 </body>
 </html>
-<?
-exit (0);
-?>
