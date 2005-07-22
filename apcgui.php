@@ -57,6 +57,10 @@ function graphics_avail()
 }
 if (isset($MYREQUEST['IMG']))
 {
+	if (!graphics_avail()) {
+		exit(0);
+	}
+
 	function fill_arc($im, $centerX, $centerY, $diameter, $start, $end, $color1,$color2,$text='')
 	{
 		$r=$diameter/2;
@@ -364,10 +368,10 @@ else
 		<tr class=tr-1><td class=td-0>PHP Version</td><td>$phpversion</td></tr>
 EOB;
 
-	if($SERVER_NAME)
-		echo "<tr class=tr-0><td class=td-0>APC Host</td><td>$SERVER_NAME</td></tr>\n";
-	if($SERVER_SOFTWARE)
-		echo "<tr class=tr-1><td class=td-0>Server Software</td><td>$SERVER_SOFTWARE</td></tr>\n";
+	if(!empty($_SERVER['SERVER_NAME']))
+		echo "<tr class=tr-0><td class=td-0>APC Host</td><td>{$_SERVER['SERVER_NAME']}</td></tr>\n";
+	if(!empty($_SERVER['$SERVER_SOFTWARE'])
+		echo "<tr class=tr-1><td class=td-0>Server Software</td><td>{$_SERVER['SERVER_SOFTWARE']}</td></tr>\n";
 
 	echo <<<EOB
 		<tr class=tr-0><td class=td-0>Hits</td><td>{$cache['num_hits']}</td></tr>
@@ -380,25 +384,10 @@ EOB;
 		<div class="info div2"><h2>Runtime Settings</h2><table cellspacing=0><tbody>
 EOB;
 
-	ob_start();
-	phpinfo();
-	$content=ob_get_contents();
-	ob_end_clean();
-
-	$found=0;$j=0;
-	foreach (split("\n",$content) as $i => $v)
-	{
-		if (preg_match("/\"module_/",$v))      $found=0;
-		if ($found && !preg_match("/Directive/",$v) && !preg_match("/<\/?table/",$v))
-		{
-			$v=preg_replace("/<\/?tr[^>]*>/","",$v);
-			$v=preg_replace("/<\/?td[^>]*>/","§",$v);
-			$v=preg_replace("/§ *§/","§",$v);
-			$a=split("§",$v);
-			echo "<tr class=tr-$j><td class=td-0>",$a[1],"</td><td>",$a[2],"</td></tr>\n";
-			$j=1-$j;
-		}
-		if (preg_match("/\"module_apc\"/",$v)) $found=1;
+	$j = 0;
+	foreach (ini_get_all('apc') as $k => $v) {
+		echo "<tr class=tr-$j><td class=td-0>",$k,"</td><td>",$v['local_value'],"</td></tr>\n";
+		$j = 1 - $j;
 	}
 
 	echo <<< EOB
