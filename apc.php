@@ -7,13 +7,7 @@ $admin_password = 'password';  // Change this to enable the Clear Cache Command
 $PHP_SELF= isset($_SERVER['PHP_SELF']) ? htmlentities(strip_tags($_SERVER['PHP_SELF'],'')) : '';
 $time = time();
 $cache_mode = 'opcode';
-/*
-class foobar {
-	var $banana = "<font color=yellow>banana</font>";
-}
-$foobar = new foobar();
-apc_store('foobar',$foobar);
-*/
+
 // check validity of input variables
 $vardom=array(
 	'CC'	=> '/^[01]$/',
@@ -530,7 +524,7 @@ EOB;
 		</tbody></table>
 		</div>
 		
-		<div class="graph div3"><h2>Hoststatus Diagrams</h2>
+		<div class="graph div3"><h2>Host Status Diagrams</h2>
 		<table cellspacing=0><tbody>
 		<tr>
 		<td class=td-0>Memory Usage</td>
@@ -559,6 +553,6 @@ EOB;
 }
 ?>
 
-<!-- <?php echo "\nBy R.Becker\n$VERSION\n"?> -->
+<!-- <?php echo "\nBased on APCGUI By R.Becker\n$VERSION\n"?> -->
 </body>
 </html>
