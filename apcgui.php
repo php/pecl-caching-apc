@@ -324,11 +324,11 @@ EOB;
 else
 {
 	$mem=apc_sma_info();
-	$mem_size=$mem['num_seg']*$mem['seg_size'];
-	$mem_avail=$mem['avail_mem'];
-	$mem_used=$mem_size-$mem_avail;
-	$seg_size=bsize($mem['seg_size']);
-
+	$mem_size = $mem['num_seg']*$mem['seg_size'];
+	$mem_avail= $mem['avail_mem'];
+	$mem_used = $mem_size-$mem_avail;
+	$seg_size = bsize($mem['seg_size']);
+	$req_rate = sprintf("%.2f",($cache['num_hits']+$cache['num_misses'])/(time()-$cache['start_time']));
 	echo <<< EOB
 		<ol class=menu>
 		<li><a href="$MY_SELF&OB=0">Refresh Data</a></li>
@@ -343,7 +343,8 @@ else
 		<tr class=tr-1><td class=td-0>Server Software</td><td>$SERVER_SOFTWARE</td></tr>
 		<tr class=tr-0><td class=td-0>Hits</td><td>{$cache['num_hits']}</td></tr>
 		<tr class=tr-1><td class=td-0>Misses</td><td>{$cache['num_misses']}</td></tr>
-		<tr class=tr-0><td class=td-0>Shared Memory</td><td>{$mem['num_seg']} Segment(s) with $seg_size</td></tr>
+		<tr class=tr-0><td class=td-0>Request Rate</td><td>$req_rate requests/second</td></tr>
+		<tr class=tr-1><td class=td-0>Shared Memory</td><td>{$mem['num_seg']} Segment(s) with $seg_size</td></tr>
 		</tbody></table>
 		</div>
 
