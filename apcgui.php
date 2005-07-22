@@ -370,7 +370,7 @@ EOB;
 
 	if(!empty($_SERVER['SERVER_NAME']))
 		echo "<tr class=tr-0><td class=td-0>APC Host</td><td>{$_SERVER['SERVER_NAME']}</td></tr>\n";
-	if(!empty($_SERVER['$SERVER_SOFTWARE'])
+	if(!empty($_SERVER['$SERVER_SOFTWARE']))
 		echo "<tr class=tr-1><td class=td-0>Server Software</td><td>{$_SERVER['SERVER_SOFTWARE']}</td></tr>\n";
 
 	echo <<<EOB
