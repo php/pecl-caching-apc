@@ -1,9 +1,32 @@
 <?php
+/*
+  +----------------------------------------------------------------------+
+  | APC                                                                  |
+  +----------------------------------------------------------------------+
+  | Copyright (c) 2005 The PHP Group                                     |
+  +----------------------------------------------------------------------+
+  | This source file is subject to version 3.0 of the PHP license,       |
+  | that is bundled with this package in the file LICENSE, and is        |
+  | available through the world-wide-web at the following url:           |
+  | http://www.php.net/license/3_0.txt.                                  |
+  | If you did not receive a copy of the PHP license and are unable to   |
+  | obtain it through the world-wide-web, please send a note to          |
+  | license@php.net so we can mail you a copy immediately.               |
+  +----------------------------------------------------------------------+
+  | Authors: Ralf Becker <beckerr@php.net>                               |
+  |          Rasmus Lerdorf <rasmus@php.net>                             |
+  +----------------------------------------------------------------------+
+
+   All other licensing and usage conditions are those of the PHP Group.
+
+ */
+
 $VERSION='$Id$';
 
 $admin_password = 'password';  // Change this to enable the Clear Cache Command
 
 // rewrite $PHP_SELF to block XSS attacks
+//
 $PHP_SELF= isset($_SERVER['PHP_SELF']) ? htmlentities(strip_tags($_SERVER['PHP_SELF'],'')) : '';
 $time = time();
 $cache_mode = 'opcode';
@@ -32,22 +55,32 @@ if (empty($_REQUEST)) {
 	}
 }
 
-foreach($vardom as $var => $dom)
-{
+foreach($vardom as $var => $dom) {
 	if (!isset($_REQUEST[$var])) {
 		$MYREQUEST[$var]=NULL;
 		continue;
-	} if (!is_array($_REQUEST[$var]) && preg_match($dom,$_REQUEST[$var]))
+	}
+	if (!is_array($_REQUEST[$var]) && preg_match($dom,$_REQUEST[$var]))
 		$MYREQUEST[$var]=$_REQUEST[$var];
 	else
 		$MYREQUEST[$var]=$_REQUEST[$var]=NULL;
 }
 
+// object mode selector
+//
 if (isset($MYREQUEST['OB']) && $MYREQUEST['OB']) {
 	if($MYREQUEST['OB']==2) {
-		$cache_mode='user'; $fieldname='info';	$fieldheading='User Entry Label'; $OB=2; $fieldkey='info';
+		$cache_mode='user';
+		$fieldname='info';
+		$fieldheading='User Entry Label';
+		$OB=2;
+		$fieldkey='info';
 	} else {
-		$cache_mode='opcode'; $fieldname='filename'; $fieldheading='Script Filename'; $OB=1; $fieldkey='inode';
+		$cache_mode='opcode';
+		$fieldname='filename';
+		$fieldheading='Script Filename';
+		$OB=1;
+		$fieldkey='inode';
 	}
 }
 
@@ -61,12 +94,11 @@ $mem=apc_sma_info();
 //
 header("Cache-Control: no-store, no-cache, must-revalidate");  // HTTP/1.1
 header("Cache-Control: post-check=0, pre-check=0", false);
-header("Pragma: no-cache");                          // HTTP/1.0
+header("Pragma: no-cache");       			                   // HTTP/1.0
 
 // create graphics
 //
-function graphics_avail()
-{
+function graphics_avail() {
 	return extension_loaded('gd');
 }
 if (isset($MYREQUEST['IMG']))
@@ -75,18 +107,14 @@ if (isset($MYREQUEST['IMG']))
 		exit(0);
 	}
 
-	function fill_arc($im, $centerX, $centerY, $diameter, $start, $end, $color1,$color2,$text='')
-	{
+	function fill_arc($im, $centerX, $centerY, $diameter, $start, $end, $color1,$color2,$text='') {
 		$r=$diameter/2;
 		$w=deg2rad((360+$start+($end-$start)/2)%360);
 		
-		if (function_exists("imagefilledarc"))
-		{
+		if (function_exists("imagefilledarc")) {
 			// exists only if GD 2.0.1 is avaliable
 			imagefilledarc($im, $centerX, $centerY, $diameter, $diameter, $start, $end, $color2, IMG_ARC_PIE);
-		}
-		else
-		{
+		} else {
 			imagearc($im, $centerX, $centerY, $diameter, $diameter, $start, $end, $color2);
 			imageline($im, $centerX, $centerY, $centerX + cos(deg2rad($start)) * $r, $centerY + sin(deg2rad($start)) * $r, $color2);
 			imageline($im, $centerX, $centerY, $centerX + cos(deg2rad($start+1)) * $r, $centerY + sin(deg2rad($start)) * $r, $color2);
@@ -94,33 +122,31 @@ if (isset($MYREQUEST['IMG']))
 			imageline($im, $centerX, $centerY, $centerX + cos(deg2rad($end))   * $r, $centerY + sin(deg2rad($end))   * $r, $color2);
 			imagefill($im,$centerX + $r*cos($w)/2, $centerY + $r*sin($w)/2, $color2);
 		}
-		
-		if ($text)
+		if ($text) {
 			imagestring($im,4,$centerX + $r*cos($w)/2, $centerY + $r*sin($w)/2,$text,$color1);
+		}
 	} 
 	
-	function fill_box($im, $x, $y, $w, $h, $color1, $color2,$text='')
-	{
+	function fill_box($im, $x, $y, $w, $h, $color1, $color2,$text='') {
 		$x1=$x+$w-1;
 		$y1=$y+$h-1;
 
 		imagefilledrectangle($im, $x, $y1, $x1, $y, $color2);
-
-		if ($text)
+		if ($text) {
 			imagestring($im,4,$x+5,$y1-16,$text,$color1);
+		}
 	}
 
-	$size=200;
+	$size = 200; // image size
 
-	$image = imagecreate($size+10, $size+10);
+	$image     = imagecreate($size+10, $size+10);
 	$col_white = imagecolorallocate($image, 255, 255, 255);
 	$col_red   = imagecolorallocate($image, 200,  80,  30);
 	$col_green = imagecolorallocate($image, 100, 255, 100);
 	$col_black = imagecolorallocate($image,   0,   0,   0);
 	imagecolortransparent($image,$col_white);
 
-	if ($MYREQUEST['IMG']==1)
-	{
+	if ($MYREQUEST['IMG']==1) {
 		$s=$mem['num_seg']*$mem['seg_size'];
 		$a=$mem['avail_mem'];
 
@@ -128,9 +154,7 @@ if (isset($MYREQUEST['IMG']))
 
 		fill_arc($image,$x,$y,$size,0,$a*360/$s,$col_black,$col_green,bsize($a));
 		fill_arc($image,$x,$y,$size,0+$a*360/$s,360,$col_black,$col_red,bsize($s-$a));
-	}
-	else
-	{
+	} else {
 		$s=$cache['num_hits']+$cache['num_misses'];
 		$a=$cache['num_hits'];
 		
@@ -144,10 +168,8 @@ if (isset($MYREQUEST['IMG']))
 
 // pretty printer for byte values
 //
-function bsize($s)
-{
-	foreach (array('','K','M','G') as $i => $k)
-	{
+function bsize($s) {
+	foreach (array('','K','M','G') as $i => $k) {
 		if ($s < 1024) break;
 		$s/=1024;
 	}
@@ -155,13 +177,12 @@ function bsize($s)
 }
 
 // sortable table header in "scripts for this host" view
-function sortheader($key,$name,$extra='')
-{
+function sortheader($key,$name,$extra='') {
 	global $MYREQUEST, $MY_SELF_WO_SORT;
 	
-	if ($MYREQUEST['SORT1']==$key)
+	if ($MYREQUEST['SORT1']==$key) {
 		$MYREQUEST['SORT2'] = $MYREQUEST['SORT2']=='A' ? 'D' : 'A';
-
+	}
 	return "<a class=sortable href=\"$MY_SELF_WO_SORT$extra&SORT1=$key&SORT2=".$MYREQUEST['SORT2']."\">$name</a>";
 
 }
@@ -288,8 +309,7 @@ $scope_list=array(
 	'D' => 'deleted_list'
 );
 
-if (isset($MYREQUEST['CC']) && $MYREQUEST['CC'])
-{
+if (isset($MYREQUEST['CC']) && $MYREQUEST['CC']) {
 	global $admin_password;
 
 	if($admin_password && $admin_password!='password') 
@@ -320,8 +340,7 @@ if(!$admin_password || $admin_password=='password')
 else
 	$sure_msg = "Are you sure?";
 
-if (isset($MYREQUEST['SH']) && $MYREQUEST['SH'])
-{
+if (isset($MYREQUEST['SH']) && $MYREQUEST['SH']) {
 	echo <<< EOB
 		<ol class=menu>
 		<li><a href="$MY_SELF&OB=0">View host stats</a></li>
@@ -333,15 +352,13 @@ if (isset($MYREQUEST['SH']) && $MYREQUEST['SH'])
 		<div class="info"><table cellspacing=0><tbody>
 		<tr><th>Attribute</th><th>Value</th></tr>
 EOB;
+
 	$m=0;
-	foreach($scope_list as $j => $list)
-		foreach($cache[$list] as $i => $entry)
-		{
+	foreach($scope_list as $j => $list) {
+		foreach($cache[$list] as $i => $entry) {
 			if (md5($entry[$fieldkey])!=$MYREQUEST['SH']) continue;
-			foreach($entry as $k => $value)
-			{
-				if ($k == "num_hits")
-				{
+			foreach($entry as $k => $value) {
+				if ($k == "num_hits") {
 					$value=sprintf("%s (%.2f%%)",$value,$value*100/$cache['num_hits']);
 				}
 				if ($k == 'deletion_time') {
@@ -369,6 +386,7 @@ EOB;
 				}
 			}
 		}
+	}
 
 	echo
 		"</tbody></table>\n",
@@ -376,10 +394,7 @@ EOB;
 		
 		"</div>";
 	
-}
-else
-if (isset($MYREQUEST['OB']) && $MYREQUEST['OB'])
-{
+} else if (isset($MYREQUEST['OB']) && $MYREQUEST['OB']) {
 	$cols=5;
 	echo <<<EOB
 		<ol class=menu>
@@ -432,18 +447,15 @@ EOB;
 		"<th>",sortheader('M','Last modified',"&OB=$OB"),"</th>",
 		"<th>",sortheader('C','Created at',"&OB=$OB"),"</th>";
 	
-	if($fieldname=='info')
-	{
+	if($fieldname=='info') {
 		$cols++;
 		 echo "<th>",sortheader('T','Timeout',"&OB=$OB"),"</th>";
 	}
 	echo
 		"<th>",sortheader('D','Deleted at',"&OB=$OB"),"</th></tr>";
 
-	foreach($cache[$scope_list[$MYREQUEST['SCOPE']]] as $i => $entry)
-	{
-		switch($MYREQUEST['SORT1'])
-		{
+	foreach($cache[$scope_list[$MYREQUEST['SCOPE']]] as $i => $entry) {
+		switch($MYREQUEST['SORT1']) {
 			case "H": $k=sprintf("%015d-",$entry['num_hits']); 		break;
 			case "M": $k=sprintf("%015d-",$entry['mtime']);			break;
 			case "C": $k=sprintf("%015d-",$entry['creation_time']);	break;
@@ -453,16 +465,13 @@ EOB;
 		}
 		$list[$k.$entry['filename']]=$entry;
 	}
-	if (isset($list) && is_array($list))
-	{
-		switch ($MYREQUEST['SORT2'])
-		{
+	if (isset($list) && is_array($list)) {
+		switch ($MYREQUEST['SORT2']) {
 			case "A":	krsort($list);	break;
 			case "D":	ksort($list);	break;
 		}
 		$i=0;
-		foreach($list as $k => $entry)
-		{
+		foreach($list as $k => $entry) {
 			echo
 				"<tr class=tr-",$i%2,">",
 				"<td class=td-0><a href=\"$MY_SELF&OB=$OB&SH=",md5($entry[$fieldkey]),"\">",$entry[$fieldname],"</a></td>",
@@ -479,9 +488,7 @@ EOB;
 			$i++;
 			if (isset($MYREQUEST['COUNT']) && $MYREQUEST['COUNT']!=-1 && $i >= $MYREQUEST['COUNT']) break;
 		}
-	}
-	else
-	{
+	} else {
 		echo '<tr class=tr-0><td class="center" colspan=',$cols,'><i>No data</i></td></tr>';
 	}
 	echo <<< EOB
@@ -490,9 +497,7 @@ EOB;
 		
 		</div>
 EOB;
-}
-else
-{
+} else {
 	$mem_size = $mem['num_seg']*$mem['seg_size'];
 	$mem_avail= $mem['avail_mem'];
 	$mem_used = $mem_size-$mem_avail;
