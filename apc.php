@@ -80,7 +80,20 @@ if (isset($MYREQUEST['IMG']))
 		$r=$diameter/2;
 		$w=deg2rad((360+$start+($end-$start)/2)%360);
 		
-		imagefilledarc($im, $centerX, $centerY, $diameter, $diameter, $start, $end, $color2, IMG_ARC_PIE);
+		if (function_exists("imagefilledarc"))
+		{
+			// exists only if GD 2.0.1 is avaliable
+			imagefilledarc($im, $centerX, $centerY, $diameter, $diameter, $start, $end, $color2, IMG_ARC_PIE);
+		}
+		else
+		{
+			imagearc($im, $centerX, $centerY, $diameter, $diameter, $start, $end, $color2);
+			imageline($im, $centerX, $centerY, $centerX + cos(deg2rad($start)) * $r, $centerY + sin(deg2rad($start)) * $r, $color2);
+			imageline($im, $centerX, $centerY, $centerX + cos(deg2rad($start+1)) * $r, $centerY + sin(deg2rad($start)) * $r, $color2);
+			imageline($im, $centerX, $centerY, $centerX + cos(deg2rad($end-1))   * $r, $centerY + sin(deg2rad($end))   * $r, $color2);
+			imageline($im, $centerX, $centerY, $centerX + cos(deg2rad($end))   * $r, $centerY + sin(deg2rad($end))   * $r, $color2);
+			imagefill($im,$centerX + $r*cos($w)/2, $centerY + $r*sin($w)/2, $color2);
+		}
 		
 		if ($text)
 			imagestring($im,4,$centerX + $r*cos($w)/2, $centerY + $r*sin($w)/2,$text,$color1);
@@ -159,7 +172,7 @@ function sortheader($key,$name,$extra='')
 <head><title>APC INFO</title>
 <style><!--
 body { background:white; font-size:100.01%; margin:0; padding:0; }
-body,p,td,th,input,submit { font-family:arial,helvetica,sans-serif; }
+body,p,td,th,input,submit { font-size:0.8em;font-family:arial,helvetica,sans-serif; }
 * html body   {font-size:0.8em}
 * html p      {font-size:0.8em}
 * html td     {font-size:0.8em}
@@ -241,7 +254,7 @@ div.info table td.td-n { border-right:solid rgb(102,102,153) 1px; }
 
 div.graph { background:rgb(204,204,204); border:solid rgb(204,204,204) 1px; margin-bottom:1em }
 div.graph h2 { background:rgb(204,204,204);; color:black; font-size:1em; margin:0; padding:0.1em 1em 0.1em 1em; }
-div.graph table { border:solid rgb(204,204,204) 1px; color:black; font-weight:bold; width:100%; }
+div.graph table { border:solid rgb(204,204,204) 1px; color:black; font-weight:normal; width:100%; }
 div.graph table td.td-0 { background:rgb(238,238,238); }
 div.graph table td.td-1 { background:rgb(221,221,221); }
 div.graph table td { padding:0.2em 1em 0.2em 1em; }
@@ -367,7 +380,7 @@ EOB;
 else
 if (isset($MYREQUEST['OB']) && $MYREQUEST['OB'])
 {
-
+	$cols=5;
 	echo <<<EOB
 		<ol class=menu>
 		<li><a href="$MY_SELF&OB=$OB">Refresh Data</a></li>
@@ -418,8 +431,12 @@ EOB;
 		"<th>",sortheader('H','Hits',"&OB=$OB"),"</th>",
 		"<th>",sortheader('M','Last modified',"&OB=$OB"),"</th>",
 		"<th>",sortheader('C','Created at',"&OB=$OB"),"</th>";
-	if($fieldname=='info') echo
-		"<th>",sortheader('T','Timeout',"&OB=$OB"),"</th>";
+	
+	if($fieldname=='info')
+	{
+		$cols++;
+		 echo "<th>",sortheader('T','Timeout',"&OB=$OB"),"</th>";
+	}
 	echo
 		"<th>",sortheader('D','Deleted at',"&OB=$OB"),"</th></tr>";
 
@@ -465,7 +482,7 @@ EOB;
 	}
 	else
 	{
-		echo '<tr class=tr-0><td class="center" colspan=5><i>No data</i></td></tr>';
+		echo '<tr class=tr-0><td class="center" colspan=',$cols,'><i>No data</i></td></tr>';
 	}
 	echo <<< EOB
 		</tbody></table>
