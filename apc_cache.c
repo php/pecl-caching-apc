@@ -589,7 +589,7 @@ int apc_cache_make_file_key(apc_cache_key_t* key,
     } else {
         if (apc_stat(filename, &buf) != 0 && apc_stat_paths(filename, include_path, &buf) != 0) {
 #ifdef __DEBUG_APC__
-            fprintf(stderr,"Stat failed %s - bailing (%s) (%d)\n",filename,SG(request_info).path_translated,foo);
+            fprintf(stderr,"Stat failed %s - bailing (%s) (%d)\n",filename,SG(request_info).path_translated);
 #endif
             return 0;
         }
