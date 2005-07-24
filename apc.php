@@ -502,6 +502,7 @@ EOB;
 echo <<<EOB
 		<ol class=menu>
 		<li><a href="$MY_SELF&OB=0">View host stats</a></li>
+		<li><a href="$MY_SELF&OB=1">Cache Entries</a></li>
 		<li><a href="$MY_SELF&OB=2">User Cache</a></li>
 		</ol>
 		<div class=content>
@@ -521,26 +522,31 @@ EOB;
 		preg_match('!<title>APC ([0-9.]+)</title>!', $rss, $match);
 		if (version_compare($apcversion, $match[1], '>=')) {
 			echo '<tr class="td-last center"><td>You are running the latest version of APC ('.$apcversion.')</td></tr>';
+			$i = 3;
 		} else {
 			echo '<tr class="td-n center"><td>You are running an older version of APC ('.$apcversion.'), 
 				newer version '.$match[1].' is available at <a href="http://pecl.php.net/package/APC/'.$match[1].'">
 				http://pecl.php.net/package/APC/'.$match[1].'</a>
 				</td></tr>';
-			echo '<tr class=tr-0><td><h2>Change Log:</h2	><br />';
-
-			preg_match_all('!<(title|description)>([^<]+)</\\1>!', $rss, $match);
-			next($match[2]); next($match[2]);
-			while (list(,$v) = each($match[2])) {
-				list(,$ver) = explode(' ', $v, 2);
-				if (version_compare($apcversion, $ver, '>=')) {
-					break;
-				}
-				echo "<b>".htmlspecialchars($v)."</b><br><blockquote>";
-				echo nl2br(htmlspecialchars(current($match[2])))."</blockquote>";
-				next($match[2]);
-			}
-			echo '</td></tr>';
+			$i = -1;
 		}
+		echo '<tr class=tr-0><td><h2>Change Log:</h2	><br />';
+
+		preg_match_all('!<(title|description)>([^<]+)</\\1>!', $rss, $match);
+		next($match[2]); next($match[2]);
+
+		while (list(,$v) = each($match[2])) {
+			list(,$ver) = explode(' ', $v, 2);
+			if ($i < 0 && version_compare($apcversion, $ver, '>=')) {
+				break;
+			} else if (!$i--) {
+				break;
+			}
+			echo "<b>".htmlspecialchars($v)."</b><br><blockquote>";
+			echo nl2br(htmlspecialchars(current($match[2])))."</blockquote>";
+			next($match[2]);
+		}
+		echo '</td></tr>';
 	}
 echo <<< EOB
 		</tbody></table>
