@@ -139,21 +139,39 @@ if (isset($MYREQUEST['IMG']))
 
 	$size = 200; // image size
 
-	$image     = imagecreate($size+10, $size+10);
-	$col_white = imagecolorallocate($image, 255, 255, 255);
-	$col_red   = imagecolorallocate($image, 200,  80,  30);
-	$col_green = imagecolorallocate($image, 100, 255, 100);
+	$image     = imagecreate($size+50, $size+10);
+	$col_white = imagecolorallocate($image, 0xFF, 0xFF, 0xFF);
+	$col_red   = imagecolorallocate($image, 0xD0,  0x60,  0x30);
+	$col_green = imagecolorallocate($image, 0x60, 0xF0, 0x60);
 	$col_black = imagecolorallocate($image,   0,   0,   0);
 	imagecolortransparent($image,$col_white);
 
 	if ($MYREQUEST['IMG']==1) {
 		$s=$mem['num_seg']*$mem['seg_size'];
 		$a=$mem['avail_mem'];
-
 		$x=$y=$size/2;
+		$fuzz = 0.000001;
 
-		fill_arc($image,$x,$y,$size,0,$a*360/$s,$col_black,$col_green,bsize($a));
-		fill_arc($image,$x,$y,$size,0+$a*360/$s,360,$col_black,$col_red,bsize($s-$a));
+		// This block of code creates the pie chart.  It is a lot more complex than you
+		// would expect because we try to visualize any memory fragmentation as well.
+		$angle_from = 0;	
+		for($i=0; $i<$mem['num_seg']; $i++) {	
+			$ptr = 0;
+			$free = $mem['block_lists'][$i];
+			foreach($free as $block) {
+				if($block['offset']!=$ptr) {       // Used block
+					$angle_to = $angle_from+($block['offset']-$ptr)/$s;
+					if(($angle_to+$fuzz)>1) $angle_to = 1;
+					fill_arc($image,$x,$y,$size,$angle_from*360,$angle_to*360,$col_black,$col_red,(($angle_to-$angle_from)>0.05)?bsize($s*($angle_to-$angle_from)):'');
+					$angle_from = $angle_to;
+				}
+				$angle_to = $angle_from+($block['size'])/$s;
+				if(($angle_to+$fuzz)>1) $angle_to = 1;
+				fill_arc($image,$x,$y,$size,$angle_from*360,$angle_to*360,$col_black,$col_green,(($angle_to-$angle_from)>0.05)?bsize($s*($angle_to-$angle_from)):'');
+				$angle_from = $angle_to;
+				$ptr = $block['offset']+$block['size'];
+			}
+		}
 	} else {
 		$s=$cache['num_hits']+$cache['num_misses'];
 		$a=$cache['num_hits'];
@@ -619,12 +637,12 @@ EOB;
 			  "<tr><td class=td-0><img alt=\"\" src=\"$PHP_SELF?IMG=1&$time\"></td><td class=td-1><img alt=\"\" src=\"$PHP_SELF?IMG=2&$time\"></td></tr>\n"
 			: "",
 		"<tr>\n",
-		"<td class=td-0>Free: ",bsize($mem_avail).sprintf(" (%.1f%%)",$mem_avail*100/$mem_size),"</td>\n",
-		"<td class=td-1>Hits: ",$cache['num_hits'].sprintf(" (%.1f%%)",$cache['num_hits']*100/($cache['num_hits']+$cache['num_misses'])),"</td>\n",
+		"<td class=td-0><font style=\"background:#60F060;\"> &nbsp; &nbsp; </font> &nbsp; Free: ",bsize($mem_avail).sprintf(" (%.1f%%)",$mem_avail*100/$mem_size),"</td>\n",
+		"<td class=td-1><font style=\"background:#60F060;\"> &nbsp; &nbsp; </font> &nbsp; Hits: ",$cache['num_hits'].sprintf(" (%.1f%%)",$cache['num_hits']*100/($cache['num_hits']+$cache['num_misses'])),"</td>\n",
 		"</tr>\n",
 		"<tr>\n",
-		"<td class=td-0>Used: ",bsize($mem_used ).sprintf(" (%.1f%%)",$mem_used *100/$mem_size),"</td>\n",
-		"<td class=td-1>Misses: ",$cache['num_misses'].sprintf(" (%.1f%%)",$cache['num_misses']*100/($cache['num_hits']+$cache['num_misses'])),"</td>\n";
+		"<td class=td-0><font style=\"background:#D06030;\"> &nbsp; &nbsp; </font> &nbsp; Used: ",bsize($mem_used ).sprintf(" (%.1f%%)",$mem_used *100/$mem_size),"</td>\n",
+		"<td class=td-1><font style=\"background:#D06030;\"> &nbsp; &nbsp; </font> &nbsp; Misses: ",$cache['num_misses'].sprintf(" (%.1f%%)",$cache['num_misses']*100/($cache['num_hits']+$cache['num_misses'])),"</td>\n";
 	echo <<< EOB
 		</tr>
 		</tbody></table>
