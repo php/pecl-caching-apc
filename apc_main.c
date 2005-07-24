@@ -216,6 +216,7 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
     apc_function_t* alloc_functions;
     apc_class_t* alloc_classes;
     time_t t;
+	char *path;
 
     if (!APCG(enabled)) {
 #ifdef __DEBUG_APC__
@@ -317,7 +318,10 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
         return op_array;
     }
 
-    if(!(cache_entry = apc_cache_make_file_entry(h->opened_path, alloc_op_array, alloc_functions, alloc_classes))) {
+	path = h->opened_path;
+	if(!path) path=h->filename;
+
+    if(!(cache_entry = apc_cache_make_file_entry(path, alloc_op_array, alloc_functions, alloc_classes))) {
         apc_free_op_array(alloc_op_array, apc_sma_free);
         apc_free_functions(alloc_functions, apc_sma_free);
         apc_free_classes(alloc_classes, apc_sma_free);

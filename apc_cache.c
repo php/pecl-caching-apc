@@ -680,6 +680,9 @@ apc_cache_entry_t* apc_cache_make_file_entry(const char* filename,
 
     entry->data.file.filename  = apc_xstrdup(filename, apc_sma_malloc);
     if(!entry->data.file.filename) {
+#ifdef __DEBUG_APC__
+		fprintf(stderr,"apc_cache_make_file_entry: entry->data.file.filename is NULL - bailing\n");
+#endif
         apc_sma_free(entry);
         return NULL;
     }
