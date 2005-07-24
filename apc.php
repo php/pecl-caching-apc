@@ -114,6 +114,7 @@ if (isset($MYREQUEST['IMG']))
 		if (function_exists("imagefilledarc")) {
 			// exists only if GD 2.0.1 is avaliable
 			imagefilledarc($im, $centerX, $centerY, $diameter, $diameter, $start, $end, $color2, IMG_ARC_PIE);
+			imagefilledarc($im, $centerX, $centerY, $diameter, $diameter, $start, $end, $color1, IMG_ARC_NOFILL|IMG_ARC_EDGED);
 		} else {
 			imagearc($im, $centerX, $centerY, $diameter, $diameter, $start, $end, $color2);
 			imageline($im, $centerX, $centerY, $centerX + cos(deg2rad($start)) * $r, $centerY + sin(deg2rad($start)) * $r, $color2);
@@ -621,6 +622,11 @@ EOB;
 		$j = 1 - $j;
 	}
 
+	if($mem['num_seg']>1 || $mem['num_seg']==1 && count($mem['block_lists'][0])>1)
+		$mem_note = "Memory Usage<br /><font size=-2>(multiple slices indicate fragments)</font>";
+	else
+		$mem_note = "Memory Usage";
+
 	echo <<< EOB
 		</tbody></table>
 		</div>
@@ -628,8 +634,8 @@ EOB;
 		<div class="graph div3"><h2>Host Status Diagrams</h2>
 		<table cellspacing=0><tbody>
 		<tr>
-		<td class=td-0>Memory Usage</td>
-		<td class=td-1>Hits & Misses</td>
+		<td class=td-0>$mem_note</td>
+		<td class=td-1>Hits &amp; Misses</td>
 		</tr>
 EOB;
 	echo
@@ -637,12 +643,12 @@ EOB;
 			  "<tr><td class=td-0><img alt=\"\" src=\"$PHP_SELF?IMG=1&$time\"></td><td class=td-1><img alt=\"\" src=\"$PHP_SELF?IMG=2&$time\"></td></tr>\n"
 			: "",
 		"<tr>\n",
-		"<td class=td-0><font style=\"background:#60F060;\"> &nbsp; &nbsp; </font> &nbsp; Free: ",bsize($mem_avail).sprintf(" (%.1f%%)",$mem_avail*100/$mem_size),"</td>\n",
-		"<td class=td-1><font style=\"background:#60F060;\"> &nbsp; &nbsp; </font> &nbsp; Hits: ",$cache['num_hits'].sprintf(" (%.1f%%)",$cache['num_hits']*100/($cache['num_hits']+$cache['num_misses'])),"</td>\n",
+		"<td class=td-0><font style=\"background:#60F060; border: #000000 solid 1px;\"> &nbsp; &nbsp; </font> &nbsp; Free: ",bsize($mem_avail).sprintf(" (%.1f%%)",$mem_avail*100/$mem_size),"</td>\n",
+		"<td class=td-1><font style=\"background:#60F060; border: #000000 solid 1px;\"> &nbsp; &nbsp; </font> &nbsp; Hits: ",$cache['num_hits'].sprintf(" (%.1f%%)",$cache['num_hits']*100/($cache['num_hits']+$cache['num_misses'])),"</td>\n",
 		"</tr>\n",
 		"<tr>\n",
-		"<td class=td-0><font style=\"background:#D06030;\"> &nbsp; &nbsp; </font> &nbsp; Used: ",bsize($mem_used ).sprintf(" (%.1f%%)",$mem_used *100/$mem_size),"</td>\n",
-		"<td class=td-1><font style=\"background:#D06030;\"> &nbsp; &nbsp; </font> &nbsp; Misses: ",$cache['num_misses'].sprintf(" (%.1f%%)",$cache['num_misses']*100/($cache['num_hits']+$cache['num_misses'])),"</td>\n";
+		"<td class=td-0><font style=\"background:#D06030; border: #000000 solid 1px;\"> &nbsp; &nbsp; </font> &nbsp; Used: ",bsize($mem_used ).sprintf(" (%.1f%%)",$mem_used *100/$mem_size),"</td>\n",
+		"<td class=td-1><font style=\"background:#D06030; border: #000000 solid 1px;\"> &nbsp; &nbsp; </font> &nbsp; Misses: ",$cache['num_misses'].sprintf(" (%.1f%%)",$cache['num_misses']*100/($cache['num_hits']+$cache['num_misses'])),"</td>\n";
 	echo <<< EOB
 		</tr>
 		</tbody></table>
