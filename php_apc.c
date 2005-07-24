@@ -148,7 +148,7 @@ static PHP_MINIT_FUNCTION(apc)
 
     /* Disable APC in cli mode */
     if(!strcmp(sapi_module.name, "cli")) {
-        APCG(enabled) = 0;
+		zend_alter_ini_entry("apc.enabled", strlen("apc.enabled")+1, "0", 2, PHP_INI_SYSTEM, PHP_INI_STAGE_ACTIVATE);
     }
 
     if (APCG(enabled)) {
