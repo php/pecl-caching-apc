@@ -317,7 +317,7 @@ input {
 </style>
 </head>
 <body>
-<h1 class=apc><div class=logo><span class=logo>APC</span></div>
+<h1 class=apc><div class=logo><span class=logo><a href="http://pecl.php.net/package/APC">APC</a></span></div>
 <div class=nameinfo>Opcode Cache</div>
 </div></h1>
 <hr class=apc>
@@ -561,7 +561,7 @@ EOB;
 			} else if (!$i--) {
 				break;
 			}
-			echo "<b>".htmlspecialchars($v)."</b><br><blockquote>";
+			echo "<b><a href=\"http://pecl.php.net/package/APC/$ver\">".htmlspecialchars($v)."</a></b><br><blockquote>";
 			echo nl2br(htmlspecialchars(current($match[2])))."</blockquote>";
 			next($match[2]);
 		}
