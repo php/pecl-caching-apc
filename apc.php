@@ -340,7 +340,7 @@ if(!$admin_password || $admin_password=='password')
 else
 	$sure_msg = "Are you sure?";
 
-if (isset($MYREQUEST['SH']) && $MYREQUEST['SH']) {
+if (isset($MYREQUEST['SH'], $MYREQUEST['OB']) && $MYREQUEST['SH'] && $MYREQUEST['OB']) {
 	echo <<< EOB
 		<ol class=menu>
 		<li><a href="$MY_SELF&OB=0">View host stats</a></li>
@@ -385,6 +385,7 @@ EOB;
 					"</tr>\n";
 				}
 			}
+			break 2;
 		}
 	}
 
@@ -497,6 +498,57 @@ EOB;
 		
 		</div>
 EOB;
+} else if (!empty($_GET['VC'])) {
+echo <<<EOB
+		<ol class=menu>
+		<li><a href="$MY_SELF&OB=0">View host stats</a></li>
+		<li><a href="$MY_SELF&OB=2">User Cache</a></li>
+		</ol>
+		<div class=content>
+		
+		<div class="info"><table cellspacing=0><tbody>
+		<tr>
+		<th>APC Version Information</th>
+		</tr>
+EOB;
+
+	$rss = @file_get_contents("http://pecl.php.net/feeds/pkg_apc.rss");
+	if (!$rss) {
+		echo '<tr class="td-last center"><td>Unable to fetch version information.</td></tr>';
+	} else {
+		$apcversion = phpversion('apc');
+
+		preg_match('!<title>APC ([0-9.]+)</title>!', $rss, $match);
+		if (version_compare($apcversion, $match[1], '>=')) {
+			echo '<tr class="td-last center"><td>You are running the latest version of APC ('.$apcversion.')</td></tr>';
+		} else {
+			echo '<tr class="td-n center"><td>You are running an older version of APC ('.$apcversion.'), 
+				newer version '.$match[1].' is available at <a href="http://pecl.php.net/package/APC/'.$match[1].'">
+				http://pecl.php.net/package/APC/'.$match[1].'</a>
+				</td></tr>';
+			echo '<tr class=tr-0><td><h2>Change Log:</h2	><br />';
+
+			preg_match_all('!<(title|description)>([^<]+)</\\1>!', $rss, $match);
+			next($match[2]); next($match[2]);
+			while (list(,$v) = each($match[2])) {
+				list(,$ver) = explode(' ', $v, 2);
+				if (version_compare($apcversion, $ver, '>=')) {
+					break;
+				}
+				echo "<b>".htmlspecialchars($v)."</b><br><blockquote>";
+				echo nl2br(htmlspecialchars(current($match[2])))."</blockquote>";
+				next($match[2]);
+			}
+			echo '</td></tr>';
+		}
+	}
+echo <<< EOB
+		</tbody></table>
+		</div>
+		
+		</div>
+EOB;
+
 } else {
 	$mem_size = $mem['num_seg']*$mem['seg_size'];
 	$mem_avail= $mem['avail_mem'];
@@ -511,6 +563,7 @@ EOB;
 		<ol class=menu>
 		<li><a href="$MY_SELF&OB=0">Refresh Data</a></li>
 		<li><a href="$MY_SELF&OB=1">Cache Entries</a></li>
+		<li><a href="$PHP_SELF?VC=1">Version Check</a></li>
 		<li><a class="right" href="$MY_SELF&CC=1" onClick="javascipt:return confirm('$sure_msg');">Clear Cache</a></li>
 		</ol>
 		<div class=content>
