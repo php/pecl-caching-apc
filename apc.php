@@ -23,26 +23,57 @@
 
 $VERSION='$Id$';
 
-$admin_password = 'password';  // Change this to enable the Clear Cache Command
+
+
+////////// BEGIN OF CONFIG AREA ///////////////////////////////////////////////////////////
+
+define(ADMIN_PASSWORD,'password');  	// Change this to enable the Clear Cache Command
+
+//define(DATE_FORMAT, "d.m.Y H:i:s");	// German
+define(DATE_FORMAT, 'Y/m/d H:i:s'); 	// US
+
+
+////////// END OF CONFIG AREA /////////////////////////////////////////////////////////////
+
+
+
+
+
 
 // rewrite $PHP_SELF to block XSS attacks
 //
 $PHP_SELF= isset($_SERVER['PHP_SELF']) ? htmlentities(strip_tags($_SERVER['PHP_SELF'],'')) : '';
 $time = time();
-$cache_mode = 'opcode';
+
+// operation constants
+define('OB_HOST_STATS',1);
+define('OB_SYS_CACHE',2);
+define('OB_USER_CACHE',3);
+define('OB_VERSION_CHECK',9);
 
 // check validity of input variables
 $vardom=array(
 	'CC'	=> '/^[01]$/',
 	'COUNT'	=> '/^\d+$/',
 	'IMG'	=> '/^[12]$/',
-	'OB'	=> '/^[012]$/',
+	'OB'	=> '/^\d+$/',
 	'SCOPE'	=> '/^[AD]$/',
 	'SH'	=> '/^[a-z0-9]+$/',
 	'SORT1'	=> '/^[HSMCDT]$/',
 	'SORT2'	=> '/^[DA]$/',
 );
 
+// default cache mode
+$cache_mode='opcode';
+
+// cache scope
+$scope_list=array(
+	'A' => 'cache_list',
+	'D' => 'deleted_list'
+);
+
+
+// handle POST and GET requests
 if (empty($_REQUEST)) {
 	if (!empty($_GET) && !empty($_POST)) {
 		$_REQUEST = array_merge($_GET, $_POST);
@@ -55,6 +86,7 @@ if (empty($_REQUEST)) {
 	}
 }
 
+// check parameter syntax
 foreach($vardom as $var => $dom) {
 	if (!isset($_REQUEST[$var])) {
 		$MYREQUEST[$var]=NULL;
@@ -66,23 +98,28 @@ foreach($vardom as $var => $dom) {
 		$MYREQUEST[$var]=$_REQUEST[$var]=NULL;
 }
 
-// object mode selector
-//
-if (isset($MYREQUEST['OB']) && $MYREQUEST['OB']) {
-	if($MYREQUEST['OB']==2) {
-		$cache_mode='user';
-		$fieldname='info';
-		$fieldheading='User Entry Label';
-		$OB=2;
-		$fieldkey='info';
-	} else {
-		$cache_mode='opcode';
-		$fieldname='filename';
-		$fieldheading='Script Filename';
-		$OB=1;
-		$fieldkey='inode';
-	}
-}
+// check parameter sematics
+if (empty($MYREQUEST['SCOPE'])) $MYREQUEST['SCOPE']="A";
+if (empty($MYREQUEST['SORT1'])) $MYREQUEST['SORT1']="H";
+if (empty($MYREQUEST['SORT2'])) $MYREQUEST['SORT2']="D";
+if (empty($MYREQUEST['OB']))	$MYREQUEST['OB']=OB_HOST_STATS;
+if (!isset($MYREQUEST['COUNT'])) $MYREQUEST['COUNT']=10;
+if (!isset($scope_list[$MYREQUEST['SCOPE']])) $MYREQUEST['SCOPE']='A';
+
+$MY_SELF=
+	"$PHP_SELF".
+	"?SCOPE=".$MYREQUEST['SCOPE'].
+	"&SORT1=".$MYREQUEST['SORT1'].
+	"&SORT2=".$MYREQUEST['SORT2'].
+	"&COUNT=".$MYREQUEST['COUNT'];
+$MY_SELF_WO_SORT=
+	"$PHP_SELF".
+	"?SCOPE=".$MYREQUEST['SCOPE'].
+	"&COUNT=".$MYREQUEST['COUNT'];
+	
+// select cache mode
+if ($MYREQUEST['OB'] == OB_USER_CACHE)
+	$cache_mode='user';
 
 if(!$cache=@apc_cache_info($cache_mode)) {
 	echo "No cache info available.  APC does not appear to be running.";
@@ -206,6 +243,19 @@ function sortheader($key,$name,$extra='') {
 
 }
 
+// create menu entry 
+function menu_entry($ob,$title) {
+	global $MYREQUEST,$MY_SELF;
+	if ($MYREQUEST['OB']!=$ob) {
+		return "<li><a href=\"$MY_SELF&OB=$ob\">$title</a></li>";
+	} else if (empty($MYREQUEST['SH'])) {
+		return "<li><span class=active>$title</span></li>";
+	} else {
+		return "<li><a class=\"child_active\" href=\"$MY_SELF&OB=$ob\">$title</a></li>";	
+	}
+}
+
+
 ?>
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html>
@@ -225,6 +275,7 @@ a:hover { text-decoration:underline; }
 div.content { padding:1em 1em 1em 1em; position:absolute; width:97%; z-index:100; }
 h1.apc { background:rgb(153,153,204);; margin:0; padding:0.5em 1em 0.5em 1em; }
 * html h1.apc { margin-bottom:-7px; }
+h1.apc a:hover { text-decoration:none; color:rgb(90,90,90); }
 h1.apc div.logo span.logo {
 	background:rgb(119,123,180); #white;
 	color:black; #rgb(153,153,204);
@@ -250,18 +301,40 @@ hr.apc {
 	padding:0;
 }
 
-ol,menu { margin:1em 0 0 0; padding:0.2em; }
-ol.menu li { display:inline; margin-left:2em; }
+ol,menu { margin:1em 0 0 0; padding:0.2em; margin-left:1em;}
+ol.menu li { display:inline; margin-right:0.7em; list-style:none}
 ol.menu a {
 	background:rgb(153,153,204);
 	border:solid rgb(102,102,153) 2px;
 	color:white;
 	font-weight:bold;
-	margin-right:1em;
+	margin-right:0em;
 	padding:0.1em 0.5em 0.1em 0.5em;
 	text-decoration:none;
+	margin-left: 5px;
 	}
-ol.menu a:hover { text-decoration:underline; }
+ol.menu a.child_active {
+	background:rgb(153,153,204);
+	border:solid rgb(102,102,153) 2px;
+	color:white;
+	font-weight:bold;
+	margin-right:0em;
+	padding:0.1em 0.5em 0.1em 0.5em;
+	text-decoration:none;
+	border-left: solid black 5px;
+	margin-left: 0px;
+	}
+ol.menu span.active {
+	background:rgb(153,153,204);
+	border:solid rgb(102,102,153) 2px;
+	color:black;
+	font-weight:bold;
+	margin-right:0em;
+	padding:0.1em 0.5em 0.1em 0.5em;
+	text-decoration:none;
+	border-left: solid black 5px;
+	}
+ol.menu a:hover { background:rgb(193,193,244);}
 div.info {
 	background:rgb(204,204,204);
 	border:solid rgb(204,204,204) 1px;
@@ -291,6 +364,11 @@ div.info table tr.tr-1 { background:rgb(221,221,221); }
 div.info table td { padding:0.3em 1em 0.3em 1em; }
 div.info table td.td-0 { border-right:solid rgb(102,102,153) 1px; white-space:nowrap; }
 div.info table td.td-n { border-right:solid rgb(102,102,153) 1px; }
+div.info table td h3 {
+	color:black;
+	font-size:1.1em;
+	margin-left:-0.3em;
+	}
 
 div.graph { background:rgb(204,204,204); border:solid rgb(204,204,204) 1px; margin-bottom:1em }
 div.graph h2 { background:rgb(204,204,204);; color:black; font-size:1em; margin:0; padding:0.1em 1em 0.1em 1em; }
@@ -305,6 +383,8 @@ div.div3 { position:absolute; left:37em; top:1em; right:1em; }
 div.sorting { margin:1.5em 0em 2em 2em }
 .center { text-align:center }
 .right { position:absolute;right:1em }
+.ok { color:rgb(0,200,0); font-weight:bold}
+.failed { color:rgb(200,0,0); font-weight:bold}
 input {
 	background:rgb(153,153,204);
 	border:solid rgb(102,102,153) 2px;
@@ -323,258 +403,47 @@ input {
 <hr class=apc>
 <?php
 
-$scope_list=array(
-	'A' => 'cache_list',
-	'D' => 'deleted_list'
-);
-
+// clear clear cache need's ADMIN_PASSWORD to be changed!
+//
 if (isset($MYREQUEST['CC']) && $MYREQUEST['CC']) {
-	global $admin_password;
-
-	if($admin_password && $admin_password!='password') 
+	if(ADMIN_PASSWORD!='' && ADMIN_PASSWORD!='password') 
 		apc_clear_cache();
 }
-
-
-if (!isset($MYREQUEST['SCOPE'])) $MYREQUEST['SCOPE']="A";
-if (!isset($MYREQUEST['SORT1'])) $MYREQUEST['SORT1']="H";
-if (!isset($MYREQUEST['SORT2'])) $MYREQUEST['SORT2']="D";
-if (!isset($MYREQUEST['COUNT'])) $MYREQUEST['COUNT']=10;
-if (!isset($scope_list[$MYREQUEST['SCOPE']])) $MYREQUEST['SCOPE']='A';
-
-
-$MY_SELF=
-	"$PHP_SELF".
-	"?SCOPE=".$MYREQUEST['SCOPE'].
-	"&SORT1=".$MYREQUEST['SORT1'].
-	"&SORT2=".$MYREQUEST['SORT2'].
-	"&COUNT=".$MYREQUEST['COUNT'];
-$MY_SELF_WO_SORT=
-	"$PHP_SELF".
-	"?SCOPE=".$MYREQUEST['SCOPE'].
-	"&COUNT=".$MYREQUEST['COUNT'];
-
-if(!$admin_password || $admin_password=='password')
-	$sure_msg = "You need to set a password at the top of apc.php before this will work";
+if(ADMIN_PASSWORD=='' || ADMIN_PASSWORD=='password')
+	$sure_msg = "alert('You need to set a password at the top of apc.php before this will work')";
 else
-	$sure_msg = "Are you sure?";
+	$sure_msg = "confirm('Are you sure?');";
 
-if (isset($MYREQUEST['SH'], $MYREQUEST['OB']) && $MYREQUEST['SH'] && $MYREQUEST['OB']) {
-	echo <<< EOB
-		<ol class=menu>
-		<li><a href="$MY_SELF&OB=0">View host stats</a></li>
-		<li><a href="$MY_SELF&OB=1">Cache Entries</a></li>
-		<li><a href="$MY_SELF&OB=2">User Cache</a></li>
-		</ol>
-		<div class=content>
-		
-		<div class="info"><table cellspacing=0><tbody>
-		<tr><th>Attribute</th><th>Value</th></tr>
-EOB;
 
-	$m=0;
-	foreach($scope_list as $j => $list) {
-		foreach($cache[$list] as $i => $entry) {
-			if (md5($entry[$fieldkey])!=$MYREQUEST['SH']) continue;
-			foreach($entry as $k => $value) {
-				if ($k == "num_hits") {
-					$value=sprintf("%s (%.2f%%)",$value,$value*100/$cache['num_hits']);
-				}
-				if ($k == 'deletion_time') {
-					if(!$entry['deletion_time']) $value = "None";
-				}
-				echo
-					"<tr class=tr-$m>",
-					"<td class=td-0>",ucwords(preg_replace("/_/"," ",$k)),"</td>",
-					"<td class=td-last>",(preg_match("/time/",$k) && $value!='None') ? date("d.m.Y H:i:s",$value) : $value,"</td>",
-					"</tr>";
-				$m=1-$m;
-			}
-			if($fieldkey=='info') {
-				if($admin_password!='password') {
-					echo "<tr class=tr-$m><td class=td-0>Stored Value</td><td class=td-last><pre>";
-					$output = var_export(apc_fetch($entry[$fieldkey]),true);
-					echo htmlspecialchars($output);
-					echo "</pre></td></tr>\n";
-				} else {
-					echo
-					"<tr class=tr-$m>",
-					"<td class=td-0>Stored Value</td>",
-					"<td class=td-last>Set your apc.php password to see the user values here</td>",
-					"</tr>\n";
-				}
-			}
-			break 2;
-		}
-	}
-
-	echo
-		"</tbody></table>\n",
-		"</div>",
-		
-		"</div>";
-	
-} else if (isset($MYREQUEST['OB']) && $MYREQUEST['OB']) {
-	$cols=5;
-	echo <<<EOB
-		<ol class=menu>
-		<li><a href="$MY_SELF&OB=$OB">Refresh Data</a></li>
-		<li><a href="$MY_SELF&OB=0">View host stats</a></li>
-		<li><a href="$MY_SELF&OB=2">User Cache</a></li>
-		<li><a class="right" href="$MY_SELF&CC=1" onClick="javascipt:return confirm('$sure_msg');">Clear Cache</a></li>
-		</ol>
-		<div class=sorting><form>Scope:
-		<input type=hidden name=OB value=$OB>
-		<select name=SCOPE>
-EOB;
-	echo 
-		"<option value=A",$MYREQUEST['SCOPE']=='A' ? " selected":"",">Active</option>",
-		"<option value=D",$MYREQUEST['SCOPE']=='D' ? " selected":"",">Deleted</option>",
-		"</select>",
-		", Sorting:<select name=SORT1>",
-		"<option value=H",$MYREQUEST['SORT1']=='H' ? " selected":"",">Hits</option>",
-		"<option value=S",$MYREQUEST['SORT1']=='S' ? " selected":"",">$fieldheading</option>",
-		"<option value=M",$MYREQUEST['SORT1']=='M' ? " selected":"",">Last modified</option>",
-		"<option value=C",$MYREQUEST['SORT1']=='C' ? " selected":"",">Created at</option>",
-		"<option value=D",$MYREQUEST['SORT1']=='D' ? " selected":"",">Deleted at</option>";
-	if($fieldname=='info') echo
-		"<option value=D",$MYREQUEST['SORT1']=='T' ? " selected":"",">Timeout</option>";
-	echo 
-		"</select>",
-		"<select name=SORT2>",
-		"<option value=D",$MYREQUEST['SORT2']=='D' ? " selected":"",">DESC</option>",
-		"<option value=A",$MYREQUEST['SORT2']=='A' ? " selected":"",">ASC</option>",
-		"</select>",
-		"<select name=COUNT>",
-		"<option value=10 ",$MYREQUEST['COUNT']=='10' ? " selected":"",">Top 10</option>",
-		"<option value=20 ",$MYREQUEST['COUNT']=='20' ? " selected":"",">Top 20</option>",
-		"<option value=50 ",$MYREQUEST['COUNT']=='50' ? " selected":"",">Top 50</option>",
-		"<option value=100",$MYREQUEST['COUNT']=='100'? " selected":"",">Top 100</option>",
-		"<option value=150",$MYREQUEST['COUNT']=='150'? " selected":"",">Top 150</option>",
-		"<option value=200",$MYREQUEST['COUNT']=='200'? " selected":"",">Top 200</option>",
-		"<option value=500",$MYREQUEST['COUNT']=='500'? " selected":"",">Top 500</option>",
-		"<option value=-1", $MYREQUEST['COUNT']=='-1' ? " selected":"",">All</option>",
-		"</select>",
-		'&nbsp;<input type=submit value="GO!">',
-		"</form></div>",
-		
-		"<div class=content>\n",
-		
-		'<div class="info"><table cellspacing=0><tbody>',
-		"<tr>",
-		"<th>",sortheader('S',$fieldheading,"&OB=$OB"),"</th>",
-		"<th>",sortheader('H','Hits',"&OB=$OB"),"</th>",
-		"<th>",sortheader('M','Last modified',"&OB=$OB"),"</th>",
-		"<th>",sortheader('C','Created at',"&OB=$OB"),"</th>";
-	
-	if($fieldname=='info') {
-		$cols++;
-		 echo "<th>",sortheader('T','Timeout',"&OB=$OB"),"</th>";
-	}
-	echo
-		"<th>",sortheader('D','Deleted at',"&OB=$OB"),"</th></tr>";
-
-	foreach($cache[$scope_list[$MYREQUEST['SCOPE']]] as $i => $entry) {
-		switch($MYREQUEST['SORT1']) {
-			case "H": $k=sprintf("%015d-",$entry['num_hits']); 		break;
-			case "M": $k=sprintf("%015d-",$entry['mtime']);			break;
-			case "C": $k=sprintf("%015d-",$entry['creation_time']);	break;
-			case "T": $k=sprintf("%015d-",$entry['ttl']);			break;
-			case "D": $k=sprintf("%015d-",$entry['deletion_time']);	break;
-			case "S": $k='';										break;
-		}
-		$list[$k.$entry['filename']]=$entry;
-	}
-	if (isset($list) && is_array($list)) {
-		switch ($MYREQUEST['SORT2']) {
-			case "A":	krsort($list);	break;
-			case "D":	ksort($list);	break;
-		}
-		$i=0;
-		foreach($list as $k => $entry) {
-			echo
-				"<tr class=tr-",$i%2,">",
-				"<td class=td-0><a href=\"$MY_SELF&OB=$OB&SH=",md5($entry[$fieldkey]),"\">",$entry[$fieldname],"</a></td>",
-				'<td class="td-n center">',$entry['num_hits'],"</td>",
-				'<td class="td-n center">',date("d.m.Y H:i:s",$entry['mtime']),"</td>",
-				'<td class="td-n center">',date("d.m.Y H:i:s",$entry['creation_time']),"</td>";
-			if($fieldname=='info') {
-				if($entry['ttl']) echo '<td class="td-n center">'.$entry['ttl']." seconds</td>";
-				else echo '<td class="td-n center">None</td>';
-			}
-			echo
-				'<td class="td-last center">',$entry['deletion_time'] ? date("d.m.Y H:i:s",$entry['deletion_time']) : '-','</td>',
-				'</tr>';
-			$i++;
-			if (isset($MYREQUEST['COUNT']) && $MYREQUEST['COUNT']!=-1 && $i >= $MYREQUEST['COUNT']) break;
-		}
-	} else {
-		echo '<tr class=tr-0><td class="center" colspan=',$cols,'><i>No data</i></td></tr>';
-	}
-	echo <<< EOB
-		</tbody></table>
-		</div>
-		
-		</div>
-EOB;
-} else if (!empty($_GET['VC'])) {
+// Display main Menu
 echo <<<EOB
-		<ol class=menu>
-		<li><a href="$MY_SELF&OB=0">View host stats</a></li>
-		<li><a href="$MY_SELF&OB=1">Cache Entries</a></li>
-		<li><a href="$MY_SELF&OB=2">User Cache</a></li>
-		</ol>
-		<div class=content>
-		
-		<div class="info"><table cellspacing=0><tbody>
-		<tr>
-		<th>APC Version Information</th>
-		</tr>
+	<ol class=menu>
+	<li><a href="$MY_SELF&OB=$OB">Refresh Data</a></li>
+EOB;
+echo
+	menu_entry(1,'View Host Stats'),
+	menu_entry(2,'System Cache Entries'),
+	menu_entry(3,'User Cache Entries'),
+	menu_entry(9,'Version Check');
+echo <<<EOB
+	<li><a class="right" href="$MY_SELF&CC=1&OB=$OB" onClick="javascipt:return $sure_msg;">Clear Cache</a></li>
+	</ol>
 EOB;
 
-	$rss = @file_get_contents("http://pecl.php.net/feeds/pkg_apc.rss");
-	if (!$rss) {
-		echo '<tr class="td-last center"><td>Unable to fetch version information.</td></tr>';
-	} else {
-		$apcversion = phpversion('apc');
 
-		preg_match('!<title>APC ([0-9.]+)</title>!', $rss, $match);
-		if (version_compare($apcversion, $match[1], '>=')) {
-			echo '<tr class="td-last center"><td>You are running the latest version of APC ('.$apcversion.')</td></tr>';
-			$i = 3;
-		} else {
-			echo '<tr class="td-n center"><td>You are running an older version of APC ('.$apcversion.'), 
-				newer version '.$match[1].' is available at <a href="http://pecl.php.net/package/APC/'.$match[1].'">
-				http://pecl.php.net/package/APC/'.$match[1].'</a>
-				</td></tr>';
-			$i = -1;
-		}
-		echo '<tr class=tr-0><td><h2>Change Log:</h2	><br />';
 
-		preg_match_all('!<(title|description)>([^<]+)</\\1>!', $rss, $match);
-		next($match[2]); next($match[2]);
+// MAIN SWITCH STATEMENT 
 
-		while (list(,$v) = each($match[2])) {
-			list(,$ver) = explode(' ', $v, 2);
-			if ($i < 0 && version_compare($apcversion, $ver, '>=')) {
-				break;
-			} else if (!$i--) {
-				break;
-			}
-			echo "<b><a href=\"http://pecl.php.net/package/APC/$ver\">".htmlspecialchars($v)."</a></b><br><blockquote>";
-			echo nl2br(htmlspecialchars(current($match[2])))."</blockquote>";
-			next($match[2]);
-		}
-		echo '</td></tr>';
-	}
-echo <<< EOB
-		</tbody></table>
-		</div>
-		
-		</div>
-EOB;
+switch ($MYREQUEST['OB']) {
 
-} else {
+
+
+
+
+// -----------------------------------------------
+// Host Stats
+// -----------------------------------------------
+case OB_HOST_STATS:
 	$mem_size = $mem['num_seg']*$mem['seg_size'];
 	$mem_avail= $mem['avail_mem'];
 	$mem_used = $mem_size-$mem_avail;
@@ -585,14 +454,7 @@ EOB;
 	$number_cached = count($cache['cache_list']);
 	$i=0;
 	echo <<< EOB
-		<ol class=menu>
-		<li><a href="$MY_SELF&OB=0">Refresh Data</a></li>
-		<li><a href="$MY_SELF&OB=1">Cache Entries</a></li>
-		<li><a href="$PHP_SELF?VC=1">Version Check</a></li>
-		<li><a class="right" href="$MY_SELF&CC=1" onClick="javascipt:return confirm('$sure_msg');">Clear Cache</a></li>
-		</ol>
-		<div class=content>
-		
+		<div class=content>		
 		<div class="info div1"><h2>General Cache Information</h2>
 		<table cellspacing=0><tbody>
 		<tr class=tr-0><td class=td-0>APC Version</td><td>$apcversion</td></tr>
@@ -657,6 +519,264 @@ EOB;
 		</div>
 EOB;
 		
+	break;
+
+
+
+
+// -----------------------------------------------
+// System Cache Entries		
+// -----------------------------------------------
+case OB_SYS_CACHE:	
+	$fieldname='filename';
+	$fieldheading='Script Filename';
+	$fieldkey='inode';
+	
+// -----------------------------------------------
+ // User Cache Entries
+// -----------------------------------------------
+case OB_USER_CACHE:
+	if (!isset($fieldname))
+	{
+		$fieldname='info';
+		$fieldheading='User Entry Label';
+		$fieldkey='info';
+	}
+
+	$OB=$MYREQUEST['OB'];
+
+	if (!empty($MYREQUEST['SH']))
+	{
+		echo <<< EOB
+			<div class=content>
+
+			<div class="info"><table cellspacing=0><tbody>
+			<tr><th>Attribute</th><th>Value</th></tr>
+EOB;
+
+		$m=0;
+		foreach($scope_list as $j => $list) {
+			foreach($cache[$list] as $i => $entry) {
+				if (md5($entry[$fieldkey])!=$MYREQUEST['SH']) continue;
+				foreach($entry as $k => $value) {
+					if ($k == "num_hits") {
+						$value=sprintf("%s (%.2f%%)",$value,$value*100/$cache['num_hits']);
+					}
+					if ($k == 'deletion_time') {
+						if(!$entry['deletion_time']) $value = "None";
+					}
+					echo
+						"<tr class=tr-$m>",
+						"<td class=td-0>",ucwords(preg_replace("/_/"," ",$k)),"</td>",
+						"<td class=td-last>",(preg_match("/time/",$k) && $value!='None') ? date(DATE_FORMAT,$value) : $value,"</td>",
+						"</tr>";
+					$m=1-$m;
+				}
+				if($fieldkey=='info') {
+					if(ADMIN_PASSWORD!='password') {
+						echo "<tr class=tr-$m><td class=td-0>Stored Value</td><td class=td-last><pre>";
+						$output = var_export(apc_fetch($entry[$fieldkey]),true);
+						echo htmlspecialchars($output);
+						echo "</pre></td></tr>\n";
+					} else {
+						echo
+						"<tr class=tr-$m>",
+						"<td class=td-0>Stored Value</td>",
+						"<td class=td-last>Set your apc.php password to see the user values here</td>",
+						"</tr>\n";
+					}
+				}
+				break 2;
+			}
+		}
+
+		echo
+			"</tbody></table>\n",
+			"</div>",
+
+			"</div>";
+		break;
+	}
+
+	$cols=5;
+	echo <<<EOB
+		<div class=sorting><form>Scope:
+		<input type=hidden name=OB value=$OB>
+		<select name=SCOPE>
+EOB;
+	echo 
+		"<option value=A",$MYREQUEST['SCOPE']=='A' ? " selected":"",">Active</option>",
+		"<option value=D",$MYREQUEST['SCOPE']=='D' ? " selected":"",">Deleted</option>",
+		"</select>",
+		", Sorting:<select name=SORT1>",
+		"<option value=H",$MYREQUEST['SORT1']=='H' ? " selected":"",">Hits</option>",
+		"<option value=S",$MYREQUEST['SORT1']=='S' ? " selected":"",">$fieldheading</option>",
+		"<option value=M",$MYREQUEST['SORT1']=='M' ? " selected":"",">Last modified</option>",
+		"<option value=C",$MYREQUEST['SORT1']=='C' ? " selected":"",">Created at</option>",
+		"<option value=D",$MYREQUEST['SORT1']=='D' ? " selected":"",">Deleted at</option>";
+	if($fieldname=='info') echo
+		"<option value=D",$MYREQUEST['SORT1']=='T' ? " selected":"",">Timeout</option>";
+	echo 
+		'</select>',
+		'<select name=SORT2>',
+		'<option value=D',$MYREQUEST['SORT2']=='D' ? ' selected':'','>DESC</option>',
+		'<option value=A',$MYREQUEST['SORT2']=='A' ? ' selected':'','>ASC</option>',
+		'</select>',
+		'<select name=COUNT onChange="form.submit()">',
+		'<option value=10 ',$MYREQUEST['COUNT']=='10' ? ' selected':'','>Top 10</option>',
+		'<option value=20 ',$MYREQUEST['COUNT']=='20' ? ' selected':'','>Top 20</option>',
+		'<option value=50 ',$MYREQUEST['COUNT']=='50' ? ' selected':'','>Top 50</option>',
+		'<option value=100',$MYREQUEST['COUNT']=='100'? ' selected':'','>Top 100</option>',
+		'<option value=150',$MYREQUEST['COUNT']=='150'? ' selected':'','>Top 150</option>',
+		'<option value=200',$MYREQUEST['COUNT']=='200'? ' selected':'','>Top 200</option>',
+		'<option value=500',$MYREQUEST['COUNT']=='500'? ' selected':'','>Top 500</option>',
+		'<option value=-1', $MYREQUEST['COUNT']=='0'  ? ' selected':'','>All</option>',
+		'</select>',
+		'&nbsp;<input type=submit value="GO!">',
+		'</form></div>',
+
+		'<div class=content>',
+
+		'<div class="info"><table cellspacing=0><tbody>',
+		'<tr>',
+		'<th>',sortheader('S',$fieldheading,"&OB=$OB"),  '</th>',
+		'<th>',sortheader('H','Hits',"&OB=$OB"),         '</th>',
+		'<th>',sortheader('M','Last modified',"&OB=$OB"),'</th>',
+		'<th>',sortheader('C','Created at',"&OB=$OB"),   '</th>';
+
+	if($fieldname=='info') {
+		$cols++;
+		 echo '<th>',sortheader('T','Timeout',"&OB=$OB"),'</th>';
+	}
+	echo '<th>',sortheader('D','Deleted at',"&OB=$OB"),'</th></tr>';
+
+	// buils list with alpha numeric sortable keys
+	//
+	foreach($cache[$scope_list[$MYREQUEST['SCOPE']]] as $i => $entry) {
+		switch($MYREQUEST['SORT1']) {
+			case "H": $k=sprintf("%015d-",$entry['num_hits']); 		break;
+			case "M": $k=sprintf("%015d-",$entry['mtime']);			break;
+			case "C": $k=sprintf("%015d-",$entry['creation_time']);	break;
+			case "T": $k=sprintf("%015d-",$entry['ttl']);			break;
+			case "D": $k=sprintf("%015d-",$entry['deletion_time']);	break;
+			case "S": $k='';										break;
+		}
+		$list[$k.$entry['filename']]=$entry;
+	}
+	if (isset($list) && is_array($list)) {
+		
+		// sort list
+		//
+		switch ($MYREQUEST['SORT2']) {
+			case "A":	krsort($list);	break;
+			case "D":	ksort($list);	break;
+		}
+		
+		// output list
+		$i=0;
+		foreach($list as $k => $entry) {
+			echo
+				'<tr class=tr-',$i%2,'>',
+				"<td class=td-0><a href=\"$MY_SELF&OB=$OB&SH=",md5($entry[$fieldkey]),"\">",$entry[$fieldname],'</a></td>',
+				'<td class="td-n center">',$entry['num_hits'],'</td>',
+				'<td class="td-n center">',date(DATE_FORMAT,$entry['mtime']),'</td>',
+				'<td class="td-n center">',date(DATE_FORMAT,$entry['creation_time']),'</td>';
+
+			if($fieldname=='info') {
+				if($entry['ttl'])
+					echo '<td class="td-n center">'.$entry['ttl'].' seconds</td>';
+				else
+					echo '<td class="td-n center">None</td>';
+			}
+			echo
+				'<td class="td-last center">',$entry['deletion_time'] ? date(DATE_FORMAT,$entry['deletion_time']) : '-','</td>',
+				'</tr>';
+			$i++;
+			if ($i == $MYREQUEST['COUNT'])
+				break;
+		}
+		
+	} else {
+		echo '<tr class=tr-0><td class="center" colspan=',$cols,'><i>No data</i></td></tr>';
+	}
+	echo <<< EOB
+		</tbody></table>
+EOB;
+
+	if ($i < count($list)) {
+		echo "<a href=\"$MY_SELF&OB=$OB&COUNT=0\"><i>",count($list)-$i,' more available...</i></a>';
+	}
+
+	echo <<< EOB
+		</div>
+		</div>
+EOB;
+	break;
+
+
+
+		
+// -----------------------------------------------
+// Version check
+// -----------------------------------------------
+case OB_VERSION_CHECK:
+	echo <<<EOB
+		<div class=content>
+		
+		<div class="info"><h2>APC Version Information</h2>
+		<table cellspacing=0><tbody>
+		<tr>
+		<th></th>
+		</tr>
+EOB;
+
+	$rss = @file_get_contents("http://pecl.php.net/feeds/pkg_apc.rss");
+	if (!$rss) {
+		echo '<tr class="td-last center"><td>Unable to fetch version information.</td></tr>';
+	} else {
+		$apcversion = phpversion('apc');
+
+		preg_match('!<title>APC ([0-9.]+)</title>!', $rss, $match);
+		echo '<tr class="tr-0 center"><td>';
+		if (version_compare($apcversion, $match[1], '>=')) {
+			echo '<div class="ok">You are running the latest version of APC ('.$apcversion.')</div>';
+			$i = 3;
+		} else {
+			echo '<div class="failed">You are running an older version of APC ('.$apcversion.'), 
+				newer version '.$match[1].' is available at <a href="http://pecl.php.net/package/APC/'.$match[1].'">
+				http://pecl.php.net/package/APC/'.$match[1].'</a>
+				</div>';
+			$i = -1;
+		}
+		echo '</td></tr>';
+		echo '<tr class="tr-0"><td><h3>Change Log:</h3><br/>';
+
+		preg_match_all('!<(title|description)>([^<]+)</\\1>!', $rss, $match);
+		next($match[2]); next($match[2]);
+
+		while (list(,$v) = each($match[2])) {
+			list(,$ver) = explode(' ', $v, 2);
+			if ($i < 0 && version_compare($apcversion, $ver, '>=')) {
+				break;
+			} else if (!$i--) {
+				break;
+			}
+			echo "<b><a href=\"http://pecl.php.net/package/APC/$ver\">".htmlspecialchars($v)."</a></b><br><blockquote>";
+			echo nl2br(htmlspecialchars(current($match[2])))."</blockquote>";
+			next($match[2]);
+		}
+		echo '</td></tr>';
+	}
+	echo <<< EOB
+		</tbody></table>
+		</div>
+		
+		</div>
+EOB;
+	break;
+
+
+
 }
 ?>
 
