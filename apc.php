@@ -27,10 +27,10 @@ $VERSION='$Id$';
 
 ////////// BEGIN OF CONFIG AREA ///////////////////////////////////////////////////////////
 
-define(ADMIN_PASSWORD,'password');  	// Change this to enable the Clear Cache Command
+define('ADMIN_PASSWORD','password');  	// Change this to enable the Clear Cache Command
 
 //define(DATE_FORMAT, "d.m.Y H:i:s");	// German
-define(DATE_FORMAT, 'Y/m/d H:i:s'); 	// US
+define('DATE_FORMAT', 'Y/m/d H:i:s'); 	// US
 
 
 ////////// END OF CONFIG AREA /////////////////////////////////////////////////////////////
@@ -418,7 +418,7 @@ else
 // Display main Menu
 echo <<<EOB
 	<ol class=menu>
-	<li><a href="$MY_SELF&OB=$OB">Refresh Data</a></li>
+	<li><a href="$MY_SELF&OB={$MYREQUEST['OB']}">Refresh Data</a></li>
 EOB;
 echo
 	menu_entry(1,'View Host Stats'),
@@ -426,7 +426,7 @@ echo
 	menu_entry(3,'User Cache Entries'),
 	menu_entry(9,'Version Check');
 echo <<<EOB
-	<li><a class="right" href="$MY_SELF&CC=1&OB=$OB" onClick="javascipt:return $sure_msg;">Clear Cache</a></li>
+	<li><a class="right" href="$MY_SELF&CC=1&OB={$MYREQUEST['OB']}" onClick="javascipt:return $sure_msg;">Clear Cache</a></li>
 	</ol>
 EOB;
 
@@ -703,7 +703,7 @@ EOB;
 		</tbody></table>
 EOB;
 
-	if ($i < count($list)) {
+	if (isset($list) && is_array($list) && $i < count($list)) {
 		echo "<a href=\"$MY_SELF&OB=$OB&COUNT=0\"><i>",count($list)-$i,' more available...</i></a>';
 	}
 
