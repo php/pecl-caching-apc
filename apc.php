@@ -470,7 +470,7 @@ EOB;
 		<tr class=tr-0><td class=td-0>Cached Files</td><td>$number_cached</td></tr>
 		<tr class=tr-1><td class=td-0>Hits</td><td>{$cache['num_hits']}</td></tr>
 		<tr class=tr-0><td class=td-0>Misses</td><td>{$cache['num_misses']}</td></tr>
-		<tr class=tr-1><td class=td-0>Request Rate</td><td>$req_rate requests/second</td></tr>
+		<tr class=tr-1><td class=td-0>Request Rate</td><td>$req_rate cache requests/second</td></tr>
 		<tr class=tr-0><td class=td-0>Shared Memory</td><td>{$mem['num_seg']} Segment(s) with $seg_size</td></tr>
 		</tbody></table>
 		</div>
