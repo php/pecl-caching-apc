@@ -630,7 +630,7 @@ EOB;
 		'<option value=150',$MYREQUEST['COUNT']=='150'? ' selected':'','>Top 150</option>',
 		'<option value=200',$MYREQUEST['COUNT']=='200'? ' selected':'','>Top 200</option>',
 		'<option value=500',$MYREQUEST['COUNT']=='500'? ' selected':'','>Top 500</option>',
-		'<option value=-1', $MYREQUEST['COUNT']=='0'  ? ' selected':'','>All</option>',
+		'<option value=0  ',$MYREQUEST['COUNT']=='0'  ? ' selected':'','>All</option>',
 		'</select>',
 		'&nbsp;<input type=submit value="GO!">',
 		'</form></div>',
