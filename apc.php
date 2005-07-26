@@ -76,7 +76,7 @@ $vardom=array(
 
 	'COUNT'	=> '/^\d+$/',			// number of line displayed in list
 	'SCOPE'	=> '/^[AD]$/',			// list view scope
-	'SORT1'	=> '/^[HSMCDT]$/',		// first sort key
+	'SORT1'	=> '/^[AHSMCDT]$/',		// first sort key
 	'SORT2'	=> '/^[DA]$/',			// second sort key
 );
 
@@ -195,7 +195,7 @@ if (isset($MYREQUEST['IMG']))
 		exit(0);
 	}
 
-	function fill_arc($im, $centerX, $centerY, $diameter, $start, $end, $color1,$color2,$text='') {
+	function fill_arc($im, $centerX, $centerY, $diameter, $start, $end, $color1,$color2,$text='',$placeindex=0) {
 		$r=$diameter/2;
 		$w=deg2rad((360+$start+($end-$start)/2)%360);
 		
@@ -213,7 +213,13 @@ if (isset($MYREQUEST['IMG']))
 			imagefill($im,$centerX + $r*cos($w)/2, $centerY + $r*sin($w)/2, $color2);
 		}
 		if ($text) {
-			imagestring($im,4,$centerX + $r*cos($w)/2, $centerY + $r*sin($w)/2,$text,$color1);
+			if ($placeindex>0) {
+				imageline($im,$centerX + $r*cos($w)/2, $centerY + $r*sin($w)/2,$diameter, $placeindex*12,$color1);
+				imagestring($im,4,$diameter, $placeindex*12,$text,$color1);	
+				
+			} else {
+				imagestring($im,4,$centerX + $r*cos($w)/2, $centerY + $r*sin($w)/2,$text,$color1);
+			}
 		}
 	} 
 	
@@ -325,7 +331,7 @@ function put_login_link($s="Login")
 EOB;
 	} else if ($AUTHENTICATED) {
 		print <<<EOB
-			'$PHP_AUTH_USER' logged in!
+			'$PHP_AUTH_USER'&nbsp;logged&nbsp;in!
 EOB;
 	} else{
 		print <<<EOB
@@ -551,7 +557,7 @@ input {
 // Display main Menu
 echo <<<EOB
 	<ol class=menu>
-	<li><a href="$MY_SELF&OB={$MYREQUEST['OB']}">Refresh Data</a></li>
+	<li><a href="$MY_SELF&OB={$MYREQUEST['OB']}&SH={$MYREQUEST['SH']}">Refresh Data</a></li>
 EOB;
 echo
 	menu_entry(1,'View Host Stats'),
@@ -612,7 +618,12 @@ EOB;
 		<tr class=tr-1><td class=td-0>Hits</td><td>{$cache['num_hits']}</td></tr>
 		<tr class=tr-0><td class=td-0>Misses</td><td>{$cache['num_misses']}</td></tr>
 		<tr class=tr-1><td class=td-0>Request Rate</td><td>$req_rate cache requests/second</td></tr>
-		<tr class=tr-0><td class=td-0>Shared Memory</td><td>{$mem['num_seg']} Segment(s) with $seg_size</td></tr>
+		<tr class=tr-0><td class=td-0>Time To Live</td><td>{$cache['ttl']}</td></tr>
+		<tr class=tr-1><td class=td-0>Shared Memory</td><td>{$mem['num_seg']} Segment(s) with $seg_size</td></tr>
+EOB;
+	echo 
+		'<tr class=tr-0><td class=td-0>Start Time</td><td>',date(DATE_FORMAT,$cache['start_time']),'</td></tr>';
+	echo <<<EOB
 		</tbody></table>
 		</div>
 
@@ -633,28 +644,35 @@ EOB;
 	echo <<< EOB
 		</tbody></table>
 		</div>
-		
+
 		<div class="graph div3"><h2>Host Status Diagrams</h2>
 		<table cellspacing=0><tbody>
+EOB;
+	$size='width='.(GRAPH_SIZE+50).' height='.(GRAPH_SIZE+10);
+	echo <<<EOB
 		<tr>
 		<td class=td-0>$mem_note</td>
 		<td class=td-1>Hits &amp; Misses</td>
 		</tr>
 EOB;
+
 	echo
 		graphics_avail() ? 
-			  "<tr><td class=td-0><img alt=\"\" width=".(GRAPH_SIZE+50)." height=".(GRAPH_SIZE+10).
-				" src=\"$PHP_SELF?IMG=1&$time\"></td><td class=td-1><img alt=\"\" src=\"$PHP_SELF?IMG=2&$time\"></td></tr>\n"
+			  '<tr>'.
+			  "<td class=td-0><img alt=\"\" $size src=\"$PHP_SELF?IMG=1&$time\"></td>".
+			  "<td class=td-1><img alt=\"\" $size src=\"$PHP_SELF?IMG=2&$time\"></td></tr>\n"
 			: "",
-		"<tr>\n",
+		'<tr>',
 		'<td class=td-0><span class="green box">&nbsp;</span>Free: ',bsize($mem_avail).sprintf(" (%.1f%%)",$mem_avail*100/$mem_size),"</td>\n",
 		'<td class=td-1><span class="green box">&nbsp;</span>Hits: ',$cache['num_hits'].sprintf(" (%.1f%%)",$cache['num_hits']*100/($cache['num_hits']+$cache['num_misses'])),"</td>\n",
-		"</tr>\n",
-		"<tr>\n",
+		'</tr>',
+		'<tr>',
 		'<td class=td-0><span class="red box">&nbsp;</span>Used: ',bsize($mem_used ).sprintf(" (%.1f%%)",$mem_used *100/$mem_size),"</td>\n",
 		'<td class=td-1><span class="red box">&nbsp;</span>Misses: ',$cache['num_misses'].sprintf(" (%.1f%%)",$cache['num_misses']*100/($cache['num_hits']+$cache['num_misses'])),"</td>\n";
 	echo <<< EOB
 		</tr>
+EOB;
+	echo <<<EOB
 		</tbody></table>
 		</div>
 EOB;
@@ -733,7 +751,7 @@ EOB;
 		break;
 	}
 
-	$cols=5;
+	$cols=6;
 	echo <<<EOB
 		<div class=sorting><form>Scope:
 		<input type=hidden name=OB value={$MYREQUEST['OB']}>
@@ -746,6 +764,7 @@ EOB;
 		", Sorting:<select name=SORT1>",
 		"<option value=H",$MYREQUEST['SORT1']=='H' ? " selected":"",">Hits</option>",
 		"<option value=S",$MYREQUEST['SORT1']=='S' ? " selected":"",">$fieldheading</option>",
+		"<option value=M",$MYREQUEST['SORT1']=='A' ? " selected":"",">Last accessed</option>",
 		"<option value=M",$MYREQUEST['SORT1']=='M' ? " selected":"",">Last modified</option>",
 		"<option value=C",$MYREQUEST['SORT1']=='C' ? " selected":"",">Created at</option>",
 		"<option value=D",$MYREQUEST['SORT1']=='D' ? " selected":"",">Deleted at</option>";
@@ -774,6 +793,7 @@ EOB;
 		'<tr>',
 		'<th>',sortheader('S',$fieldheading,  "&OB=".$MYREQUEST['OB']),'</th>',
 		'<th>',sortheader('H','Hits',         "&OB=".$MYREQUEST['OB']),'</th>',
+		'<th>',sortheader('A','Last accessed',"&OB=".$MYREQUEST['OB']),'</th>',
 		'<th>',sortheader('M','Last modified',"&OB=".$MYREQUEST['OB']),'</th>',
 		'<th>',sortheader('C','Created at',   "&OB=".$MYREQUEST['OB']),'</th>';
 
@@ -787,12 +807,13 @@ EOB;
 	//
 	foreach($cache[$scope_list[$MYREQUEST['SCOPE']]] as $i => $entry) {
 		switch($MYREQUEST['SORT1']) {
-			case "H": $k=sprintf("%015d-",$entry['num_hits']); 		break;
-			case "M": $k=sprintf("%015d-",$entry['mtime']);			break;
-			case "C": $k=sprintf("%015d-",$entry['creation_time']);	break;
-			case "T": $k=sprintf("%015d-",$entry['ttl']);			break;
-			case "D": $k=sprintf("%015d-",$entry['deletion_time']);	break;
-			case "S": $k='';										break;
+			case 'A': $k=sprintf('%015d-',$entry['access_time']); 	break;
+			case 'H': $k=sprintf('%015d-',$entry['num_hits']); 		break;
+			case 'M': $k=sprintf('%015d-',$entry['mtime']);			break;
+			case 'C': $k=sprintf('%015d-',$entry['creation_time']);	break;
+			case 'T': $k=sprintf('%015d-',$entry['ttl']);			break;
+			case 'D': $k=sprintf('%015d-',$entry['deletion_time']);	break;
+			case 'S': $k='';										break;
 		}
 		if (!$AUTHENTICATED) {
 			// hide all path entries if not logged in
@@ -817,6 +838,7 @@ EOB;
 				'<tr class=tr-',$i%2,'>',
 				"<td class=td-0><a href=\"$MY_SELF&OB=",$MYREQUEST['OB'],"&SH=",md5($entry[$fieldkey]),"\">",$entry[$fieldname],'</a></td>',
 				'<td class="td-n center">',$entry['num_hits'],'</td>',
+				'<td class="td-n center">',date(DATE_FORMAT,$entry['access_time']),'</td>',
 				'<td class="td-n center">',date(DATE_FORMAT,$entry['mtime']),'</td>',
 				'<td class="td-n center">',date(DATE_FORMAT,$entry['creation_time']),'</td>';
 
