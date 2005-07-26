@@ -817,9 +817,9 @@ EOB;
 		}
 		if (!$AUTHENTICATED) {
 			// hide all path entries if not logged in
-			$list[$k.$entry['filename']]=preg_replace('/^.*\//','<i>&lt;hidden&gt;</i>/',$entry);
+			$list[$k.$entry[$fieldname]]=preg_replace('/^.*\//','<i>&lt;hidden&gt;</i>/',$entry);
 		} else {
-			$list[$k.$entry['filename']]=$entry;
+			$list[$k.$entry[$fieldname]]=$entry;
 		}
 	}
 	if (isset($list) && is_array($list)) {
