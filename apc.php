@@ -27,6 +27,15 @@ $VERSION='$Id$';
 
 ////////// BEGIN OF CONFIG AREA ///////////////////////////////////////////////////////////
 
+define('USE_AUTHENTIFICATION',1);		// Use (internal) authentification - best choice if 
+										// no other authentification is available
+										// If set to 0:
+										//  There will be no further authentification. You 
+										//  will have to handle this by yourself!
+										// If set to 1:
+										//  You need to change ADMIN_PASSWORD to make
+										//  this work!
+										
 define('ADMIN_USERNAME','apc');  		// Admin Username
 define('ADMIN_PASSWORD','password');  	// Admin Password - CHANGE THIS TO ENABLE!!!
 
@@ -123,29 +132,31 @@ $MY_SELF_WO_SORT=
 
 // authentication needed?
 //
-$AUTHENTICATED=0;
-if (ADMIN_PASSWORD!='password' && ($MYREQUEST['LO'] == 1 || isset($_SERVER['PHP_AUTH_USER']))) {
+if (!USE_AUTHENTIFICATION) {
+	$AUTHENTICATED=1;
+} else {
+	$AUTHENTICATED=0;
+	if (ADMIN_PASSWORD!='password' && ($MYREQUEST['LO'] == 1 || isset($_SERVER['PHP_AUTH_USER']))) {
 
-	if (!isset($_SERVER['PHP_AUTH_USER']) ||
-		!isset($_SERVER['PHP_AUTH_PW']) ||
-		$_SERVER['PHP_AUTH_USER'] != ADMIN_USERNAME ||
-		$_SERVER['PHP_AUTH_PW'] != ADMIN_PASSWORD) {
-		Header("WWW-Authenticate: Basic realm=\"APC Login\"");
-		Header("HTTP/1.0 401 Unauthorized");
+		if (!isset($_SERVER['PHP_AUTH_USER']) ||
+			!isset($_SERVER['PHP_AUTH_PW']) ||
+			$_SERVER['PHP_AUTH_USER'] != ADMIN_USERNAME ||
+			$_SERVER['PHP_AUTH_PW'] != ADMIN_PASSWORD) {
+			Header("WWW-Authenticate: Basic realm=\"APC Login\"");
+			Header("HTTP/1.0 401 Unauthorized");
 
-		echo <<<EOB
-			<html><body>
-			<h1>Rejected!</h1>
-			<big>Wrong Username or Passwort!</big><br/>&nbsp;<br/>&nbsp;
-			<big><a href='$PHP_SELF?OB={$MYREQUEST['OB']}'>Continue...</a></big>
-			</body></html>
+			echo <<<EOB
+				<html><body>
+				<h1>Rejected!</h1>
+				<big>Wrong Username or Passwort!</big><br/>&nbsp;<br/>&nbsp;
+				<big><a href='$PHP_SELF?OB={$MYREQUEST['OB']}'>Continue...</a></big>
+				</body></html>
 EOB;
-		exit;
-
-	}
-	else
-	{
-		$AUTHENTICATED=1;
+			exit;
+			
+		} else {
+			$AUTHENTICATED=1;
+		}
 	}
 }
 	
@@ -303,7 +314,9 @@ function put_login_link($s="Login")
 	global $MY_SELF,$MYREQUEST,$AUTHENTICATED,$PHP_AUTH_USER;
 	// need's ADMIN_PASSWORD to be changed!
 	//
-	if (ADMIN_PASSWORD=='password')
+	if (!USE_AUTHENTIFICATION) {
+		return;
+	} else if (ADMIN_PASSWORD=='password')
 	{
 		print <<<EOB
 			<a href="#" onClick="javascript:alert('You need to set a password at the top of apc.php before this will work!');return false";>$s</a>
@@ -344,6 +357,7 @@ div.head div.login {
 	right: 1em;
 	top: 1.2em;
 	color:white;
+	width:6em;
 	}
 div.head div.login a {
 	position:absolute;
@@ -498,7 +512,7 @@ span.green { background:#60F060; padding:0 0.5em 0 0.5em}
 span.red { background:#D06030; padding:0 0.5em 0 0.5em }
 
 div.authneeded {
-	background:rgb(238,238,238)
+	background:rgb(238,238,238);
 	border:solid rgb(204,204,204) 1px;
 	color:rgb(200,0,0);
 	font-size:1.2em;
@@ -700,19 +714,10 @@ EOB;
 					$m=1-$m;
 				}
 				if($fieldkey=='info') {
-					if($AUTHENTICATED) {
-						echo "<tr class=tr-$m><td class=td-0>Stored Value</td><td class=td-last><pre>";
-						$output = var_export(apc_fetch($entry[$fieldkey]),true);
-						echo htmlspecialchars($output);
-						echo "</pre></td></tr>\n";
-					} else {
-					// this will never be reached.... we may remove it! (beckerr)
-						echo
-						"<tr class=tr-$m>",
-						"<td class=td-0>Stored Value</td>",
-						"<td class=td-last>Set your apc.php password to see the user values here</td>",
-						"</tr>\n";
-					}
+					echo "<tr class=tr-$m><td class=td-0>Stored Value</td><td class=td-last><pre>";
+					$output = var_export(apc_fetch($entry[$fieldkey]),true);
+					echo htmlspecialchars($output);
+					echo "</pre></td></tr>\n";
 				}
 				break;
 			}
