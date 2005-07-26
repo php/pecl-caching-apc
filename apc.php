@@ -27,7 +27,11 @@ $VERSION='$Id$';
 
 ////////// BEGIN OF CONFIG AREA ///////////////////////////////////////////////////////////
 
-define('ADMIN_PASSWORD','password');  	// Change this to enable the Clear Cache Command
+define('ADMIN_USERNAME','apc');  		// Admin Username
+define('ADMIN_PASSWORD','password');  	// Admin Password - CHANGE THIS TO ENABLE!!!
+
+// (beckerr) I'm using a clear text password here, because I've no good idea how to let 
+//           the user generate a md5 or crypt passwort in a easy way to fill it in above
 
 //define(DATE_FORMAT, "d.m.Y H:i:s");	// German
 define('DATE_FORMAT', 'Y/m/d H:i:s'); 	// US
@@ -57,6 +61,7 @@ $vardom=array(
 	'COUNT'	=> '/^\d+$/',
 	'IMG'	=> '/^[12]$/',
 	'OB'	=> '/^\d+$/',
+	'LO'	=> '/^1$/',
 	'SCOPE'	=> '/^[AD]$/',
 	'SH'	=> '/^[a-z0-9]+$/',
 	'SORT1'	=> '/^[HSMCDT]$/',
@@ -71,7 +76,6 @@ $scope_list=array(
 	'A' => 'cache_list',
 	'D' => 'deleted_list'
 );
-
 
 // handle POST and GET requests
 if (empty($_REQUEST)) {
@@ -116,10 +120,44 @@ $MY_SELF_WO_SORT=
 	"$PHP_SELF".
 	"?SCOPE=".$MYREQUEST['SCOPE'].
 	"&COUNT=".$MYREQUEST['COUNT'];
+
+// authentication needed?
+//
+$AUTHENTICATED=0;
+if (ADMIN_PASSWORD!='password' && ($MYREQUEST['LO'] == 1 || isset($_SERVER['PHP_AUTH_USER']))) {
+
+	if (!isset($_SERVER['PHP_AUTH_USER']) ||
+		!isset($_SERVER['PHP_AUTH_PW']) ||
+		$_SERVER['PHP_AUTH_USER'] != ADMIN_USERNAME ||
+		$_SERVER['PHP_AUTH_PW'] != ADMIN_PASSWORD) {
+		Header("WWW-Authenticate: Basic realm=\"APC Login\"");
+		Header("HTTP/1.0 401 Unauthorized");
+
+		echo <<<EOB
+			<html><body>
+			<h1>Rejected!</h1>
+			<big>Wrong Username or Passwort!</big><br/>&nbsp;<br/>&nbsp;
+			<big><a href='$PHP_SELF?OB={$MYREQUEST['OB']}'>Continue...</a></big>
+			</body></html>
+EOB;
+		exit;
+
+	}
+	else
+	{
+		$AUTHENTICATED=1;
+	}
+}
 	
+// clear cache
+if ($AUTHENTICATED && isset($MYREQUEST['CC']) && $MYREQUEST['CC']) {
+	apc_clear_cache();
+}
 // select cache mode
-if ($MYREQUEST['OB'] == OB_USER_CACHE)
+if ($AUTHENTICATED && $MYREQUEST['OB'] == OB_USER_CACHE) {
 	$cache_mode='user';
+}
+
 
 if(!$cache=@apc_cache_info($cache_mode)) {
 	echo "No cache info available.  APC does not appear to be running.";
@@ -150,6 +188,7 @@ if (isset($MYREQUEST['IMG']))
 		
 		if (function_exists("imagefilledarc")) {
 			// exists only if GD 2.0.1 is avaliable
+			imagefilledarc($im, $centerX+1, $centerY+1, $diameter, $diameter, $start, $end, $color1, IMG_ARC_PIE);
 			imagefilledarc($im, $centerX, $centerY, $diameter, $diameter, $start, $end, $color2, IMG_ARC_PIE);
 			imagefilledarc($im, $centerX, $centerY, $diameter, $diameter, $start, $end, $color1, IMG_ARC_NOFILL|IMG_ARC_EDGED);
 		} else {
@@ -166,14 +205,18 @@ if (isset($MYREQUEST['IMG']))
 	} 
 	
 	function fill_box($im, $x, $y, $w, $h, $color1, $color2,$text='') {
+		global $col_black;
 		$x1=$x+$w-1;
 		$y1=$y+$h-1;
 
+		imagerectangle($im, $x, $y1, $x1+1, $y+1, $col_black);
 		imagefilledrectangle($im, $x, $y1, $x1, $y, $color2);
+		imagerectangle($im, $x, $y1, $x1, $y, $color1);
 		if ($text) {
 			imagestring($im,4,$x+5,$y1-16,$text,$color1);
 		}
 	}
+
 
 	$size = 200; // image size
 
@@ -255,6 +298,27 @@ function menu_entry($ob,$title) {
 	}
 }
 
+function put_login_link($s="Login")
+{
+	global $MY_SELF,$MYREQUEST,$AUTHENTICATED,$PHP_AUTH_USER;
+	// need's ADMIN_PASSWORD to be changed!
+	//
+	if (ADMIN_PASSWORD=='password')
+	{
+		print <<<EOB
+			<a href="#" onClick="javascript:alert('You need to set a password at the top of apc.php before this will work!');return false";>$s</a>
+EOB;
+	} else if ($AUTHENTICATED) {
+		print <<<EOB
+			'$PHP_AUTH_USER' logged in!
+EOB;
+	} else{
+		print <<<EOB
+			<a href="$MY_SELF&LO=1&OB={$MYREQUEST['OB']}">$s</a>
+EOB;
+	}
+}
+
 
 ?>
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
@@ -273,11 +337,33 @@ td { vertical-align:top }
 a { color:black; font-weight:none; text-decoration:none; }
 a:hover { text-decoration:underline; }
 div.content { padding:1em 1em 1em 1em; position:absolute; width:97%; z-index:100; }
-h1.apc { background:rgb(153,153,204);; margin:0; padding:0.5em 1em 0.5em 1em; }
+
+
+div.head div.login {
+	position:absolute;
+	right: 1em;
+	top: 1.2em;
+	color:white;
+	}
+div.head div.login a {
+	position:absolute;
+	right: 0em;
+	background:rgb(119,123,180);
+	border:solid rgb(102,102,153) 2px;
+	color:white;
+	font-weight:bold;
+	padding:0.1em 0.5em 0.1em 0.5em;
+	text-decoration:none;
+	}
+div.head div.login a:hover {
+	background:rgb(193,193,244);
+	}
+
+h1.apc { background:rgb(153,153,204); margin:0; padding:0.5em 1em 0.5em 1em; }
 * html h1.apc { margin-bottom:-7px; }
 h1.apc a:hover { text-decoration:none; color:rgb(90,90,90); }
 h1.apc div.logo span.logo {
-	background:rgb(119,123,180); #white;
+	background:rgb(119,123,180);
 	color:black; #rgb(153,153,204);
 	border-right: solid black 1px;
 	border-bottom: solid black 1px;
@@ -334,7 +420,22 @@ ol.menu span.active {
 	text-decoration:none;
 	border-left: solid black 5px;
 	}
-ol.menu a:hover { background:rgb(193,193,244);}
+ol.menu span.inactive {
+	background:rgb(193,193,244);
+	border:solid rgb(182,182,233) 2px;
+	color:white;
+	font-weight:bold;
+	margin-right:0em;
+	padding:0.1em 0.5em 0.1em 0.5em;
+	text-decoration:none;
+	margin-left: 5px;
+	}
+ol.menu a:hover {
+	background:rgb(193,193,244);
+	text-decoration:none;
+	}
+	
+	
 div.info {
 	background:rgb(204,204,204);
 	border:solid rgb(204,204,204) 1px;
@@ -380,11 +481,32 @@ div.graph table td { padding:0.2em 1em 0.2em 1em; }
 div.div1,div.div2 { margin-bottom:1em; width:35em; }
 div.div3 { position:absolute; left:37em; top:1em; right:1em; }
 
-div.sorting { margin:1.5em 0em 2em 2em }
+div.sorting { margin:1.5em 0em 1.5em 2em }
 .center { text-align:center }
 .right { position:absolute;right:1em }
 .ok { color:rgb(0,200,0); font-weight:bold}
 .failed { color:rgb(200,0,0); font-weight:bold}
+
+span.box {
+	border: black solid 1px;
+	border-right:solid black 2px;
+	border-bottom:solid black 2px;
+	padding:0 0.5em 0 0.5em;
+	margin-right:1em;
+}
+span.green { background:#60F060; padding:0 0.5em 0 0.5em}
+span.red { background:#D06030; padding:0 0.5em 0 0.5em }
+
+div.authneeded {
+	background:rgb(238,238,238)
+	border:solid rgb(204,204,204) 1px;
+	color:rgb(200,0,0);
+	font-size:1.2em;
+	font-weight:bold;
+	padding:2em;
+	text-align:center;
+	}
+	
 input {
 	background:rgb(153,153,204);
 	border:solid rgb(102,102,153) 2px;
@@ -397,22 +519,17 @@ input {
 </style>
 </head>
 <body>
-<h1 class=apc><div class=logo><span class=logo><a href="http://pecl.php.net/package/APC">APC</a></span></div>
-<div class=nameinfo>Opcode Cache</div>
-</div></h1>
-<hr class=apc>
+<div class="head">
+	<h1 class="apc">
+		<div class="logo"><span class="logo"><a href="http://pecl.php.net/package/APC">APC</a></span></div>
+		<div class="nameinfo">Opcode Cache</div>
+	</h1>
+	<div class="login">
+	<?php put_login_link(); ?>
+	</div>
+	<hr class="apc">
+</div>
 <?php
-
-// clear clear cache need's ADMIN_PASSWORD to be changed!
-//
-if (isset($MYREQUEST['CC']) && $MYREQUEST['CC']) {
-	if(ADMIN_PASSWORD!='' && ADMIN_PASSWORD!='password') 
-		apc_clear_cache();
-}
-if(ADMIN_PASSWORD=='' || ADMIN_PASSWORD=='password')
-	$sure_msg = "alert('You need to set a password at the top of apc.php before this will work')";
-else
-	$sure_msg = "confirm('Are you sure?');";
 
 
 // Display main Menu
@@ -425,12 +542,21 @@ echo
 	menu_entry(2,'System Cache Entries'),
 	menu_entry(3,'User Cache Entries'),
 	menu_entry(9,'Version Check');
+	
+if ($AUTHENTICATED) {
+	echo <<<EOB
+		<li><a class="right" href="$MY_SELF&CC=1&OB={$MYREQUEST['OB']}" onClick="javascipt:return confirm('Are you sure?');">Clear Cache</a></li>
+EOB;
+}
 echo <<<EOB
-	<li><a class="right" href="$MY_SELF&CC=1&OB={$MYREQUEST['OB']}" onClick="javascipt:return $sure_msg;">Clear Cache</a></li>
 	</ol>
 EOB;
 
 
+// CONTENT
+echo <<<EOB
+	<div class=content>
+EOB;
 
 // MAIN SWITCH STATEMENT 
 
@@ -454,7 +580,6 @@ case OB_HOST_STATS:
 	$number_cached = count($cache['cache_list']);
 	$i=0;
 	echo <<< EOB
-		<div class=content>		
 		<div class="info div1"><h2>General Cache Information</h2>
 		<table cellspacing=0><tbody>
 		<tr class=tr-0><td class=td-0>APC Version</td><td>$apcversion</td></tr>
@@ -505,51 +630,49 @@ EOB;
 			  "<tr><td class=td-0><img alt=\"\" src=\"$PHP_SELF?IMG=1&$time\"></td><td class=td-1><img alt=\"\" src=\"$PHP_SELF?IMG=2&$time\"></td></tr>\n"
 			: "",
 		"<tr>\n",
-		"<td class=td-0><font style=\"background:#60F060; border: #000000 solid 1px;\"> &nbsp; &nbsp; </font> &nbsp; Free: ",bsize($mem_avail).sprintf(" (%.1f%%)",$mem_avail*100/$mem_size),"</td>\n",
-		"<td class=td-1><font style=\"background:#60F060; border: #000000 solid 1px;\"> &nbsp; &nbsp; </font> &nbsp; Hits: ",$cache['num_hits'].sprintf(" (%.1f%%)",$cache['num_hits']*100/($cache['num_hits']+$cache['num_misses'])),"</td>\n",
+		'<td class=td-0><span class="green box">&nbsp;</span>Free: ',bsize($mem_avail).sprintf(" (%.1f%%)",$mem_avail*100/$mem_size),"</td>\n",
+		'<td class=td-1><span class="green box">&nbsp;</span>Hits: ',$cache['num_hits'].sprintf(" (%.1f%%)",$cache['num_hits']*100/($cache['num_hits']+$cache['num_misses'])),"</td>\n",
 		"</tr>\n",
 		"<tr>\n",
-		"<td class=td-0><font style=\"background:#D06030; border: #000000 solid 1px;\"> &nbsp; &nbsp; </font> &nbsp; Used: ",bsize($mem_used ).sprintf(" (%.1f%%)",$mem_used *100/$mem_size),"</td>\n",
-		"<td class=td-1><font style=\"background:#D06030; border: #000000 solid 1px;\"> &nbsp; &nbsp; </font> &nbsp; Misses: ",$cache['num_misses'].sprintf(" (%.1f%%)",$cache['num_misses']*100/($cache['num_hits']+$cache['num_misses'])),"</td>\n";
+		'<td class=td-0><span class="red box">&nbsp;</span>Used: ',bsize($mem_used ).sprintf(" (%.1f%%)",$mem_used *100/$mem_size),"</td>\n",
+		'<td class=td-1><span class="red box">&nbsp;</span>Misses: ',$cache['num_misses'].sprintf(" (%.1f%%)",$cache['num_misses']*100/($cache['num_hits']+$cache['num_misses'])),"</td>\n";
 	echo <<< EOB
 		</tr>
 		</tbody></table>
-		</div>
-
 		</div>
 EOB;
 		
 	break;
 
 
+// -----------------------------------------------
+// User Cache Entries
+// -----------------------------------------------
+case OB_USER_CACHE:
+	if (!$AUTHENTICATED) {
+		echo '<div class="authneeded">You need to login to see the user values here!<br/>&nbsp;<br/>';
+		put_login_link("Login now!");
+		echo '</div>';
+		break;
+	}
+	$fieldname='info';
+	$fieldheading='User Entry Label';
+	$fieldkey='info';
 
 
 // -----------------------------------------------
 // System Cache Entries		
 // -----------------------------------------------
 case OB_SYS_CACHE:	
-	$fieldname='filename';
-	$fieldheading='Script Filename';
-	$fieldkey='inode';
-	
-// -----------------------------------------------
- // User Cache Entries
-// -----------------------------------------------
-case OB_USER_CACHE:
 	if (!isset($fieldname))
 	{
-		$fieldname='info';
-		$fieldheading='User Entry Label';
-		$fieldkey='info';
+		$fieldname='filename';
+		$fieldheading='Script Filename';
+		$fieldkey='inode';
 	}
-
-	$OB=$MYREQUEST['OB'];
-
 	if (!empty($MYREQUEST['SH']))
 	{
 		echo <<< EOB
-			<div class=content>
-
 			<div class="info"><table cellspacing=0><tbody>
 			<tr><th>Attribute</th><th>Value</th></tr>
 EOB;
@@ -559,6 +682,10 @@ EOB;
 			foreach($cache[$list] as $i => $entry) {
 				if (md5($entry[$fieldkey])!=$MYREQUEST['SH']) continue;
 				foreach($entry as $k => $value) {
+
+					// hide all path entries if not logged in
+					$value=preg_replace('/^.*\//','<i>&lt;hidden&gt;</i>/',$value);
+
 					if ($k == "num_hits") {
 						$value=sprintf("%s (%.2f%%)",$value,$value*100/$cache['num_hits']);
 					}
@@ -573,12 +700,13 @@ EOB;
 					$m=1-$m;
 				}
 				if($fieldkey=='info') {
-					if(ADMIN_PASSWORD!='password') {
+					if($AUTHENTICATED) {
 						echo "<tr class=tr-$m><td class=td-0>Stored Value</td><td class=td-last><pre>";
 						$output = var_export(apc_fetch($entry[$fieldkey]),true);
 						echo htmlspecialchars($output);
 						echo "</pre></td></tr>\n";
 					} else {
+					// this will never be reached.... we may remove it! (beckerr)
 						echo
 						"<tr class=tr-$m>",
 						"<td class=td-0>Stored Value</td>",
@@ -586,22 +714,21 @@ EOB;
 						"</tr>\n";
 					}
 				}
-				break 2;
+				break;
 			}
 		}
 
-		echo
-			"</tbody></table>\n",
-			"</div>",
-
-			"</div>";
+		echo <<<EOB
+			</tbody></table>
+			</div>
+EOB;
 		break;
 	}
 
 	$cols=5;
 	echo <<<EOB
 		<div class=sorting><form>Scope:
-		<input type=hidden name=OB value=$OB>
+		<input type=hidden name=OB value={$MYREQUEST['OB']}>
 		<select name=SCOPE>
 EOB;
 	echo 
@@ -635,20 +762,18 @@ EOB;
 		'&nbsp;<input type=submit value="GO!">',
 		'</form></div>',
 
-		'<div class=content>',
-
 		'<div class="info"><table cellspacing=0><tbody>',
 		'<tr>',
-		'<th>',sortheader('S',$fieldheading,"&OB=$OB"),  '</th>',
-		'<th>',sortheader('H','Hits',"&OB=$OB"),         '</th>',
-		'<th>',sortheader('M','Last modified',"&OB=$OB"),'</th>',
-		'<th>',sortheader('C','Created at',"&OB=$OB"),   '</th>';
+		'<th>',sortheader('S',$fieldheading,  "&OB=".$MYREQUEST['OB']),'</th>',
+		'<th>',sortheader('H','Hits',         "&OB=".$MYREQUEST['OB']),'</th>',
+		'<th>',sortheader('M','Last modified',"&OB=".$MYREQUEST['OB']),'</th>',
+		'<th>',sortheader('C','Created at',   "&OB=".$MYREQUEST['OB']),'</th>';
 
 	if($fieldname=='info') {
 		$cols++;
-		 echo '<th>',sortheader('T','Timeout',"&OB=$OB"),'</th>';
+		 echo '<th>',sortheader('T','Timeout',"&OB=".$MYREQUEST['OB']),'</th>';
 	}
-	echo '<th>',sortheader('D','Deleted at',"&OB=$OB"),'</th></tr>';
+	echo '<th>',sortheader('D','Deleted at',"&OB=".$MYREQUEST['OB']),'</th></tr>';
 
 	// buils list with alpha numeric sortable keys
 	//
@@ -661,7 +786,12 @@ EOB;
 			case "D": $k=sprintf("%015d-",$entry['deletion_time']);	break;
 			case "S": $k='';										break;
 		}
-		$list[$k.$entry['filename']]=$entry;
+		if (!$AUTHENTICATED) {
+			// hide all path entries if not logged in
+			$list[$k.$entry['filename']]=preg_replace('/^.*\//','<i>&lt;hidden&gt;</i>/',$entry);
+		} else {
+			$list[$k.$entry['filename']]=$entry;
+		}
 	}
 	if (isset($list) && is_array($list)) {
 		
@@ -677,7 +807,7 @@ EOB;
 		foreach($list as $k => $entry) {
 			echo
 				'<tr class=tr-',$i%2,'>',
-				"<td class=td-0><a href=\"$MY_SELF&OB=$OB&SH=",md5($entry[$fieldkey]),"\">",$entry[$fieldname],'</a></td>',
+				"<td class=td-0><a href=\"$MY_SELF&OB=",$MYREQUEST['OB'],"&SH=",md5($entry[$fieldkey]),"\">",$entry[$fieldname],'</a></td>',
 				'<td class="td-n center">',$entry['num_hits'],'</td>',
 				'<td class="td-n center">',date(DATE_FORMAT,$entry['mtime']),'</td>',
 				'<td class="td-n center">',date(DATE_FORMAT,$entry['creation_time']),'</td>';
@@ -704,11 +834,10 @@ EOB;
 EOB;
 
 	if (isset($list) && is_array($list) && $i < count($list)) {
-		echo "<a href=\"$MY_SELF&OB=$OB&COUNT=0\"><i>",count($list)-$i,' more available...</i></a>';
+		echo "<a href=\"$MY_SELF&OB=",$MYREQUEST['OB'],"&COUNT=0\"><i>",count($list)-$i,' more available...</i></a>';
 	}
 
 	echo <<< EOB
-		</div>
 		</div>
 EOB;
 	break;
@@ -721,8 +850,6 @@ EOB;
 // -----------------------------------------------
 case OB_VERSION_CHECK:
 	echo <<<EOB
-		<div class=content>
-		
 		<div class="info"><h2>APC Version Information</h2>
 		<table cellspacing=0><tbody>
 		<tr>
@@ -770,14 +897,15 @@ EOB;
 	echo <<< EOB
 		</tbody></table>
 		</div>
-		
-		</div>
 EOB;
 	break;
 
-
-
 }
+
+echo <<< EOB
+	</div>
+EOB;
+
 ?>
 
 <!-- <?php echo "\nBased on APCGUI By R.Becker\n$VERSION\n"?> -->
