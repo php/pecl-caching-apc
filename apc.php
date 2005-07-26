@@ -40,11 +40,12 @@ define('ADMIN_USERNAME','apc');  		// Admin Username
 define('ADMIN_PASSWORD','password');  	// Admin Password - CHANGE THIS TO ENABLE!!!
 
 // (beckerr) I'm using a clear text password here, because I've no good idea how to let 
-//           the user generate a md5 or crypt passwort in a easy way to fill it in above
+//           users generate a md5 or crypt passwort in a easy way to fill it in above
 
 //define(DATE_FORMAT, "d.m.Y H:i:s");	// German
 define('DATE_FORMAT', 'Y/m/d H:i:s'); 	// US
 
+define('GRAPH_SIZE',200);				// Image size
 
 ////////// END OF CONFIG AREA /////////////////////////////////////////////////////////////
 
@@ -66,15 +67,17 @@ define('OB_VERSION_CHECK',9);
 
 // check validity of input variables
 $vardom=array(
-	'CC'	=> '/^[01]$/',
-	'COUNT'	=> '/^\d+$/',
-	'IMG'	=> '/^[12]$/',
-	'OB'	=> '/^\d+$/',
-	'LO'	=> '/^1$/',
-	'SCOPE'	=> '/^[AD]$/',
-	'SH'	=> '/^[a-z0-9]+$/',
-	'SORT1'	=> '/^[HSMCDT]$/',
-	'SORT2'	=> '/^[DA]$/',
+	'OB'	=> '/^\d+$/',			// operational mode switch
+	'CC'	=> '/^[01]$/',			// clear cache requested
+	'SH'	=> '/^[a-z0-9]+$/',		// shared object description
+
+	'IMG'	=> '/^[12]$/',			// image to generate
+	'LO'	=> '/^1$/',				// login requested
+
+	'COUNT'	=> '/^\d+$/',			// number of line displayed in list
+	'SCOPE'	=> '/^[AD]$/',			// list view scope
+	'SORT1'	=> '/^[HSMCDT]$/',		// first sort key
+	'SORT2'	=> '/^[DA]$/',			// second sort key
 );
 
 // default cache mode
@@ -103,12 +106,11 @@ if (empty($_REQUEST)) {
 foreach($vardom as $var => $dom) {
 	if (!isset($_REQUEST[$var])) {
 		$MYREQUEST[$var]=NULL;
-		continue;
-	}
-	if (!is_array($_REQUEST[$var]) && preg_match($dom,$_REQUEST[$var]))
+	} else if (!is_array($_REQUEST[$var]) && preg_match($dom,$_REQUEST[$var])) {
 		$MYREQUEST[$var]=$_REQUEST[$var];
-	else
+	} else {
 		$MYREQUEST[$var]=$_REQUEST[$var]=NULL;
+	}
 }
 
 // check parameter sematics
@@ -229,7 +231,7 @@ if (isset($MYREQUEST['IMG']))
 	}
 
 
-	$size = 200; // image size
+	$size = GRAPH_SIZE; // image size
 
 	$image     = imagecreate($size+50, $size+10);
 	$col_white = imagecolorallocate($image, 0xFF, 0xFF, 0xFF);
@@ -641,7 +643,8 @@ EOB;
 EOB;
 	echo
 		graphics_avail() ? 
-			  "<tr><td class=td-0><img alt=\"\" src=\"$PHP_SELF?IMG=1&$time\"></td><td class=td-1><img alt=\"\" src=\"$PHP_SELF?IMG=2&$time\"></td></tr>\n"
+			  "<tr><td class=td-0><img alt=\"\" width=".(GRAPH_SIZE+50)." height=".(GRAPH_SIZE+10).
+				" src=\"$PHP_SELF?IMG=1&$time\"></td><td class=td-1><img alt=\"\" src=\"$PHP_SELF?IMG=2&$time\"></td></tr>\n"
 			: "",
 		"<tr>\n",
 		'<td class=td-0><span class="green box">&nbsp;</span>Free: ',bsize($mem_avail).sprintf(" (%.1f%%)",$mem_avail*100/$mem_size),"</td>\n",
