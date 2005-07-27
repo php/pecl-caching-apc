@@ -177,6 +177,7 @@ if(!$cache=@apc_cache_info($cache_mode)) {
 	exit;
 } 
 $mem=apc_sma_info();
+if(!$cache['num_hits']) { $cache['num_hits']=1; $time++; }  // Avoid division by 0 errors on a cache clear
 
 // don't cache this page
 //
