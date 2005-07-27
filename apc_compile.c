@@ -1277,6 +1277,7 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_mal
             if(!(dst->vars[i].name = apc_xmemcpy(src->vars[i].name,
                                 src->vars[i].name_len + 1,
                                 allocate))) {
+		src->last_var = i;
                 goto cleanup_opcodes;
             }
         }
@@ -1313,8 +1314,10 @@ cleanup:
     if(dst->brk_cont_array) deallocate(dst->brk_cont_array);
     if(dst->static_variables) my_free_hashtable(dst->static_variables, (ht_free_fun_t)my_free_zval_ptr, (apc_free_t)deallocate);
 #ifdef ZEND_ENGINE_2_1
-     for(i=0; i < src->last_var; i++) {
-         if(dst->vars[i].name) deallocate(dst->vars[i].name);
+    if (dst->vars) {
+    	for(i=0; i < src->last_var; i++) {
+		if(dst->vars[i].name) deallocate(dst->vars[i].name);
+	}
     }
 #endif
     if(local_dst_alloc) deallocate(dst);
