@@ -200,12 +200,13 @@ if (isset($MYREQUEST['IMG']))
 	function fill_arc($im, $centerX, $centerY, $diameter, $start, $end, $color1,$color2,$text='',$placeindex=0) {
 		$r=$diameter/2;
 		$w=deg2rad((360+$start+($end-$start)/2)%360);
+
 		
 		if (function_exists("imagefilledarc")) {
 			// exists only if GD 2.0.1 is avaliable
 			imagefilledarc($im, $centerX+1, $centerY+1, $diameter, $diameter, $start, $end, $color1, IMG_ARC_PIE);
 			imagefilledarc($im, $centerX, $centerY, $diameter, $diameter, $start, $end, $color2, IMG_ARC_PIE);
-			imagefilledarc($im, $centerX, $centerY, $diameter, $diameter, $start, $end, $color2, IMG_ARC_NOFILL|IMG_ARC_EDGED);
+			imagefilledarc($im, $centerX, $centerY, $diameter, $diameter, $start, $end, $color1, IMG_ARC_NOFILL|IMG_ARC_EDGED);
 		} else {
 			imagearc($im, $centerX, $centerY, $diameter, $diameter, $start, $end, $color2);
 			imageline($im, $centerX, $centerY, $centerX + cos(deg2rad($start)) * $r, $centerY + sin(deg2rad($start)) * $r, $color2);
@@ -224,6 +225,19 @@ if (isset($MYREQUEST['IMG']))
 			}
 		}
 	} 
+
+	function text_arc($im, $centerX, $centerY, $diameter, $start, $end, $color1,$text,$placeindex=0) {
+		$r=$diameter/2;
+		$w=deg2rad((360+$start+($end-$start)/2)%360);
+
+		if ($placeindex>0) {
+			imageline($im,$centerX + $r*cos($w)/2, $centerY + $r*sin($w)/2,$diameter, $placeindex*12,$color1);
+			imagestring($im,4,$diameter, $placeindex*12,$text,$color1);	
+				
+		} else {
+			imagestring($im,4,$centerX + $r*cos($w)/2, $centerY + $r*sin($w)/2,$text,$color1);
+		}
+	} 
 	
 	function fill_box($im, $x, $y, $w, $h, $color1, $color2,$text='',$placeindex='') {
 		global $col_black;
@@ -232,7 +246,7 @@ if (isset($MYREQUEST['IMG']))
 
 		imagerectangle($im, $x, $y1, $x1+1, $y+1, $col_black);
 		imagefilledrectangle($im, $x, $y1, $x1, $y, $color2);
-		imagerectangle($im, $x, $y1, $x1, $y, $color2);
+		imagerectangle($im, $x, $y1, $x1, $y, $color1);
 		if ($text) {
 			if ($placeindex>0) {
 			
@@ -246,15 +260,15 @@ if (isset($MYREQUEST['IMG']))
 					
 				} else {
 					if ($placeindex<31) {
-						$px=$x+$w*2;
+						$px=$x+40*2;
 						$py=($placeindex-15)*12+6;
 					} else {
-						$px=$x+$w*2+100*intval(($placeindex-15)/15);
+						$px=$x+40*2+100*intval(($placeindex-15)/15);
 						$py=($placeindex%15)*12+6;
 					}
 					imagefilledrectangle($im, $px, $py+3, $px-4, $py-3, $color2);
 					imageline($im,$x+$w,$y+$h/2,$px,$py,$color2);
-					imagestring($im,2,$px,$py-6,$text,$color1);	
+					imagestring($im,2,$px+2,$py-6,$text,$color1);	
 				}
 			} else {
 				imagestring($im,4,$x+5,$y1-16,$text,$color1);
@@ -293,19 +307,42 @@ if (isset($MYREQUEST['IMG']))
 				if($block['offset']!=$ptr) {       // Used block
 					$angle_to = $angle_from+($block['offset']-$ptr)/$s;
 					if(($angle_to+$fuzz)>1) $angle_to = 1;
-					fill_arc($image,$x,$y,$size,$angle_from*360,$angle_to*360,$col_black,$col_red,(($angle_to-$angle_from)>0.05)?bsize($s*($angle_to-$angle_from)):'');
+					fill_arc($image,$x,$y,$size,$angle_from*360,$angle_to*360,$col_black,$col_red);
 					$angle_from = $angle_to;
 				}
 				$angle_to = $angle_from+($block['size'])/$s;
 				if(($angle_to+$fuzz)>1) $angle_to = 1;
-				fill_arc($image,$x,$y,$size,$angle_from*360,$angle_to*360,$col_black,$col_green,(($angle_to-$angle_from)>0.05)?bsize($s*($angle_to-$angle_from)):'');
+				fill_arc($image,$x,$y,$size,$angle_from*360,$angle_to*360,$col_black,$col_green);
 				$angle_from = $angle_to;
 				$ptr = $block['offset']+$block['size'];
 			}
 			if ($ptr < $mem['seg_size']) { // memory at the end 
 				$angle_to = $angle_from + ($mem['seg_size'] - $ptr)/$s;
 				if(($angle_to+$fuzz)>1) $angle_to = 1;
-				fill_arc($image,$x,$y,$size,$angle_from*360,$angle_to*360,$col_black,$col_red,(($angle_to-$angle_from)>0.05)?bsize($s*($angle_to-$angle_from)):'');
+				fill_arc($image,$x,$y,$size,$angle_from*360,$angle_to*360,$col_black,$col_red);
+			}
+		}
+		$angle_from = 0;	
+		for($i=0; $i<$mem['num_seg']; $i++) {	
+			$ptr = 0;
+			$free = $mem['block_lists'][$i];
+			foreach($free as $block) {
+				if($block['offset']!=$ptr) {       // Used block
+					$angle_to = $angle_from+($block['offset']-$ptr)/$s;
+					if(($angle_to+$fuzz)>1) $angle_to = 1;
+					text_arc($image,$x,$y,$size,$angle_from*360,$angle_to*360,$col_black,(($angle_to-$angle_from)>0.05)?bsize($s*($angle_to-$angle_from)):'');
+					$angle_from = $angle_to;
+				}
+				$angle_to = $angle_from+($block['size'])/$s;
+				if(($angle_to+$fuzz)>1) $angle_to = 1;
+				text_arc($image,$x,$y,$size,$angle_from*360,$angle_to*360,$col_black,(($angle_to-$angle_from)>0.05)?bsize($s*($angle_to-$angle_from)):'');
+				$angle_from = $angle_to;
+				$ptr = $block['offset']+$block['size'];
+			}
+			if ($ptr < $mem['seg_size']) { // memory at the end 
+				$angle_to = $angle_from + ($mem['seg_size'] - $ptr)/$s;
+				if(($angle_to+$fuzz)>1) $angle_to = 1;
+				text_arc($image,$x,$y,$size,$angle_from*360,$angle_to*360,$col_black,(($angle_to-$angle_from)>0.05)?bsize($s*($angle_to-$angle_from)):'');
 			}
 		}
 		break;
@@ -333,11 +370,13 @@ if (isset($MYREQUEST['IMG']))
 			foreach($free as $block) {
 				if($block['offset']!=$ptr) {       // Used block
 					$h=(GRAPH_SIZE-5)*($block['offset']-$ptr)/$s;
-					fill_box($image,$x,$y,50,$h,$col_black,$col_red,bsize($block['offset']-$ptr),$j++);
+					if ($h>0)
+						fill_box($image,$x,$y,50,$h,$col_black,$col_red,bsize($block['offset']-$ptr),$j++);
 					$y+=$h;
 				}
 				$h=(GRAPH_SIZE-5)*($block['size'])/$s;
-				fill_box($image,$x,$y,50,$h,$col_black,$col_green,bsize($block['size']),$j++);
+				if ($h>0)
+					fill_box($image,$x,$y,50,$h,$col_black,$col_green,bsize($block['size']),$j++);
 				$y+=$h;
 				$ptr = $block['offset']+$block['size'];
 			}
@@ -749,17 +788,15 @@ EOB;
 
 	// Fragementation:
 	// Is this the correct way to calculate fragmentstation? I'm not sure...
-	$frag_size=0.00001;
+	$biggest=0;
 	for($i=0; $i<$mem['num_seg']; $i++) {	
-		$ptr = 0;
 		foreach($mem['block_lists'][$i] as $block) {
-			if ($ptr==0) $ptr=$block['offset'];
-			if($block['offset']!=$ptr)
-				$frag_size+=$block['offset']-$ptr;
-			$ptr=$block['offset']+$block['size'];
+			if ($block['size'] > $biggest)
+				$biggest=$block['size'];
 		}
 	}
-	$frag=sprintf("%.2f%%",($frag_size/$mem['avail_mem'])*100);
+	$frag=sprintf("%.2f%%",100-100*($biggest/max(0.00001,$mem['avail_mem'])));
+
 
 	if (graphics_avail()) {
 		$size='width='.(2*GRAPH_SIZE+50).' height='.(GRAPH_SIZE+10);
