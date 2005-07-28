@@ -272,6 +272,11 @@ if (isset($MYREQUEST['IMG']))
 				$angle_from = $angle_to;
 				$ptr = $block['offset']+$block['size'];
 			}
+			if ($ptr < $mem['seg_size']) { // memory at the end 
+				$angle_to = $angle_from + ($mem['seg_size'] - $ptr)/$s;
+				if(($angle_to+$fuzz)>1) $angle_to = 1;
+				fill_arc($image,$x,$y,$size,$angle_from*360,$angle_to*360,$col_black,$col_green,(($angle_to-$angle_from)>0.05)?bsize($s*($angle_to-$angle_from)):'');
+			}
 		}
 	} else {
 		$s=$cache['num_hits']+$cache['num_misses'];
