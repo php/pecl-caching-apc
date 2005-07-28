@@ -30,9 +30,13 @@
  <license>PHP</license>
  <release>
   <state>stable</state>
-  <version>3.0.5-dev</version>
-  <date>2005-07-??</date>
+  <version>3.0.5</version>
+  <date>2005-07-27</date>
   <notes>
+Make it easier for sapis that only populate file_handle->filename to use APC. (Rasmus)
+Support extensions such as bcompiler that need to hook into compile_file. (Val)
+Ralf Becker's apcgui code has now become the default apc.php status page. (Ralf, Rasmus, Ilia)
+Segfault in cache cleanup code (Ilia, Rasmus)
   </notes>
  </release>
   <configureoptions>
