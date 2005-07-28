@@ -373,8 +373,8 @@ void apc_sma_free(void* p)
         return;
     }
 
+    assert(sma_initialized);    
     LOCK(sma_lock);
-    assert(sma_initialized);
 
     for (i = 0; i < sma_numseg; i++) {
         unsigned int d_size = (unsigned int)((char *)p - (char *)(sma_shmaddrs[i]));
