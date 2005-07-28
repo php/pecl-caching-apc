@@ -15,6 +15,7 @@
   +----------------------------------------------------------------------+
   | Authors: Ralf Becker <beckerr@php.net>                               |
   |          Rasmus Lerdorf <rasmus@php.net>                             |
+  |          Ilia Alshanetsky <ilia@prohost.org>                         |
   +----------------------------------------------------------------------+
 
    All other licensing and usage conditions are those of the PHP Group.
@@ -71,7 +72,7 @@ $vardom=array(
 	'CC'	=> '/^[01]$/',			// clear cache requested
 	'SH'	=> '/^[a-z0-9]+$/',		// shared object description
 
-	'IMG'	=> '/^[12]$/',			// image to generate
+	'IMG'	=> '/^[123]$/',			// image to generate
 	'LO'	=> '/^1$/',				// login requested
 
 	'COUNT'	=> '/^\d+$/',			// number of line displayed in list
@@ -204,7 +205,7 @@ if (isset($MYREQUEST['IMG']))
 			// exists only if GD 2.0.1 is avaliable
 			imagefilledarc($im, $centerX+1, $centerY+1, $diameter, $diameter, $start, $end, $color1, IMG_ARC_PIE);
 			imagefilledarc($im, $centerX, $centerY, $diameter, $diameter, $start, $end, $color2, IMG_ARC_PIE);
-			imagefilledarc($im, $centerX, $centerY, $diameter, $diameter, $start, $end, $color1, IMG_ARC_NOFILL|IMG_ARC_EDGED);
+			imagefilledarc($im, $centerX, $centerY, $diameter, $diameter, $start, $end, $color2, IMG_ARC_NOFILL|IMG_ARC_EDGED);
 		} else {
 			imagearc($im, $centerX, $centerY, $diameter, $diameter, $start, $end, $color2);
 			imageline($im, $centerX, $centerY, $centerX + cos(deg2rad($start)) * $r, $centerY + sin(deg2rad($start)) * $r, $color2);
@@ -224,30 +225,59 @@ if (isset($MYREQUEST['IMG']))
 		}
 	} 
 	
-	function fill_box($im, $x, $y, $w, $h, $color1, $color2,$text='') {
+	function fill_box($im, $x, $y, $w, $h, $color1, $color2,$text='',$placeindex='') {
 		global $col_black;
 		$x1=$x+$w-1;
 		$y1=$y+$h-1;
 
 		imagerectangle($im, $x, $y1, $x1+1, $y+1, $col_black);
 		imagefilledrectangle($im, $x, $y1, $x1, $y, $color2);
-		imagerectangle($im, $x, $y1, $x1, $y, $color1);
+		imagerectangle($im, $x, $y1, $x1, $y, $color2);
 		if ($text) {
-			imagestring($im,4,$x+5,$y1-16,$text,$color1);
+			if ($placeindex>0) {
+			
+				if ($placeindex<16)
+				{
+					$px=5;
+					$py=$placeindex*12+6;
+					imagefilledrectangle($im, $px+90, $py+3, $px+90-4, $py-3, $color2);
+					imageline($im,$x,$y+$h/2,$px+90,$py,$color2);
+					imagestring($im,2,$px,$py-6,$text,$color1);	
+					
+				} else {
+					if ($placeindex<31) {
+						$px=$x+$w*2;
+						$py=($placeindex-15)*12+6;
+					} else {
+						$px=$x+$w*2+100*intval(($placeindex-15)/15);
+						$py=($placeindex%15)*12+6;
+					}
+					imagefilledrectangle($im, $px, $py+3, $px-4, $py-3, $color2);
+					imageline($im,$x+$w,$y+$h/2,$px,$py,$color2);
+					imagestring($im,2,$px,$py-6,$text,$color1);	
+				}
+			} else {
+				imagestring($im,4,$x+5,$y1-16,$text,$color1);
+			}
 		}
 	}
 
 
 	$size = GRAPH_SIZE; // image size
+	if ($MYREQUEST['IMG']==3)
+		$image = imagecreate(2*$size+50, $size+10);
+	else
+		$image = imagecreate($size+50, $size+10);
 
-	$image     = imagecreate($size+50, $size+10);
 	$col_white = imagecolorallocate($image, 0xFF, 0xFF, 0xFF);
-	$col_red   = imagecolorallocate($image, 0xD0,  0x60,  0x30);
+	$col_red   = imagecolorallocate($image, 0xD0, 0x60,  0x30);
 	$col_green = imagecolorallocate($image, 0x60, 0xF0, 0x60);
 	$col_black = imagecolorallocate($image,   0,   0,   0);
 	imagecolortransparent($image,$col_white);
 
-	if ($MYREQUEST['IMG']==1) {
+	switch ($MYREQUEST['IMG']) {
+	
+	case 1:
 		$s=$mem['num_seg']*$mem['seg_size'];
 		$a=$mem['avail_mem'];
 		$x=$y=$size/2;
@@ -278,12 +308,42 @@ if (isset($MYREQUEST['IMG']))
 				fill_arc($image,$x,$y,$size,$angle_from*360,$angle_to*360,$col_black,$col_red,(($angle_to-$angle_from)>0.05)?bsize($s*($angle_to-$angle_from)):'');
 			}
 		}
-	} else {
+		break;
+		
+	case 2: 
 		$s=$cache['num_hits']+$cache['num_misses'];
 		$a=$cache['num_hits'];
 		
 		fill_box($image, 30,$size,50,-$a*($size-21)/$s,$col_black,$col_green,sprintf("%.1f%%",$cache['num_hits']*100/$s));
 		fill_box($image,130,$size,50,-max(4,($s-$a)*($size-21)/$s),$col_black,$col_red,sprintf("%.1f%%",$cache['num_misses']*100/$s));
+		break;
+		
+	case 3:
+		$s=$mem['num_seg']*$mem['seg_size'];
+		$a=$mem['avail_mem'];
+		$x=130;
+		$y=1;
+		$j=1;
+
+		// This block of code creates the pie chart.  It is a lot more complex than you
+		// would expect because we try to visualize any memory fragmentation as well.
+		for($i=0; $i<$mem['num_seg']; $i++) {	
+			$ptr = 0;
+			$free = $mem['block_lists'][$i];
+			foreach($free as $block) {
+				if($block['offset']!=$ptr) {       // Used block
+					$h=(GRAPH_SIZE-5)*($block['offset']-$ptr)/$s;
+					fill_box($image,$x,$y,50,$h,$col_black,$col_red,bsize($block['offset']-$ptr),$j++);
+					$y+=$h;
+				}
+				$h=(GRAPH_SIZE-5)*($block['size'])/$s;
+				fill_box($image,$x,$y,50,$h,$col_black,$col_green,bsize($block['size']),$j++);
+				$y+=$h;
+				$ptr = $block['offset']+$block['size'];
+			}
+		}
+		break;
+	
 	}
 	header("Content-type: image/png");
 	imagepng($image);
@@ -297,7 +357,7 @@ function bsize($s) {
 		if ($s < 1024) break;
 		$s/=1024;
 	}
-	return sprintf("%.1f %sBytes",$s,$k);
+	return sprintf("%5.1f %sBytes",$s,$k);
 }
 
 // sortable table header in "scripts for this host" view
@@ -499,15 +559,16 @@ div.info table td h3 {
 	margin-left:-0.3em;
 	}
 
-div.graph { background:rgb(204,204,204); border:solid rgb(204,204,204) 1px; margin-bottom:1em }
+div.graph { margin-bottom:1em }
 div.graph h2 { background:rgb(204,204,204);; color:black; font-size:1em; margin:0; padding:0.1em 1em 0.1em 1em; }
 div.graph table { border:solid rgb(204,204,204) 1px; color:black; font-weight:normal; width:100%; }
 div.graph table td.td-0 { background:rgb(238,238,238); }
 div.graph table td.td-1 { background:rgb(221,221,221); }
-div.graph table td { padding:0.2em 1em 0.2em 1em; }
+div.graph table td { padding:0.2em 1em 0.4em 1em; }
 
 div.div1,div.div2 { margin-bottom:1em; width:35em; }
-div.div3 { position:absolute; left:37em; top:1em; right:1em; }
+div.div3 { position:absolute; left:37em; top:1em; width:580px; }
+//div.div3 { position:absolute; left:37em; top:1em; right:1em; }
 
 div.sorting { margin:1.5em 0em 1.5em 2em }
 .center { text-align:center }
@@ -677,8 +738,39 @@ EOB;
 		'<td class=td-1><span class="red box">&nbsp;</span>Misses: ',$cache['num_misses'].sprintf(" (%.1f%%)",$cache['num_misses']*100/($cache['num_hits']+$cache['num_misses'])),"</td>\n";
 	echo <<< EOB
 		</tr>
+		</tbody></table>
+
+		<br/>
+		<h2>Detailed Memory Usage and Fragmentation</h2>
+		<table cellspacing=0><tbody>
+		<tr>
+		<td class=td-0 colspan=2><br/>
 EOB;
+
+	// Fragementation:
+	// Is this the correct way to calculate fragmentstation? I'm not sure...
+	$frag_size=0.00001;
+	for($i=0; $i<$mem['num_seg']; $i++) {	
+		$ptr = 0;
+		foreach($mem['block_lists'][$i] as $block) {
+			if ($ptr==0) $ptr=$block['offset'];
+			if($block['offset']!=$ptr)
+				$frag_size+=$block['offset']-$ptr;
+			$ptr=$block['offset']+$block['size'];
+		}
+	}
+	$frag=sprintf("%.2f%%",($frag_size/$mem['avail_mem'])*100);
+
+	if (graphics_avail()) {
+		$size='width='.(2*GRAPH_SIZE+50).' height='.(GRAPH_SIZE+10);
+		echo <<<EOB
+			<img alt="" $size src="$PHP_SELF?IMG=3&$time">
+EOB;
+	}
 	echo <<<EOB
+		</br>Fragmentation: : $frag
+		</td>
+		</tr>
 		</tbody></table>
 		</div>
 EOB;
