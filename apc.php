@@ -786,17 +786,24 @@ EOB;
 		<td class=td-0 colspan=2><br/>
 EOB;
 
-	// Fragementation:
-	// Is this the correct way to calculate fragmentstation? I'm not sure...
-	$biggest=0;
-	for($i=0; $i<$mem['num_seg']; $i++) {	
+	// Fragementation: (freeseg - 1) / total_seg
+	$nseg = $freeseg = 0;
+	for($i=0; $i<$mem['num_seg']; $i++) {
+		$ptr = 0;
 		foreach($mem['block_lists'][$i] as $block) {
-			if ($block['size'] > $biggest)
-				$biggest=$block['size'];
+			if ($block['offset'] != $ptr) {
+				++$nseg;
+			}
+			$ptr = $block['offset'] + $block['size'];
 		}
+		$freeseg += count($mem['block_lists'][$i]);
 	}
-	$frag=sprintf("%.2f%%",100-100*($biggest/max(0.00001,$mem['avail_mem'])));
-
+	
+	if ($freeseg > 1) {
+		$frag = sprintf("%.2f%%", (($freeseg - 1) / ($freeseg + $nseg)) * 100);
+	} else {
+		$frag = "0%";
+	}
 
 	if (graphics_avail()) {
 		$size='width='.(2*GRAPH_SIZE+50).' height='.(GRAPH_SIZE+10);
@@ -805,7 +812,7 @@ EOB;
 EOB;
 	}
 	echo <<<EOB
-		</br>Fragmentation: : $frag
+		</br>Fragmentation: $frag
 		</td>
 		</tr>
 		</tbody></table>
