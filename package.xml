@@ -33,6 +33,7 @@
   <version>3.0.6</version>
   <date>2005-08-??</date>
   <notes>
+Added apc.php to package.xml file
   </notes>
  </release>
   <configureoptions>
@@ -79,6 +80,7 @@
     <file role="src" name="php_apc.c" />
     <file role="src" name="php_apc.h" />
     <file role="src" name="apc_fcntl_win32.c" />
+    <file role="php" name="apc.php" />
   </filelist>
   <changelog>
      <release>
