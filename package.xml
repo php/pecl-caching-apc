@@ -30,13 +30,9 @@
  <license>PHP</license>
  <release>
   <state>stable</state>
-  <version>3.0.5</version>
-  <date>2005-07-27</date>
+  <version>3.0.6</version>
+  <date>2005-08-??</date>
   <notes>
-Make it easier for sapis that only populate file_handle->filename to use APC. (Rasmus)
-Support extensions such as bcompiler that need to hook into compile_file. (Val)
-Ralf Becker's apcgui code has now become the default apc.php status page. (Ralf, Rasmus, Ilia)
-Segfault in cache cleanup code (Ilia, Rasmus)
   </notes>
  </release>
   <configureoptions>
@@ -149,6 +145,17 @@ Fix compile problem against PHP 5.0.x
 Add win32 support from Edin.
 Add --with-apxs switch to work around problem when loading APC into Apache binary compiled with LFS switches
 A couple of other minor fixes.
+  </notes>
+ </release>
+ <release>
+  <state>stable</state>
+  <version>3.0.5</version>
+  <date>2005-07-27</date>
+  <notes>
+Make it easier for sapis that only populate file_handle->filename to use APC. (Rasmus)
+Support extensions such as bcompiler that need to hook into compile_file. (Val)
+Ralf Becker's apcgui code has now become the default apc.php status page. (Ralf, Rasmus, Ilia)
+Segfault in cache cleanup code (Ilia, Rasmus)
   </notes>
  </release>
   </changelog>
