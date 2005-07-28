@@ -245,7 +245,8 @@ if (isset($MYREQUEST['IMG']))
 		$y1=$y+$h-1;
 
 		imagerectangle($im, $x, $y1, $x1+1, $y+1, $col_black);
-		imagefilledrectangle($im, $x, $y1, $x1, $y, $color2);
+		if($y1>$y) imagefilledrectangle($im, $x, $y, $x1, $y1, $color2);
+		else imagefilledrectangle($im, $x, $y1, $x1, $y, $color2);
 		imagerectangle($im, $x, $y1, $x1, $y, $color1);
 		if ($text) {
 			if ($placeindex>0) {
