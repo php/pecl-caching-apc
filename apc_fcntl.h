@@ -34,6 +34,7 @@
 extern int apc_fcntl_create(const char* pathname);
 extern void apc_fcntl_destroy(int semid);
 extern void apc_fcntl_lock(int semid);
+extern void apc_fcntl_rdlock(int semid);
 extern void apc_fcntl_unlock(int semid);
 
 #endif

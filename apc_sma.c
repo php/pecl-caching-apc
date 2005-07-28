@@ -39,8 +39,9 @@ void apc_unmap(void* shmaddr, int size);
 #endif
 
 /* {{{ locking macros */
-#define LOCK(c)         apc_lck_lock(c)
-#define UNLOCK(c)       apc_lck_unlock(c)
+#define LOCK(c)         { HANDLE_BLOCK_INTERRUPTIONS(); apc_lck_lock(c); }
+#define RDLOCK(c)       { HANDLE_BLOCK_INTERRUPTIONS(); apc_lck_rdlock(c); }
+#define UNLOCK(c)       { apc_lck_unlock(c); HANDLE_UNBLOCK_INTERRUPTIONS(); }
 /* }}} */
 
 enum { POWER_OF_TWO_BLOCKSIZE=0 };  /* force allocated blocks to 2^n? */
@@ -373,7 +374,7 @@ void apc_sma_free(void* p)
         return;
     }
 
-    assert(sma_initialized);    
+    assert(sma_initialized);
     LOCK(sma_lock);
 
     for (i = 0; i < sma_numseg; i++) {
@@ -410,7 +411,7 @@ apc_sma_info_t* apc_sma_info()
         info->list[i] = NULL;
     }
 
-    LOCK(sma_lock);
+    RDLOCK(sma_lock);
 
     /* For each segment */
     for (i = 0; i < sma_numseg; i++) {

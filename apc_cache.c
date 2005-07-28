@@ -42,6 +42,7 @@
 #define CREATE_LOCK     apc_lck_create(NULL, 0, 1)
 #define DESTROY_LOCK(c) apc_lck_destroy(c->lock)
 #define LOCK(c)         { HANDLE_BLOCK_INTERRUPTIONS(); apc_lck_lock(c->lock); }
+#define RDLOCK(c)       { HANDLE_BLOCK_INTERRUPTIONS(); apc_lck_rdlock(c->lock); }
 #define UNLOCK(c)       { apc_lck_unlock(c->lock); HANDLE_UNBLOCK_INTERRUPTIONS(); }
 /* }}} */
 
@@ -752,7 +753,7 @@ apc_cache_info_t* apc_cache_info(apc_cache_t* cache)
 
     if(!cache) return NULL;
 
-    LOCK(cache);
+    RDLOCK(cache);
 
     info = (apc_cache_info_t*) apc_emalloc(sizeof(apc_cache_info_t));
     if(!info) {

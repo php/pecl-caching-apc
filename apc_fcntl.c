@@ -64,28 +64,39 @@ void apc_fcntl_destroy(int fd)
     close(fd);
 }
 
-int lock_reg(int fd, int cmd, int type, off_t offset, int whence, off_t len)
+static int lock_reg(int fd, int cmd, int type, off_t offset, int whence, off_t len)
 {
+  int ret;
   struct flock lock;
 
   lock.l_type = type;
   lock.l_start = offset;
   lock.l_whence = whence;
   lock.l_len = len;
+  lock.l_pid = 0;
 
-  return( fcntl(fd, cmd, &lock) );
+  do { ret = fcntl(fd, cmd, &lock) ; }
+  while(ret < 0 && errno == EINTR);
+  return(ret);
 }
 
 void apc_fcntl_lock(int fd)
 {
-    if(lock_reg(fd, F_SETLKW, F_WRLCK, 0, SEEK_SET, 1) < 0) {
+    if(lock_reg(fd, F_SETLKW, F_WRLCK, 0, SEEK_SET, 0) < 0) {
         apc_eprint("apc_fcntl_lock failed errno:%d", errno);
+    }
+}
+
+void apc_fcntl_rdlock(int fd)
+{
+    if(lock_reg(fd, F_SETLKW, F_RDLCK, 0, SEEK_SET, 0) < 0) {
+        apc_eprint("apc_fcntl_rdlock failed errno:%d", errno);
     }
 }
 
 void apc_fcntl_unlock(int fd)
 {
-    if(lock_reg(fd, F_SETLK, F_UNLCK, 0, SEEK_SET, 1) < 0) {
+    if(lock_reg(fd, F_SETLKW, F_UNLCK, 0, SEEK_SET, 0) < 0) {
         apc_eprint("apc_fcntl_unlock failed errno:%d", errno);
     }
 }
