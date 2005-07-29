@@ -77,6 +77,15 @@ void apc_fcntl_lock(int fd)
 	}
 }
 
+void apc_fcntl_rdlock(int fd)
+{
+	OVERLAPPED offset =	{0, 0, 0, 0, NULL};
+	
+	if (!LockFileEx((HANDLE)fd, 0, 0, 1, 0, &offset)) {
+		apc_eprint("apc_fcntl_rdlock failed errno:%d", GetLastError());
+	}
+}
+
 void apc_fcntl_unlock(int fd)
 {
 	OVERLAPPED offset =	{0, 0, 0, 0, NULL};
