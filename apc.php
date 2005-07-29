@@ -28,7 +28,7 @@ $VERSION='$Id$';
 
 ////////// BEGIN OF CONFIG AREA ///////////////////////////////////////////////////////////
 
-define('USE_AUTHENTIFICATION',1);		// Use (internal) authentification - best choice if 
+define('USE_AUTHENTIFICATION',0);		// Use (internal) authentification - best choice if 
 										// no other authentification is available
 										// If set to 0:
 										//  There will be no further authentification. You 
@@ -77,7 +77,7 @@ $vardom=array(
 
 	'COUNT'	=> '/^\d+$/',			// number of line displayed in list
 	'SCOPE'	=> '/^[AD]$/',			// list view scope
-	'SORT1'	=> '/^[AHSMCDT]$/',		// first sort key
+	'SORT1'	=> '/^[AHSMCDTZ]$/',	// first sort key
 	'SORT2'	=> '/^[DA]$/',			// second sort key
 );
 
@@ -119,7 +119,7 @@ if (empty($MYREQUEST['SCOPE'])) $MYREQUEST['SCOPE']="A";
 if (empty($MYREQUEST['SORT1'])) $MYREQUEST['SORT1']="H";
 if (empty($MYREQUEST['SORT2'])) $MYREQUEST['SORT2']="D";
 if (empty($MYREQUEST['OB']))	$MYREQUEST['OB']=OB_HOST_STATS;
-if (!isset($MYREQUEST['COUNT'])) $MYREQUEST['COUNT']=10;
+if (!isset($MYREQUEST['COUNT'])) $MYREQUEST['COUNT']=20;
 if (!isset($scope_list[$MYREQUEST['SCOPE']])) $MYREQUEST['SCOPE']='A';
 
 $MY_SELF=
@@ -612,7 +612,8 @@ div.div3 { position:absolute; left:37em; top:1em; width:580px; }
 
 div.sorting { margin:1.5em 0em 1.5em 2em }
 .center { text-align:center }
-.right { position:absolute;right:1em }
+.aright { position:absolute;right:1em }
+.right { text-align:right }
 .ok { color:rgb(0,200,0); font-weight:bold}
 .failed { color:rgb(200,0,0); font-weight:bold}
 
@@ -674,7 +675,7 @@ echo
 	
 if ($AUTHENTICATED) {
 	echo <<<EOB
-		<li><a class="right" href="$MY_SELF&CC=1&OB={$MYREQUEST['OB']}" onClick="javascipt:return confirm('Are you sure?');">Clear Cache</a></li>
+		<li><a class="aright" href="$MY_SELF&CC=1&OB={$MYREQUEST['OB']}" onClick="javascipt:return confirm('Are you sure?');">Clear Cache</a></li>
 EOB;
 }
 echo <<<EOB
@@ -906,6 +907,7 @@ EOB;
 		"</select>",
 		", Sorting:<select name=SORT1>",
 		"<option value=H",$MYREQUEST['SORT1']=='H' ? " selected":"",">Hits</option>",
+		"<option value=Z",$MYREQUEST['SORT1']=='Z' ? " selected":"",">Size</option>",
 		"<option value=S",$MYREQUEST['SORT1']=='S' ? " selected":"",">$fieldheading</option>",
 		"<option value=M",$MYREQUEST['SORT1']=='A' ? " selected":"",">Last accessed</option>",
 		"<option value=M",$MYREQUEST['SORT1']=='M' ? " selected":"",">Last modified</option>",
@@ -936,6 +938,7 @@ EOB;
 		'<tr>',
 		'<th>',sortheader('S',$fieldheading,  "&OB=".$MYREQUEST['OB']),'</th>',
 		'<th>',sortheader('H','Hits',         "&OB=".$MYREQUEST['OB']),'</th>',
+		'<th>',sortheader('Z','Size',         "&OB=".$MYREQUEST['OB']),'</th>',
 		'<th>',sortheader('A','Last accessed',"&OB=".$MYREQUEST['OB']),'</th>',
 		'<th>',sortheader('M','Last modified',"&OB=".$MYREQUEST['OB']),'</th>',
 		'<th>',sortheader('C','Created at',   "&OB=".$MYREQUEST['OB']),'</th>';
@@ -946,12 +949,13 @@ EOB;
 	}
 	echo '<th>',sortheader('D','Deleted at',"&OB=".$MYREQUEST['OB']),'</th></tr>';
 
-	// buils list with alpha numeric sortable keys
+	// builds list with alpha numeric sortable keys
 	//
 	foreach($cache[$scope_list[$MYREQUEST['SCOPE']]] as $i => $entry) {
 		switch($MYREQUEST['SORT1']) {
 			case 'A': $k=sprintf('%015d-',$entry['access_time']); 	break;
 			case 'H': $k=sprintf('%015d-',$entry['num_hits']); 		break;
+			case 'Z': $k=sprintf('%015d-',$entry['mem_size']); 		break;
 			case 'M': $k=sprintf('%015d-',$entry['mtime']);			break;
 			case 'C': $k=sprintf('%015d-',$entry['creation_time']);	break;
 			case 'T': $k=sprintf('%015d-',$entry['ttl']);			break;
@@ -981,6 +985,7 @@ EOB;
 				'<tr class=tr-',$i%2,'>',
 				"<td class=td-0><a href=\"$MY_SELF&OB=",$MYREQUEST['OB'],"&SH=",md5($entry[$fieldkey]),"\">",$entry[$fieldname],'</a></td>',
 				'<td class="td-n center">',$entry['num_hits'],'</td>',
+				'<td class="td-n right">',$entry['mem_size'],'</td>',
 				'<td class="td-n center">',date(DATE_FORMAT,$entry['access_time']),'</td>',
 				'<td class="td-n center">',date(DATE_FORMAT,$entry['mtime']),'</td>',
 				'<td class="td-n center">',date(DATE_FORMAT,$entry['creation_time']),'</td>';
