@@ -217,6 +217,7 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
     apc_class_t* alloc_classes;
     time_t t;
     char *path;
+    size_t mem_size;
 
     if (!APCG(enabled)) {
 #ifdef __DEBUG_APC__
@@ -295,9 +296,12 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
       return op_array;
 
     HANDLE_BLOCK_INTERRUPTIONS();
+    mem_size = 0;
+    APCG(mem_size_ptr) = &mem_size;
     if(!(alloc_op_array = apc_copy_op_array(NULL, op_array, apc_sma_malloc, apc_sma_free TSRMLS_CC))) {
         apc_cache_expunge(APCG(cache),t);
         apc_cache_expunge(APCG(user_cache),t);
+        APCG(mem_size_ptr) = NULL;
         HANDLE_UNBLOCK_INTERRUPTIONS();
         return op_array;
     }
@@ -306,6 +310,7 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
         apc_free_op_array(alloc_op_array, apc_sma_free);
         apc_cache_expunge(APCG(cache),t);
         apc_cache_expunge(APCG(user_cache),t);
+        APCG(mem_size_ptr) = NULL;
         HANDLE_UNBLOCK_INTERRUPTIONS();
         return op_array;
     }
@@ -314,6 +319,7 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
         apc_free_functions(alloc_functions, apc_sma_free);
         apc_cache_expunge(APCG(cache),t);
         apc_cache_expunge(APCG(user_cache),t);
+        APCG(mem_size_ptr) = NULL;
         HANDLE_UNBLOCK_INTERRUPTIONS();
         return op_array;
     }
@@ -327,9 +333,12 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
         apc_free_classes(alloc_classes, apc_sma_free);
         apc_cache_expunge(APCG(cache),t);
         apc_cache_expunge(APCG(user_cache),t);
+        APCG(mem_size_ptr) = NULL;
         HANDLE_UNBLOCK_INTERRUPTIONS();
         return op_array;
     }
+    APCG(mem_size_ptr) = NULL;
+    cache_entry->mem_size = mem_size;
     HANDLE_UNBLOCK_INTERRUPTIONS();
 
     if ((ret = apc_cache_insert(APCG(cache), key, cache_entry, t)) != 1) {

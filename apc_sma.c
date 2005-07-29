@@ -30,6 +30,7 @@
 
 #include "apc_sma.h"
 #include "apc.h"
+#include "apc_globals.h"
 #include "apc_lock.h"
 #include "apc_shm.h"
 #include <limits.h>
@@ -313,12 +314,14 @@ void* apc_sma_malloc(size_t n)
     int off;
     int i;
 
+    TSRMLS_FETCH();
     assert(sma_initialized);
     LOCK(sma_lock);
 
     off = sma_allocate(sma_shmaddrs[sma_lastseg], n);
     if (off != -1) {
         void* p = (void *)(((char *)(sma_shmaddrs[sma_lastseg])) + off);
+        if (APCG(mem_size_ptr) != NULL) { *(APCG(mem_size_ptr)) += n; }
         UNLOCK(sma_lock);
         return p;
     }
@@ -330,6 +333,7 @@ void* apc_sma_malloc(size_t n)
         off = sma_allocate(sma_shmaddrs[i], n);
         if (off != -1) {
             void* p = (void *)(((char *)(sma_shmaddrs[i])) + off);
+            if (APCG(mem_size_ptr) != NULL) { *(APCG(mem_size_ptr)) += n; }
             UNLOCK(sma_lock);
             sma_lastseg = i;
             return p;
@@ -374,6 +378,7 @@ void apc_sma_free(void* p)
         return;
     }
 
+	TSRMLS_FETCH();
     assert(sma_initialized);
     LOCK(sma_lock);
 
@@ -381,6 +386,7 @@ void apc_sma_free(void* p)
         unsigned int d_size = (unsigned int)((char *)p - (char *)(sma_shmaddrs[i]));
         if (p >= sma_shmaddrs[i] && d_size < sma_segsize) {
             sma_deallocate(sma_shmaddrs[i], d_size);
+            if (APCG(mem_size_ptr) != NULL) { *(APCG(mem_size_ptr)) -= d_size; }
             UNLOCK(sma_lock);
             return;
         }

@@ -692,6 +692,7 @@ apc_cache_entry_t* apc_cache_make_file_entry(const char* filename,
     entry->data.file.classes   = classes;
     entry->type = APC_CACHE_ENTRY_FILE;
     entry->ref_count = 0;
+    entry->mem_size = 0;
     return entry;
 }
 /* }}} */
@@ -718,6 +719,7 @@ apc_cache_entry_t* apc_cache_make_user_entry(const char* info, const zval* val, 
     entry->data.user.ttl = ttl;
     entry->type = APC_CACHE_ENTRY_USER;
     entry->ref_count = 0;
+    entry->mem_size = 0;
     return entry;
 }
 /* }}} */
@@ -790,6 +792,7 @@ apc_cache_info_t* apc_cache_info(apc_cache_t* cache)
             link->deletion_time = p->deletion_time;
             link->access_time = p->access_time;
             link->ref_count = p->value->ref_count;
+            link->mem_size = p->value->mem_size;
             link->next = info->list;
             info->list = link;
         }
@@ -816,6 +819,7 @@ apc_cache_info_t* apc_cache_info(apc_cache_t* cache)
         link->deletion_time = p->deletion_time;
         link->access_time = p->access_time;
         link->ref_count = p->value->ref_count;
+        link->mem_size = p->value->mem_size;
         link->next = info->deleted_list;
         info->deleted_list = link;
     }

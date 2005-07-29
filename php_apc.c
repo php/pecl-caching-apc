@@ -68,6 +68,7 @@ static void php_apc_init_globals(zend_apc_globals* apc_globals TSRMLS_DC)
     apc_globals->compiled_filters = NULL;
     apc_globals->cache_by_default = 1;
     apc_globals->slam_defense = 0;
+    apc_globals->mem_size_ptr = NULL;
 }
 
 #ifdef ZTS
@@ -248,6 +249,7 @@ PHP_FUNCTION(apc_cache_info)
         add_assoc_long(link, "deletion_time", p->deletion_time);
         add_assoc_long(link, "access_time", p->access_time);
         add_assoc_long(link, "ref_count", p->ref_count);
+        add_assoc_long(link, "mem_size", p->mem_size);
         add_next_index_zval(list, link);
     }
     add_assoc_zval(return_value, "cache_list", list);

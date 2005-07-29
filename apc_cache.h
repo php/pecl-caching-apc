@@ -83,6 +83,7 @@ struct apc_cache_entry_t {
     apc_cache_entry_value_t data;
     unsigned char type;
     int ref_count;
+    size_t mem_size;
 };
 /* }}} */
 
@@ -238,6 +239,7 @@ struct apc_cache_link_t {
     time_t deletion_time;
     time_t access_time;
     int ref_count;
+    size_t mem_size;
     apc_cache_link_t* next;
 };
 /* }}} */
