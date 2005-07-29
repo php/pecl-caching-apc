@@ -373,12 +373,12 @@ char* apc_sma_strdup(const char* s)
 void apc_sma_free(void* p)
 {
     int i;
+	TSRMLS_FETCH();
 
     if (p == NULL) {
         return;
     }
 
-	TSRMLS_FETCH();
     assert(sma_initialized);
     LOCK(sma_lock);
 
