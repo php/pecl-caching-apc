@@ -33,11 +33,13 @@
   <version>3.0.6</version>
   <date>2005-08-??</date>
   <notes>
-Added apc.php to package.xml file
-Track per-entry memory usage (Val)
-Various apc.php fixes and enhancements (Ralf, Ilia, Rasmus)
-fcntl locking robustness fixes (Rasmus)
-Shared fcntl read-lock for read-only info functions (Rasmus)
+Added apc.php to package.xml file.
+Track per-entry memory usage. (Val)
+Various apc.php fixes and enhancements. (Ralf, Ilia, Rasmus)
+fcntl locking robustness fixes. (Rasmus)
+Shared fcntl read-lock for read-only info functions. (Rasmus)
+Added file_update_protection configuration parameter. (Rasmus)
+Windows ZTS fixes (Frank)
   </notes>
  </release>
   <configureoptions>
