@@ -28,7 +28,7 @@ $VERSION='$Id$';
 
 ////////// BEGIN OF CONFIG AREA ///////////////////////////////////////////////////////////
 
-define('USE_AUTHENTIFICATION',0);		// Use (internal) authentification - best choice if 
+define('USE_AUTHENTIFICATION',1);		// Use (internal) authentification - best choice if 
 										// no other authentification is available
 										// If set to 0:
 										//  There will be no further authentification. You 
