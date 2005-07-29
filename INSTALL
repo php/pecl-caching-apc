@@ -285,3 +285,25 @@ users should consider tuning the following parameters:
                             against cache slams.  Setting this to 0 disables this
                             feature.
                             (Default: 0)
+
+    apc.file_update_protection
+                            When you modify a file on a live web server you really
+                            should do so in an atomic manner.  That is, write to a
+                            temporary file and rename (mv) the file into its permanent
+                            position when it is ready.  Many text editors, cp, tar and
+                            other such programs don't do this.  This means that there
+                            is a chance that a file is accessed (and cached) while it
+                            is still being written to.  This file_update_protection
+                            setting puts a delay on caching brand new files.  The
+                            default is 2 seconds which means that if the modification
+                            timestamp (mtime) on a file shows that it is less than 2
+                            seconds old when it is accessed, it will not be cached.  
+                            The unfortunate person who accessed this half-written file
+                            will still see weirdness, but at least it won't persist.
+                            If you are certain you always atomically update your files
+                            by using something like rsync which does this correctly, you
+                            can turn this protection off by setting it to 0.  If you
+                            have a system that is flooded with io causing some update
+                            procedure to take longer than 2 seconds, you may want to
+                            increase this a bit.
+                            (Default: 2)

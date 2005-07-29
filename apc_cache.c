@@ -571,7 +571,8 @@ int apc_cache_make_file_key(apc_cache_key_t* key,
 					   TSRMLS_DC)
 {
     struct stat buf, *tmp_buf=NULL;
-		
+	
+    TSRMLS_FETCH();		
     assert(key != NULL);
 
     if (!filename || !SG(request_info).path_translated) {
@@ -605,27 +606,16 @@ int apc_cache_make_file_key(apc_cache_key_t* key,
      * request time and we want to avoid caching files that have not been
      * completely written.  Of course, people should be using atomic 
      * mechanisms to push files onto live web servers, but adding this
-     * tiny safety is easier than educating the world.
+     * tiny safety is easier than educating the world.  This is now
+     * configurable, but the default is still 2 seconds.
      */
-    if(t - buf.st_mtime < 2) { 
+    if(APCG(file_update_protection) && (t - buf.st_mtime < APCG(file_update_protection))) { 
 #ifdef __DEBUG_APC__
 		fprintf(stderr,"File is too new %s (%d - %d) - bailing\n",filename,t,buf.st_mtime);
 #endif
 		return 0;
 	}
 
-    /*
-     * This is an even bigger hack than the above.
-     *
-     * Basically this will cause a file only to be cached on a percentage
-     * of the attempts.  This is to avoid cache slams when starting up a
-     * very busy server or when modifying files on a very busy live server.
-     * There is no point having many processes all trying to cache the same
-     * file at the same time.  By introducing a chance of being cached
-     * we theoretically cut the cache slam problem by the given percentage.
-     * For example if apc.slam_defense is set to 66 then 2/3 of the attempts
-     * to cache an uncached file will be ignored.
-     */
     key->data.file.device = buf.st_dev;
     key->data.file.inode  = buf.st_ino;
     /* 
@@ -636,7 +626,9 @@ int apc_cache_make_file_key(apc_cache_key_t* key,
      * "older" template.  At some point the Smarty templating system did this.
      * I generally disagree with using the ctime here because you lose the 
      * ability to warm up new content by saving it to a temporary file, hitting
-     * it once to cache it and then renaming it into its permanent location.
+     * it once to cache it and then renaming it into its permanent location so
+     * I am leaving this commented out by default.  If you need this, uncomment
+     * it.
      */
     /* key->mtime  = (buf.st_ctime > buf.st_mtime) ? buf.st_ctime : buf.st_mtime; */
     key->mtime = buf.st_mtime;
