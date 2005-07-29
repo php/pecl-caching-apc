@@ -468,12 +468,15 @@ apc_cache_entry_t* apc_cache_find(apc_cache_t* cache, apc_cache_key_t key, time_
 {
     slot_t** slot;
 
-    LOCK(cache);
+    RDLOCK(cache);
 
     slot = &cache->slots[hash(key) % cache->num_slots];
 
     while (*slot) {
         if (key_equals((*slot)->key.data.file, key.data.file)) {
+#if RDLOCK_AVAILABLE
+            LOCK(cache);  /* Upgrade to a write lock */
+#endif
             if ((*slot)->key.mtime < key.mtime) {
                 remove_slot(cache, slot);
                 break;
@@ -491,6 +494,9 @@ apc_cache_entry_t* apc_cache_find(apc_cache_t* cache, apc_cache_key_t key, time_
         slot = &(*slot)->next;
     }
 
+#if RDLOCK_AVAILABLE
+    LOCK(cache);  /* Upgrade to a write lock */
+#endif
     cache->header->num_misses++;
     UNLOCK(cache);
     return NULL;
@@ -502,12 +508,15 @@ apc_cache_entry_t* apc_cache_user_find(apc_cache_t* cache, char *strkey, int key
 {
     slot_t** slot;
 
-    LOCK(cache);
+    RDLOCK(cache);
 
     slot = &cache->slots[string_nhash_8(strkey, keylen) % cache->num_slots];
 
     while (*slot) {
         if (!strncmp((*slot)->key.data.user.identifier, strkey, keylen)) {
+#if RDLOCK_AVAILABLE
+            LOCK(cache);  /* Upgrade to a write lock */
+#endif
             /* Check to make sure this entry isn't expired by a hard TTL */
             if((*slot)->value->data.user.ttl && ((*slot)->creation_time + (*slot)->value->data.user.ttl) < t) {
                 remove_slot(cache, slot);
@@ -525,6 +534,9 @@ apc_cache_entry_t* apc_cache_user_find(apc_cache_t* cache, char *strkey, int key
         slot = &(*slot)->next;
     }
 
+#if RDLOCK_AVAILABLE
+    LOCK(cache);  /* Upgrade to a write lock */
+#endif
     cache->header->num_misses++;
     UNLOCK(cache);
     return NULL;

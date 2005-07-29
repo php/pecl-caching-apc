@@ -38,6 +38,7 @@
 #endif
 
 #ifdef TSRM_LOCKS
+#define RDLOCK_AVAILABLE 0
 /* quick & dirty: use TSRM mutex locks for now */
 #define apc_lck_create(a,b,c) (int)tsrm_mutex_alloc()
 #define apc_lck_destroy(a)    tsrm_mutex_free((MUTEX_T)a)
@@ -45,12 +46,14 @@
 #define apc_lck_rdlock(a)     tsrm_mutex_lock((MUTEX_T)a)
 #define apc_lck_unlock(a)     tsrm_mutex_unlock((MUTEX_T)a)
 #elif defined(APC_SEM_LOCKS)
+#define RDLOCK_AVAILABLE 0
 #define apc_lck_create(a,b,c) apc_sem_create(NULL,(b),(c))
 #define apc_lck_destroy(a)    apc_sem_destroy(a)
 #define apc_lck_lock(a)       apc_sem_lock(a)
 #define apc_lck_rdlock(a)     apc_sem_lock(a)
 #define apc_lck_unlock(a)     apc_sem_unlock(a)
 #else
+#define RDLOCK_AVAILABLE 1
 #define apc_lck_create(a,b,c) apc_fcntl_create((a))
 #define apc_lck_destroy(a)    apc_fcntl_destroy(a)
 #define apc_lck_lock(a)       apc_fcntl_lock(a)
