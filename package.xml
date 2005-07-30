@@ -31,7 +31,7 @@
  <release>
   <state>stable</state>
   <version>3.0.6</version>
-  <date>2005-08-??</date>
+  <date>2005-07-30</date>
   <notes>
 Added apc.php to package.xml file.
 Track per-entry memory usage. (Val)
