@@ -957,6 +957,7 @@ EOB;
 
 	// builds list with alpha numeric sortable keys
 	//
+	$list = array();
 	foreach($cache[$scope_list[$MYREQUEST['SCOPE']]] as $i => $entry) {
 		switch($MYREQUEST['SORT1']) {
 			case 'A': $k=sprintf('%015d-',$entry['access_time']); 	break;
