@@ -30,16 +30,9 @@
  <license>PHP</license>
  <release>
   <state>stable</state>
-  <version>3.0.6</version>
-  <date>2005-07-30</date>
+  <version>3.0.7</version>
+  <date>2005-08-??</date>
   <notes>
-Added apc.php to package.xml file.
-Track per-entry memory usage. (Val)
-Various apc.php fixes and enhancements. (Ralf, Ilia, Rasmus)
-fcntl locking robustness fixes. (Rasmus)
-Shared read-locks where possible. (Rasmus)
-Added file_update_protection configuration parameter. (Rasmus)
-Windows ZTS fixes (Frank)
   </notes>
  </release>
   <configureoptions>
@@ -164,6 +157,20 @@ Make it easier for sapis that only populate file_handle->filename to use APC. (R
 Support extensions such as bcompiler that need to hook into compile_file. (Val)
 Ralf Becker's apcgui code has now become the default apc.php status page. (Ralf, Rasmus, Ilia)
 Segfault in cache cleanup code (Ilia, Rasmus)
+  </notes>
+ </release>
+ <release>
+  <state>stable</state>
+  <version>3.0.6</version>
+  <date>2005-07-30</date>
+  <notes>
+Added apc.php to package.xml file.
+Track per-entry memory usage. (Val)
+Various apc.php fixes and enhancements. (Ralf, Ilia, Rasmus)
+fcntl locking robustness fixes. (Rasmus)
+Shared read-locks where possible. (Rasmus)
+Added file_update_protection configuration parameter. (Rasmus)
+Windows ZTS fixes (Frank)
   </notes>
  </release>
   </changelog>
