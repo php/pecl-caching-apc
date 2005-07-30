@@ -381,6 +381,12 @@ if (isset($MYREQUEST['IMG']))
 				$y+=$h;
 				$ptr = $block['offset']+$block['size'];
 			}
+			if ($ptr < $mem['seg_size']) { // memory at the end 
+				$h = (GRAPH_SIZE-5) * ($mem['seg_size'] - $ptr) / $s;
+				if ($h > 0) {
+					fill_box($image,$x,$y,50,$h,$col_black,$col_red,bsize($mem['seg_size']-$ptr),$j++);
+				}
+			}
 		}
 		break;
 	
