@@ -676,8 +676,11 @@ echo <<<EOB
 EOB;
 echo
 	menu_entry(1,'View Host Stats'),
-	menu_entry(2,'System Cache Entries'),
-	menu_entry(4,'Per-Directory System Cache Entries'),
+	menu_entry(2,'System Cache Entries');
+if ($AUTHENTICATED) {
+	echo menu_entry(4,'Per-Directory System Cache Entries');
+}
+echo
 	menu_entry(3,'User Cache Entries'),
 	menu_entry(9,'Version Check');
 	
@@ -1035,6 +1038,10 @@ EOB;
 // System Cache Entries		
 // -----------------------------------------------
 case OB_SYS_CACHE_DIR:	
+	if (!$AUTHENTICATED) {
+		break;
+	}
+
 	echo <<<EOB
 		<div class=sorting><form>Scope:
 		<input type=hidden name=OB value={$MYREQUEST['OB']}>
