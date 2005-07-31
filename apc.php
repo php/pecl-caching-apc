@@ -64,6 +64,7 @@ $time = time();
 define('OB_HOST_STATS',1);
 define('OB_SYS_CACHE',2);
 define('OB_USER_CACHE',3);
+define('OB_SYS_CACHE_DIR',4);
 define('OB_VERSION_CHECK',9);
 
 // check validity of input variables
@@ -676,6 +677,7 @@ EOB;
 echo
 	menu_entry(1,'View Host Stats'),
 	menu_entry(2,'System Cache Entries'),
+	menu_entry(4,'Per-Directory System Cache Entries'),
 	menu_entry(3,'User Cache Entries'),
 	menu_entry(9,'Version Check');
 	
@@ -976,7 +978,8 @@ EOB;
 			$list[$k.$entry[$fieldname]]=$entry;
 		}
 	}
-	if (isset($list) && is_array($list)) {
+
+	if ($list) {
 		
 		// sort list
 		//
@@ -1018,7 +1021,7 @@ EOB;
 		</tbody></table>
 EOB;
 
-	if (isset($list) && is_array($list) && $i < count($list)) {
+	if ($list && $i < count($list)) {
 		echo "<a href=\"$MY_SELF&OB=",$MYREQUEST['OB'],"&COUNT=0\"><i>",count($list)-$i,' more available...</i></a>';
 	}
 
@@ -1028,8 +1031,120 @@ EOB;
 	break;
 
 
+// -----------------------------------------------
+// System Cache Entries		
+// -----------------------------------------------
+case OB_SYS_CACHE_DIR:	
+	echo <<<EOB
+		<div class=sorting><form>Scope:
+		<input type=hidden name=OB value={$MYREQUEST['OB']}>
+		<select name=SCOPE>
+EOB;
+	echo 
+		"<option value=A",$MYREQUEST['SCOPE']=='A' ? " selected":"",">Active</option>",
+		"<option value=D",$MYREQUEST['SCOPE']=='D' ? " selected":"",">Deleted</option>",
+		"</select>",
+		", Sorting:<select name=SORT1>",
+		"<option value=H",$MYREQUEST['SORT1']=='H' ? " selected":"",">Total Hits</option>",
+		"<option value=Z",$MYREQUEST['SORT1']=='Z' ? " selected":"",">Total Size</option>",
+		"<option value=S",$MYREQUEST['SORT1']=='T' ? " selected":"",">Number of Files</option>",
+		"<option value=S",$MYREQUEST['SORT1']=='S' ? " selected":"",">Directory Name</option>",
+		"<option value=M",$MYREQUEST['SORT1']=='A' ? " selected":"",">Avg. Size</option>",
+		"<option value=C",$MYREQUEST['SORT1']=='C' ? " selected":"",">Avg. Hits</option>",
+		'</select>',
+		'<select name=SORT2>',
+		'<option value=D',$MYREQUEST['SORT2']=='D' ? ' selected':'','>DESC</option>',
+		'<option value=A',$MYREQUEST['SORT2']=='A' ? ' selected':'','>ASC</option>',
+		'</select>',
+		'<select name=COUNT onChange="form.submit()">',
+		'<option value=10 ',$MYREQUEST['COUNT']=='10' ? ' selected':'','>Top 10</option>',
+		'<option value=20 ',$MYREQUEST['COUNT']=='20' ? ' selected':'','>Top 20</option>',
+		'<option value=50 ',$MYREQUEST['COUNT']=='50' ? ' selected':'','>Top 50</option>',
+		'<option value=100',$MYREQUEST['COUNT']=='100'? ' selected':'','>Top 100</option>',
+		'<option value=150',$MYREQUEST['COUNT']=='150'? ' selected':'','>Top 150</option>',
+		'<option value=200',$MYREQUEST['COUNT']=='200'? ' selected':'','>Top 200</option>',
+		'<option value=500',$MYREQUEST['COUNT']=='500'? ' selected':'','>Top 500</option>',
+		'<option value=0  ',$MYREQUEST['COUNT']=='0'  ? ' selected':'','>All</option>',
+		'</select>',
+		'&nbsp;<input type=submit value="GO!">',
+		'</form></div>',
 
+		'<div class="info"><table cellspacing=0><tbody>',
+		'<tr>',
+		'<th>',sortheader('S','Directory Name',	"&OB=".$MYREQUEST['OB']),'</th>',
+		'<th>',sortheader('T','Number of Files',"&OB=".$MYREQUEST['OB']),'</th>',
+		'<th>',sortheader('H','Total Hits',	"&OB=".$MYREQUEST['OB']),'</th>',
+		'<th>',sortheader('Z','Total Size',	"&OB=".$MYREQUEST['OB']),'</th>',
+		'<th>',sortheader('C','Avg. Hits',	"&OB=".$MYREQUEST['OB']),'</th>',
+		'<th>',sortheader('A','Avg. Size',	"&OB=".$MYREQUEST['OB']),'</th>',
+		'</tr>';
+
+	// builds list with alpha numeric sortable keys
+	//
+	$tmp = $list = array();
+	foreach($cache[$scope_list[$MYREQUEST['SCOPE']]] as $entry) {
+		$n = dirname($entry['filename']);
+		if (!isset($tmp[$n])) {
+			$tmp[$n] = array('hits'=>0,'size'=>0,'ents'=>0);
+		}
+		$tmp[$n]['hits'] += $entry['num_hits'];
+		$tmp[$n]['size'] += $entry['mem_size'];
+		++$tmp[$n]['ents'];
+	}
+
+	foreach ($tmp as $k => $v) {
+		switch($MYREQUEST['SORT1']) {
+			case 'A': $kn=sprintf('%015d-',$v['size'] / $v['ents']);break;
+			case 'T': $kn=sprintf('%015d-',$v['ents']);		break;
+			case 'H': $kn=sprintf('%015d-',$v['hits']);		break;
+			case 'Z': $kn=sprintf('%015d-',$v['size']);		break;
+			case 'C': $kn=sprintf('%015d-',$v['hits'] / $v['ents']);break;
+			case 'S': $kn = $k;					break;
+		}
+		$list[$kn.$k] = array($k, $v['ents'], $v['hits'], $v['size']);
+	}
+
+	if ($list) {
 		
+		// sort list
+		//
+		switch ($MYREQUEST['SORT2']) {
+			case "A":	krsort($list);	break;
+			case "D":	ksort($list);	break;
+		}
+		
+		// output list
+		$i = 0;
+		foreach($list as $entry) {
+			echo
+				'<tr class=tr-',$i%2,'>',
+				"<td class=td-0>",$entry[0],'</a></td>',
+				'<td class="td-n center">',$entry[1],'</td>',
+				'<td class="td-n center">',$entry[2],'</td>',
+				'<td class="td-n center">',$entry[3],'</td>',
+				'<td class="td-n center">',round($entry[2] / $entry[1]),'</td>',
+				'<td class="td-n center">',round($entry[3] / $entry[1]),'</td>',
+				'</tr>';
+
+			if (++$i == $MYREQUEST['COUNT']) break;
+		}
+		
+	} else {
+		echo '<tr class=tr-0><td class="center" colspan=6><i>No data</i></td></tr>';
+	}
+	echo <<< EOB
+		</tbody></table>
+EOB;
+
+	if ($list && $i < count($list)) {
+		echo "<a href=\"$MY_SELF&OB=",$MYREQUEST['OB'],"&COUNT=0\"><i>",count($list)-$i,' more available...</i></a>';
+	}
+
+	echo <<< EOB
+		</div>
+EOB;
+	break;
+
 // -----------------------------------------------
 // Version check
 // -----------------------------------------------
