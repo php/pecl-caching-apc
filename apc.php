@@ -24,36 +24,38 @@
 
 $VERSION='$Id$';
 
+////////// READ OPTIONAL CONFIGURATION FILE ////////////
+if (file_exists("apc.conf.php")) include("apc.conf.php");
+////////////////////////////////////////////////////////
 
+////////// BEGIN OF DEFAULT CONFIG AREA ///////////////////////////////////////////////////////////
 
-////////// BEGIN OF CONFIG AREA ///////////////////////////////////////////////////////////
-
-define('USE_AUTHENTIFICATION',1);		// Use (internal) authentification - best choice if 
-										// no other authentification is available
-										// If set to 0:
-										//  There will be no further authentification. You 
-										//  will have to handle this by yourself!
-										// If set to 1:
-										//  You need to change ADMIN_PASSWORD to make
-										//  this work!
-										
-define('ADMIN_USERNAME','apc');  		// Admin Username
-define('ADMIN_PASSWORD','password');  	// Admin Password - CHANGE THIS TO ENABLE!!!
+defaults('USE_AUTHENTIFICATION',1);			// Use (internal) authentification - best choice if 
+											// no other authentification is available
+											// If set to 0:
+											//  There will be no further authentification. You 
+											//  will have to handle this by yourself!
+											// If set to 1:
+											//  You need to change ADMIN_PASSWORD to make
+											//  this work!
+defaults('ADMIN_USERNAME','apc'); 			// Admin Username
+defaults('ADMIN_PASSWORD','password');  	// Admin Password - CHANGE THIS TO ENABLE!!!
 
 // (beckerr) I'm using a clear text password here, because I've no good idea how to let 
 //           users generate a md5 or crypt passwort in a easy way to fill it in above
 
-//define(DATE_FORMAT, "d.m.Y H:i:s");	// German
-define('DATE_FORMAT', 'Y/m/d H:i:s'); 	// US
+//defaults('DATE_FORMAT', "d.m.Y H:i:s");	// German
+defaults('DATE_FORMAT', 'Y/m/d H:i:s'); 	// US
 
-define('GRAPH_SIZE',200);				// Image size
+defaults('GRAPH_SIZE',200);					// Image size
 
-////////// END OF CONFIG AREA /////////////////////////////////////////////////////////////
-
-
+////////// END OF DEFAULT CONFIG AREA /////////////////////////////////////////////////////////////
 
 
-
+// "define if not defined"
+function defaults($d,$v) {
+	if (!defined($d)) define($d,$v); // or just @define(...)
+}
 
 // rewrite $PHP_SELF to block XSS attacks
 //
@@ -301,7 +303,8 @@ if (isset($MYREQUEST['IMG']))
 
 		// This block of code creates the pie chart.  It is a lot more complex than you
 		// would expect because we try to visualize any memory fragmentation as well.
-		$angle_from = 0;	
+		$angle_from = 0;
+		$string_placement=array();
 		for($i=0; $i<$mem['num_seg']; $i++) {	
 			$ptr = 0;
 			$free = $mem['block_lists'][$i];
@@ -310,11 +313,17 @@ if (isset($MYREQUEST['IMG']))
 					$angle_to = $angle_from+($block['offset']-$ptr)/$s;
 					if(($angle_to+$fuzz)>1) $angle_to = 1;
 					fill_arc($image,$x,$y,$size,$angle_from*360,$angle_to*360,$col_black,$col_red);
+					if (($angle_to-$angle_from)>0.05) {
+						array_push($string_placement, array($angle_from,$angle_to));
+					}
 					$angle_from = $angle_to;
 				}
 				$angle_to = $angle_from+($block['size'])/$s;
 				if(($angle_to+$fuzz)>1) $angle_to = 1;
 				fill_arc($image,$x,$y,$size,$angle_from*360,$angle_to*360,$col_black,$col_green);
+				if (($angle_to-$angle_from)>0.05) {
+					array_push($string_placement, array($angle_from,$angle_to));
+				}
 				$angle_from = $angle_to;
 				$ptr = $block['offset']+$block['size'];
 			}
@@ -322,30 +331,13 @@ if (isset($MYREQUEST['IMG']))
 				$angle_to = $angle_from + ($mem['seg_size'] - $ptr)/$s;
 				if(($angle_to+$fuzz)>1) $angle_to = 1;
 				fill_arc($image,$x,$y,$size,$angle_from*360,$angle_to*360,$col_black,$col_red);
+				if (($angle_to-$angle_from)>0.05) {
+					array_push($string_placement, array($angle_from,$angle_to));
+				}
 			}
 		}
-		$angle_from = 0;	
-		for($i=0; $i<$mem['num_seg']; $i++) {	
-			$ptr = 0;
-			$free = $mem['block_lists'][$i];
-			foreach($free as $block) {
-				if($block['offset']!=$ptr) {       // Used block
-					$angle_to = $angle_from+($block['offset']-$ptr)/$s;
-					if(($angle_to+$fuzz)>1) $angle_to = 1;
-					text_arc($image,$x,$y,$size,$angle_from*360,$angle_to*360,$col_black,(($angle_to-$angle_from)>0.05)?bsize($s*($angle_to-$angle_from)):'');
-					$angle_from = $angle_to;
-				}
-				$angle_to = $angle_from+($block['size'])/$s;
-				if(($angle_to+$fuzz)>1) $angle_to = 1;
-				text_arc($image,$x,$y,$size,$angle_from*360,$angle_to*360,$col_black,(($angle_to-$angle_from)>0.05)?bsize($s*($angle_to-$angle_from)):'');
-				$angle_from = $angle_to;
-				$ptr = $block['offset']+$block['size'];
-			}
-			if ($ptr < $mem['seg_size']) { // memory at the end 
-				$angle_to = $angle_from + ($mem['seg_size'] - $ptr)/$s;
-				if(($angle_to+$fuzz)>1) $angle_to = 1;
-				text_arc($image,$x,$y,$size,$angle_from*360,$angle_to*360,$col_black,(($angle_to-$angle_from)>0.05)?bsize($s*($angle_to-$angle_from)):'');
-			}
+		foreach ($string_placement as $angle) {
+			text_arc($image,$x,$y,$size,$angle[0]*360,$angle[1]*360,$col_black,bsize($s*($angle[1]-$angle[0])));
 		}
 		break;
 		
@@ -955,7 +947,7 @@ EOB;
 		'<th>',sortheader('C','Created at',   "&OB=".$MYREQUEST['OB']),'</th>';
 
 	if($fieldname=='info') {
-		$cols++;
+		$cols+=2;
 		 echo '<th>',sortheader('T','Timeout',"&OB=".$MYREQUEST['OB']),'</th>';
 	}
 	echo '<th>',sortheader('D','Deleted at',"&OB=".$MYREQUEST['OB']),'</th></tr>';
