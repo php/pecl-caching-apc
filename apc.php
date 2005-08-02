@@ -864,9 +864,10 @@ EOB;
 			foreach($cache[$list] as $i => $entry) {
 				if (md5($entry[$fieldkey])!=$MYREQUEST['SH']) continue;
 				foreach($entry as $k => $value) {
-
-					// hide all path entries if not logged in
-					$value=preg_replace('/^.*\//','<i>&lt;hidden&gt;</i>/',$value);
+					if (!$AUTHENTICATED) {
+						// hide all path entries if not logged in
+						$value=preg_replace('/^.*\//','<i>&lt;hidden&gt;</i>/',$value);
+					}
 
 					if ($k == "num_hits") {
 						$value=sprintf("%s (%.2f%%)",$value,$value*100/$cache['num_hits']);
