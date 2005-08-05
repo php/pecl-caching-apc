@@ -572,7 +572,6 @@ int apc_cache_make_file_key(apc_cache_key_t* key,
 {
     struct stat buf, *tmp_buf=NULL;
 	
-    TSRMLS_FETCH();		
     assert(key != NULL);
 
     if (!filename || !SG(request_info).path_translated) {
