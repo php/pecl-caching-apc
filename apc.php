@@ -82,6 +82,7 @@ $vardom=array(
 	'SCOPE'	=> '/^[AD]$/',			// list view scope
 	'SORT1'	=> '/^[AHSMCDTZ]$/',	// first sort key
 	'SORT2'	=> '/^[DA]$/',			// second sort key
+	'AGGR'	=> '/^\d+$/'			// aggregation by dir level
 );
 
 // default cache mode
@@ -1028,7 +1029,7 @@ EOB;
 
 
 // -----------------------------------------------
-// System Cache Entries		
+// Per-Directory System Cache Entries
 // -----------------------------------------------
 case OB_SYS_CACHE_DIR:	
 	if (!$AUTHENTICATED) {
@@ -1066,6 +1067,11 @@ EOB;
 		'<option value=500',$MYREQUEST['COUNT']=='500'? ' selected':'','>Top 500</option>',
 		'<option value=0  ',$MYREQUEST['COUNT']=='0'  ? ' selected':'','>All</option>',
 		'</select>',
+		", Group By Dir Level:<select name=AGGR>",
+		"<option value='' selected>None</option>";
+		for ($i = 1; $i < 10; $i++)
+			echo "<option value=$i",$MYREQUEST['AGGR']==$i ? " selected":"",">$i</option>";
+		echo '</select>',
 		'&nbsp;<input type=submit value="GO!">',
 		'</form></div>',
 
@@ -1084,6 +1090,9 @@ EOB;
 	$tmp = $list = array();
 	foreach($cache[$scope_list[$MYREQUEST['SCOPE']]] as $entry) {
 		$n = dirname($entry['filename']);
+		if ($MYREQUEST['AGGR'] > 0) {
+			$n = preg_replace("!^(/?(?:[^/\\\\]+[/\\\\]){".($MYREQUEST['AGGR']-1)."}[^/\\\\]*).*!", "$1", $n);
+		}
 		if (!isset($tmp[$n])) {
 			$tmp[$n] = array('hits'=>0,'size'=>0,'ents'=>0);
 		}
