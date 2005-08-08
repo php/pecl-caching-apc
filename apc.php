@@ -516,7 +516,7 @@ hr.apc {
 }
 
 ol,menu { margin:1em 0 0 0; padding:0.2em; margin-left:1em;}
-ol.menu li { display:inline; margin-right:0.7em; list-style:none}
+ol.menu li { display:inline; margin-right:0.7em; list-style:none; font-size:85%}
 ol.menu a {
 	background:rgb(153,153,204);
 	border:solid rgb(102,102,153) 2px;
@@ -671,7 +671,7 @@ echo
 	menu_entry(1,'View Host Stats'),
 	menu_entry(2,'System Cache Entries');
 if ($AUTHENTICATED) {
-	echo menu_entry(4,'Per-Directory System Cache Entries');
+	echo menu_entry(4,'Per-Directory Entries');
 }
 echo
 	menu_entry(3,'User Cache Entries'),
