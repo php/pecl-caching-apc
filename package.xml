@@ -35,6 +35,8 @@
   <notes>
 Fix to apc.php to show final segment in frag chart. (Ilia)
 A couple of win32 fixes. (Frank)
+Add apc.enable_cli ini directive. (Rasmus)
+Add test cases. (Marcus)
   </notes>
  </release>
   <configureoptions>
