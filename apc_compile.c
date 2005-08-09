@@ -405,6 +405,9 @@ static zval* my_copy_zval(zval* dst, const zval* src, apc_malloc_t allocate, apc
             my_destroy_class_entry(dst->value.obj.ce, deallocate);
             return NULL;
         }
+        break;
+#else
+	dst->type = IS_NULL;
 #endif        
         break;
 
