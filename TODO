@@ -6,8 +6,8 @@ Known Bugs
      $bar = apc_fetch('foo');
      $bar->a = true;
 
-     Crashes under PHP5 because apc_fetch doesn't correctly put the 
-     object in the object store when it restores it
+     Crashes under PHP5 because apc_store/apc_fetch doesn't correctly deal
+     with the object store. 
 
 2.   Gallery2 doesn't work with PHP5+APC.  There is something wrong
      with the way methods are restored in some edge case I haven't
@@ -28,3 +28,17 @@ Known Bugs
      in the apc_store() function in php_apc.c but I am wondering if it needs to do more
      than that.
 
+4.   apc_store() on an array with thousands of items seems to have some difficulties.
+     serializing it and storing it as a string works fine.  Perhaps it is simply the 
+     overhead of that many zvals that becomes the bottleneck.  
+
+Enhancements
+
+1.   Some faster platform-specific locking mechanisms wouldd be nice.  futex support
+     for the 2.6 Linux kernels, and/or x86-specific spinlock support.
+
+2.   The optimizer needs a lot of work.  
+
+3.   Assert() elimination in the optimizer when some debug flag somewhere isn't set.
+
+4.   Proper __sleep, __wakeup and __autoload support for apc_fetch/store on objects.
