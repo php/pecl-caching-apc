@@ -307,3 +307,10 @@ users should consider tuning the following parameters:
                             procedure to take longer than 2 seconds, you may want to
                             increase this a bit.
                             (Default: 2)
+
+    apc.enable_cli          Mostly for testing and debugging.  Setting this enables APC
+                            for the CLI version of PHP.  Normally you wouldn't want to
+                            create, populate and tear down the APC cache on every CLI
+                            request, but for various test scenarios it is handy to be
+                            able to enable APC for the CLI version of APC easily.
+                            (Default: 0)

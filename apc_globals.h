@@ -68,6 +68,7 @@ ZEND_BEGIN_MODULE_GLOBALS(apc)
     int slam_defense;       /* Probability of a process not caching an uncached file */
     size_t* mem_size_ptr;   /* size of blocks allocated to file being cached (NULL outside my_compile_file) */
     int file_update_protection; /* Age in seconds before a file is eligible to be cached - 0 to disable */
+    int enable_cli;         /* Flag to override turning APC off for CLI */
 ZEND_END_MODULE_GLOBALS(apc)
 
 /* (the following declaration is defined in php_apc.c) */
