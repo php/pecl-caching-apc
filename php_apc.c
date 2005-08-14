@@ -59,22 +59,25 @@ PHP_FUNCTION(apc_load_constants);
 /* {{{ ZEND_DECLARE_MODULE_GLOBALS(apc) */
 ZEND_DECLARE_MODULE_GLOBALS(apc)
 
+/* True globals */
+apc_cache_t* apc_cache = NULL;       
+apc_cache_t* apc_user_cache = NULL;
+void* apc_compiled_filters = NULL;
+
 static void php_apc_init_globals(zend_apc_globals* apc_globals TSRMLS_DC)
 {
     apc_globals->filters = NULL;
     apc_globals->initialized = 0;
-    apc_globals->cache = NULL;
-    apc_globals->cache_stack = NULL;
-    apc_globals->compiled_filters = NULL;
+    apc_globals->cache_stack = apc_stack_create(0);
+    apc_globals->user_cache_stack = apc_stack_create(0);
     apc_globals->cache_by_default = 1;
     apc_globals->slam_defense = 0;
     apc_globals->mem_size_ptr = NULL;
 }
 
-#ifdef ZTS
 static void php_apc_shutdown_globals(zend_apc_globals* apc_globals TSRMLS_DC)
 {
-	char* p;
+    char* p;
     /* deallocate the ignore patterns */
     if (apc_globals->filters != NULL) {
         for (p = apc_globals->filters[0]; p != NULL; p++) {
@@ -83,9 +86,39 @@ static void php_apc_shutdown_globals(zend_apc_globals* apc_globals TSRMLS_DC)
         apc_efree(apc_globals->filters);
     }
 
+    /* 
+     * In case we got interrupted by a SIGTERM or something else during execution
+     * we may have cache entries left on the stack that we need to check to make
+     * sure that any functions or classes these may have added to the global function
+     * and class tables are removed before we blow away the memory that hold them
+     */
+    while (apc_stack_size(apc_globals->cache_stack) > 0) {
+        int i;
+        apc_cache_entry_t* cache_entry = (apc_cache_entry_t*) apc_stack_pop(apc_globals->cache_stack);
+        if (cache_entry->data.file.functions) {
+            for (i = 0; cache_entry->data.file.functions[i].function != NULL; i++) {
+                zend_hash_del(EG(function_table),
+                cache_entry->data.file.functions[i].name,
+                cache_entry->data.file.functions[i].name_len+1);
+            }
+        }
+        if (cache_entry->data.file.classes) {
+            for (i = 0; cache_entry->data.file.classes[i].class_entry != NULL; i++) {
+                zend_hash_del(EG(class_table),
+                cache_entry->data.file.classes[i].name,
+                cache_entry->data.file.classes[i].name_len+1);
+            }
+        }
+        apc_cache_free_entry(cache_entry);
+    }
+
+    /* apc cleanup */
+    apc_stack_destroy(apc_globals->cache_stack);
+    apc_stack_destroy(apc_globals->user_cache_stack);
+
+
     /* the rest of the globals are cleaned up in apc_module_shutdown() */
 }
-#endif
 
 /* }}} */
 
@@ -145,7 +178,7 @@ static PHP_MINFO_FUNCTION(apc)
 /* {{{ PHP_MINIT_FUNCTION(apc) */
 static PHP_MINIT_FUNCTION(apc)
 {
-	ZEND_INIT_MODULE_GLOBALS(apc, php_apc_init_globals, php_apc_shutdown_globals);
+    ZEND_INIT_MODULE_GLOBALS(apc, php_apc_init_globals, php_apc_shutdown_globals);
 
     REGISTER_INI_ENTRIES();
 
@@ -155,7 +188,7 @@ static PHP_MINIT_FUNCTION(apc)
     }
 
     if (APCG(enabled)) {
-        apc_module_init(module_number);
+        apc_module_init(module_number TSRMLS_CC);
     }
 
 	return SUCCESS;
@@ -166,7 +199,10 @@ static PHP_MINIT_FUNCTION(apc)
 static PHP_MSHUTDOWN_FUNCTION(apc)
 {
     if(APCG(enabled)) {
-        apc_module_shutdown();
+        apc_module_shutdown(TSRMLS_C);
+#ifndef ZTS
+        php_apc_shutdown_globals(&apc_globals);
+#endif
     }
     UNREGISTER_INI_ENTRIES();
 	return SUCCESS;
@@ -187,7 +223,7 @@ static PHP_RINIT_FUNCTION(apc)
 static PHP_RSHUTDOWN_FUNCTION(apc)
 {
     if(APCG(enabled)) {
-        apc_request_shutdown();
+        apc_request_shutdown(TSRMLS_C);
     }
 	return SUCCESS;
 }
@@ -208,11 +244,11 @@ PHP_FUNCTION(apc_cache_info)
 
     if(ZEND_NUM_ARGS()) {
         if(!strcasecmp(cache_type,"user")) {
-            info = apc_cache_info(APCG(user_cache));
+            info = apc_cache_info(apc_user_cache);
         } else {
-            info = apc_cache_info(APCG(cache));
+            info = apc_cache_info(apc_cache);
         }
-    } else info = apc_cache_info(APCG(cache));
+    } else info = apc_cache_info(apc_cache);
 
     if(!info) {
         php_error_docref(NULL TSRMLS_CC, E_WARNING, "No APC info available.  Perhaps APC is not enabled? Check apc.enabled in your ini file");
@@ -300,11 +336,11 @@ PHP_FUNCTION(apc_clear_cache)
 
     if(ZEND_NUM_ARGS()) {
         if(!strcasecmp(cache_type,"user")) {
-            apc_cache_clear(APCG(user_cache));
+            apc_cache_clear(apc_user_cache);
             RETURN_TRUE;
         }
     }
-    apc_cache_clear(APCG(cache));
+    apc_cache_clear(apc_cache);
 }
 /* }}} */
 
@@ -377,23 +413,23 @@ static int _apc_store(char *strkey, const zval *val, const unsigned int ttl TSRM
     if(!APCG(enabled)) return 0;
 
     if (!(entry = apc_cache_make_user_entry(strkey, val, ttl))) {
-        apc_cache_expunge(APCG(cache),t);
-        apc_cache_expunge(APCG(user_cache),t);
+        apc_cache_expunge(apc_cache,t);
+        apc_cache_expunge(apc_user_cache,t);
         return 0;
     }
 
     if (!apc_cache_make_user_key(&key, strkey, t)) {
         apc_cache_free_entry(entry);
-        apc_cache_expunge(APCG(cache),t);
-        apc_cache_expunge(APCG(user_cache),t);
+        apc_cache_expunge(apc_cache,t);
+        apc_cache_expunge(apc_user_cache,t);
         return 0;
     }
 
-    if (!apc_cache_user_insert(APCG(user_cache), key, entry, t)) {
+    if (!apc_cache_user_insert(apc_user_cache, key, entry, t)) {
         apc_cache_free_user_key(&key);
         apc_cache_free_entry(entry);
-        apc_cache_expunge(APCG(cache),t);
-        apc_cache_expunge(APCG(user_cache),t);
+        apc_cache_expunge(apc_cache,t);
+        apc_cache_expunge(apc_user_cache,t);
         return 0;
     }
 
@@ -450,7 +486,7 @@ PHP_FUNCTION(apc_fetch) {
     t = sapi_get_request_time(TSRMLS_C);
 #endif
 
-	entry = apc_cache_user_find(APCG(user_cache), strkey, strkey_len, t);
+	entry = apc_cache_user_find(apc_user_cache, strkey, strkey_len, t);
 
     if(entry) {
         /* Still working out if I actually need to maintain this stack */
@@ -478,7 +514,7 @@ PHP_FUNCTION(apc_delete) {
 
     if(!strkey_len) RETURN_FALSE;
 
-	if(apc_cache_user_delete(APCG(user_cache), strkey, strkey_len)) {
+	if(apc_cache_user_delete(apc_user_cache, strkey, strkey_len)) {
         RETURN_TRUE;
     } else {
         RETURN_FALSE;
@@ -572,7 +608,7 @@ PHP_FUNCTION(apc_load_constants) {
     t = sapi_get_request_time(TSRMLS_C);
 #endif
 
-	entry = apc_cache_user_find(APCG(user_cache), strkey, strkey_len, t);
+	entry = apc_cache_user_find(apc_user_cache, strkey, strkey_len, t);
 
     if(entry) {
         apc_stack_push(APCG(user_cache_stack), entry);

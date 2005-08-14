@@ -58,11 +58,8 @@ ZEND_BEGIN_MODULE_GLOBALS(apc)
 
     /* module variables */
     int initialized;        /* true if module was initialized */
-    apc_cache_t* cache;     /* the global compiler cache */
-    apc_cache_t* user_cache;  /* the global user content cache */
     apc_stack_t* cache_stack; /* the stack of cached executable code */
     apc_stack_t* user_cache_stack; /* the stack of cached user entries */
-    void* compiled_filters; /* compiled filters */
     int cache_by_default;   /* true if files should be cached unless filtered out */
                             /* false if files should only be cached if filtered in */
     int slam_defense;       /* Probability of a process not caching an uncached file */
@@ -79,6 +76,11 @@ ZEND_EXTERN_MODULE_GLOBALS(apc)
 #else
 # define APCG(v) (apc_globals.v)
 #endif
+
+/* True globals */
+extern apc_cache_t* apc_cache;       /* the global compiler cache */
+extern apc_cache_t* apc_user_cache;  /* the global user content cache */
+extern void* apc_compiled_filters;       /* compiled filters */
 
 #endif
 

@@ -38,10 +38,10 @@
  * This module provides the primary interface between PHP and APC.
  */
 
-extern int apc_module_init(int module_number);
-extern int apc_module_shutdown();
+extern int apc_module_init(int module_number TSRMLS_DC);
+extern int apc_module_shutdown(TSRMLS_D);
 extern int apc_request_init(TSRMLS_D);
-extern int apc_request_shutdown();
+extern int apc_request_shutdown(TSRMLS_D);
 
 /*
  * apc_deactivate is called by the PHP interpreter when an "exception" is
