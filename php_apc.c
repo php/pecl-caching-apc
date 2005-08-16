@@ -536,6 +536,7 @@ static void _apc_define_constants(zval *constants, zend_bool case_sensitive TSRM
 
         key_type = zend_hash_get_current_key_ex(Z_ARRVAL_P(constants), &const_key, &const_key_len, &num_key, 0, &pos);
         if(key_type != HASH_KEY_IS_STRING) {
+            zend_hash_move_forward_ex(Z_ARRVAL_P(constants), &pos);
             continue;
         }
         switch(Z_TYPE_PP(entry)) {
@@ -547,6 +548,7 @@ static void _apc_define_constants(zval *constants, zend_bool case_sensitive TSRM
             case IS_NULL:
                 break;
             default:
+                zend_hash_move_forward_ex(Z_ARRVAL_P(constants), &pos);
                 continue;
         }
         c.value = **entry;
