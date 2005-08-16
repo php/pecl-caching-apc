@@ -65,6 +65,7 @@ ZEND_BEGIN_MODULE_GLOBALS(apc)
     size_t* mem_size_ptr;   /* size of blocks allocated to file being cached (NULL outside my_compile_file) */
     int file_update_protection; /* Age in seconds before a file is eligible to be cached - 0 to disable */
     int enable_cli;         /* Flag to override turning APC off for CLI */
+    long max_file_size;	    /* Maximum size of file, in bytes that APC will be allowed to cache */
 ZEND_END_MODULE_GLOBALS(apc)
 
 /* (the following declaration is defined in php_apc.c) */

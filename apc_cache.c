@@ -596,6 +596,13 @@ int apc_cache_make_file_key(apc_cache_key_t* key,
         }
     }
 
+    if (APCG(max_file_size) < buf.st_size) {
+#ifdef __DEBUG_APC__
+		fprintf(stderr,"File is too big %s (%d - %ld) - bailing\n",filename,t,buf.st_size);
+#endif
+		return 0;
+    }
+
     /*
      * This is a bit of a hack.
      *
