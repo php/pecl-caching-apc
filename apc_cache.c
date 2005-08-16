@@ -707,6 +707,7 @@ apc_cache_entry_t* apc_cache_make_user_entry(const char* info, const zval* val, 
         apc_sma_free(entry);
         return NULL;
     }
+    INIT_PZVAL(entry->data.user.val);
     entry->data.user.ttl = ttl;
     entry->type = APC_CACHE_ENTRY_USER;
     entry->ref_count = 0;

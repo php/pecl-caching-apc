@@ -39,6 +39,7 @@ Add apc.enable_cli ini directive. (Rasmus)
 Add test cases. (Marcus)
 Fix apc_define_constants() bug - http://pecl.php.net/bugs/5084 (Rasmus)
 Simplify user cache handling by removing the user_cache_stack (Rasmus)
+Fix apc_fetch() memory corruption (Andrei,Rasmus)
   </notes>
  </release>
   <configureoptions>

@@ -29,6 +29,7 @@
 /* $Id$ */
 
 #include "php_apc.h"
+#include "apc_zend.h"
 #include "apc_cache.h"
 #include "apc_main.h"
 #include "apc_sma.h"
@@ -484,11 +485,9 @@ PHP_FUNCTION(apc_fetch) {
 #endif
 
     entry = apc_cache_user_find(apc_user_cache, strkey, strkey_len, t);
-
     if(entry) {
         /* deep-copy returned shm zval to emalloc'ed return_value */
-        memcpy(return_value, entry->data.user.val, sizeof(zval));
-        zval_copy_ctor(return_value);
+        apc_copy_zval(return_value, entry->data.user.val, apc_php_malloc, apc_php_free);
         apc_cache_release(apc_user_cache, entry);
     } else {
         RETURN_FALSE;
