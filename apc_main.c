@@ -399,7 +399,6 @@ int apc_module_shutdown(TSRMLS_D)
 int apc_request_init(TSRMLS_D)
 {
     apc_stack_clear(APCG(cache_stack));
-    apc_stack_clear(APCG(user_cache_stack));
     return 0;
 }
 
@@ -421,11 +420,6 @@ void apc_deactivate(TSRMLS_D)
         apc_cache_entry_t* cache_entry =
             (apc_cache_entry_t*) apc_stack_pop(APCG(cache_stack));
         apc_cache_release(apc_cache, cache_entry);
-    }
-    while (apc_stack_size(APCG(user_cache_stack)) > 0) {
-        apc_cache_entry_t* cache_entry =
-            (apc_cache_entry_t*) apc_stack_pop(APCG(user_cache_stack));
-        apc_cache_release(apc_user_cache, cache_entry);
     }
 }
 /* }}} */

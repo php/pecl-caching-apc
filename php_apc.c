@@ -69,7 +69,6 @@ static void php_apc_init_globals(zend_apc_globals* apc_globals TSRMLS_DC)
     apc_globals->filters = NULL;
     apc_globals->initialized = 0;
     apc_globals->cache_stack = apc_stack_create(0);
-    apc_globals->user_cache_stack = apc_stack_create(0);
     apc_globals->cache_by_default = 1;
     apc_globals->slam_defense = 0;
     apc_globals->mem_size_ptr = NULL;
@@ -114,8 +113,6 @@ static void php_apc_shutdown_globals(zend_apc_globals* apc_globals TSRMLS_DC)
 
     /* apc cleanup */
     apc_stack_destroy(apc_globals->cache_stack);
-    apc_stack_destroy(apc_globals->user_cache_stack);
-
 
     /* the rest of the globals are cleaned up in apc_module_shutdown() */
 }
@@ -489,11 +486,10 @@ PHP_FUNCTION(apc_fetch) {
 	entry = apc_cache_user_find(apc_user_cache, strkey, strkey_len, t);
 
     if(entry) {
-        /* Still working out if I actually need to maintain this stack */
-        apc_stack_push(APCG(user_cache_stack), entry);
         /* deep-copy returned shm zval to emalloc'ed return_value */
         memcpy(return_value, entry->data.user.val, sizeof(zval));
         zval_copy_ctor(return_value);
+        apc_cache_release(apc_user_cache, entry);
     } else {
         RETURN_FALSE;
     }
@@ -613,8 +609,8 @@ PHP_FUNCTION(apc_load_constants) {
 	entry = apc_cache_user_find(apc_user_cache, strkey, strkey_len, t);
 
     if(entry) {
-        apc_stack_push(APCG(user_cache_stack), entry);
         _apc_define_constants(entry->data.user.val, case_sensitive TSRMLS_CC);
+        apc_cache_release(apc_user_cache, entry);
         RETURN_TRUE;
     } else {
         RETURN_FALSE;

@@ -59,7 +59,6 @@ ZEND_BEGIN_MODULE_GLOBALS(apc)
     /* module variables */
     int initialized;        /* true if module was initialized */
     apc_stack_t* cache_stack; /* the stack of cached executable code */
-    apc_stack_t* user_cache_stack; /* the stack of cached user entries */
     int cache_by_default;   /* true if files should be cached unless filtered out */
                             /* false if files should only be cached if filtered in */
     int slam_defense;       /* Probability of a process not caching an uncached file */
