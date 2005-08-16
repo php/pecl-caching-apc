@@ -168,7 +168,7 @@ static PHP_MINFO_FUNCTION(apc)
 	php_info_print_table_row(2, "Revision", "$Revision$");
 	php_info_print_table_row(2, "Build Date", __DATE__ " " __TIME__);
 	php_info_print_table_end();
-    DISPLAY_INI_ENTRIES();
+	DISPLAY_INI_ENTRIES();
 }
 /* }}} */
 
@@ -181,14 +181,14 @@ static PHP_MINIT_FUNCTION(apc)
 
     /* Disable APC in cli mode unless overridden by apc.enable_cli */
     if(!APCG(enable_cli) && !strcmp(sapi_module.name, "cli")) {
-		zend_alter_ini_entry("apc.enabled", sizeof("apc.enabled"), "0", 2, PHP_INI_SYSTEM, PHP_INI_STAGE_ACTIVATE);
+        zend_alter_ini_entry("apc.enabled", sizeof("apc.enabled"), "0", 2, PHP_INI_SYSTEM, PHP_INI_STAGE_ACTIVATE);
     }
 
     if (APCG(enabled)) {
         apc_module_init(module_number TSRMLS_CC);
     }
 
-	return SUCCESS;
+    return SUCCESS;
 }
 /* }}} */
 
@@ -202,7 +202,7 @@ static PHP_MSHUTDOWN_FUNCTION(apc)
 #endif
     }
     UNREGISTER_INI_ENTRIES();
-	return SUCCESS;
+    return SUCCESS;
 }
 /* }}} */
 
@@ -212,7 +212,7 @@ static PHP_RINIT_FUNCTION(apc)
     if(APCG(enabled)) {
         apc_request_init(TSRMLS_C);
     }
-	return SUCCESS;
+    return SUCCESS;
 }
 /* }}} */
 
@@ -222,7 +222,7 @@ static PHP_RSHUTDOWN_FUNCTION(apc)
     if(APCG(enabled)) {
         apc_request_shutdown(TSRMLS_C);
     }
-	return SUCCESS;
+    return SUCCESS;
 }
 /* }}} */
 
@@ -235,9 +235,9 @@ PHP_FUNCTION(apc_cache_info)
     char *cache_type;
     int ct_len;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|s", &cache_type, &ct_len) == FAILURE) {
-		return;
-	}
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|s", &cache_type, &ct_len) == FAILURE) {
+        return;
+    }
 
     if(ZEND_NUM_ARGS()) {
         if(!strcasecmp(cache_type,"user")) {
@@ -327,9 +327,9 @@ PHP_FUNCTION(apc_clear_cache)
     char *cache_type;
     int ct_len;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|s", &cache_type, &ct_len) == FAILURE) {
-		return;
-	}
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|s", &cache_type, &ct_len) == FAILURE) {
+        return;
+    }
 
     if(ZEND_NUM_ARGS()) {
         if(!strcasecmp(cache_type,"user")) {
@@ -437,14 +437,14 @@ static int _apc_store(char *strkey, const zval *val, const unsigned int ttl TSRM
 /* {{{ proto int apc_store(string key, zval var [, ttl ])
  */
 PHP_FUNCTION(apc_store) {
-	zval *val;
-	char *strkey;
-	int strkey_len;
+    zval *val;
+    char *strkey;
+    int strkey_len;
     long ttl = 0L;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sz|l", &strkey, &strkey_len, &val, &ttl) == FAILURE) {
-		return;
-	}
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sz|l", &strkey, &strkey_len, &val, &ttl) == FAILURE) {
+        return;
+    }
 
     if(!strkey_len) RETURN_FALSE;
 
@@ -460,16 +460,16 @@ void *apc_erealloc_wrapper(void *ptr, size_t size) {
 /* {{{ proto mixed apc_fetch(string key)
  */
 PHP_FUNCTION(apc_fetch) {
-	char *strkey;
-	int strkey_len;
+    char *strkey;
+    int strkey_len;
     apc_cache_entry_t* entry;
     time_t t;
 
     if(!APCG(enabled)) RETURN_FALSE;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &strkey, &strkey_len) == FAILURE) {
-		return;
-	}
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &strkey, &strkey_len) == FAILURE) {
+        return;
+    }
 
     if(!strkey_len) RETURN_FALSE;
 
@@ -483,7 +483,7 @@ PHP_FUNCTION(apc_fetch) {
     t = sapi_get_request_time(TSRMLS_C);
 #endif
 
-	entry = apc_cache_user_find(apc_user_cache, strkey, strkey_len, t);
+    entry = apc_cache_user_find(apc_user_cache, strkey, strkey_len, t);
 
     if(entry) {
         /* deep-copy returned shm zval to emalloc'ed return_value */
@@ -499,18 +499,18 @@ PHP_FUNCTION(apc_fetch) {
 /* {{{ proto mixed apc_delete(string key)
  */
 PHP_FUNCTION(apc_delete) {
-	char *strkey;
-	int strkey_len;
+    char *strkey;
+    int strkey_len;
 
     if(!APCG(enabled)) RETURN_FALSE;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &strkey, &strkey_len) == FAILURE) {
-		return;
-	}
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &strkey, &strkey_len) == FAILURE) {
+        return;
+    }
 
     if(!strkey_len) RETURN_FALSE;
 
-	if(apc_cache_user_delete(apc_user_cache, strkey, strkey_len)) {
+    if(apc_cache_user_delete(apc_user_cache, strkey, strkey_len)) {
         RETURN_TRUE;
     } else {
         RETURN_FALSE;
@@ -561,15 +561,15 @@ static void _apc_define_constants(zval *constants, zend_bool case_sensitive TSRM
 /* {{{ proto mixed apc_define_constants(string key, array constants [,bool case-sensitive])
  */
 PHP_FUNCTION(apc_define_constants) {
-	char *strkey;
-	int strkey_len;
+    char *strkey;
+    int strkey_len;
     zval *constants = NULL;
     zend_bool case_sensitive = 1;
     int argc = ZEND_NUM_ARGS();
 
-	if (zend_parse_parameters(argc TSRMLS_CC, "sa|b", &strkey, &strkey_len, &constants, &case_sensitive) == FAILURE) {
-		return;
-	}
+    if (zend_parse_parameters(argc TSRMLS_CC, "sa|b", &strkey, &strkey_len, &constants, &case_sensitive) == FAILURE) {
+        return;
+    }
 
     if(!strkey_len) RETURN_FALSE;
 
@@ -582,17 +582,17 @@ PHP_FUNCTION(apc_define_constants) {
 /* {{{ proto mixed apc_load_constants(string key [, bool case-sensitive])
  */
 PHP_FUNCTION(apc_load_constants) {
-	char *strkey;
-	int strkey_len;
+    char *strkey;
+    int strkey_len;
     apc_cache_entry_t* entry;
     time_t t;
     zend_bool case_sensitive = 1;
 
     if(!APCG(enabled)) RETURN_FALSE;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|b", &strkey, &strkey_len, &case_sensitive) == FAILURE) {
-		return;
-	}
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|b", &strkey, &strkey_len, &case_sensitive) == FAILURE) {
+        return;
+    }
 
     if(!strkey_len) RETURN_FALSE;
 
@@ -606,7 +606,7 @@ PHP_FUNCTION(apc_load_constants) {
     t = sapi_get_request_time(TSRMLS_C);
 #endif
 
-	entry = apc_cache_user_find(apc_user_cache, strkey, strkey_len, t);
+    entry = apc_cache_user_find(apc_user_cache, strkey, strkey_len, t);
 
     if(entry) {
         _apc_define_constants(entry->data.user.val, case_sensitive TSRMLS_CC);
@@ -636,7 +636,7 @@ function_entry apc_functions[] = {
 
 zend_module_entry apc_module_entry = {
 	STANDARD_MODULE_HEADER,
-    "apc",
+	"apc",
 	apc_functions,
 	PHP_MINIT(apc),
 	PHP_MSHUTDOWN(apc),
