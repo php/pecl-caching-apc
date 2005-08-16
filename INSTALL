@@ -314,3 +314,6 @@ users should consider tuning the following parameters:
                             request, but for various test scenarios it is handy to be
                             able to enable APC for the CLI version of APC easily.
                             (Default: 0)
+
+    apc.max_file_size       Prevents large files from being cached.  
+                            (Default: 1M)
