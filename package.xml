@@ -31,7 +31,7 @@
  <release>
   <state>stable</state>
   <version>3.0.7</version>
-  <date>2005-08-??</date>
+  <date>2005-08-16</date>
   <notes>
 Fix to apc.php to show final segment in frag chart. (Ilia)
 A couple of win32 fixes. (Frank)
@@ -52,6 +52,7 @@ Added apc.max_file_size INI setting that allows exclusion of large files from be
     <file role="doc" name="INSTALL" />
     <file role="doc" name="LICENSE" />
     <file role="doc" name="NOTICE" />
+    <file role="doc" name="TODO" />
     <file role="src" name="apc.c" />
     <file role="src" name="apc.dsp" />
     <file role="src" name="apc.h" />
