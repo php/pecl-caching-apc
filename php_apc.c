@@ -150,7 +150,7 @@ STD_PHP_INI_BOOLEAN("apc.cache_by_default", "1",  PHP_INI_SYSTEM, OnUpdateInt,  
 STD_PHP_INI_BOOLEAN("apc.slam_defense", "0",      PHP_INI_SYSTEM, OnUpdateInt,          slam_defense,     zend_apc_globals, apc_globals)
 STD_PHP_INI_ENTRY("apc.file_update_protection", "2", PHP_INI_SYSTEM, OnUpdateInt,file_update_protection, zend_apc_globals, apc_globals)
 STD_PHP_INI_BOOLEAN("apc.enable_cli", "0", PHP_INI_SYSTEM, OnUpdateInt, enable_cli, zend_apc_globals, apc_globals)
-STD_PHP_INI_ENTRY("apc.max_file_size", "1M",    PHP_INI_SYSTEM, OnUpdateLong,            max_file_size,       zend_apc_globals, apc_globals)
+STD_PHP_INI_ENTRY("apc.max_file_size", "1M",    PHP_INI_SYSTEM, OnUpdateInt,            max_file_size,       zend_apc_globals, apc_globals)
 PHP_INI_END()
 
 /* }}} */
