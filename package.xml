@@ -33,6 +33,7 @@
   <version>3.0.8</version>
   <date>2005-08-??</date>
   <notes>
+Fix invalid free in globals destructor introduced in 3.0.7 (Rasmus)
   </notes>
  </release>
   <configureoptions>

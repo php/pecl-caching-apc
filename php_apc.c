@@ -77,11 +77,11 @@ static void php_apc_init_globals(zend_apc_globals* apc_globals TSRMLS_DC)
 
 static void php_apc_shutdown_globals(zend_apc_globals* apc_globals TSRMLS_DC)
 {
-    char* p;
     /* deallocate the ignore patterns */
     if (apc_globals->filters != NULL) {
-        for (p = apc_globals->filters[0]; p != NULL; p++) {
-            apc_efree(p);
+		int i;
+        for (i=0; apc_globals->filters[i] != NULL; i++) {
+            apc_efree(apc_globals->filters[i]);
         }
         apc_efree(apc_globals->filters);
     }
@@ -145,7 +145,7 @@ STD_PHP_INI_ENTRY("apc.user_ttl",       "0",    PHP_INI_SYSTEM, OnUpdateInt,    
 #if APC_MMAP
 STD_PHP_INI_ENTRY("apc.mmap_file_mask",  NULL,  PHP_INI_SYSTEM, OnUpdateString,         mmap_file_mask, zend_apc_globals, apc_globals)
 #endif
-    PHP_INI_ENTRY("apc.filters",        "",     PHP_INI_SYSTEM, OnUpdate_filters)
+    PHP_INI_ENTRY("apc.filters",        NULL,     PHP_INI_SYSTEM, OnUpdate_filters)
 STD_PHP_INI_BOOLEAN("apc.cache_by_default", "1",  PHP_INI_SYSTEM, OnUpdateInt,          cache_by_default, zend_apc_globals, apc_globals)
 STD_PHP_INI_BOOLEAN("apc.slam_defense", "0",      PHP_INI_SYSTEM, OnUpdateInt,          slam_defense,     zend_apc_globals, apc_globals)
 STD_PHP_INI_ENTRY("apc.file_update_protection", "2", PHP_INI_SYSTEM, OnUpdateInt,file_update_protection, zend_apc_globals, apc_globals)
