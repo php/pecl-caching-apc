@@ -867,7 +867,7 @@ EOB;
 				foreach($entry as $k => $value) {
 					if (!$AUTHENTICATED) {
 						// hide all path entries if not logged in
-						$value=preg_replace('/^.*\//','<i>&lt;hidden&gt;</i>/',$value);
+						$value=preg_replace('/^.*(\\/|\\\\)/','<i>&lt;hidden&gt;</i>/',$value);
 					}
 
 					if ($k == "num_hits") {
@@ -970,7 +970,7 @@ EOB;
 		}
 		if (!$AUTHENTICATED) {
 			// hide all path entries if not logged in
-			$list[$k.$entry[$fieldname]]=preg_replace('/^.*\//','<i>&lt;hidden&gt;</i>/',$entry);
+			$list[$k.$entry[$fieldname]]=preg_replace('/^.*(\\/|\\\\)/','<i>&lt;hidden&gt;</i>/',$entry);
 		} else {
 			$list[$k.$entry[$fieldname]]=$entry;
 		}
