@@ -31,7 +31,7 @@
  <release>
   <state>stable</state>
   <version>3.0.8</version>
-  <date>2005-08-??</date>
+  <date>2005-08-24</date>
   <notes>
 Fix invalid free in globals destructor introduced in 3.0.7 (Rasmus)
 Cache corruption fix in cache-full cleanup code (Gopal)
