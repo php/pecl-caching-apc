@@ -954,6 +954,7 @@ static HashTable* my_copy_hashtable_ex(HashTable* dst,
     Bucket* newp = NULL;
     int first = 1;
     int local_dst_alloc = 0;
+    int index = 0;
 
     assert(src != NULL);
 
@@ -1007,15 +1008,7 @@ static HashTable* my_copy_hashtable_ex(HashTable* dst,
             (Bucket*) apc_xmemcpy(curr,
                                   sizeof(Bucket) + curr->nKeyLength - 1,
                                   allocate))) {
-            curr = curr->pListLast;
-            while(curr) {
-                int nn = curr->h % dst->nTableSize;
-                if(dst->arBuckets[nn]) deallocate(dst->arBuckets[nn]);
-                curr = curr->pListLast;
-            }
-            deallocate(dst->arBuckets);
-            if(local_dst_alloc) deallocate(dst);
-            return NULL;
+            goto cleanup;
         }
 
         /* insert 'newp' into the linked list at its hashed index */
@@ -1032,21 +1025,7 @@ static HashTable* my_copy_hashtable_ex(HashTable* dst,
 
         /* copy the bucket data using our 'copy_fn' callback function */
         if(!(newp->pData = copy_fn(NULL, curr->pData, allocate, deallocate))) {
-
-            deallocate(newp);
-            curr = curr->pListLast;
-            while(curr) {
-                int nn = curr->h % dst->nTableSize;
-                if(dst->arBuckets[nn]) {
-                    if(free_fn && dst->arBuckets[nn]->pData) free_fn(dst->arBuckets[nn]->pData, deallocate);
-                    deallocate(dst->arBuckets[nn]);
-                }
-                curr = curr->pListLast;
-            }
-            deallocate(dst->arBuckets);
-            if(local_dst_alloc) deallocate(dst);
-            else dst->arBuckets = NULL; /* invalid ptr */
-            return NULL;
+            goto cleanup;
         }
 
         if (holds_ptrs) {
@@ -1081,6 +1060,27 @@ static HashTable* my_copy_hashtable_ex(HashTable* dst,
 #endif
 
     return dst;
+    
+    cleanup:
+    for(index = 0; index < dst->nTableSize; index++)
+    {
+        curr = dst->arBuckets[index];
+        while(curr != NULL)
+        {
+            Bucket * tmp = curr;
+            if(curr->pData && free_fn)
+            {
+                free_fn(curr->pData, deallocate);
+            }
+            curr = curr->pNext;
+            deallocate(tmp);
+        }
+    }   
+    deallocate(dst->arBuckets);
+    if(local_dst_alloc) deallocate(dst);
+    else dst->arBuckets = NULL;
+
+    return NULL;
 }
 /* }}} */
 

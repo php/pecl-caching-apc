@@ -34,6 +34,7 @@
   <date>2005-08-??</date>
   <notes>
 Fix invalid free in globals destructor introduced in 3.0.7 (Rasmus)
+Cache corruption fix in cache-full cleanup code (Gopal)
   </notes>
  </release>
   <configureoptions>
