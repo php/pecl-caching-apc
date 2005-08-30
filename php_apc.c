@@ -398,6 +398,7 @@ static int _apc_store(char *strkey, const zval *val, const unsigned int ttl TSRM
     apc_cache_entry_t *entry;
     apc_cache_key_t key;
     time_t t;
+    size_t mem_size = 0;
 
 #if PHP_API_VERSION <= 20041225
 #if HAVE_APACHE && defined(APC_PHP4_STAT)
@@ -411,26 +412,35 @@ static int _apc_store(char *strkey, const zval *val, const unsigned int ttl TSRM
 
     if(!APCG(enabled)) return 0;
 
+    APCG(mem_size_ptr) = &mem_size;
     if (!(entry = apc_cache_make_user_entry(strkey, val, ttl))) {
+        APCG(mem_size_ptr) = NULL;
         apc_cache_expunge(apc_cache,t);
         apc_cache_expunge(apc_user_cache,t);
         return 0;
     }
 
     if (!apc_cache_make_user_key(&key, strkey, t)) {
+        APCG(mem_size_ptr) = NULL;
         apc_cache_free_entry(entry);
         apc_cache_expunge(apc_cache,t);
         apc_cache_expunge(apc_user_cache,t);
         return 0;
     }
 
+
     if (!apc_cache_user_insert(apc_user_cache, key, entry, t)) {
+        APCG(mem_size_ptr) = NULL;
         apc_cache_free_user_key(&key);
         apc_cache_free_entry(entry);
         apc_cache_expunge(apc_cache,t);
         apc_cache_expunge(apc_user_cache,t);
         return 0;
     }
+
+    APCG(mem_size_ptr) = NULL;
+    entry->mem_size = mem_size;
+
 
     return 1;
 }

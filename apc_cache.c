@@ -421,6 +421,7 @@ int apc_cache_user_insert(apc_cache_t* cache, apc_cache_key_t key, apc_cache_ent
 {
     slot_t** slot;
     int ilen;
+    size_t mem_size = NULL;
 
     if (!value) {
         return 0;
@@ -431,6 +432,11 @@ int apc_cache_user_insert(apc_cache_t* cache, apc_cache_key_t key, apc_cache_ent
 
     ilen = strlen(key.data.user.identifier);
     slot = &cache->slots[string_nhash_8(key.data.user.identifier, ilen) % cache->num_slots];
+
+    if (APCG(mem_size_ptr) != NULL) {
+	mem_size = APCG(mem_size_ptr);
+	APCG(mem_size_ptr) = NULL;
+    }
 
     while (*slot) {
         if (!strncmp((*slot)->key.data.user.identifier, key.data.user.identifier, ilen)) {
@@ -451,6 +457,10 @@ int apc_cache_user_insert(apc_cache_t* cache, apc_cache_key_t key, apc_cache_ent
             continue;
         }
         slot = &(*slot)->next;
+    }
+
+    if (mem_size != NULL) {
+	APCG(mem_size_ptr) = mem_size;
     }
 
     if ((*slot = make_slot(key, value, *slot, t)) == NULL) {
