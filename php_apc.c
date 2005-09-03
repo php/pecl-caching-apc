@@ -429,7 +429,7 @@ static int _apc_store(char *strkey, const zval *val, const unsigned int ttl TSRM
     }
 
 
-    if (!apc_cache_user_insert(apc_user_cache, key, entry, t)) {
+    if (!apc_cache_user_insert(apc_user_cache, key, entry, t TSRMLS_CC)) {
         APCG(mem_size_ptr) = NULL;
         apc_cache_free_user_key(&key);
         apc_cache_free_entry(entry);

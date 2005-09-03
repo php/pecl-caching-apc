@@ -417,7 +417,7 @@ int apc_cache_insert(apc_cache_t* cache,
 /* }}} */
 
 /* {{{ apc_cache_user_insert */
-int apc_cache_user_insert(apc_cache_t* cache, apc_cache_key_t key, apc_cache_entry_t* value, time_t t)
+int apc_cache_user_insert(apc_cache_t* cache, apc_cache_key_t key, apc_cache_entry_t* value, time_t t TSRMLS_DC)
 {
     slot_t** slot;
     int ilen;
