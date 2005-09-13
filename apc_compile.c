@@ -129,102 +129,6 @@ static int my_check_copy_static_member(Bucket* src, va_list args);
 
 /* }}} */
 
-#ifdef __DEBUG_APC__
-
-/*
- * Function to dump a "struct HashTable" for debugging purposes... copied from zend_hash.c
- */
-void my_zend_hash_display(HashTable *ht, char* separator)
-{
-	Bucket *p;
-	uint i;
-   
-    fprintf(stderr, "%s", separator);
-    fprintf(stderr, "\tht->nTableSize: %d\n", ht->nTableSize);
-    fprintf(stderr, "%s", separator);
-    fprintf(stderr, "\tht->nNumOfElements: %d\n", ht->nNumOfElements);
-	for (i = 0; i < ht->nTableSize; i++) {
-		if(!ht->arBuckets) break;
-        p = ht->arBuckets[i];
-        if(p) {
-            fprintf(stderr, "%s", separator);
-            fprintf(stderr, "\tht->arBuckets[%d]\n", i);
-        }
-		while (p != NULL) {
-            fprintf(stderr, "%s", separator);
-            fprintf(stderr, "\t\t%s:%d <", __FILE__, __LINE__);
-            if(1)
-            {
-                int k = 0;
-                for(k = 0; k < p->nKeyLength; k++)
-                {
-                    if(p->arKey[k])
-                        fprintf(stderr, "%c", p->arKey[k]);
-                    else
-                        fprintf(stderr, "\\0");
-                }
-            }
-            fprintf(stderr, "> <==> %p\n", p->pData);
-			p = p->pNext;
-		}
-	}
-
-	p = ht->pListTail;
-    if(p) {
-        fprintf(stderr, "%s", separator);
-        fprintf(stderr, "\tht->pListTail: %p\n", p);
-    }
-	while (p != NULL) {
-            fprintf(stderr, "%s", separator);
-            fprintf(stderr, "\t\t%s:%d <", __FILE__, __LINE__);
-            if(1)
-            {
-                int k = 0;
-                for(k = 0; k < p->nKeyLength; k++)
-                {
-                    if(p->arKey[k])
-                        fprintf(stderr, "%c", p->arKey[k]);
-                    else
-                        fprintf(stderr, "\\0");
-                }
-            }
-            fprintf(stderr, "> <==> %p\n", p->pData);
-		p = p->pListLast;
-	}
-}
-
-
-/*
- * Function to dump a "struct _zend_class_entry" for debugging purposes
- */
-static void my_dump_zend_class_entry(zend_class_entry* zce)
-{
-    fprintf(stderr, "Dumping zend_class_entry* %p...\n", zce);
-    fprintf(stderr, "zce->type: %i\n", (int)zce->type);
-   
-    if(zce->name)
-    {
-        fprintf(stderr, "zce->name: %s, zce->name_length: %d\n", zce->name, zce->name_length);
-    }
-    else
-    {
-        fprintf(stderr, "zce->name: <null>\n");
-    }
-    
-    fprintf(stderr, "zce->parent: %p\n", zce->parent);
-    fprintf(stderr, "zce->refcount: %i\n", zce->refcount);
-    fprintf(stderr, "zce->constants_updated: %i\n", (int)zce->constants_updated);
-    fprintf(stderr, "zce->ce_flags: %i\n", (int)zce->ce_flags);
-/*    fprintf(stderr, "zce->: %\n", zce-> );*/
-    
-/*    fprintf(stderr, "zce->function_table:\n" );*/
-/*    my_zend_hash_display(zce->static_members);*/
-
-    fprintf(stderr, "\n\n");
-}
-
-#endif
-
 /* {{{ check_op_array_integrity */
 #if 0
 static void check_op_array_integrity(zend_op_array* src)
@@ -726,12 +630,6 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
 
     assert(src != NULL);
 
-#ifdef __DEBUG_APC__
-    fprintf(stderr, "\n\n<my_copy_class_entry>... \n" );
-    fprintf(stderr, "\tAbout to dump \"src\"... \n" );
-    my_dump_zend_class_entry(src);
-#endif
-
     if (!dst) {
         CHECK(dst = (zend_class_entry*) allocate(sizeof(*src)));
         local_dst_alloc = 1;
@@ -767,9 +665,6 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
     }
 #endif        
 
-    #ifdef __DEBUG_APC__
-    fprintf( stderr, "\tAbout to copy the zend_class_entry:function_table... \n" );
-    #endif    
     if(!(my_copy_hashtable_ex(&dst->function_table,
                             &src->function_table,
                             (ht_copy_fun_t) my_copy_function,
@@ -784,9 +679,6 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
                             src))) {
         goto cleanup;
     }
-    #ifdef __DEBUG_APC__
-    fprintf( stderr, "\tSUCCESS!\n\n" );
-    #endif    
 
 #ifdef ZEND_ENGINE_2
 
@@ -806,9 +698,6 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
     my_fixup_hashtable(&dst->function_table, (ht_fixup_fun_t)my_fixup_function, src, dst);
 #endif
 
-    #ifdef __DEBUG_APC__
-    fprintf( stderr, "\tAbout to copy the zend_class_entry:default_properties... \n" );
-    #endif    
     if(!(my_copy_hashtable(&dst->default_properties,
                             &src->default_properties,
                             (ht_copy_fun_t) my_copy_zval_ptr,
@@ -817,15 +706,9 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
                             allocate,deallocate))) {
         goto cleanup;
     }
-    #ifdef __DEBUG_APC__
-    fprintf( stderr, "\tSUCCESS!\n\n" );
-    #endif    
 
 #ifdef ZEND_ENGINE_2
     
-    #ifdef __DEBUG_APC__
-    fprintf( stderr, "\tAbout to copy the zend_class_entry:properties_info... \n" );
-    #endif    
     if(!(my_copy_hashtable_ex(&dst->properties_info,
                             &src->properties_info,
                             (ht_copy_fun_t) my_copy_property_info,
@@ -836,14 +719,6 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
                             src))) {
         goto cleanup;
     }
-    #ifdef __DEBUG_APC__
-    fprintf( stderr, "\tSUCCESS!\n\n" );
-    #endif    
-    
-	/* not sure if statics should be dumped... */
-    #ifdef __DEBUG_APC__
-    fprintf( stderr, "\tAbout to copy the zend_class_entry:static_members... \n" );
-    #endif   
 
     if(!(dst->static_members = my_copy_hashtable_ex(NULL,
                             src->static_members,
@@ -855,13 +730,7 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
                             src))) {
         goto cleanup;
     }
-    #ifdef __DEBUG_APC__
-    fprintf( stderr, "\tSUCCESS!\n\n" );
-    #endif    
-    
-    #ifdef __DEBUG_APC__
-    fprintf( stderr, "\tAbout to copy the zend_class_entry:constants_table... \n" );
-    #endif    
+
     if(!(my_copy_hashtable(&dst->constants_table,
                             &src->constants_table,
                             (ht_copy_fun_t) my_copy_zval_ptr,
@@ -870,9 +739,6 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
                             allocate, deallocate))) {
         goto cleanup;
     }
-    #ifdef __DEBUG_APC__
-    fprintf( stderr, "\tSUCCESS!\n\n" );
-    #endif    
 
     if (src->doc_comment) {
         if(!(dst->doc_comment =
@@ -907,11 +773,6 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
         dst->builtin_functions[n].fname = NULL;
     }
    
-#ifdef __DEBUG_APC__
-    fprintf(stderr, "\nAbout to dump \"dst\"... \n" );
-    my_dump_zend_class_entry(dst);
-#endif
-
     return dst;
 
 
@@ -965,22 +826,12 @@ static HashTable* my_copy_hashtable_ex(HashTable* dst,
 
     memcpy(dst, src, sizeof(src[0]));
 
-#ifdef __DEBUG_APC__
-    fprintf(stderr, "\t<my_copy_hashtable>: About to dump src: %p\n", src);
-    my_zend_hash_display(src, "\t\t");
-    fprintf(stderr,"\n");
-#endif
-    
     /* allocate buckets for the new hashtable */
     if(!(dst->arBuckets = allocate(dst->nTableSize * sizeof(Bucket*)))) {
         if(local_dst_alloc) deallocate(dst);
         return NULL;
     }
 
-#ifdef __DEBUG_APC__
-/*    fprintf(stderr, "\t\t<my_copy_hashtable>: dst->arBuckets: %p\n", dst->arBuckets);*/
-#endif
-    
     memset(dst->arBuckets, 0, dst->nTableSize * sizeof(Bucket*));
     dst->pInternalPointer = NULL;
     dst->pListHead = NULL;
@@ -1052,12 +903,6 @@ static HashTable* my_copy_hashtable_ex(HashTable* dst,
     }
 
     dst->pListTail = newp;
-
-#ifdef __DEBUG_APC__
-    fprintf(stderr, "\t<my_copy_hashtable>: About to dump dst: %p\n", dst);
-    my_zend_hash_display(dst, "\t\t");
-    fprintf(stderr,"\n");
-#endif
 
     return dst;
     
@@ -1280,7 +1125,7 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_mal
             if(!(dst->vars[i].name = apc_xmemcpy(src->vars[i].name,
                                 src->vars[i].name_len + 1,
                                 allocate))) {
-		src->last_var = i;
+                dst->last_var = i;
                 goto cleanup_opcodes;
             }
         }
@@ -1318,9 +1163,10 @@ cleanup:
     if(dst->static_variables) my_free_hashtable(dst->static_variables, (ht_free_fun_t)my_free_zval_ptr, (apc_free_t)deallocate);
 #ifdef ZEND_ENGINE_2_1
     if (dst->vars) {
-    	for(i=0; i < src->last_var; i++) {
-		if(dst->vars[i].name) deallocate(dst->vars[i].name);
-	}
+    	for(i=0; i < dst->last_var; i++) {
+            if(dst->vars[i].name) deallocate(dst->vars[i].name);    
+        }
+        deallocate(dst->vars);
     }
 #endif
     if(local_dst_alloc) deallocate(dst);
@@ -1402,10 +1248,6 @@ apc_class_t* apc_copy_new_classes(zend_op_array* op_array, int old_count, apc_ma
     apc_class_t* array;
     int new_count;              /* number of new classes in table */
     int i;
-    HashPosition pos;
-#ifdef __DEBUG_APC__
-    int debug_ret_val = 0;
-#endif
     
     new_count = zend_hash_num_elements(CG(class_table)) - old_count;
     assert(new_count >= 0);
@@ -1418,10 +1260,6 @@ apc_class_t* apc_copy_new_classes(zend_op_array* op_array, int old_count, apc_ma
         array[0].class_entry = NULL;
         return array;
     }
-
-#ifdef __DEBUG_APC__
-    fprintf(stderr, "<apc_copy_new_classes> new_count: %d\n", new_count);
-#endif
 
     /* Skip the first `old_count` classes in the table */
     zend_hash_internal_pointer_reset(CG(class_table));
@@ -1437,9 +1275,6 @@ apc_class_t* apc_copy_new_classes(zend_op_array* op_array, int old_count, apc_ma
 
         array[i].class_entry = NULL;
 
-#ifdef __DEBUG_APC__
-       debug_ret_val =
-#endif
         zend_hash_get_current_key_ex(CG(class_table),
                                      &key,
                                      &key_size,
@@ -1449,9 +1284,6 @@ apc_class_t* apc_copy_new_classes(zend_op_array* op_array, int old_count, apc_ma
 
        zend_hash_get_current_data(CG(class_table), (void**) &elem);
   
-#ifdef __DEBUG_APC__
-        fprintf(stderr, "<apc_copy_new_classes> zend_hash_get_current_key_ex: %d -> <%s, %u>\n", debug_ret_val, key, key_size);
-#endif       
         
 #ifdef ZEND_ENGINE_2
 		elem = *((zend_class_entry**)elem);
@@ -1479,9 +1311,6 @@ apc_class_t* apc_copy_new_classes(zend_op_array* op_array, int old_count, apc_ma
                 deallocate(array[ii].class_entry);
             }
             deallocate(array);
-#ifdef __DEBUG_APC__
-            fprintf(stderr, "Oops! my_copy_class_entry failed! :-(\n");
-#endif
             return NULL;
         }
 
@@ -1685,6 +1514,8 @@ static void my_destroy_class_entry(zend_class_entry* src, apc_free_t deallocate)
     deallocate(src->name);
 #ifndef ZEND_ENGINE_2    
     deallocate(src->refcount);
+#else
+    if(src->doc_comment) deallocate(src->doc_comment);
 #endif
 
     my_destroy_hashtable(&src->function_table,
@@ -1696,10 +1527,17 @@ static void my_destroy_class_entry(zend_class_entry* src, apc_free_t deallocate)
                          deallocate);
 
 #ifdef ZEND_ENGINE_2
+    my_destroy_hashtable(&src->properties_info, 
+                            (ht_free_fun_t) my_free_property_info,
+                            deallocate);
     my_destroy_hashtable(src->static_members,
                          (ht_free_fun_t) my_free_zval_ptr,
                          deallocate);
     deallocate(src->static_members);
+
+    my_destroy_hashtable(&src->constants_table, 
+                            (ht_free_fun_t) my_free_zval_ptr,
+                            deallocate);
 #endif
 
     if (src->builtin_functions) {
@@ -1708,12 +1546,6 @@ static void my_destroy_class_entry(zend_class_entry* src, apc_free_t deallocate)
         }
         deallocate(src->builtin_functions);
     }
-
-#ifdef ZEND_ENGINE_2
-#ifndef _MSC_VER
-#warning "TODO: my_destroy_class_entry leaks memory in ZEND_ENGINE_2!"
-#endif
-#endif
 }
 /* }}} */
 
@@ -1774,10 +1606,18 @@ static void my_destroy_op_array(zend_op_array* src, apc_free_t deallocate)
                           deallocate);
     }
     
-#ifdef ZEND_ENGINE_2
-#ifndef _MSC_VER
-#warning "TODO: my_destroy_op_array leaks memory of vars & try-catch in ZEND_ENGINE_2!"
+#ifdef ZEND_ENGINE_2_1
+    if (src->vars) {
+    	for(i=0; i < src->last_var; i++) {
+            if(src->vars[i].name) deallocate(src->vars[i].name);    
+        }
+        deallocate(src->vars);
+    }
 #endif
+#ifdef ZEND_ENGINE_2
+    if(src->try_catch_array) {
+        deallocate(src->try_catch_array);
+    }
     if (src->doc_comment) {
         deallocate(src->doc_comment);
     }
@@ -1924,10 +1764,6 @@ zend_class_entry* apc_copy_class_entry_for_execution(zend_class_entry* src, int 
     zend_class_entry* dst = (zend_class_entry*) emalloc(sizeof(src[0]));
     memcpy(dst, src, sizeof(src[0]));
 
-#ifdef __DEBUG_APC__
-    fprintf(stderr, "<apc_copy_class_entry_for_execution>\n");
-#endif
-
 #ifdef ZEND_ENGINE_2
     /* These are slots to be populated later by ADD_INTERFACE insns */
     dst->interfaces = apc_php_malloc(sizeof(zend_class_entry*) * 
@@ -1937,9 +1773,6 @@ zend_class_entry* apc_copy_class_entry_for_execution(zend_class_entry* src, int 
 
     /* Deep-copy the class properties, because they will be modified */
 
-#ifdef __DEBUG_APC__
-    fprintf(stderr, "About to copy default_properties...\n");
-#endif
     my_copy_hashtable(&dst->default_properties,
                       &src->default_properties,
                       (ht_copy_fun_t) my_copy_zval_ptr,
@@ -1950,9 +1783,6 @@ zend_class_entry* apc_copy_class_entry_for_execution(zend_class_entry* src, int 
     /* For derived classes, we must also copy the function hashtable (although
      * we can merely bitwise copy the functions it contains) */
 
-#ifdef __DEBUG_APC__
-    fprintf(stderr, "About to copy function_table...\n");
-#endif
     my_copy_hashtable(&dst->function_table,
                       &src->function_table,
                       (ht_copy_fun_t) apc_copy_function_for_execution_ex,
@@ -2038,9 +1868,6 @@ static void my_fixup_function(Bucket *p, zend_class_entry *src, zend_class_entry
         assert(0);
     }
 
-#ifdef __DEBUG_APC__
-    fprintf(stderr, " <%s>->scope = %s\n" , zf->common.function_name, zf->common.scope->name);
-#endif
     #undef SET_IF_SAME_NAME
 }
 /* }}} */

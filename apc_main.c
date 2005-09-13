@@ -99,9 +99,6 @@ static int install_class(apc_class_t cl TSRMLS_DC)
     zend_class_entry** allocated_ce = apc_php_malloc(sizeof(zend_class_entry*));    
 
     if(!allocated_ce) {
-#ifdef __DEBUG_APC__
-        fprintf(stderr, "Failed to allocate memory for the allocated_ce!\n");
-#endif
         return FAILURE;
     }
 
@@ -131,11 +128,6 @@ static int install_class(apc_class_t cl TSRMLS_DC)
                                 strlen(cl.parent_name)+1,
                                 (void**) &parent);
 #endif
-#ifdef __DEBUG_APC__
-        my_zend_hash_display(EG(class_table), "\t");
-        fprintf(stderr, "<zend_hash_find> for %s got <%s, %d> and returned: %d\n", class_entry->name, cl.parent_name, strlen(cl.parent_name)+1, status);
-#endif
-        
         if (status == FAILURE) {
             class_entry->parent = NULL;
         }
@@ -145,9 +137,6 @@ static int install_class(apc_class_t cl TSRMLS_DC)
 #endif 
             class_entry->parent = parent;
 #ifdef ZEND_ENGINE_2            
-#ifdef __DEBUG_APC__
-            fprintf(stderr, "<install_class> for <%s, %p>, parent: <%s, %p> --> %d\n", class_entry->name, class_entry, cl.parent_name, parent, status);
-#endif 
             zend_do_inheritance(class_entry, parent TSRMLS_CC);
 #endif            
         }
@@ -162,9 +151,6 @@ static int install_class(apc_class_t cl TSRMLS_DC)
                            allocated_ce,
                            sizeof(zend_class_entry*),
                            NULL);
-#ifdef __DEBUG_APC__
-        fprintf(stderr, "<zend_hash_add> <%s, %d> %d\n", cl.name, cl.name_len+1, status);
-#endif
 #else                           
     status = zend_hash_add(EG(class_table),
                            cl.name,
@@ -220,9 +206,6 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
     size_t mem_size;
 
     if (!APCG(enabled)) {
-#ifdef __DEBUG_APC__
-		fprintf(stderr,"APC disabled - no caching on this request\n");
-#endif
 		return old_compile_file(h, type TSRMLS_CC);
 	}
 
@@ -230,15 +213,9 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
     if (apc_compiled_filters) {
         int ret = apc_regex_match_array(apc_compiled_filters, h->filename);
         if(ret == APC_NEGATIVE_MATCH || (ret != APC_POSITIVE_MATCH && !APCG(cache_by_default))) {
-#ifdef __DEBUG_APC__
-			fprintf(stderr,"negative regex match found - no caching on this request\n");
-#endif
             return old_compile_file(h, type TSRMLS_CC);
         }
     } else if(!APCG(cache_by_default)) {
-#ifdef __DEBUG_APC__
-		fprintf(stderr,"cache_by_default is off - no caching on this request\n");
-#endif
         return old_compile_file(h, type TSRMLS_CC);
     }
 
@@ -254,9 +231,6 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
 
     /* try to create a cache key; if we fail, give up on caching */
     if (!apc_cache_make_file_key(&key, h->filename, PG(include_path), t TSRMLS_CC)) {
-#ifdef __DEBUG_APC__
-		fprintf(stderr,"Unable to create a cache key - no caching on this request\n");
-#endif
         return old_compile_file(h, type TSRMLS_CC);
     }
     
