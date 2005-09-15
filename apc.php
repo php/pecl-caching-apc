@@ -42,7 +42,7 @@ defaults('ADMIN_USERNAME','apc'); 			// Admin Username
 defaults('ADMIN_PASSWORD','password');  	// Admin Password - CHANGE THIS TO ENABLE!!!
 
 // (beckerr) I'm using a clear text password here, because I've no good idea how to let 
-//           users generate a md5 or crypt passwort in a easy way to fill it in above
+//           users generate a md5 or crypt password in a easy way to fill it in above
 
 //defaults('DATE_FORMAT', "d.m.Y H:i:s");	// German
 defaults('DATE_FORMAT', 'Y/m/d H:i:s'); 	// US
@@ -155,7 +155,7 @@ if (!USE_AUTHENTIFICATION) {
 			echo <<<EOB
 				<html><body>
 				<h1>Rejected!</h1>
-				<big>Wrong Username or Passwort!</big><br/>&nbsp;<br/>&nbsp;
+				<big>Wrong Username or Password!</big><br/>&nbsp;<br/>&nbsp;
 				<big><a href='$PHP_SELF?OB={$MYREQUEST['OB']}'>Continue...</a></big>
 				</body></html>
 EOB;
