@@ -116,6 +116,10 @@ static int install_class(apc_class_t cl TSRMLS_DC)
         /*
          * zend_lookup_class has to be due to presence of __autoload, 
          * just looking up the EG(class_table) is not enough in php5!
+         * Even more dangerously, thanks to __autoload and people using
+         * class names as filepaths for inclusion, this has to be case
+         * sensitive. zend_lookup_class automatically does a case_fold
+         * internally, but passes the case preserved version to __autoload.
          * Aside: Do NOT pass *strlen(cl.parent_name)+1* because 
          * zend_lookup_class does it internally anyway!
          */

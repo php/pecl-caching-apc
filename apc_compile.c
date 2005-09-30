@@ -1338,13 +1338,6 @@ apc_class_t* apc_copy_new_classes(zend_op_array* op_array, int old_count, apc_ma
                 return NULL;
             }
             array[i].is_derived = 1;
-#ifdef ZEND_ENGINE_2
-            /*
-             * CG(class_table) is in lower-case but 
-             * elem->parent->name preserves case
-             */
-        	zend_str_tolower_copy(array[i].parent_name, elem->parent->name, strlen(elem->parent->name)+1);            
-#endif
         }
         else {
             array[i].parent_name = NULL;
