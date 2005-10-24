@@ -79,7 +79,7 @@ static int install_function(apc_function_t fn TSRMLS_DC)
                       NULL);
 
     if (status == FAILURE) {
-        /* XXX: is there any way for us to handle this case? */
+        zend_error(E_ERROR, "Cannot redeclare %s()", fn.name);
     }
 
     return status;
@@ -163,7 +163,9 @@ static int install_class(apc_class_t cl TSRMLS_DC)
                            sizeof(zend_class_entry),
                            NULL);
 #endif                           
-    
+    if (status == FAILURE) {
+        zend_error(E_ERROR, "Cannot redeclare class %s", cl.name);
+    } 
     return status;
 }
 /* }}} */
