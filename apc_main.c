@@ -152,7 +152,8 @@ static int install_class(apc_class_t cl TSRMLS_DC)
               be much slower doing the inheritance dynamically like this.  Stick to 
               well-ordered inheritance trees that allows early binding to do its thing.
             */
-            char *lower_parent = zend_str_tolower_dup(cl.parent_name, parent_len+1);
+            char *lower_parent = estrndup(cl.parent_name, parent_len);
+	    zend_str_tolower(cl.parent_name, parent_len);
 #ifdef ZEND_ENGINE_2                           
             zend_hash_add(&APCG(delayed_inheritance_hash), lower_parent, parent_len+1, (void *)allocated_ce, sizeof(zend_class_entry *), NULL);
 #else                           
