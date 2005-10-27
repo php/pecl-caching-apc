@@ -92,6 +92,7 @@ static int install_class(apc_class_t cl TSRMLS_DC)
     zend_class_entry* class_entry = cl.class_entry;
     zend_class_entry* parent;
     int status;
+
 #ifdef ZEND_ENGINE_2    
     /*
      * XXX: We need to free this somewhere...
@@ -104,13 +105,26 @@ static int install_class(apc_class_t cl TSRMLS_DC)
 
     *allocated_ce = 
 #endif        
-    class_entry =
-        apc_copy_class_entry_for_execution(cl.class_entry,
-                                           cl.is_derived);
+    class_entry = apc_copy_class_entry_for_execution(cl.class_entry, cl.is_derived);
 
+    /* check to see if this class is on the delayed inheritance list and perform inheritance if so */
+    if(APCG(delayed_inheritance_hash).nNumOfElements) {
+        zend_class_entry **pparent;
+        status = zend_hash_find(&APCG(delayed_inheritance_hash), cl.name, cl.name_len+1, (void **)&pparent);
+        if(status == SUCCESS) {
+            /* 
+               At this point we have found a class that a child has previously said it extended, so
+               we go back and fix up that child class by adding this class as its parent and doing the
+               inheritance magic on it
+            */
+            (*pparent)->parent = class_entry;
+            zend_do_inheritance(*pparent, class_entry TSRMLS_CC);
+        }
+    } 
 
     /* restore parent class pointer for compile-time inheritance */
     if (cl.parent_name != NULL) {
+        int parent_len = strlen(cl.parent_name);
 #ifdef ZEND_ENGINE_2    
         zend_class_entry** parent_ptr = NULL;
         /*
@@ -123,16 +137,28 @@ static int install_class(apc_class_t cl TSRMLS_DC)
          * Aside: Do NOT pass *strlen(cl.parent_name)+1* because 
          * zend_lookup_class does it internally anyway!
          */
-        status = zend_lookup_class(cl.parent_name,
-                                    strlen(cl.parent_name),
-                                    &parent_ptr TSRMLS_CC);
+        status = zend_lookup_class(cl.parent_name, parent_len, &parent_ptr TSRMLS_CC);
 #else
-        status = zend_hash_find(EG(class_table),
-                                cl.parent_name,
-                                strlen(cl.parent_name)+1,
-                                (void**) &parent);
+        status = zend_hash_find(EG(class_table), cl.parent_name, parent_len+1, (void**) &parent);
 #endif
         if (status == FAILURE) {
+            /*
+              Here a class has said it is a child of some other class, but we can't
+              find that other class in the class table.  This is either an error, or
+              this parent class is going to come along later (dynamic languages suck!)
+              so we keep a table of future_parent->child relationships and each time
+              we see a new class we check to see if a child wants it to be its parent.
+              Of course, you shouldn't write code that does this since it is going to
+              be much slower doing the inheritance dynamically like this.  Stick to 
+              well-ordered inheritance trees that allows early binding to do its thing.
+            */
+            char *lower_parent = zend_str_tolower_dup(cl.parent_name, parent_len+1);
+#ifdef ZEND_ENGINE_2                           
+            zend_hash_add(&APCG(delayed_inheritance_hash), lower_parent, parent_len+1, (void *)allocated_ce, sizeof(zend_class_entry *), NULL);
+#else                           
+            zend_hash_add(&APCG(delayed_inheritance_hash), lower_parent, parent_len+1, (void *)&class_entry, sizeof(zend_class_entry *), NULL);
+#endif
+            efree(lower_parent);
             class_entry->parent = NULL;
         }
         else {
@@ -144,10 +170,9 @@ static int install_class(apc_class_t cl TSRMLS_DC)
             zend_do_inheritance(class_entry, parent TSRMLS_CC);
 #endif            
         }
-
-
     }
 
+    
 #ifdef ZEND_ENGINE_2                           
     status = zend_hash_add(EG(class_table),
                            cl.name,
@@ -400,6 +425,9 @@ void apc_deactivate(TSRMLS_D)
         apc_cache_entry_t* cache_entry =
             (apc_cache_entry_t*) apc_stack_pop(APCG(cache_stack));
         apc_cache_release(apc_cache, cache_entry);
+    }
+    if(APCG(delayed_inheritance_hash).nNumOfElements) {
+        zend_hash_clean(&APCG(delayed_inheritance_hash));
     }
 }
 /* }}} */
