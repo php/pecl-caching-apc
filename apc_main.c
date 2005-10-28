@@ -117,7 +117,6 @@ static int install_class(apc_class_t cl TSRMLS_DC)
                we go back and fix up that child class by adding this class as its parent and doing the
                inheritance magic on it
             */
-            (*pparent)->parent = class_entry;
             zend_do_inheritance(*pparent, class_entry TSRMLS_CC);
         }
     } 
@@ -155,6 +154,7 @@ static int install_class(apc_class_t cl TSRMLS_DC)
             char *lower_parent = estrndup(cl.parent_name, parent_len);
             zend_str_tolower(lower_parent, parent_len);
 #ifdef ZEND_ENGINE_2                           
+            (*allocated_ce)->refcount++; 
             zend_hash_add(&APCG(delayed_inheritance_hash), lower_parent, parent_len+1, (void *)allocated_ce, sizeof(zend_class_entry *), NULL);
 #else                           
             zend_hash_add(&APCG(delayed_inheritance_hash), lower_parent, parent_len+1, (void *)&class_entry, sizeof(zend_class_entry *), NULL);
@@ -166,10 +166,7 @@ static int install_class(apc_class_t cl TSRMLS_DC)
 #ifdef ZEND_ENGINE_2            
             parent = *parent_ptr;
 #endif 
-            class_entry->parent = parent;
-#ifdef ZEND_ENGINE_2            
             zend_do_inheritance(class_entry, parent TSRMLS_CC);
-#endif            
         }
     }
 
