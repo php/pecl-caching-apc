@@ -772,16 +772,25 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
         }
         dst->builtin_functions[n].fname = NULL;
     }
+
+#ifdef ZEND_ENGINE_2
+    if (src->filename) {
+        if(!(dst->filename = apc_xstrdup(src->filename, allocate))) {
+            goto cleanup;
+        }
+    }
+#endif
    
     return dst;
 
 
 cleanup:
     if(dst->name) deallocate(dst->name);
-#ifndef ZEND_ENGINE_2
-    if(dst->refcount) deallocate(dst->refcount);
-#else
+#ifdef ZEND_ENGINE_2
     if(dst->doc_comment) deallocate(dst->doc_comment);
+    if(dst->filename) deallocate(dst->filename);
+#else
+    if(dst->refcount) deallocate(dst->refcount);
 #endif
     
     if(dst->builtin_functions) deallocate(dst->builtin_functions);
