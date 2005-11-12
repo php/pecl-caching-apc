@@ -5,35 +5,39 @@ dnl
 AC_ARG_WITH(apxs,
 [  --with-apxs[=FILE]      Get compiler flags from apxs -q.  Provide the
                           pathname to the Apache apxs tool; defaults to "apxs".],[
-  if test "$withval" = "yes"; then
-    APXS=apxs
-    $APXS -q CFLAGS >/dev/null 2>&1
-    if test "$?" != "0" && test -x /usr/sbin/apxs; then #SUSE 6.x
-      APXS=/usr/sbin/apxs
+  if test "$withval" != "no"; then
+    if test "$withval" = "yes"; then
+      APXS=apxs
+      $APXS -q CFLAGS >/dev/null 2>&1
+      if test "$?" != "0" && test -x /usr/sbin/apxs; then #SUSE 6.x
+        APXS=/usr/sbin/apxs
+      fi
+    else
+      PHP_EXPAND_PATH($withval, APXS)
     fi
+
+    $APXS -q CFLAGS >/dev/null 2>&1
+    if test "$?" != "0"; then
+      AC_MSG_RESULT()
+      AC_MSG_RESULT()
+      AC_MSG_RESULT([Sorry, I was not able to successfully run APXS.  Possible reasons:])
+      AC_MSG_RESULT()
+      AC_MSG_RESULT([1.  Perl is not installed;])
+      AC_MSG_RESULT([2.  Apache was not compiled with DSO support (--enable-module=so);])
+      AC_MSG_RESULT([3.  'apxs' is not in your path.  Try to use --with-apxs=/path/to/apxs])
+      AC_MSG_RESULT([The output of $APXS follows])
+      $APXS -q CFLAGS
+      AC_MSG_ERROR([Aborting])
+    fi
+
+    APC_CFLAGS=`$APXS -q CFLAGS`
+    AC_MSG_RESULT(yes)
   else
-    PHP_EXPAND_PATH($withval, APXS)
+    AC_MSG_RESULT(no)
   fi
-
-  $APXS -q CFLAGS >/dev/null 2>&1
-  if test "$?" != "0"; then
-    AC_MSG_RESULT()
-    AC_MSG_RESULT()
-    AC_MSG_RESULT([Sorry, I was not able to successfully run APXS.  Possible reasons:])
-    AC_MSG_RESULT()
-    AC_MSG_RESULT([1.  Perl is not installed;])
-    AC_MSG_RESULT([2.  Apache was not compiled with DSO support (--enable-module=so);])
-    AC_MSG_RESULT([3.  'apxs' is not in your path.  Try to use --with-apxs=/path/to/apxs])
-    AC_MSG_RESULT([The output of $APXS follows])
-    $APXS -q CFLAGS
-    AC_MSG_ERROR([Aborting])
-  fi
-
-  APC_CFLAGS=`$APXS -q CFLAGS`
-  AC_MSG_RESULT(yes)
 ],[
   AC_MSG_RESULT(no)
-])  
+])
 
 PHP_ARG_ENABLE(apc, whether to enable APC support,
 [  --enable-apc           Enable APC support])
