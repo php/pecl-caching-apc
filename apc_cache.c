@@ -420,7 +420,6 @@ int apc_cache_insert(apc_cache_t* cache,
 int apc_cache_user_insert(apc_cache_t* cache, apc_cache_key_t key, apc_cache_entry_t* value, time_t t TSRMLS_DC)
 {
     slot_t** slot;
-    int ilen;
     size_t* mem_size_ptr = NULL;
 
     if (!value) {
@@ -430,8 +429,7 @@ int apc_cache_user_insert(apc_cache_t* cache, apc_cache_key_t key, apc_cache_ent
     LOCK(cache);
     process_pending_removals(cache);
 
-    ilen = strlen(key.data.user.identifier);
-    slot = &cache->slots[string_nhash_8(key.data.user.identifier, ilen) % cache->num_slots];
+    slot = &cache->slots[string_nhash_8(key.data.user.identifier, key.data.user.identifier_len) % cache->num_slots];
 
     if (APCG(mem_size_ptr) != NULL) {
         mem_size_ptr = APCG(mem_size_ptr);
@@ -439,7 +437,7 @@ int apc_cache_user_insert(apc_cache_t* cache, apc_cache_key_t key, apc_cache_ent
     }
 
     while (*slot) {
-        if (!strncmp((*slot)->key.data.user.identifier, key.data.user.identifier, ilen)) {
+        if (!memcmp((*slot)->key.data.user.identifier, key.data.user.identifier, key.data.user.identifier_len)) {
             /* If a slot with the same identifier already exists, remove it */
             remove_slot(cache, slot);
             break;
@@ -517,7 +515,7 @@ apc_cache_entry_t* apc_cache_user_find(apc_cache_t* cache, char *strkey, int key
     slot = &cache->slots[string_nhash_8(strkey, keylen) % cache->num_slots];
 
     while (*slot) {
-        if (!strncmp((*slot)->key.data.user.identifier, strkey, keylen)) {
+        if (!memcmp((*slot)->key.data.user.identifier, strkey, keylen)) {
             /* Check to make sure this entry isn't expired by a hard TTL */
             if((*slot)->value->data.user.ttl && ((*slot)->creation_time + (*slot)->value->data.user.ttl) < t) {
                 remove_slot(cache, slot);
@@ -551,7 +549,7 @@ int apc_cache_user_delete(apc_cache_t* cache, char *strkey, int keylen)
     slot = &cache->slots[string_nhash_8(strkey, keylen) % cache->num_slots];
 
     while (*slot) {
-        if (!strncmp((*slot)->key.data.user.identifier, strkey, keylen)) {
+        if (!memcmp((*slot)->key.data.user.identifier, strkey, keylen)) {
             remove_slot(cache, slot);
             UNLOCK(cache);
             return 1;
@@ -653,7 +651,7 @@ int apc_cache_make_file_key(apc_cache_key_t* key,
 /* }}} */
 
 /* {{{ apc_cache_make_user_key */
-int apc_cache_make_user_key(apc_cache_key_t* key, char* identifier, const time_t t)
+int apc_cache_make_user_key(apc_cache_key_t* key, char* identifier, int identifier_len, const time_t t)
 {
     assert(key != NULL);
 
@@ -661,6 +659,7 @@ int apc_cache_make_user_key(apc_cache_key_t* key, char* identifier, const time_t
         return 0;
 
     key->data.user.identifier = identifier;
+    key->data.user.identifier_len = identifier_len;
     key->mtime = t;
     return 1;
 }
@@ -706,14 +705,15 @@ apc_cache_entry_t* apc_cache_make_file_entry(const char* filename,
 /* }}} */
 
 /* {{{ apc_cache_make_user_entry */
-apc_cache_entry_t* apc_cache_make_user_entry(const char* info, const zval* val, const unsigned int ttl)
+apc_cache_entry_t* apc_cache_make_user_entry(const char* info, int info_len, const zval* val, const unsigned int ttl)
 {
     apc_cache_entry_t* entry;
 
     entry = (apc_cache_entry_t*) apc_sma_malloc(sizeof(apc_cache_entry_t));
     if (!entry) return NULL;
 
-    entry->data.user.info  = apc_xstrdup(info, apc_sma_malloc);
+    entry->data.user.info = apc_xmemcpy(info, info_len, apc_sma_malloc);
+    entry->data.user.info_len = info_len;
     if(!entry->data.user.info) {
         apc_sma_free(entry);
         return NULL;
@@ -791,7 +791,7 @@ apc_cache_info_t* apc_cache_info(apc_cache_t* cache)
                 link->data.file.inode = p->key.data.file.inode;
                 link->type = APC_CACHE_ENTRY_FILE;
             } else if(p->value->type == APC_CACHE_ENTRY_USER) {
-                link->data.user.info = apc_xstrdup(p->value->data.user.info, apc_emalloc);
+                link->data.user.info = apc_xmemcpy(p->value->data.user.info, p->value->data.user.info_len, apc_emalloc);
                 link->data.user.ttl = p->value->data.user.ttl;
                 link->type = APC_CACHE_ENTRY_USER;
             }
@@ -818,7 +818,7 @@ apc_cache_info_t* apc_cache_info(apc_cache_t* cache)
             link->data.file.inode = p->key.data.file.inode;
             link->type = APC_CACHE_ENTRY_FILE;
         } else if(p->value->type == APC_CACHE_ENTRY_USER) {
-            link->data.user.info = apc_xstrdup(p->value->data.user.info, apc_emalloc);
+            link->data.user.info = apc_xmemcpy(p->value->data.user.info, p->value->data.user.info_len, apc_emalloc);
             link->data.user.ttl = p->value->data.user.ttl;
             link->type = APC_CACHE_ENTRY_USER;
         }

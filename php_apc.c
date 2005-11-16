@@ -395,7 +395,7 @@ PHP_FUNCTION(apc_sma_info)
 /* }}} */
 
 /* {{{ _apc_store */
-static int _apc_store(char *strkey, const zval *val, const unsigned int ttl TSRMLS_DC) {
+static int _apc_store(char *strkey, int strkey_len, const zval *val, const unsigned int ttl TSRMLS_DC) {
     apc_cache_entry_t *entry;
     apc_cache_key_t key;
     time_t t;
@@ -414,14 +414,14 @@ static int _apc_store(char *strkey, const zval *val, const unsigned int ttl TSRM
     if(!APCG(enabled)) return 0;
 
     APCG(mem_size_ptr) = &mem_size;
-    if (!(entry = apc_cache_make_user_entry(strkey, val, ttl))) {
+    if (!(entry = apc_cache_make_user_entry(strkey, strkey_len + 1, val, ttl))) {
         APCG(mem_size_ptr) = NULL;
         apc_cache_expunge(apc_cache,t);
         apc_cache_expunge(apc_user_cache,t);
         return 0;
     }
 
-    if (!apc_cache_make_user_key(&key, strkey, t)) {
+    if (!apc_cache_make_user_key(&key, strkey, strkey_len + 1, t)) {
         APCG(mem_size_ptr) = NULL;
         apc_cache_free_entry(entry);
         apc_cache_expunge(apc_cache,t);
@@ -461,7 +461,7 @@ PHP_FUNCTION(apc_store) {
 
     if(!strkey_len) RETURN_FALSE;
 
-    if(_apc_store(strkey, val, (unsigned int)ttl TSRMLS_CC)) RETURN_TRUE;
+    if(_apc_store(strkey, strkey_len, val, (unsigned int)ttl TSRMLS_CC)) RETURN_TRUE;
     RETURN_FALSE;
 }
 /* }}} */
@@ -496,7 +496,7 @@ PHP_FUNCTION(apc_fetch) {
     t = sapi_get_request_time(TSRMLS_C);
 #endif
 
-    entry = apc_cache_user_find(apc_user_cache, strkey, strkey_len, t);
+    entry = apc_cache_user_find(apc_user_cache, strkey, strkey_len + 1, t);
     if(entry) {
         /* deep-copy returned shm zval to emalloc'ed return_value */
         apc_copy_zval(return_value, entry->data.user.val, apc_php_malloc, apc_php_free);
@@ -521,7 +521,7 @@ PHP_FUNCTION(apc_delete) {
 
     if(!strkey_len) RETURN_FALSE;
 
-    if(apc_cache_user_delete(apc_user_cache, strkey, strkey_len)) {
+    if(apc_cache_user_delete(apc_user_cache, strkey, strkey_len + 1)) {
         RETURN_TRUE;
     } else {
         RETURN_FALSE;
@@ -586,7 +586,7 @@ PHP_FUNCTION(apc_define_constants) {
 
     _apc_define_constants(constants, case_sensitive TSRMLS_CC);
 
-    if(_apc_store(strkey, constants, 0 TSRMLS_CC)) RETURN_TRUE;
+    if(_apc_store(strkey, strkey_len, constants, 0 TSRMLS_CC)) RETURN_TRUE;
     RETURN_FALSE;
 } /* }}} */
 

@@ -198,6 +198,14 @@ Fix invalid free in globals destructor introduced in 3.0.7 (Rasmus)
 Cache corruption fix in cache-full cleanup code (Gopal)
   </notes>
  </release>
+  <release>
+  <state>stable</state>
+  <version>3.0.9</version>
+  <date>2005-??-??</date>
+  <notes>
+Allow keys used in apc_store/apc_fetch/apc_delete to be binary safe and prevent conflicts between keys that are found at the start of other keys. (Ilia)
+  </notes>
+ </release>
   </changelog>
 </package>
 <!--

@@ -52,6 +52,7 @@ typedef union _apc_cache_key_data_t {
     } file;
     struct {
         char *identifier;
+	int identifier_len;
     } user;
 } apc_cache_key_data_t;
 
@@ -72,6 +73,7 @@ typedef union _apc_cache_entry_value_t {
     } file;
     struct {
         char *info; 
+	int info_len; 
         zval *val;
         unsigned int ttl;
     } user;
@@ -203,9 +205,9 @@ extern apc_cache_entry_t* apc_cache_make_file_entry(const char* filename,
  * apc_cache_make_user_entry creates an apc_cache_entry_t object given an info string
  * and the zval to be stored.
  */
-extern apc_cache_entry_t* apc_cache_make_user_entry(const char* info, const zval *val, const unsigned int ttl);
+extern apc_cache_entry_t* apc_cache_make_user_entry(const char* info, int info_len, const zval *val, const unsigned int ttl);
 
-extern int apc_cache_make_user_key(apc_cache_key_t* key, char* identifier, const time_t t);
+extern int apc_cache_make_user_key(apc_cache_key_t* key, char* identifier, int identifier_len, const time_t t);
 extern int apc_cache_free_user_key(apc_cache_key_t* key);
 
 /*
