@@ -54,6 +54,7 @@
 /* pointer to the original Zend engine compile_file function */
 typedef zend_op_array* (zend_compile_t)(zend_file_handle*, int TSRMLS_DC);
 static zend_compile_t *old_compile_file;
+static int recursive_inheritance(zend_class_entry *class_entry);
 
 /* }}} */
 
@@ -86,8 +87,157 @@ static int install_function(apc_function_t fn TSRMLS_DC)
 }
 /* }}} */
 
-/* {{{ install_class */
+typedef struct apc_hash_link_t apc_hash_link_t;
+struct apc_hash_link_t {
+    zend_class_entry *ce;
+    apc_hash_link_t *next;
+};
+
+/* {{{ install_class
+ *
+ * This install_class function contains mucho magico related to inheritance.
+ * Think of the inheritance chain of A->B->C as in A is the root class extended
+ * by B which is in turn extended by C.  The simplest case is when everything
+ * happens in order.  That is, we get called on to install A, B and C in that
+ * order.  For A it doesn't have a parent so we just fall through to doing a
+ * zend_hash_add(A).  For B, it has parent A and the class lookup will find
+ * A because we added it on the previous call.  Then zend_do_inheritance() is
+ * called to inherit from A into B.  And the same thing happens when C comes
+ * along.
+ *
+ * Now, flip things around.  Say we get called on to install class C first.
+ * It has a parent, so we try to lookup the parent.  This will fail because
+ * it hasn't been added yet.  We then add it to the delayed inheritance hash
+ * with the key being B.  Next, B comes along.  Its parent is A which isn't
+ * around so we fall into the same logic as with C.  We couldn't find the 
+ * parent, so we are not allowed to do any inheritance yet.  We can only
+ * add it to the delayed inheritance hash.  We therefore add the A->B
+ * entry to the delayed inheritance hash.  Note that there can be multiple
+ * children for a parent node, so the hash actually contains a linked list
+ * of children at each parent node.  
+ * 
+ * -Rasmus (in a hotel room in Paris, Nov.13 2005)
+ */
 static int install_class(apc_class_t cl TSRMLS_DC)
+{
+    zend_class_entry *class_entry;
+    zend_class_entry *parent;
+    apc_hash_link_t  *he;
+    int status;
+
+    class_entry = apc_copy_class_entry_for_execution(cl.class_entry, cl.is_derived);
+
+    if(cl.parent_name != NULL) {
+        int parent_len = strlen(cl.parent_name);
+#ifdef ZEND_ENGINE_2    
+        zend_class_entry** parent_ptr = NULL;
+        status = zend_lookup_class(cl.parent_name, parent_len, &parent_ptr TSRMLS_CC);
+#else
+        status = zend_hash_find(EG(class_table), cl.parent_name, parent_len+1, (void**) &parent);
+#endif
+        if(status == SUCCESS) {
+#ifdef ZEND_ENGINE_2            
+            parent = *parent_ptr;
+#endif 
+            zend_do_inheritance(class_entry, parent TSRMLS_CC);
+            zend_error(E_WARNING, "Inheriting into %s from parent %s", class_entry->name, parent->name);
+            status = recursive_inheritance(class_entry);
+        } else {
+            if(APCG(dynamic_error)) {
+                zend_error(E_WARNING, "Dynamic inheritance detected on %s extending %s", class_entry->name, cl.parent_name);
+            }
+            apc_hash_link_t *hl = apc_php_malloc(sizeof(apc_hash_link_t *));
+            int added = 0;
+            char *lower_parent = estrndup(cl.parent_name, parent_len);
+            zend_str_tolower(lower_parent, parent_len);
+            hl->ce = class_entry;
+            hl->next = NULL;
+            if(APCG(delayed_inheritance_hash).nNumOfElements) {
+                apc_hash_link_t **ehl;
+                status = zend_hash_find(&APCG(delayed_inheritance_hash), lower_parent, parent_len+1, (void **)&ehl);
+                if(status == SUCCESS) {
+                    /* It's already in the hash, so add the class_entry to the linked list */
+                    while((*ehl)->next) *ehl=(*ehl)->next;
+                    (*ehl)->next = hl;        
+                    added = 1;
+                }
+            }
+            if(!added) {
+                zend_hash_add(&APCG(delayed_inheritance_hash), lower_parent, parent_len+1, (void *)&hl, sizeof(apc_hash_link_t *), NULL);
+            }
+            class_entry->parent = NULL;
+            efree(lower_parent);
+            status = SUCCESS;
+        }
+    } else {
+        status = SUCCESS;
+        status = recursive_inheritance(class_entry);
+    }
+   
+    return status;
+}
+/* }}} */
+
+/* {{{ recursive_inheritance 
+ * 
+ * We can't have mucho magico without a dose of recursion to really confuse
+ * things.  This function completes a node in the inheritance tree.
+ * By complete I mean a node who is either a true root parent node or a sub-node
+ * who has already been inherited into from a complete parent.  We check to
+ * see if we have any children waiting for us on the delayed inheritance list and
+ * if we do we inherit into them making each of those nodes complete.  Once we
+ * have inherited into a node, we call ourselves again with this new node as the
+ * complete parent node.  Once there are no more children for a node, we delete 
+ * the hash entry from the delayed inheritance list and finally we add the class
+ * to the class table.
+ */
+static int recursive_inheritance(zend_class_entry *class_entry) {
+    apc_hash_link_t  **ehl;
+    zend_class_entry **allocated_ce;
+    int status;
+    char *lower_cen = estrndup(class_entry->name, class_entry->name_length);
+    zend_str_tolower(lower_cen, class_entry->name_length);
+    status = zend_hash_find(&APCG(delayed_inheritance_hash), lower_cen, class_entry->name_length+1, (void **)&ehl);
+    zend_error(E_WARNING, "Recursive inheritance called for %s", class_entry->name);
+    if(status == SUCCESS) {
+        do {
+            zend_do_inheritance((*ehl)->ce, class_entry TSRMLS_CC);
+            zend_error(E_WARNING, "Inheriting into %s from parent %s", (*ehl)->ce->name, class_entry->name);
+            zend_error(E_WARNING, "Recursing for %s", (*ehl)->ce->name);
+            status = recursive_inheritance((*ehl)->ce);
+            if(status == FAILURE) {
+                efree(lower_cen);
+                return status;
+            }
+        } while(*ehl = (*ehl)->next);
+        zend_hash_del(&APCG(delayed_inheritance_hash), lower_cen, class_entry->name_length+1);
+    }
+
+#ifdef ZEND_ENGINE_2    
+    /* XXX: We need to free this somewhere... */
+    allocated_ce = apc_php_malloc(sizeof(zend_class_entry*));    
+    if(!allocated_ce) {
+        efree(lower_cen);
+        return FAILURE;
+    }
+    *allocated_ce = class_entry; 
+    status = zend_hash_add(EG(class_table), lower_cen, class_entry->name_length+1, allocated_ce, sizeof(zend_class_entry*), NULL);
+#else
+    status = zend_hash_add(EG(class_table), lower_cen, class_entry->name_length+1, class_entry, sizeof(zend_class_entry), NULL);
+#endif        
+    if(status == FAILURE) {
+        zend_error(E_WARNING, "Failed adding class %s", lower_cen);
+    } else {
+        zend_error(E_WARNING, "Added class %s", lower_cen);
+    }
+
+    efree(lower_cen);
+    return status;
+}
+/* }}} */
+
+/* {{{ old_install_class */
+static int old_install_class(apc_class_t cl TSRMLS_DC)
 {
     zend_class_entry* class_entry = cl.class_entry;
     zend_class_entry* parent;
@@ -118,6 +268,7 @@ static int install_class(apc_class_t cl TSRMLS_DC)
                inheritance magic on it
             */
             zend_do_inheritance(*pparent, class_entry TSRMLS_CC);
+            zend_error(E_WARNING, "Inheriting into %s from parent %s", (*pparent)->name, class_entry->name);
         }
     } 
 
@@ -167,10 +318,11 @@ static int install_class(apc_class_t cl TSRMLS_DC)
             parent = *parent_ptr;
 #endif 
             zend_do_inheritance(class_entry, parent TSRMLS_CC);
+            zend_error(E_WARNING, "Inheriting into %s from parent %s", class_entry->name, parent->name);
         }
     }
-
     
+    zend_error(E_WARNING, "Adding %s", (*allocated_ce)->name);
 #ifdef ZEND_ENGINE_2                           
     status = zend_hash_add(EG(class_table),
                            cl.name,

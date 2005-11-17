@@ -317,3 +317,12 @@ users should consider tuning the following parameters:
 
     apc.max_file_size       Prevents large files from being cached.  
                             (Default: 1M)
+
+    apc.dynamic_error       If you turn this on then you will get an E_ERROR on any
+                            runtime dynamic inheritance.  By always, non-conditionally
+                            defining your parent class before extending it, this 
+                            inheritance can be done at compile-time.  Most of the time
+                            it isn't that hard to make sure you are always using 
+                            compile-time inheritance which results in faster and simpler
+                            code.
+                            (Default: 0)
