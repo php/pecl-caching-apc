@@ -1293,16 +1293,15 @@ apc_class_t* apc_copy_new_classes(zend_op_array* op_array, int old_count, apc_ma
 
        zend_hash_get_current_data(CG(class_table), (void**) &elem);
   
-       zend_error(E_WARNING, "key = [%s], key_size = [%d]", key, (int)key_size); 
+        
 #ifdef ZEND_ENGINE_2
 		elem = *((zend_class_entry**)elem);
 #endif
-
+        
         if(!(array[i].name = apc_xmemcpy(key, (int) key_size, allocate))) {
             int ii;
 
             for(ii=i-1; ii>=0; ii--) {
-                zend_error(E_WARNING, "clearing name = \"%s\"", array[ii].name);        
                 deallocate(array[ii].name);
                 my_destroy_class_entry(array[ii].class_entry, deallocate);
                 deallocate(array[ii].class_entry);

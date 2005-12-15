@@ -65,12 +65,6 @@ apc_cache_t* apc_cache = NULL;
 apc_cache_t* apc_user_cache = NULL;
 void* apc_compiled_filters = NULL;
 
-/*
-static void php_apc_hash_entry_destructor(apc_hash_link_t *he) {
-    
-}
-*/
-
 static void php_apc_init_globals(zend_apc_globals* apc_globals TSRMLS_DC)
 {
     apc_globals->filters = NULL;
@@ -79,8 +73,6 @@ static void php_apc_init_globals(zend_apc_globals* apc_globals TSRMLS_DC)
     apc_globals->cache_by_default = 1;
     apc_globals->slam_defense = 0;
     apc_globals->mem_size_ptr = NULL;
-/*    zend_hash_init(&(apc_globals->delayed_inheritance_hash), 0, NULL, (void (*)(void *)) php_apc_hash_entry_destructor, 1); */
-    zend_hash_init(&(apc_globals->delayed_inheritance_hash), 0, NULL, NULL, 1);
 }
 
 static void php_apc_shutdown_globals(zend_apc_globals* apc_globals TSRMLS_DC)
@@ -159,7 +151,6 @@ STD_PHP_INI_BOOLEAN("apc.slam_defense", "0",      PHP_INI_SYSTEM, OnUpdateInt,  
 STD_PHP_INI_ENTRY("apc.file_update_protection", "2", PHP_INI_SYSTEM, OnUpdateInt,file_update_protection, zend_apc_globals, apc_globals)
 STD_PHP_INI_BOOLEAN("apc.enable_cli", "0", PHP_INI_SYSTEM, OnUpdateInt, enable_cli, zend_apc_globals, apc_globals)
 STD_PHP_INI_ENTRY("apc.max_file_size", "1M",    PHP_INI_SYSTEM, OnUpdateInt,            max_file_size,       zend_apc_globals, apc_globals)
-STD_PHP_INI_BOOLEAN("apc.dynamic_error", "0", PHP_INI_SYSTEM, OnUpdateInt, dynamic_error, zend_apc_globals, apc_globals)
 PHP_INI_END()
 
 /* }}} */
@@ -474,11 +465,9 @@ PHP_FUNCTION(apc_store) {
 }
 /* }}} */
 
-/* {{{ apc_erealloc_wrapper */
 void *apc_erealloc_wrapper(void *ptr, size_t size) {
     return _erealloc(ptr, size, 0 ZEND_FILE_LINE_CC ZEND_FILE_LINE_EMPTY_CC);
 }
-/* }}} */
 
 /* {{{ proto mixed apc_fetch(string key)
  */
@@ -539,7 +528,6 @@ PHP_FUNCTION(apc_delete) {
 }
 /* }}} */
 
-/* {{{ _apc_define_constants */
 static void _apc_define_constants(zval *constants, zend_bool case_sensitive TSRMLS_DC) {
     char *const_key;
     int const_key_len;
@@ -579,7 +567,6 @@ static void _apc_define_constants(zval *constants, zend_bool case_sensitive TSRM
         zend_hash_move_forward_ex(Z_ARRVAL_P(constants), &pos);
     }
 }
-/* }}} */
 
 /* {{{ proto mixed apc_define_constants(string key, array constants [,bool case-sensitive])
  */
