@@ -66,7 +66,8 @@ ZEND_BEGIN_MODULE_GLOBALS(apc)
     int file_update_protection; /* Age in seconds before a file is eligible to be cached - 0 to disable */
     int enable_cli;         /* Flag to override turning APC off for CLI */
     long max_file_size;	    /* Maximum size of file, in bytes that APC will be allowed to cache */
-    int slam_rand;          /* A place to store the slam rand value for the request */
+    int dynamic_error;      /* Error on runtime dynamic inheritance */
+    HashTable delayed_inheritance_hash;
 ZEND_END_MODULE_GLOBALS(apc)
 
 /* (the following declaration is defined in php_apc.c) */
