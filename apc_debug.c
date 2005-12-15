@@ -525,7 +525,7 @@ void dump(zend_op_array *op_array)
   
   for(i = 0; i < op_array->last; i++) {
     zend_op * zo = &(op_array->opcodes[i]); 
-    fprintf(stderr, "%s %s", optimizer_zend_util_opcode_to_string(op_array->opcodes[i].opcode), op_array->opcodes[i].extended_value);
+    fprintf(stderr, "%s ", optimizer_zend_util_opcode_to_string(op_array->opcodes[i].opcode)) ;
 
     switch (zo->opcode)
     {

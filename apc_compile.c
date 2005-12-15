@@ -175,7 +175,7 @@ static void check_op_array_integrity(zend_op_array* src)
 /* {{{ is_derived_class */
 static int is_derived_class(zend_op_array* op_array, const char* key, int key_size)
 {
-    int i, derived = 0;
+    int i;
 
     /*
      * Scan the op_array for execution-time class declarations of derived
@@ -188,7 +188,7 @@ static int is_derived_class(zend_op_array* op_array, const char* key, int key_si
      * for a Zend Engine patch.
      *
      * XXX checking for derived classes provides a minimal (albeit measurable)
-     * speed up. It may not be worth the added complexity -- consider
+     * speed up. It may not be worth the added complexity -- considere
      * removing this optimization.
      */
 
@@ -196,7 +196,8 @@ static int is_derived_class(zend_op_array* op_array, const char* key, int key_si
         zend_op* op = &op_array->opcodes[i];
 
 #ifdef ZEND_ENGINE_2        
-        if (op->opcode == ZEND_DECLARE_INHERITED_CLASS)
+        if (op->opcode == ZEND_DECLARE_CLASS &&
+            op->extended_value == ZEND_DECLARE_INHERITED_CLASS)
 #else            
         if (op->opcode == ZEND_DECLARE_FUNCTION_OR_CLASS &&
             op->extended_value == ZEND_DECLARE_INHERITED_CLASS)
@@ -205,12 +206,12 @@ static int is_derived_class(zend_op_array* op_array, const char* key, int key_si
             if (op->op1.u.constant.value.str.len == key_size &&
                 !memcmp(op->op1.u.constant.value.str.val, key, key_size))
             {
-                derived = 1;
+                return 1;
             }
         }
     }
 
-    return derived;
+    return 0;
 }
 /* }}} */
 
@@ -973,10 +974,6 @@ zval* apc_copy_zval(zval* dst, const zval* src, apc_malloc_t allocate, apc_free_
 /* }}} */
 
 #ifdef ZEND_ENGINE_2
-
-#undef MAKE_NOP
-#define MAKE_NOP(opline)        { opline->opcode = ZEND_NOP;  memset(&opline->result,0,sizeof(znode)); memset(&opline->op1,0,sizeof(znode)); memset(&opline->op2,0,sizeof(znode)); opline->result.op_type=opline->op1.op_type=opline->op2.op_type=IS_UNUSED;  }
-
 /* {{{ apc_fixup_op_array_jumps */
 static void apc_fixup_op_array_jumps(zend_op_array *dst, zend_op_array *src )
 {
@@ -984,7 +981,6 @@ static void apc_fixup_op_array_jumps(zend_op_array *dst, zend_op_array *src )
 
     for (i=0; i < dst->last; ++i) {
         zend_op *zo = &(dst->opcodes[i]);
-        zend_op *pzo = &(dst->opcodes[i-1]);
         /*convert opline number to jump address*/
         switch (zo->opcode) {
             case ZEND_JMP:
@@ -996,10 +992,6 @@ static void apc_fixup_op_array_jumps(zend_op_array *dst, zend_op_array *src )
             case ZEND_JMPZ_EX:
             case ZEND_JMPNZ_EX:
                 zo->op2.u.jmp_addr = dst->opcodes + (zo->op2.u.jmp_addr - src->opcodes);
-                break;
-            case ZEND_DECLARE_INHERITED_CLASS:
-                if(pzo->opcode == ZEND_FETCH_CLASS) MAKE_NOP(pzo);
-                MAKE_NOP(zo);
                 break;
             default:
                 break;
@@ -1301,16 +1293,15 @@ apc_class_t* apc_copy_new_classes(zend_op_array* op_array, int old_count, apc_ma
 
        zend_hash_get_current_data(CG(class_table), (void**) &elem);
   
-       zend_error(E_WARNING, "key = [%s], key_size = [%d]", key, (int)key_size); 
+        
 #ifdef ZEND_ENGINE_2
 		elem = *((zend_class_entry**)elem);
 #endif
-
-        if(!(array[i].name = apc_xmemcpy(elem->name, (int) elem->name_length, allocate))) {
+        
+        if(!(array[i].name = apc_xmemcpy(key, (int) key_size, allocate))) {
             int ii;
 
             for(ii=i-1; ii>=0; ii--) {
-                zend_error(E_WARNING, "clearing name = \"%s\"", array[ii].name);        
                 deallocate(array[ii].name);
                 my_destroy_class_entry(array[ii].class_entry, deallocate);
                 deallocate(array[ii].class_entry);
@@ -1318,7 +1309,7 @@ apc_class_t* apc_copy_new_classes(zend_op_array* op_array, int old_count, apc_ma
             deallocate(array);
             return NULL;
         }
-        array[i].name_len = (int) elem->name_length-1;
+        array[i].name_len = (int) key_size-1;
         if(!(array[i].class_entry = my_copy_class_entry(NULL, elem, allocate, deallocate))) {
             int ii;
             
@@ -1359,7 +1350,7 @@ apc_class_t* apc_copy_new_classes(zend_op_array* op_array, int old_count, apc_ma
         }
         else {
             array[i].parent_name = NULL;
-            array[i].is_derived = is_derived_class(op_array, elem->name, elem->name_length);
+            array[i].is_derived = is_derived_class(op_array, key, key_size);
         }
 
         zend_hash_move_forward(CG(class_table));
@@ -1746,7 +1737,6 @@ zend_op_array* apc_copy_op_array_for_execution(zend_op_array* src)
     memcpy(dst, src, sizeof(src[0]));
     dst->static_variables = my_copy_static_variables(src, apc_php_malloc, apc_php_free);
     /*check_op_array_integrity(dst);*/
-    dump(dst);
     return dst;
 }
 /* }}} */
