@@ -79,7 +79,7 @@ static int install_function(apc_function_t fn TSRMLS_DC)
                       NULL);
 
     if (status == FAILURE) {
-        zend_error(E_ERROR, "Cannot redeclare %s()", fn.name);
+        /* zend_error(E_ERROR, "Cannot redeclare %s()", fn.name); */
     }
 
     return status;
