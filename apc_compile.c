@@ -799,7 +799,14 @@ cleanup:
 
 #ifdef ZEND_ENGINE_2
     if(dst->properties_info.arBuckets) my_destroy_hashtable(&dst->properties_info, (ht_free_fun_t) my_free_property_info, deallocate);
-    if(dst->static_members) my_free_hashtable(dst->static_members, (ht_free_fun_t) my_free_zval_ptr, deallocate);
+    if(dst->static_members)
+    {
+        my_destroy_hashtable(dst->static_members, (ht_free_fun_t) my_free_zval_ptr, deallocate);
+        if(dst->static_members != &(dst->default_static_members))
+        {
+            deallocate(dst->static_members);
+        }
+    }
     if(dst->constants_table.arBuckets) my_destroy_hashtable(&dst->constants_table, (ht_free_fun_t) my_free_zval_ptr, deallocate);
 #endif
     if(local_dst_alloc) deallocate(dst);
@@ -1532,10 +1539,16 @@ static void my_destroy_class_entry(zend_class_entry* src, apc_free_t deallocate)
     my_destroy_hashtable(&src->properties_info, 
                             (ht_free_fun_t) my_free_property_info,
                             deallocate);
-    my_destroy_hashtable(src->static_members,
+    if(src->static_members) 
+    {
+        my_destroy_hashtable(src->static_members,
                          (ht_free_fun_t) my_free_zval_ptr,
                          deallocate);
-    deallocate(src->static_members);
+        if(src->static_members != &(src->default_static_members))
+        {
+            deallocate(src->static_members);
+        }
+    }
 
     my_destroy_hashtable(&src->constants_table, 
                             (ht_free_fun_t) my_free_zval_ptr,
@@ -1815,12 +1828,26 @@ zend_class_entry* apc_copy_class_entry_for_execution(zend_class_entry* src, int 
                       1,
                       apc_php_malloc, apc_php_free);
 
-    dst->static_members = my_copy_hashtable(NULL,
-                      src->static_members,
+    my_copy_hashtable(&dst->default_static_members,
+                      &src->default_static_members,
                       (ht_copy_fun_t) my_copy_zval_ptr,
                       (ht_free_fun_t) my_free_zval_ptr,
                       1,
                       apc_php_malloc, apc_php_free);
+
+    if(src->static_members != &(src->default_static_members))
+    {
+        dst->static_members = my_copy_hashtable(NULL,
+                          src->static_members,
+                          (ht_copy_fun_t) my_copy_zval_ptr,
+                          (ht_free_fun_t) my_free_zval_ptr,
+                          1,
+                          apc_php_malloc, apc_php_free);
+    }
+    else 
+    {
+        dst->static_members = &(dst->default_static_members);
+    }
 
 #endif
 
@@ -1940,12 +1967,16 @@ static int my_check_copy_property_info(Bucket* p, va_list args)
 static int my_check_copy_static_member(Bucket* p, va_list args)
 {
     zend_class_entry* src = va_arg(args, zend_class_entry*);
+    HashTable * ht = va_arg(args, HashTable*);
     zend_class_entry* parent = src->parent;
+    HashTable * parent_ht = NULL;
     char * member_name;
-    char * class_name;
+    char * class_name = NULL;
 
     zend_property_info *parent_info = NULL;
     zend_property_info *child_info = NULL;
+    zval ** parent_prop = NULL;
+    zval ** child_prop = (zval**)(p->pData);
 
     if(!parent) {
         return 1;
@@ -1972,6 +2003,26 @@ static int my_check_copy_static_member(Bucket* p, va_list args)
              * TODO: decrement refcount or fixup when copying out for exec ? 
              */ 
             return 0;
+        }
+        if(ht == &(src->default_static_members))
+        {
+            parent_ht = &parent->default_static_members;
+        }
+        else
+        {
+            parent_ht = parent->static_members;
+        }
+
+        if(zend_hash_quick_find(parent_ht, p->arKey,
+                       p->nKeyLength, p->h, (void**)&parent_prop) == SUCCESS)
+        {
+            /* they point to the same zval */
+            if(*parent_prop == *child_prop)
+            {
+                fprintf(stderr, "%s:%d %s::%s removed\n", __FILE__, __LINE__,
+                        src->name, member_name);
+                return 0;
+            }
         }
     }
     
