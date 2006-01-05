@@ -160,6 +160,12 @@ extern apc_cache_entry_t* apc_cache_user_find(T cache, char* strkey, int keylen,
  */
 extern int apc_cache_user_delete(apc_cache_t* cache, char *strkey, int keylen);
 
+/* apc_cach_fetch_zval takes a zval in the cache and reconstructs a runtime
+ * zval from it.
+ *
+ */
+zval* apc_cache_fetch_zval(zval* dst, const zval* src, apc_malloc_t allocate, apc_free_t deallocate);
+
 /*
  * apc_cache_release decrements the reference count associated with a cache
  * entry. Calling apc_cache_find automatically increments the reference count,

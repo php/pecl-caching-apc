@@ -35,8 +35,11 @@
 #include "apc_sma.h"
 #include "apc_globals.h"
 #include "SAPI.h"
+#include "ext/standard/php_var.h"
 
 /* TODO: rehash when load factor exceeds threshold */
+
+#define CHECK(p) { if ((p) == NULL) return NULL; }
 
 /* {{{ locking macros */
 #define CREATE_LOCK     apc_lck_create(NULL, 0, 1)
@@ -704,6 +707,73 @@ apc_cache_entry_t* apc_cache_make_file_entry(const char* filename,
 }
 /* }}} */
 
+/* {{{ apc_cache_store_zval */
+zval* apc_cache_store_zval(zval* dst, const zval* src, apc_malloc_t allocate, apc_free_t deallocate)
+{
+    if ((src->type & ~IS_CONSTANT_INDEX) == IS_OBJECT) {
+		TSRMLS_FETCH();
+
+	    if (!dst) {
+	        CHECK(dst = (zval*) allocate(sizeof(zval)));
+	    }
+		php_serialize_data_t var_hash;
+		smart_str buf = {0};
+		
+		PHP_VAR_SERIALIZE_INIT(var_hash);
+		php_var_serialize(&buf, (zval**)&src, &var_hash TSRMLS_CC);
+		PHP_VAR_SERIALIZE_DESTROY(var_hash);
+		
+		dst->type = IS_NULL; /* in case we fail */
+		if (buf.c) {
+			dst->type = src->type & ~IS_CONSTANT_INDEX;
+			dst->value.str.len = buf.len;
+            CHECK(dst->value.str.val = apc_xmemcpy(buf.c, buf.len+1, allocate));
+			dst->type = src->type;
+		}
+	    return dst; 
+    } else {
+    	return apc_copy_zval(dst, src, allocate, deallocate);
+    }
+}
+/* }}} */
+
+/* {{{ apc_cache_fetch_zval */
+zval* apc_cache_fetch_zval(zval* dst, const zval* src, apc_malloc_t allocate, apc_free_t deallocate)
+{
+    if ((src->type & ~IS_CONSTANT_INDEX) == IS_OBJECT) {
+		php_unserialize_data_t var_hash;
+		const unsigned char *p = (unsigned char*)Z_STRVAL_P(src);
+		TSRMLS_FETCH();
+
+		PHP_VAR_UNSERIALIZE_INIT(var_hash);
+		if (!php_var_unserialize(&dst, &p, p + Z_STRLEN_P(src), &var_hash TSRMLS_CC)) {
+			PHP_VAR_UNSERIALIZE_DESTROY(var_hash);
+			zval_dtor(dst);
+			php_error_docref(NULL TSRMLS_CC, E_NOTICE, "Error at offset %ld of %d bytes", (long)((char*)p - Z_STRVAL_P(src)), Z_STRLEN_P(src));
+			dst->type = IS_NULL;
+		}
+		PHP_VAR_UNSERIALIZE_DESTROY(var_hash);		
+	    return dst; 
+	} else {
+		return apc_copy_zval(dst, src, allocate, deallocate);
+	}
+}
+/* }}} */
+
+/* {{{ apc_cache_free_zval */
+void apc_cache_free_zval(zval* src, apc_free_t deallocate)
+{
+    if ((src->type & ~IS_CONSTANT_INDEX) == IS_OBJECT) {
+        if (src->value.str.val) {
+        	deallocate(src->value.str.val);
+        }
+		deallocate(src);
+	} else {
+        apc_free_zval(src, deallocate);
+    }
+}
+/* }}} */
+
 /* {{{ apc_cache_make_user_entry */
 apc_cache_entry_t* apc_cache_make_user_entry(const char* info, int info_len, const zval* val, const unsigned int ttl)
 {
@@ -718,7 +788,7 @@ apc_cache_entry_t* apc_cache_make_user_entry(const char* info, int info_len, con
         apc_sma_free(entry);
         return NULL;
     }
-    entry->data.user.val = apc_copy_zval(NULL, val, apc_sma_malloc, apc_sma_free);
+    entry->data.user.val = apc_cache_store_zval(NULL, val, apc_sma_malloc, apc_sma_free);
     if(!entry->data.user.val) {
         apc_sma_free(entry->data.user.info);
         apc_sma_free(entry);
@@ -747,7 +817,7 @@ void apc_cache_free_entry(apc_cache_entry_t* entry)
                 break;
             case APC_CACHE_ENTRY_USER:
                 apc_sma_free(entry->data.user.info);
-                apc_free_zval(entry->data.user.val, apc_sma_free);
+                apc_cache_free_zval(entry->data.user.val, apc_sma_free);
                 break;
         }
         apc_sma_free(entry);

@@ -498,7 +498,7 @@ PHP_FUNCTION(apc_fetch) {
     entry = apc_cache_user_find(apc_user_cache, strkey, strkey_len + 1, t);
     if(entry) {
         /* deep-copy returned shm zval to emalloc'ed return_value */
-        apc_copy_zval(return_value, entry->data.user.val, apc_php_malloc, apc_php_free);
+        apc_cache_fetch_zval(return_value, entry->data.user.val, apc_php_malloc, apc_php_free);
         apc_cache_release(apc_user_cache, entry);
     } else {
         RETURN_FALSE;

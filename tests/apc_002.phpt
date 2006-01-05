@@ -23,4 +23,12 @@ var_dump($bar);
 ===DONE===
 <?php exit(0); ?>
 --EXPECTF--
+object(foo)#%d (0) {
+}
+object(foo)#%d (0) {
+}
+object(foo)#%d (1) {
+  ["a"]=>
+  bool(true)
+}
 ===DONE===
