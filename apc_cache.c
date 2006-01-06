@@ -710,14 +710,15 @@ apc_cache_entry_t* apc_cache_make_file_entry(const char* filename,
 /* {{{ apc_cache_store_zval */
 zval* apc_cache_store_zval(zval* dst, const zval* src, apc_malloc_t allocate, apc_free_t deallocate)
 {
+		smart_str buf = {0};
+		php_serialize_data_t var_hash;
+
     if ((src->type & ~IS_CONSTANT_INDEX) == IS_OBJECT) {
 		TSRMLS_FETCH();
 
 	    if (!dst) {
 	        CHECK(dst = (zval*) allocate(sizeof(zval)));
 	    }
-		php_serialize_data_t var_hash;
-		smart_str buf = {0};
 		
 		PHP_VAR_SERIALIZE_INIT(var_hash);
 		php_var_serialize(&buf, (zval**)&src, &var_hash TSRMLS_CC);
