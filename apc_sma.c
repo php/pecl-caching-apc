@@ -305,6 +305,8 @@ void apc_sma_cleanup()
     }
     apc_lck_destroy(sma_lock);
     sma_initialized = 0;
+    apc_efree(sma_segments);
+    apc_efree(sma_shmaddrs);
 }
 /* }}} */
 
