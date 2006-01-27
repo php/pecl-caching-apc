@@ -294,6 +294,10 @@ int apc_stat_paths(const char* filename, const char* path, struct stat* buf)
 
     assert(filename && buf);
 
+    if (IS_ABSOLUTE_PATH(filename, strlen(filename)) && apc_stat(filename, buf) == 0) {
+        return 0;
+    }
+
     paths = apc_tokenize(path, DEFAULT_DIR_SEPARATOR);
     if (!paths)
         return -1;
