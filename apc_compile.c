@@ -649,6 +649,7 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
     dst->doc_comment = NULL;
     memset(&dst->properties_info, 0, sizeof(dst->properties_info));
     memset(&dst->constants_table, 0, sizeof(dst->constants_table));
+    memset(&dst->default_static_members, 0, sizeof(dst->default_static_members));
 #endif
 
     if (src->name) {
@@ -719,8 +720,20 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
                             src))) {
         goto cleanup;
     }
-
-    if(!(dst->static_members = my_copy_hashtable_ex(NULL,
+    
+    if(!my_copy_hashtable_ex(&dst->default_static_members,
+                            &src->default_static_members,
+                            (ht_copy_fun_t) my_copy_zval_ptr,
+                            (ht_free_fun_t) my_free_zval_ptr,
+                            1,
+                            allocate, deallocate,
+                            (ht_check_copy_fun_t) my_check_copy_static_member,
+                            src)) {
+        goto cleanup;
+    }
+    if(src->static_members != &src->default_static_members)
+    {
+        if(!(dst->static_members = my_copy_hashtable_ex(NULL,
                             src->static_members,
                             (ht_copy_fun_t) my_copy_zval_ptr,
                             (ht_free_fun_t) my_free_zval_ptr,
@@ -728,7 +741,12 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
                             allocate, deallocate,
                             (ht_check_copy_fun_t) my_check_copy_static_member,
                             src))) {
-        goto cleanup;
+            goto cleanup;
+        }
+    }
+    else
+    {
+        dst->static_members = &dst->default_static_members;
     }
 
     if(!(my_copy_hashtable(&dst->constants_table,
@@ -799,13 +817,14 @@ cleanup:
 
 #ifdef ZEND_ENGINE_2
     if(dst->properties_info.arBuckets) my_destroy_hashtable(&dst->properties_info, (ht_free_fun_t) my_free_property_info, deallocate);
-    if(dst->static_members)
+    if(dst->default_static_members.arBuckets)
     {
         my_destroy_hashtable(dst->static_members, (ht_free_fun_t) my_free_zval_ptr, deallocate);
-        if(dst->static_members != &(dst->default_static_members))
-        {
-            deallocate(dst->static_members);
-        }
+    }
+    if(dst->static_members != &(dst->default_static_members))
+    {
+        my_destroy_hashtable(dst->static_members, (ht_free_fun_t) my_free_zval_ptr, deallocate);
+        deallocate(dst->static_members);
     }
     if(dst->constants_table.arBuckets) my_destroy_hashtable(&dst->constants_table, (ht_free_fun_t) my_free_zval_ptr, deallocate);
 #endif
