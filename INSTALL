@@ -223,6 +223,11 @@ users should consider tuning the following parameters:
                             many thousands of source files.
                             (Default: 1000)
 
+    apc.user_entries_hint   Just like num_files_hint, a "hint" about the number
+                            of distinct user cache variables to store. 
+                            Set to zero or omit if you're not sure;
+                            (Default: 100)
+
     apc.ttl                 The number of seconds a cache entry is allowed to
                             idle in a slot in case this cache entry slot is 
                             needed by another entry.  Leaving this at zero
@@ -230,6 +235,15 @@ users should consider tuning the following parameters:
                             with stale entries while newer entries won't be
                             cached.  
                             (Default: 0)
+
+    apc.user_ttl            The number of seconds a user cache entry is allowed 
+                            to idle in a slot in case this cache entry slot is 
+                            needed by another entry.  Leaving this at zero
+                            means that your cache could potentially fill up
+                            with stale entries while newer entries won't be
+                            cached.  
+                            (Default: 0)
+
 
     apc.gc_ttl              The number of seconds that a cache entry may
                             remain on the garbage-collection list. This value
@@ -271,7 +285,7 @@ users should consider tuning the following parameters:
                             kernel's /dev/zero interface to anonymous mmap'ed 
                             memory.  Leaving it undefined will force an 
                             anonymous mmap.
-							(Default: "")
+							              (Default: "")
 
     apc.slam_defense        On very busy servers whenever you start the server or
                             modify files you can create a race of many processes

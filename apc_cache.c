@@ -468,6 +468,9 @@ int apc_cache_user_insert(apc_cache_t* cache, apc_cache_key_t key, apc_cache_ent
         UNLOCK(cache);
         return 0;
     }
+    if (APCG(mem_size_ptr) != NULL) {
+	value->mem_size = *APCG(mem_size_ptr);
+    }
 
     UNLOCK(cache);
     return 1;
@@ -485,7 +488,7 @@ apc_cache_entry_t* apc_cache_find(apc_cache_t* cache, apc_cache_key_t key, time_
 
     while (*slot) {
         if (key_equals((*slot)->key.data.file, key.data.file)) {
-            if ((*slot)->key.mtime < key.mtime) {
+            if ((*slot)->key.mtime != key.mtime) {
                 remove_slot(cache, slot);
                 break;
             }

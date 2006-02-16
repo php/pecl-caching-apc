@@ -439,7 +439,6 @@ static int _apc_store(char *strkey, int strkey_len, const zval *val, const unsig
     }
 
     APCG(mem_size_ptr) = NULL;
-    entry->mem_size = mem_size;
 
 
     return 1;
