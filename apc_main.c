@@ -74,7 +74,7 @@ static int install_function(apc_function_t fn TSRMLS_DC)
         zend_hash_add(EG(function_table),
                       fn.name,
                       fn.name_len+1,
-                      apc_copy_function_for_execution(fn.function),
+                      apc_copy_function_for_execution(fn.function TSRMLS_CC),
                       sizeof(fn.function[0]),
                       NULL);
 
@@ -191,7 +191,7 @@ static zend_op_array* cached_compile(TSRMLS_D)
         }
     }
 
-    return apc_copy_op_array_for_execution(cache_entry->data.file.op_array);
+    return apc_copy_op_array_for_execution(cache_entry->data.file.op_array TSRMLS_CC);
 }
 /* }}} */
 

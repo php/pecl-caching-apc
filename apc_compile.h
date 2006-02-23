@@ -87,8 +87,8 @@ extern void apc_free_zval(zval* src, apc_free_t deallocate);
  * structures.
  */
 
-extern zend_op_array* apc_copy_op_array_for_execution(zend_op_array* src);
-extern zend_function* apc_copy_function_for_execution(zend_function* src);
+extern zend_op_array* apc_copy_op_array_for_execution(zend_op_array* src TSRMLS_DC);
+extern zend_function* apc_copy_function_for_execution(zend_function* src TSRMLS_DC);
 extern zend_class_entry* apc_copy_class_entry_for_execution(zend_class_entry* src, int is_derived);
 
 #endif

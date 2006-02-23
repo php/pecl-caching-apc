@@ -1777,7 +1777,7 @@ void apc_free_zval(zval* src, apc_free_t deallocate)
 
 #ifdef ZEND_ENGINE_2
 /* {{{ my_fetch_global_vars */
-void my_fetch_global_vars(zend_op_array* src)
+void my_fetch_global_vars(zend_op_array* src TSRMLS_DC)
 {
     /* all jit_initialization variables (like $_SERVER) are created
        on demand due to a fetch_simple_variable called during parsing.
@@ -1802,13 +1802,13 @@ void my_fetch_global_vars(zend_op_array* src)
 #endif
 
 /* {{{ apc_copy_op_array_for_execution */
-zend_op_array* apc_copy_op_array_for_execution(zend_op_array* src)
+zend_op_array* apc_copy_op_array_for_execution(zend_op_array* src TSRMLS_DC)
 {
     zend_op_array* dst = (zend_op_array*) emalloc(sizeof(src[0]));
     memcpy(dst, src, sizeof(src[0]));
     dst->static_variables = my_copy_static_variables(src, apc_php_malloc, apc_php_free);
 #ifdef ZEND_ENGINE_2
-    my_fetch_global_vars(dst);
+    my_fetch_global_vars(dst TSRMLS_CC);
 #endif
     /*check_op_array_integrity(dst);*/
     return dst;
@@ -1816,13 +1816,13 @@ zend_op_array* apc_copy_op_array_for_execution(zend_op_array* src)
 /* }}} */
 
 /* {{{ apc_copy_function_for_execution */
-zend_function* apc_copy_function_for_execution(zend_function* src)
+zend_function* apc_copy_function_for_execution(zend_function* src TSRMLS_DC)
 {
     zend_function* dst = (zend_function*) emalloc(sizeof(src[0]));
     memcpy(dst, src, sizeof(src[0]));
     dst->op_array.static_variables = my_copy_static_variables(&dst->op_array, apc_php_malloc, apc_php_free);
 #ifdef ZEND_ENGINE_2
-    my_fetch_global_vars(&dst->op_array);
+    my_fetch_global_vars(&dst->op_array TSRMLS_CC);
 #endif
     /*check_op_array_integrity(&dst->op_array);*/
     return dst;
@@ -1830,10 +1830,10 @@ zend_function* apc_copy_function_for_execution(zend_function* src)
 /* }}} */
 
 /* {{{ apc_copy_function_for_execution_ex */
-zend_function* apc_copy_function_for_execution_ex(void *dummy, zend_function* src)
+zend_function* apc_copy_function_for_execution_ex(void *dummy, zend_function* src TSRMLS_DC)
 {
     if(src->type==ZEND_INTERNAL_FUNCTION || src->type==ZEND_OVERLOADED_FUNCTION) return src;
-    return apc_copy_function_for_execution(src);
+    return apc_copy_function_for_execution(src TSRMLS_CC);
 }
 /* }}} */
 
