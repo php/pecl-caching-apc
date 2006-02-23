@@ -627,6 +627,7 @@ cleanup:
 static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_entry* src, apc_malloc_t allocate, apc_free_t deallocate)
 {
     int local_dst_alloc = 0;
+    int i = 0;
 
     assert(src != NULL);
 
@@ -685,7 +686,18 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
 
     /* the interfaces are populated at runtime using ADD_INTERFACE */
     dst->interfaces = NULL; 
-   
+
+    /* the current count includes inherited interfaces as well,
+       the real dynamic ones are the first <n> which are zero'd
+       out in zend_do_end_class_declaration */
+    for(i = 0 ; i < src->num_interfaces ; i++) {
+        if(src->interfaces[i])
+        {
+            dst->num_interfaces = i;
+            break;
+        }
+    }
+
     /* these will either be set inside my_fixup_hashtable or 
      * they will be copied out from parent inside zend_do_inheritance 
      */
@@ -694,6 +706,7 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
     dst->clone = NULL;
     dst->__get = NULL;
     dst->__set = NULL;
+    dst->__unset = NULL;
     dst->__call = NULL;
     
     my_fixup_hashtable(&dst->function_table, (ht_fixup_fun_t)my_fixup_function, src, dst);
@@ -1175,7 +1188,7 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_mal
         }
     }
 #endif
-    
+
     return dst;
 
 cleanup_opcodes:
@@ -1762,12 +1775,41 @@ void apc_free_zval(zval* src, apc_free_t deallocate)
 }
 /* }}} */
 
+#ifdef ZEND_ENGINE_2
+/* {{{ my_fetch_global_vars */
+void my_fetch_global_vars(zend_op_array* src)
+{
+    /* all jit_initialization variables (like $_SERVER) are created
+       on demand due to a fetch_simple_variable called during parsing.
+       The code below fakes it and makes a call to is_auto_global.
+    */
+    int i = 0;
+    for (i = 0; i < src->last; i++)
+    {
+        zend_op *opcode = src->opcodes+i; 
+        if(opcode->op2.u.EA.type == ZEND_FETCH_GLOBAL &&
+                opcode->op1.op_type == IS_CONST &&
+                opcode->op1.u.constant.type == IS_STRING) 
+        {
+            znode * varname = &opcode->op1;
+            // TODO: figure out thread safety macros
+            (void)zend_is_auto_global(varname->u.constant.value.str.val, 
+                            varname->u.constant.value.str.len TSRMLS_CC);
+        }
+    }
+}
+/* }}} */
+#endif
+
 /* {{{ apc_copy_op_array_for_execution */
 zend_op_array* apc_copy_op_array_for_execution(zend_op_array* src)
 {
     zend_op_array* dst = (zend_op_array*) emalloc(sizeof(src[0]));
     memcpy(dst, src, sizeof(src[0]));
     dst->static_variables = my_copy_static_variables(src, apc_php_malloc, apc_php_free);
+#ifdef ZEND_ENGINE_2
+    my_fetch_global_vars(dst);
+#endif
     /*check_op_array_integrity(dst);*/
     return dst;
 }
@@ -1779,6 +1821,9 @@ zend_function* apc_copy_function_for_execution(zend_function* src)
     zend_function* dst = (zend_function*) emalloc(sizeof(src[0]));
     memcpy(dst, src, sizeof(src[0]));
     dst->op_array.static_variables = my_copy_static_variables(&dst->op_array, apc_php_malloc, apc_php_free);
+#ifdef ZEND_ENGINE_2
+    my_fetch_global_vars(&dst->op_array);
+#endif
     /*check_op_array_integrity(&dst->op_array);*/
     return dst;
 }
@@ -1906,6 +1951,7 @@ static void my_fixup_function(Bucket *p, zend_class_entry *src, zend_class_entry
         {
             SET_IF_SAME_NAME(__get);
             SET_IF_SAME_NAME(__set);
+            SET_IF_SAME_NAME(__unset);
             SET_IF_SAME_NAME(__call);
         }
         zf->common.scope = dst;
@@ -2038,8 +2084,6 @@ static int my_check_copy_static_member(Bucket* p, va_list args)
             /* they point to the same zval */
             if(*parent_prop == *child_prop)
             {
-                fprintf(stderr, "%s:%d %s::%s removed\n", __FILE__, __LINE__,
-                        src->name, member_name);
                 return 0;
             }
         }
