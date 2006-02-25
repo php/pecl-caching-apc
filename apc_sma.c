@@ -50,8 +50,8 @@ enum { POWER_OF_TWO_BLOCKSIZE=1 };  /* force allocated blocks to 2^n? */
 enum { DEFAULT_NUMSEG=1, DEFAULT_SEGSIZE=30*1024*1024 };
 
 static int sma_initialized = 0;     /* true if the sma has been initialized */
-static int sma_numseg;              /* number of shm segments to allow */
-static int sma_segsize;             /* size of each shm segment */
+static unsigned int sma_numseg;     /* number of shm segments to allow */
+static size_t sma_segsize;          /* size of each shm segment */
 static int* sma_segments;           /* array of shm segment ids */
 static void** sma_shmaddrs;         /* array of shm segment addresses */
 static int sma_lastseg = 0;         /* index of MRU segment */
@@ -59,14 +59,14 @@ static int sma_lock;                /* sempahore to serialize access */
 
 typedef struct header_t header_t;
 struct header_t {
-    int segsize;    /* size of entire segment */
-    int avail;      /* bytes available (not necessarily contiguous) */
+    size_t segsize;    /* size of entire segment */
+    size_t avail;      /* bytes available (not necessarily contiguous) */
 };
 
 typedef struct block_t block_t;
 struct block_t {
-    int size;       /* size of this block */
-    int next;       /* offset in segment of next free block */
+    size_t size;       /* size of this block */
+    size_t next;       /* offset in segment of next free block */
 };
 
 /* The macros BLOCKAT and OFFSET are used for convenience throughout this
@@ -90,14 +90,14 @@ static int alignword(int x)
 /* }}} */
 
 /* {{{ sma_allocate: tries to allocate size bytes in a segment */
-static int sma_allocate(void* shmaddr, unsigned int size)
+static int sma_allocate(void* shmaddr, size_t size)
 {
     header_t* header;       /* header of shared memory segment */
     block_t* prv;           /* block prior to working block */
     block_t* cur;           /* working block in list */
     block_t* prvbestfit;    /* block before best fit */
-    unsigned int realsize;  /* actual size of block needed, including header */
-    unsigned int minsize;   /* for finding best fit */
+    size_t realsize;        /* actual size of block needed, including header */
+    size_t minsize;         /* for finding best fit */
 
     if(size<128) {
          realsize = 128;
@@ -108,8 +108,12 @@ static int sma_allocate(void* shmaddr, unsigned int size)
          * coalesced, reducing memory fragmentation.
          */
         if (POWER_OF_TWO_BLOCKSIZE) {
-            unsigned int p = size - 1;
+            size_t p = size - 1;
+#if SIZEOF_INT == 8
+            p|=(p>>1); p|=(p>>2); p|=(p>>4); p|=(p>>8); p|=(p>>16); p|=(p>>32);
+#else
             p|=(p>>1); p|=(p>>2); p|=(p>>4); p|=(p>>8); p|=(p>>16);
+#endif
             realsize = p + 1;
         } else {
             realsize = size;
@@ -163,8 +167,8 @@ static int sma_allocate(void* shmaddr, unsigned int size)
     }
     else {
         block_t* nxt;   /* the new block (chopped part of cur) */
-        int nxtoffset;  /* offset of the block currently after cur */
-        int oldsize;    /* size of cur before split */
+        size_t nxtoffset;  /* offset of the block currently after cur */
+        size_t oldsize;    /* size of cur before split */
 
         /* bestfit is too big; split it into two smaller blocks */
         nxtoffset = cur->next;
@@ -187,9 +191,9 @@ static int sma_deallocate(void* shmaddr, int offset)
     block_t* cur;       /* the new block to insert */
     block_t* prv;       /* the block before cur */
     block_t* nxt;       /* the block after cur */
-    int size;           /* size of deallocated block */
+    size_t size;           /* size of deallocated block */
 
-    offset -= alignword(sizeof(int));
+    offset -= alignword(sizeof(size_t));
     assert(offset >= 0);
 
     /* find position of new block in free list */
@@ -376,7 +380,7 @@ char* apc_sma_strdup(const char* s)
 void apc_sma_free(void* p)
 {
     int i;
-	TSRMLS_FETCH();
+    TSRMLS_FETCH();
 
     if (p == NULL) {
         return;
@@ -386,7 +390,7 @@ void apc_sma_free(void* p)
     LOCK(sma_lock);
 
     for (i = 0; i < sma_numseg; i++) {
-        unsigned int d_size = (unsigned int)((char *)p - (char *)(sma_shmaddrs[i]));
+        size_t d_size = (unsigned int)((char *)p - (char *)(sma_shmaddrs[i]));
         if (p >= sma_shmaddrs[i] && d_size < sma_segsize) {
             sma_deallocate(sma_shmaddrs[i], d_size);
             if (APCG(mem_size_ptr) != NULL) { *(APCG(mem_size_ptr)) -= d_size; }
