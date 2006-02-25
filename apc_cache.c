@@ -70,6 +70,7 @@ struct header_t {
     int num_misses;             /* total unsuccessful hits in cache */
     slot_t* deleted_list;       /* linked list of to-be-deleted slots */
     time_t start_time;          /* time the above counters were reset */
+    int expunges;               /* total number of expunges */
 };
 /* }}} */
 
@@ -281,6 +282,7 @@ apc_cache_t* apc_cache_create(int size_hint, int gc_ttl, int ttl)
     cache->header->num_misses = 0;
     cache->header->deleted_list = NULL;
     cache->header->start_time = time(NULL);
+    cache->header->expunges = 0;
 
     cache->slots = (slot_t**) (((char*) cache->shmaddr) + sizeof(header_t));
     cache->num_slots = num_slots;
@@ -316,6 +318,7 @@ void apc_cache_clear(apc_cache_t* cache)
     cache->header->num_hits = 0;
     cache->header->num_misses = 0;
     cache->header->start_time = time(NULL);
+    cache->header->expunges = 0;
 
     for (i = 0; i < cache->num_slots; i++) {
         slot_t* p = cache->slots[i];
@@ -332,6 +335,26 @@ void apc_cache_clear(apc_cache_t* cache)
 /* {{{ apc_cache_expunge */
 void apc_cache_expunge(apc_cache_t* cache, time_t t)
 {
+#if 1
+    int i;
+    if(!cache) return;
+    /* 
+       Trying to delete only stale entries blows a million tiny little
+       holes in our cache causing excessive fragmentation.  So let's
+       try just clearing it here instead and bumping the expunges count
+       to give us a hint that we need to tune the configuration.
+    */
+    LOCK(cache);
+    cache->header->expunges++;
+    for (i = 0; i < cache->num_slots; i++) {
+        slot_t* p = cache->slots[i];
+        while (p) {
+            remove_slot(cache, &p);
+        }
+        cache->slots[i] = NULL;
+    }
+    UNLOCK(cache);
+#else
     int i;
     slot_t **p;
 
@@ -373,6 +396,7 @@ void apc_cache_expunge(apc_cache_t* cache, time_t t)
         }
     }
     UNLOCK(cache);
+#endif
 }
 /* }}} */
 
@@ -852,6 +876,7 @@ apc_cache_info_t* apc_cache_info(apc_cache_t* cache)
     info->list = NULL;
     info->deleted_list = NULL;
     info->start_time = cache->header->start_time;
+    info->expunges = cache->header->expunges;
 
     /* For each hashtable slot */
     for (i = 0; i < info->num_slots; i++) {

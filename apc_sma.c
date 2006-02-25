@@ -61,6 +61,9 @@ typedef struct header_t header_t;
 struct header_t {
     size_t segsize;    /* size of entire segment */
     size_t avail;      /* bytes available (not necessarily contiguous) */
+#if ALLOC_DISTRIBUTION
+    size_t adist[30];
+#endif
 };
 
 typedef struct block_t block_t;
@@ -99,6 +102,10 @@ static int sma_allocate(void* shmaddr, size_t size)
     size_t realsize;        /* actual size of block needed, including header */
     size_t minsize;         /* for finding best fit */
 
+#if 1
+    if(size < 8) realsize = 8;
+    else realsize = size;
+#else
     if(size < 0x40) {
          realsize = 0x40;
     } else {
@@ -126,6 +133,7 @@ static int sma_allocate(void* shmaddr, size_t size)
             realsize = p;
         }
     }
+#endif
     realsize = alignword(max(realsize + alignword(sizeof(int)), sizeof(block_t)));
 
     /*
@@ -167,8 +175,11 @@ static int sma_allocate(void* shmaddr, size_t size)
 
     /* update the block header */
     header->avail -= realsize;
+#if ALLOC_DISTRIBUTION
+    header->adist[(int)(log(size)/log(2))]++;
+#endif
 
-    if (cur->size == realsize || ((cur->size - realsize) < 0x40)) {
+    if (cur->size == realsize || ((cur->size - realsize) < 0x20)) {
         /* cur is a perfect fit for realsize; just unlink it */
         prv->next = cur->next;
     }
@@ -289,7 +300,12 @@ void apc_sma_init(int numseg, int segsize, char *mmap_file_mask)
         header->segsize = sma_segsize;
         header->avail = sma_segsize - sizeof(header_t) - sizeof(block_t) -
                         alignword(sizeof(int));
-    
+#if ALLOC_DISTRIBUTION
+       	{
+           int j;
+           for(j=0; j<30; j++) header->adist[j] = 0; 
+        }
+#endif 
         block = BLOCKAT(sizeof(header_t));
         block->size = 0;
         block->next = sizeof(header_t) + sizeof(block_t);
@@ -490,6 +506,12 @@ int apc_sma_get_avail_mem()
     return avail_mem;
 }
 /* }}} */
+
+#if ALLOC_DISTRIBUTION
+size_t *apc_sma_get_alloc_distribution(void) {
+    header_t* header = (header_t*) sma_shmaddrs[0];
+    return header->adist; 
+}
 
 /* {{{ apc_sma_unlock */
 void apc_sma_unlock()

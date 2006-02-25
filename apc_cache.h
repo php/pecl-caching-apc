@@ -262,6 +262,7 @@ struct apc_cache_info_t {
     apc_cache_link_t* list;
     apc_cache_link_t* deleted_list;
     time_t start_time;
+    int expunges;
 };
 /* }}} */
 

@@ -260,6 +260,7 @@ PHP_FUNCTION(apc_cache_info)
     add_assoc_long(return_value, "num_hits", info->num_hits);
     add_assoc_long(return_value, "num_misses", info->num_misses);
     add_assoc_long(return_value, "start_time", info->start_time);
+    add_assoc_long(return_value, "expunges", info->expunges);
 
     ALLOC_INIT_ZVAL(list);
     array_init(list);
@@ -365,7 +366,18 @@ PHP_FUNCTION(apc_sma_info)
     add_assoc_long(return_value, "num_seg", info->num_seg);
     add_assoc_long(return_value, "seg_size", info->seg_size);
     add_assoc_long(return_value, "avail_mem", apc_sma_get_avail_mem());
-
+#if ALLOC_DISTRIBUTION
+    {
+        size_t *adist = apc_sma_get_alloc_distribution();
+        zval* list;
+        ALLOC_INIT_ZVAL(list);
+        array_init(list);
+        for(i=0; i<30; i++) {
+            add_next_index_long(list, adist[i]);
+        }
+        add_assoc_zval(return_value, "adist", list);
+    }
+#endif
     ALLOC_INIT_ZVAL(block_lists);
     array_init(block_lists);
 
