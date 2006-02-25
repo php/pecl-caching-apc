@@ -45,7 +45,7 @@ void apc_unmap(void* shmaddr, int size);
 #define UNLOCK(c)       { apc_lck_unlock(c); HANDLE_UNBLOCK_INTERRUPTIONS(); }
 /* }}} */
 
-enum { POWER_OF_TWO_BLOCKSIZE=1 };  /* force allocated blocks to 2^n? */
+enum { POWER_OF_TWO_BLOCKSIZE=0 };  /* force allocated blocks to 2^n? */
 
 enum { DEFAULT_NUMSEG=1, DEFAULT_SEGSIZE=30*1024*1024 };
 
@@ -116,7 +116,14 @@ static int sma_allocate(void* shmaddr, size_t size)
 #endif
             realsize = p + 1;
         } else {
-            realsize = size;
+          /* Probably makes more sense to just round up to the next 128 byte boundary */
+            size_t p = size - 1;
+#if SIZEOF_INT == 8
+            p&=0xffffffffffffff80; p+=0x80;
+#else
+            p&=0xffffff80; p+=0x80;
+#endif
+            realsize = p;
         }
     }
     realsize = alignword(max(realsize + alignword(sizeof(int)), sizeof(block_t)));
@@ -161,7 +168,7 @@ static int sma_allocate(void* shmaddr, size_t size)
     /* update the block header */
     header->avail -= realsize;
 
-    if (cur->size == realsize || ((cur->size - realsize) < 128)) {
+    if (cur->size == realsize || ((cur->size - realsize) < 64)) {
         /* cur is a perfect fit for realsize; just unlink it */
         prv->next = cur->next;
     }
