@@ -40,6 +40,7 @@ extern void* apc_sma_malloc(size_t size);
 extern void* apc_sma_realloc(void* p, size_t size);
 extern char* apc_sma_strdup(const char *s);
 extern void apc_sma_free(void* p);
+extern void apc_sma_unlock();
 
 /* {{{ struct definition: apc_sma_link_t */
 typedef struct apc_sma_link_t apc_sma_link_t;
