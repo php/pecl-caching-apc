@@ -406,6 +406,9 @@ void apc_deactivate(TSRMLS_D)
             (apc_cache_entry_t*) apc_stack_pop(APCG(cache_stack));
         apc_cache_release(apc_cache, cache_entry);
     }
+    /* Safety net */
+    apc_sma_unlock();
+    apc_cache_unlock(apc_cache);
 }
 /* }}} */
 

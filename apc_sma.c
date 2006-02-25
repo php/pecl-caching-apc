@@ -491,6 +491,13 @@ int apc_sma_get_avail_mem()
 }
 /* }}} */
 
+/* {{{ apc_sma_unlock */
+void apc_sma_unlock()
+{
+    UNLOCK(sma_lock);
+}
+/* }}} */
+
 #if 0
 /* {{{ apc_sma_check_integrity */
 void apc_sma_check_integrity()

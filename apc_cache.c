@@ -927,6 +927,13 @@ void apc_cache_free_info(apc_cache_info_t* info)
 }
 /* }}} */
 
+/* {{{ apc_cache_unlock */
+void apc_cache_unlock(apc_cache_t* cache)
+{
+    UNLOCK(cache);
+}
+/* }}} */
+
 /*
  * Local variables:
  * tab-width: 4
