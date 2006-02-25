@@ -168,7 +168,7 @@ static int sma_allocate(void* shmaddr, size_t size)
     /* update the block header */
     header->avail -= realsize;
 
-    if (cur->size == realsize || ((cur->size - realsize) < 64)) {
+    if (cur->size == realsize || ((cur->size - realsize) < 128)) {
         /* cur is a perfect fit for realsize; just unlink it */
         prv->next = cur->next;
     }
