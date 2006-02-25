@@ -99,8 +99,8 @@ static int sma_allocate(void* shmaddr, size_t size)
     size_t realsize;        /* actual size of block needed, including header */
     size_t minsize;         /* for finding best fit */
 
-    if(size<128) {
-         realsize = 128;
+    if(size < 0x40) {
+         realsize = 0x40;
     } else {
         /*
          * Set realsize to the smallest power of 2 greater than or equal to
@@ -116,12 +116,12 @@ static int sma_allocate(void* shmaddr, size_t size)
 #endif
             realsize = p + 1;
         } else {
-          /* Probably makes more sense to just round up to the next 128 byte boundary */
+          /* Probably makes more sense to just round up to the next 64 byte boundary */
             size_t p = size - 1;
 #if SIZEOF_INT == 8
-            p&=0xffffffffffffff80; p+=0x80;
+            p&=0xffffffffffffffc0; p+=0x40;
 #else
-            p&=0xffffff80; p+=0x80;
+            p&=0xffffffc0; p+=0x40;
 #endif
             realsize = p;
         }
@@ -168,7 +168,7 @@ static int sma_allocate(void* shmaddr, size_t size)
     /* update the block header */
     header->avail -= realsize;
 
-    if (cur->size == realsize || ((cur->size - realsize) < 128)) {
+    if (cur->size == realsize || ((cur->size - realsize) < 0x40)) {
         /* cur is a perfect fit for realsize; just unlink it */
         prv->next = cur->next;
     }
