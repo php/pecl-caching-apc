@@ -45,7 +45,7 @@ void apc_unmap(void* shmaddr, int size);
 #define UNLOCK(c)       { apc_lck_unlock(c); HANDLE_UNBLOCK_INTERRUPTIONS(); }
 /* }}} */
 
-enum { POWER_OF_TWO_BLOCKSIZE=0 };  /* force allocated blocks to 2^n? */
+enum { POWER_OF_TWO_BLOCKSIZE=1 };  /* force allocated blocks to 2^n? */
 
 enum { DEFAULT_NUMSEG=1, DEFAULT_SEGSIZE=30*1024*1024 };
 
@@ -90,31 +90,32 @@ static int alignword(int x)
 /* }}} */
 
 /* {{{ sma_allocate: tries to allocate size bytes in a segment */
-static int sma_allocate(void* shmaddr, int size)
+static int sma_allocate(void* shmaddr, unsigned int size)
 {
     header_t* header;       /* header of shared memory segment */
     block_t* prv;           /* block prior to working block */
     block_t* cur;           /* working block in list */
     block_t* prvbestfit;    /* block before best fit */
-    int realsize;           /* actual size of block needed, including header */
-    int minsize;            /* for finding best fit */
+    unsigned int realsize;  /* actual size of block needed, including header */
+    unsigned int minsize;   /* for finding best fit */
 
-    /* Realsize must be aligned to a word boundary on some architectures. */
-    realsize = alignword(max(size + alignword(sizeof(int)), sizeof(block_t)));
-   
-    /*
-     * Set realsize to the smallest power of 2 greater than or equal to
-     * realsize. This increases the likelihood that neighboring blocks can be
-     * coalesced, reducing memory fragmentation.
-     */
-    if (POWER_OF_TWO_BLOCKSIZE) {
-        int p = 1;
-
-        while (p < realsize) {
-            p <<= 1;
+    if(size<128) {
+         realsize = 128;
+    } else {
+        /*
+         * Set realsize to the smallest power of 2 greater than or equal to
+         * realsize. This increases the likelihood that neighboring blocks can be
+         * coalesced, reducing memory fragmentation.
+         */
+        if (POWER_OF_TWO_BLOCKSIZE) {
+            unsigned int p = size - 1;
+            p|=(p>>1); p|=(p>>2); p|=(p>>4); p|=(p>>8); p|=(p>>16);
+            realsize = p + 1;
+        } else {
+            realsize = size;
         }
-        realsize = p;
     }
+    realsize = alignword(max(realsize + alignword(sizeof(int)), sizeof(block_t)));
 
     /*
      * First, insure that the segment contains at least realsize free bytes,
@@ -156,7 +157,7 @@ static int sma_allocate(void* shmaddr, int size)
     /* update the block header */
     header->avail -= realsize;
 
-    if (cur->size == realsize) {
+    if (cur->size == realsize || ((cur->size - realsize) < 128)) {
         /* cur is a perfect fit for realsize; just unlink it */
         prv->next = cur->next;
     }
