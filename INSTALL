@@ -4,6 +4,34 @@ Installation Instructions for APC
 This version of APC should work on every version of PHP from 4.3.0 to 
 PHP 5.1.x.  
 
+CVS Instructions
+----------------
+Building from CVS can be done like this:
+
+  cvs -d :pserver:cvsread@cvs.php.net:/repository login
+  Password: phpfi
+  cvs -d :pserver:cvsread@cvs.php.net:/repository co pecl/apc
+  cd pecl/apc
+  phpize
+  ./configure --enable-apc-mmap --with-apxs --with-php-config=/usr/local/php/bin/php-config
+  make
+  make install
+
+Suggested Configuration (in your php.ini file)
+----------------------------------------------
+  extension=apc.so
+  apc.enabled=1
+  apc.shm_segments=1
+  apc.optimization=0
+  apc.shm_size=128
+  apc.ttl=7200
+  apc.user_ttl=7200
+  apc.num_files_hint=1024
+  apc.mmap_file_mask=/tmp/apc.XXXXXX
+  apc.enable_cli=1
+
+These are fully described at the bottom of this file.
+
 PHP 4 Optimization
 ------------------
 If you are trying to get every little bit of speed out of PHP4+APC, you need
