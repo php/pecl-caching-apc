@@ -167,13 +167,13 @@ EOB;
 	}
 }
 	
-// clear cache
-if ($AUTHENTICATED && isset($MYREQUEST['CC']) && $MYREQUEST['CC']) {
-	apc_clear_cache();
-}
 // select cache mode
 if ($AUTHENTICATED && $MYREQUEST['OB'] == OB_USER_CACHE) {
 	$cache_mode='user';
+}
+// clear cache
+if ($AUTHENTICATED && isset($MYREQUEST['CC']) && $MYREQUEST['CC']) {
+	apc_clear_cache($cache_mode);
 }
 
 
@@ -708,7 +708,7 @@ echo
 	
 if ($AUTHENTICATED) {
 	echo <<<EOB
-		<li><a class="aright" href="$MY_SELF&CC=1&OB={$MYREQUEST['OB']}" onClick="javascipt:return confirm('Are you sure?');">Clear Cache</a></li>
+		<li><a class="aright" href="$MY_SELF&CC=1&OB={$MYREQUEST['OB']}" onClick="javascipt:return confirm('Are you sure?');">Clear $cache_mode Cache</a></li>
 EOB;
 }
 echo <<<EOB
