@@ -512,7 +512,7 @@ size_t *apc_sma_get_alloc_distribution(void) {
     header_t* header = (header_t*) sma_shmaddrs[0];
     return header->adist; 
 }
-
+#endif
 /* {{{ apc_sma_unlock */
 void apc_sma_unlock()
 {
