@@ -412,7 +412,7 @@ apc_sma_info_t* apc_sma_info()
 
     info = (apc_sma_info_t*) apc_emalloc(sizeof(apc_sma_info_t));
     info->num_seg = sma_numseg;
-    info->seg_size = sma_segsize;
+    info->seg_size = sma_segsize - sizeof(header_t) - sizeof(block_t) - alignword(sizeof(int));
 
     info->list = apc_emalloc(info->num_seg * sizeof(apc_sma_link_t*));
     for (i = 0; i < sma_numseg; i++) {
