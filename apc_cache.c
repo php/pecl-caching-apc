@@ -335,68 +335,67 @@ void apc_cache_clear(apc_cache_t* cache)
 /* {{{ apc_cache_expunge */
 void apc_cache_expunge(apc_cache_t* cache, time_t t)
 {
-#if 1
     int i;
+
     if(!cache) return;
-    /* 
-       Trying to delete only stale entries blows a million tiny little
-       holes in our cache causing excessive fragmentation.  So let's
-       try just clearing it here instead and bumping the expunges count
-       to give us a hint that we need to tune the configuration.
-    */
-    LOCK(cache);
-    cache->header->expunges++;
-    for (i = 0; i < cache->num_slots; i++) {
-        slot_t* p = cache->slots[i];
-        while (p) {
-            remove_slot(cache, &p);
-        }
-        cache->slots[i] = NULL;
-    }
-    UNLOCK(cache);
-#else
-    int i;
-    slot_t **p;
 
-    /*
-     * We don't do any cache cleanup here unless the ttl for the cache
-     * has been set.  For the user cache that is slightly confusing since
-     * we have the individual entry ttl's we can look at, but that would be
-     * too much work.  So if you want the user cache expunged, set a high
-     * default apc.user_ttl and still provide a specific ttl for each entry
-     * on insert
-     */
-    if(!cache || (cache && !cache->ttl)) return;
-
-    LOCK(cache);
-    for (i = 0; i < cache->num_slots; i++) {
-        p = &cache->slots[i];
-        while(*p) {
-            /* 
-             * For the user cache we look at the individual entry ttl values
-             * and if not set fall back to the default ttl for the user cache
-             */
-            if((*p)->value->type == APC_CACHE_ENTRY_USER) {
-                if((*p)->value->data.user.ttl) {
-                    if((*p)->creation_time + (*p)->value->data.user.ttl < t) {
-                        remove_slot(cache, p);
-                        continue;
-                    }
-                } else if(cache->ttl) {
-                    if((*p)->creation_time + cache->ttl < t) {
-                        remove_slot(cache, p);
-                        continue;
-                    }
-                }
-            } else if((*p)->access_time < (t - cache->ttl)) {
-                remove_slot(cache, p);
-                continue;
+    if(!cache->ttl) {
+        /* 
+         * If cache->ttl is not set, we wipe out the entire cache when
+         * we run out of space. 
+         */
+        LOCK(cache);
+        cache->header->expunges++;
+        for (i = 0; i < cache->num_slots; i++) {
+            slot_t* p = cache->slots[i];
+            while (p) {
+                remove_slot(cache, &p);
             }
-            p = &(*p)->next;
+            cache->slots[i] = NULL;
         }
+        UNLOCK(cache);
+    } else {
+        slot_t **p;
+
+        /*
+         * If the ttl for the cache is set we walk through and delete stale 
+         * entries.  For the user cache that is slightly confusing since
+         * we have the individual entry ttl's we can look at, but that would be
+         * too much work.  So if you want the user cache expunged, set a high
+         * default apc.user_ttl and still provide a specific ttl for each entry
+         * on insert
+         */
+
+        LOCK(cache);
+        cache->header->expunges++;
+        for (i = 0; i < cache->num_slots; i++) {
+            p = &cache->slots[i];
+            while(*p) {
+                /* 
+                 * For the user cache we look at the individual entry ttl values
+                 * and if not set fall back to the default ttl for the user cache
+                 */
+                if((*p)->value->type == APC_CACHE_ENTRY_USER) {
+                    if((*p)->value->data.user.ttl) {
+                        if((*p)->creation_time + (*p)->value->data.user.ttl < t) {
+                            remove_slot(cache, p);
+                            continue;
+                        }
+                    } else if(cache->ttl) {
+                        if((*p)->creation_time + cache->ttl < t) {
+                            remove_slot(cache, p);
+                            continue;
+                        }
+                    }
+                } else if((*p)->access_time < (t - cache->ttl)) {
+                    remove_slot(cache, p);
+                    continue;
+                }
+                p = &(*p)->next;
+            }
+        }
+        UNLOCK(cache);
     }
-    UNLOCK(cache);
-#endif
 }
 /* }}} */
 
