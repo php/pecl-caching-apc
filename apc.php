@@ -823,7 +823,7 @@ EOB;
 EOB;
 
 	// Fragementation: (freeseg - 1) / total_seg
-	$nseg = $freeseg = 0;
+	$nseg = $freeseg = $fragsize = $freetotal = 0;
 	for($i=0; $i<$mem['num_seg']; $i++) {
 		$ptr = 0;
 		foreach($mem['block_lists'][$i] as $block) {
@@ -831,12 +831,15 @@ EOB;
 				++$nseg;
 			}
 			$ptr = $block['offset'] + $block['size'];
+                        /* Only consider blocks <5M for the fragmentation % */
+                        if($block['size']<(5*1024*1024)) $fragsize+=$block['size'];
+                        $freetotal+=$block['size'];
 		}
 		$freeseg += count($mem['block_lists'][$i]);
 	}
 	
 	if ($freeseg > 1) {
-		$frag = sprintf("%.2f%%", (($freeseg - 1) / ($freeseg + $nseg)) * 100);
+		$frag = sprintf("%.2f%% (%s out of %s)", ($fragsize/$freetotal)*100,bsize($fragsize),bsize($freetotal));
 	} else {
 		$frag = "0%";
 	}
