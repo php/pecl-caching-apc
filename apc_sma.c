@@ -127,11 +127,10 @@ static int sma_allocate(void* shmaddr, size_t size)
         /* If it fits perfectly or it fits after a split, stop searching */
         if (cur->size == realsize || (cur->size > (sizeof(block_t) + realsize))) {
             prvnextfit = prv;
-            header->nfoffset = last_offset; /* Next time we search, start at this offset */
             break;
         }
         prv = cur;
-        if(wrapped && (prv->next >= header->nfoffset)) break;
+/*        if(wrapped && (prv->next >= header->nfoffset)) break; */
         last_offset = prv->next;
 
         /* Check to see if we need to wrap around and search from the top */
@@ -146,10 +145,10 @@ static int sma_allocate(void* shmaddr, size_t size)
         return -1;
     }
 
+/*    header->nfoffset = last_offset;  Next time we search, start at this offset */
+
     prv = prvnextfit;
     cur = BLOCKAT(prv->next);
-
-    header->nfoffset = last_offset; /* Next time we search, start at this offset */
 
     /* update the block header */
     header->avail -= realsize;
