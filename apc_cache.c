@@ -71,6 +71,7 @@ struct header_t {
     slot_t* deleted_list;       /* linked list of to-be-deleted slots */
     time_t start_time;          /* time the above counters were reset */
     int expunges;               /* total number of expunges */
+    zend_bool busy;             /* Flag to tell clients when we are busy cleaning the cache */
 };
 /* }}} */
 
@@ -283,6 +284,7 @@ apc_cache_t* apc_cache_create(int size_hint, int gc_ttl, int ttl)
     cache->header->deleted_list = NULL;
     cache->header->start_time = time(NULL);
     cache->header->expunges = 0;
+    cache->header->busy = 0;
 
     cache->slots = (slot_t**) (((char*) cache->shmaddr) + sizeof(header_t));
     cache->num_slots = num_slots;
@@ -314,7 +316,7 @@ void apc_cache_clear(apc_cache_t* cache)
     if(!cache) return;
 
     LOCK(cache);
-
+    cache->header->busy = 1;
     cache->header->num_hits = 0;
     cache->header->num_misses = 0;
     cache->header->start_time = time(NULL);
@@ -328,6 +330,7 @@ void apc_cache_clear(apc_cache_t* cache)
         cache->slots[i] = NULL;
     }
     
+    cache->header->busy = 0;
     UNLOCK(cache);
 }
 /* }}} */
@@ -345,6 +348,7 @@ void apc_cache_expunge(apc_cache_t* cache, time_t t)
          * we run out of space. 
          */
         LOCK(cache);
+        cache->header->busy = 1;
         cache->header->expunges++;
         for (i = 0; i < cache->num_slots; i++) {
             slot_t* p = cache->slots[i];
@@ -353,6 +357,7 @@ void apc_cache_expunge(apc_cache_t* cache, time_t t)
             }
             cache->slots[i] = NULL;
         }
+        cache->header->busy = 0;
         UNLOCK(cache);
     } else {
         slot_t **p;
@@ -367,6 +372,7 @@ void apc_cache_expunge(apc_cache_t* cache, time_t t)
          */
 
         LOCK(cache);
+        cache->header->busy = 1;
         cache->header->expunges++;
         for (i = 0; i < cache->num_slots; i++) {
             p = &cache->slots[i];
@@ -394,6 +400,7 @@ void apc_cache_expunge(apc_cache_t* cache, time_t t)
                 p = &(*p)->next;
             }
         }
+        cache->header->busy = 0;
         UNLOCK(cache);
     }
 }
@@ -955,6 +962,13 @@ void apc_cache_free_info(apc_cache_info_t* info)
 void apc_cache_unlock(apc_cache_t* cache)
 {
     UNLOCK(cache);
+}
+/* }}} */
+
+/* {{{ apc_cache_busy */
+zend_bool apc_cache_busy(apc_cache_t* cache)
+{
+    return cache->header->busy;
 }
 /* }}} */
 

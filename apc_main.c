@@ -211,7 +211,7 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
     char *path;
     size_t mem_size;
 
-    if (!APCG(enabled)) {
+    if (!APCG(enabled) || apc_cache_busy(apc_cache)) {
 		return old_compile_file(h, type TSRMLS_CC);
 	}
 

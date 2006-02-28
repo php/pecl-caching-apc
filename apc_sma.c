@@ -100,6 +100,7 @@ static int sma_allocate(void* shmaddr, size_t size)
     block_t* prvnextfit;    /* block before next fit */
     size_t realsize;        /* actual size of block needed, including header */
     size_t last_offset;     /* save the last search offset */
+    int wrapped=0;
 
     realsize = alignword(max(size + alignword(sizeof(int)), sizeof(block_t)));
 
@@ -126,23 +127,29 @@ static int sma_allocate(void* shmaddr, size_t size)
         /* If it fits perfectly or it fits after a split, stop searching */
         if (cur->size == realsize || (cur->size > (sizeof(block_t) + realsize))) {
             prvnextfit = prv;
+            header->nfoffset = last_offset; /* Next time we search, start at this offset */
             break;
         }
-        last_offset = prv->next;
         prv = cur;
+        if(wrapped && (prv->next >= header->nfoffset)) break;
+        last_offset = prv->next;
+
         /* Check to see if we need to wrap around and search from the top */
         if(header->nfoffset && prv->next == 0) {
             prv = BLOCKAT(sizeof(header_t));
+            wrapped = 1;
         }
     }
 
     if (prvnextfit == 0) {
+        header->nfoffset = 0;
         return -1;
     }
 
-    header->nfoffset = last_offset; /* Next time we search, start at this offset */
     prv = prvnextfit;
     cur = BLOCKAT(prv->next);
+
+    header->nfoffset = last_offset; /* Next time we search, start at this offset */
 
     /* update the block header */
     header->avail -= realsize;
@@ -214,6 +221,7 @@ static int sma_deallocate(void* shmaddr, int offset)
         cur->size += nxt->size;
         cur->next = nxt->next;
     }
+    header->nfoffset = 0;  /* Reset the next fit search marker */
 
     return size;
 }
