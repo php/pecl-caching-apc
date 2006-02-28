@@ -306,7 +306,7 @@ if (isset($MYREQUEST['IMG']))
 
 	$size = GRAPH_SIZE; // image size
 	if ($MYREQUEST['IMG']==3)
-		$image = imagecreate(2*$size+50, $size+10);
+		$image = imagecreate(2*$size+150, $size+10);
 	else
 		$image = imagecreate($size+50, $size+10);
 
@@ -379,7 +379,7 @@ if (isset($MYREQUEST['IMG']))
 		$y=1;
 		$j=1;
 
-		// This block of code creates the pie chart.  It is a lot more complex than you
+		// This block of code creates the bar chart.  It is a lot more complex than you
 		// would expect because we try to visualize any memory fragmentation as well.
 		for($i=0; $i<$mem['num_seg']; $i++) {	
 			$ptr = 0;
@@ -387,13 +387,19 @@ if (isset($MYREQUEST['IMG']))
 			foreach($free as $block) {
 				if($block['offset']!=$ptr) {       // Used block
 					$h=(GRAPH_SIZE-5)*($block['offset']-$ptr)/$s;
-					if ($h>0)
-						fill_box($image,$x,$y,50,$h,$col_black,$col_red,bsize($block['offset']-$ptr),$j++);
+					if ($h>0) {
+                                                $j++;
+						if($j<75) fill_box($image,$x,$y,50,$h,$col_black,$col_red,bsize($block['offset']-$ptr),$j);
+                                                else fill_box($image,$x,$y,50,$h,$col_black,$col_red);
+                                        }
 					$y+=$h;
 				}
 				$h=(GRAPH_SIZE-5)*($block['size'])/$s;
-				if ($h>0)
-					fill_box($image,$x,$y,50,$h,$col_black,$col_green,bsize($block['size']),$j++);
+				if ($h>0) {
+                                        $j++;
+					if($j<75) fill_box($image,$x,$y,50,$h,$col_black,$col_green,bsize($block['size']),$j);
+					else fill_box($image,$x,$y,50,$h,$col_black,$col_green);
+                                }
 				$y+=$h;
 				$ptr = $block['offset']+$block['size'];
 			}
@@ -839,13 +845,13 @@ EOB;
 	}
 	
 	if ($freeseg > 1) {
-		$frag = sprintf("%.2f%% (%s out of %s)", ($fragsize/$freetotal)*100,bsize($fragsize),bsize($freetotal));
+		$frag = sprintf("%.2f%% (%s out of %s in %d fragments)", ($fragsize/$freetotal)*100,bsize($fragsize),bsize($freetotal),$freeseg);
 	} else {
 		$frag = "0%";
 	}
 
 	if (graphics_avail()) {
-		$size='width='.(2*GRAPH_SIZE+50).' height='.(GRAPH_SIZE+10);
+		$size='width='.(2*GRAPH_SIZE+150).' height='.(GRAPH_SIZE+10);
 		echo <<<EOB
 			<img alt="" $size src="$PHP_SELF?IMG=3&$time">
 EOB;
