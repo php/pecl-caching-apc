@@ -707,7 +707,12 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
     dst->__get = NULL;
     dst->__set = NULL;
     dst->__unset = NULL;
+    dst->__isset = NULL;
     dst->__call = NULL;
+
+    /* unset function proxies */
+    dst->serialize_func = NULL;
+    dst->unserialize_func = NULL;
     
     my_fixup_hashtable(&dst->function_table, (ht_fixup_fun_t)my_fixup_function, src, dst);
 #endif
@@ -1952,6 +1957,7 @@ static void my_fixup_function(Bucket *p, zend_class_entry *src, zend_class_entry
             SET_IF_SAME_NAME(__get);
             SET_IF_SAME_NAME(__set);
             SET_IF_SAME_NAME(__unset);
+            SET_IF_SAME_NAME(__isset);
             SET_IF_SAME_NAME(__call);
         }
         zf->common.scope = dst;
