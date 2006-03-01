@@ -91,7 +91,11 @@ void apc_fcntl_unlock(int fd)
 	OVERLAPPED offset =	{0, 0, 0, 0, NULL};
 
 	if (!UnlockFileEx((HANDLE)fd, 0, 1, 0, &offset)) {
-		apc_eprint("apc_fcntl_unlock failed errno:%d", GetLastError());
+		DWORD error_code = GetLastError();
+		/* Ignore already unlocked error */
+		if (error_code != ERROR_NOT_LOCKED) {
+			apc_eprint("apc_fcntl_unlock failed errno:%d", error_code);
+		}
 	}
 }
 
