@@ -129,23 +129,22 @@ static int sma_allocate(void* shmaddr, size_t size)
             prvnextfit = prv;
             break;
         }
-        prv = cur;
-/*        if(wrapped && (prv->next >= header->nfoffset)) break; */
         last_offset = prv->next;
+        prv = cur;
+        if(wrapped && (prv->next >= header->nfoffset)) break;
 
         /* Check to see if we need to wrap around and search from the top */
         if(header->nfoffset && prv->next == 0) {
             prv = BLOCKAT(sizeof(header_t));
+            last_offset = 0;
             wrapped = 1;
-        }
+        } 
     }
 
     if (prvnextfit == 0) {
         header->nfoffset = 0;
         return -1;
     }
-
-/*    header->nfoffset = last_offset;  Next time we search, start at this offset */
 
     prv = prvnextfit;
     cur = BLOCKAT(prv->next);
@@ -168,12 +167,14 @@ static int sma_allocate(void* shmaddr, size_t size)
         /* nextfit is too big; split it into two smaller blocks */
         nxtoffset = cur->next;
         oldsize = cur->size;
-        prv->next += realsize;
-        cur->size = realsize;
+        prv->next += realsize;  /* skip over newly allocated block */
+        cur->size = realsize;   /* Set the size of this new block */
         nxt = BLOCKAT(prv->next);
-        nxt->next = nxtoffset;
-        nxt->size = oldsize - realsize;
+        nxt->next = nxtoffset;  /* Re-link the shortened block */
+        nxt->size = oldsize - realsize;  /* and fix the size */
     }
+    header->nfoffset = last_offset;
+    fprintf(stderr,"Start next search at %d\n",header->nfoffset);
 
     return OFFSET(cur) + alignword(sizeof(int));
 }
@@ -288,10 +289,11 @@ void apc_sma_init(int numseg, int segsize, char *mmap_file_mask)
         block = BLOCKAT(sizeof(header_t));
         block->size = 0;
         block->next = sizeof(header_t) + sizeof(block_t);
-    
+        fprintf(stderr,"Null block at offset %d\n",sizeof(header_t)); 
         block = BLOCKAT(block->next);
         block->size = header->avail;
         block->next = 0;
+        fprintf(stderr,"First real block at %d (size = %d)\n",sizeof(header_t)+sizeof(block_t),header->avail); 
     }
 }
 /* }}} */
