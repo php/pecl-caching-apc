@@ -174,7 +174,6 @@ static int sma_allocate(void* shmaddr, size_t size)
         nxt->size = oldsize - realsize;  /* and fix the size */
     }
     header->nfoffset = last_offset;
-    fprintf(stderr,"Start next search at %d\n",header->nfoffset);
 
     return OFFSET(cur) + alignword(sizeof(int));
 }
@@ -289,11 +288,9 @@ void apc_sma_init(int numseg, int segsize, char *mmap_file_mask)
         block = BLOCKAT(sizeof(header_t));
         block->size = 0;
         block->next = sizeof(header_t) + sizeof(block_t);
-        fprintf(stderr,"Null block at offset %d\n",sizeof(header_t)); 
         block = BLOCKAT(block->next);
         block->size = header->avail;
         block->next = 0;
-        fprintf(stderr,"First real block at %d (size = %d)\n",sizeof(header_t)+sizeof(block_t),header->avail); 
     }
 }
 /* }}} */
