@@ -76,7 +76,7 @@ struct block_t {
  * beginning of the shared memory segment in question. */
 
 #define BLOCKAT(offset) ((block_t*)((char *)shmaddr + offset))
-#define OFFSET(block) ((int)(((char*)block) - (char*)shmaddr))
+#define OFFSET(block) ((size_t)(((char*)block) - (char*)shmaddr))
 
 #ifdef max
 #undef max
