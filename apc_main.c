@@ -272,11 +272,13 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
      * For example if apc.slam_defense is set to 66 then 2/3 of the attempts
      * to cache an uncached file will be ignored.
      */
-    if(APCG(slam_rand)==-1) {
-        APCG(slam_rand) = (int)(100.0*rand()/(RAND_MAX+1.0));
-    }
-    if(APCG(slam_defense) && APCG(slam_rand) < APCG(slam_defense)) {
-        return op_array;
+    if(APCG(slam_defense)) {
+        if(APCG(slam_rand)==-1) {
+            APCG(slam_rand) = (int)(100.0*rand()/(RAND_MAX+1.0));
+        }
+        if(APCG(slam_rand) < APCG(slam_defense)) {
+            return op_array;
+        }
     }
 
     HANDLE_BLOCK_INTERRUPTIONS();
