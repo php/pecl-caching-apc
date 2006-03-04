@@ -93,12 +93,12 @@ Allow keys used in apc_store/apc_fetch/apc_delete to be binary safe and prevent 
     <file role="src" name="php_apc.h" />
     <file role="src" name="apc_fcntl_win32.c" />
     <file role="php" name="apc.php" />
-   </dir>
-   <dir name="tests">
-    <file role="test" name="apc_001.phpt" />
-    <file role="test" name="apc_002.phpt" />
-    <file role="test" name="apc_003.phpt" />
-    <file role="test" name="skipif.inc" />
+    <dir name="tests">
+     <file role="test" name="apc_001.phpt" />
+     <file role="test" name="apc_002.phpt" />
+     <file role="test" name="apc_003.phpt" />
+     <file role="test" name="skipif.inc" />
+    </dir>
    </dir>
  </contents>
 
