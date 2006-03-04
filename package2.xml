@@ -1,33 +1,46 @@
-<?xml version="1.0" encoding="ISO-8859-1" ?>
-<!DOCTYPE package SYSTEM "../pear/package.dtd">
-<package>
- <dep type="php" rel="ge" version="4.3.0" optional="no"/>
+<?xml version="1.0" encoding="UTF-8" ?>
+<package xmlns="http://pear.php.net/dtd/package-2.0" xmlns:tasks="http://pear.php.net/dtd/tasks-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-inst
+ance" packagerversion="1.4.7" version="2.0" xsi:schemaLocation="http://pear.php.net/dtd/tasks-1.0 http://pear.php.net/dtd/tasks-1.0.xsd http://pear.p
+hp.net/dtd/package-2.0 http://pear.php.net/dtd/package-2.0.xsd">
+ <dependencies>
+   <required>
+     <php>
+       <min>4.3.0</min>
+     </php>
+     <pearinstaller>
+       <min>1.4.0</min>
+     </pearinstaller>
+   </required>
+ </dependencies>
+ <providesextension>apc</providesextension>
+ <extsrcrelease/>
  <name>APC</name>
  <summary>Alternative PHP Cache</summary>
- <maintainers>
-  <maintainer>
-   <user>dcowgill</user>
-   <name>Daniel Cowgill</name>
-   <email>dan@mail.communityconnect.com</email>
-   <role>lead</role>
-  </maintainer>
-  <maintainer>
-   <user>gschlossnagle</user>
-   <name>George Schlossnagle</name>
-   <email>george@omniti.com</email>
-   <role>lead</role>
-  </maintainer>
-  <maintainer>
-   <user>rasmus</user>
-   <name>Rasmus Lerdorf</name>
-   <email>rasmus@php.net</email>
-   <role>lead</role>
-  </maintainer>
- </maintainers>
- <description> 
- APC is the Alternative PHP Cache. It was conceived of to provide a free, open, and robust framework for caching and optimizing PHP intermediate code.
- </description>
- <license>PHP</license>
+ <description>APC is a free, open, and robust framework for caching and optimizing PHP intermediate code.</description>
+ <lead>
+  <user>dcowgill</user>
+  <name>Daniel Cowgill</name>
+  <email>dan@mail.communityconnect.com</email>
+  <active>no</active>
+ </lead>
+ <lead>
+  <user>gschlossnagle</user>
+  <name>George Schlossnagle</name>
+  <email>george@omniti.com</email>
+  <active>no</active>
+ </lead>
+ <lead>
+  <user>rasmus</user>
+  <name>Rasmus Lerdorf</name>
+  <email>rasmus@php.net</email>
+  <active>yes</active>
+ </lead>
+ <license uri="http://www.php.net/license">PHP License</license>
+ <stability>
+   <release>stable</release>
+   <api>stable</api>
+ </stability>
+
  <release>
   <state>stable</state>
   <version>3.0.9</version>
@@ -56,12 +69,14 @@ Allow keys used in apc_store/apc_fetch/apc_delete to be binary safe and prevent 
     <configureoption name="enable-apc-mmap" default="yes" prompt="Use mmap instead of shmget (usually a good idea)"/>
     <configureoption name="with-apxs" default="yes" prompt="Use apxs to set compile flags (if using APC with Apache)?"/>
   </configureoptions>
-  <filelist>
+  <contents>
+   <dir name="/">
     <file role="doc" name="CHANGELOG" />
     <file role="doc" name="INSTALL" />
     <file role="doc" name="LICENSE" />
     <file role="doc" name="NOTICE" />
     <file role="doc" name="TODO" />
+    <file role="doc" name="TECHNOTES.txt" />
     <file role="src" name="apc.c" />
     <file role="src" name="apc.dsp" />
     <file role="src" name="apc.h" />
@@ -98,10 +113,17 @@ Allow keys used in apc_store/apc_fetch/apc_delete to be binary safe and prevent 
     <file role="src" name="php_apc.h" />
     <file role="src" name="apc_fcntl_win32.c" />
     <file role="php" name="apc.php" />
-  </filelist>
+   </dir>
+   <dir name="tests">
+    <file role="test" name="apc_001.phpt" />
+    <file role="test" name="apc_002.phpt" />
+    <file role="test" name="apc_003.phpt" />
+    <file role="test" name="skipif.inc" />
+   </dir>
+  </contents>
   <changelog>
      <release>
-      <state>stable</state>
+      <stability><release>stable</release><api>stable</api></stability>
       <version>2.0</version>
       <date>2003-07-01</date>
       <notes>
@@ -109,7 +131,7 @@ Complete rework.
       </notes>
      </release>
      <release>
-      <state>stable</state>
+      <stability><release>stable</release><api>stable</api></stability>
       <version>2.0.1</version>
       <date>2003-07-01</date>
       <notes>
@@ -117,7 +139,7 @@ Complete rework.
       </notes>
      </release>
    <release>
-    <state>stable</state>
+    <stability><release>stable</release><api>stable</api></stability>
     <version>2.0.2</version>
     <date>2004-03-12</date>
     <notes>
@@ -125,7 +147,7 @@ Fixed non-existant class bug.
     </notes>
    </release>
    <release>
-    <state>stable</state>
+    <stability><release>stable</release><api>stable</api></stability>
     <version>3.0.0</version>
     <date>2005-07-05</date>
     <notes>
@@ -133,7 +155,7 @@ Fixed non-existant class bug.
     </notes>
    </release>
    <release>
-    <state>stable</state>
+    <stability><release>stable</release><api>stable</api></stability>
     <version>3.0.1</version>
     <date>2005-07-05</date>
     <notes>
@@ -141,7 +163,7 @@ Fixed non-existant class bug.
     </notes>
    </release>
    <release>
-    <state>stable</state>
+    <stability><release>stable</release><api>stable</api></stability>
     <version>3.0.2</version>
     <date>2005-07-05</date>
     <notes>
@@ -149,7 +171,7 @@ Default to mmap and add a better error message for shmget failures
     </notes>
    </release>
  <release>
-  <state>stable</state>
+  <stability><release>stable</release><api>stable</api></stability>
   <version>3.0.3</version>
   <date>2005-07-07</date>
   <notes>
@@ -157,7 +179,7 @@ Fix compile problem against PHP 5.0.x
   </notes>
  </release>
  <release>
-  <state>stable</state>
+  <stability><release>stable</release><api>stable</api></stability>
   <version>3.0.4</version>
   <date>2005-07-18</date>
   <notes>
@@ -167,7 +189,7 @@ A couple of other minor fixes.
   </notes>
  </release>
  <release>
-  <state>stable</state>
+  <stability><release>stable</release><api>stable</api></stability>
   <version>3.0.5</version>
   <date>2005-07-27</date>
   <notes>
@@ -178,7 +200,7 @@ Segfault in cache cleanup code (Ilia, Rasmus)
   </notes>
  </release>
  <release>
-  <state>stable</state>
+  <stability><release>stable</release><api>stable</api></stability>
   <version>3.0.6</version>
   <date>2005-07-30</date>
   <notes>
@@ -192,7 +214,7 @@ Windows ZTS fixes (Frank)
   </notes>
  </release>
  <release>
-  <state>stable</state>
+  <stability><release>stable</release><api>stable</api></stability>
   <version>3.0.7</version>
   <date>2005-08-16</date>
   <notes>
@@ -207,7 +229,7 @@ Added apc.max_file_size INI setting that allows exclusion of large files from be
   </notes>
  </release>
  <release>
-  <state>stable</state>
+  <stability><release>stable</release><api>stable</api></stability>
   <version>3.0.8</version>
   <date>2005-08-24</date>
   <notes>
@@ -215,7 +237,7 @@ Fix invalid free in globals destructor introduced in 3.0.7 (Rasmus)
 Cache corruption fix in cache-full cleanup code (Gopal)
   </notes>
  </release>
-  </changelog>
+ </changelog>
 </package>
 <!--
 vim:et:ts=1:sw=1
