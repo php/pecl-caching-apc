@@ -106,11 +106,18 @@ Allow keys used in apc_store/apc_fetch/apc_delete to be binary safe and prevent 
    <required>
      <php>
        <min>4.3.0</min>
+       <exclude>5.0.0</exclude>
+       <exclude>5.0.1</exclude>
+       <exclude>5.0.2</exclude>
+       <exclude>5.0.3</exclude>
+       <exclude>5.0.4</exclude>
+       <exclude>5.0.5</exclude>
      </php>
      <pearinstaller>
        <min>1.4.0</min>
      </pearinstaller>
    </required>
+
  </dependencies>
 
  <providesextension>apc</providesextension>
