@@ -52,7 +52,7 @@ typedef union _apc_cache_key_data_t {
     } file;
     struct {
         char *identifier;
-	int identifier_len;
+        int identifier_len;
     } user;
 } apc_cache_key_data_t;
 
