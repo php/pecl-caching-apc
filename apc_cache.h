@@ -39,9 +39,14 @@
 #include "apc.h"
 #include "apc_compile.h"
 
-#define APC_CACHE_ENTRY_FILE 1
-#define APC_CACHE_ENTRY_USER 2
+#define APC_CACHE_ENTRY_FILE   1
+#define APC_CACHE_ENTRY_USER   2
 
+#define APC_CACHE_KEY_FILE     1
+#define APC_CACHE_KEY_USER     2
+#define APC_CACHE_KEY_FPFILE   3
+
+/* {{{ struct definition: apc_cache_key_t */
 #define T apc_cache_t*
 typedef struct apc_cache_t apc_cache_t; /* opaque cache type */
 
@@ -54,16 +59,21 @@ typedef union _apc_cache_key_data_t {
         char *identifier;
         int identifier_len;
     } user;
+    struct {
+        char *fullpath;
+        int fullpath_len;
+    } fpfile;
 } apc_cache_key_data_t;
 
-/* {{{ struct definition: apc_cache_key_t */
 typedef struct apc_cache_key_t apc_cache_key_t;
 struct apc_cache_key_t {
     apc_cache_key_data_t data;
-    int mtime;                  /* the mtime of this cached entry */
+    time_t mtime;                 /* the mtime of this cached entry */
+    unsigned char type;
 };
 /* }}} */
 
+/* {{{ struct definition: apc_cache_entry_t */
 typedef union _apc_cache_entry_value_t {
     struct {
         char *filename;             /* absolute path to source file */
@@ -73,13 +83,12 @@ typedef union _apc_cache_entry_value_t {
     } file;
     struct {
         char *info; 
-	int info_len; 
+        int info_len; 
         zval *val;
         unsigned int ttl;
     } user;
 } apc_cache_entry_value_t;
 
-/* {{{ struct definition: apc_cache_entry_t */
 typedef struct apc_cache_entry_t apc_cache_entry_t;
 struct apc_cache_entry_t {
     apc_cache_entry_value_t data;
@@ -214,7 +223,6 @@ extern apc_cache_entry_t* apc_cache_make_file_entry(const char* filename,
 extern apc_cache_entry_t* apc_cache_make_user_entry(const char* info, int info_len, const zval *val, const unsigned int ttl);
 
 extern int apc_cache_make_user_key(apc_cache_key_t* key, char* identifier, int identifier_len, const time_t t);
-extern int apc_cache_free_user_key(apc_cache_key_t* key);
 
 /*
  * Frees all memory associated with an object returned by apc_cache_make_entry

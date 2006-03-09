@@ -67,6 +67,7 @@ ZEND_BEGIN_MODULE_GLOBALS(apc)
     zend_bool enable_cli;        /* Flag to override turning APC off for CLI */
     long max_file_size;	         /* Maximum size of file, in bytes that APC will be allowed to cache */
     long slam_rand;              /* A place to store the slam rand value for the request */
+    zend_bool fpstat;            /* true if fullpath includes should be stat'ed */
 ZEND_END_MODULE_GLOBALS(apc)
 
 /* (the following declaration is defined in php_apc.c) */
@@ -81,7 +82,7 @@ ZEND_EXTERN_MODULE_GLOBALS(apc)
 /* True globals */
 extern apc_cache_t* apc_cache;       /* the global compiler cache */
 extern apc_cache_t* apc_user_cache;  /* the global user content cache */
-extern void* apc_compiled_filters;       /* compiled filters */
+extern void* apc_compiled_filters;   /* compiled filters */
 
 #endif
 

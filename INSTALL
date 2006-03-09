@@ -359,3 +359,8 @@ users should consider tuning the following parameters:
 
     apc.max_file_size       Prevents large files from being cached.  
                             (Default: 1M)
+
+    apc.stat                Whether to stat the main script file and the fullpath
+                            includes.  If you turn this off you will need to restart
+                            your server in order to update scripts.
+                            (Default: 1)

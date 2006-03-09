@@ -235,6 +235,10 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
     t = sapi_get_request_time(TSRMLS_C);
 #endif
 
+#ifdef __DEBUG_APC__
+    fprintf(stderr,"1. h->opened_path=[%s]  h->filename=[%s]\n", h->opened_path?h->opened_path:"null",h->filename);
+#endif
+
     /* try to create a cache key; if we fail, give up on caching */
     if (!apc_cache_make_file_key(&key, h->filename, PG(include_path), t TSRMLS_CC)) {
         return old_compile_file(h, type TSRMLS_CC);
@@ -312,6 +316,10 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
 
     path = h->opened_path;
     if(!path) path=h->filename;
+
+#ifdef __DEBUG_APC__
+    fprintf(stderr,"2. h->opened_path=[%s]  h->filename=[%s]\n", h->opened_path?h->opened_path:"null",h->filename);
+#endif
 
     if(!(cache_entry = apc_cache_make_file_entry(path, alloc_op_array, alloc_functions, alloc_classes))) {
         apc_free_op_array(alloc_op_array, apc_sma_free);
