@@ -74,7 +74,7 @@ static int install_function(apc_function_t fn TSRMLS_DC)
         zend_hash_add(EG(function_table),
                       fn.name,
                       fn.name_len+1,
-                      apc_copy_function_for_execution(fn.function TSRMLS_CC),
+                      apc_copy_function_for_execution(fn.function),
                       sizeof(fn.function[0]),
                       NULL);
 

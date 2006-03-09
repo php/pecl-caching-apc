@@ -1797,9 +1797,10 @@ void my_fetch_global_vars(zend_op_array* src TSRMLS_DC)
                 opcode->op1.u.constant.type == IS_STRING) 
         {
             znode * varname = &opcode->op1;
-            // TODO: figure out thread safety macros
-            (void)zend_is_auto_global(varname->u.constant.value.str.val, 
-                            varname->u.constant.value.str.len TSRMLS_CC);
+            if (varname->u.constant.value.str.val[0] == '_') {
+                (void)zend_is_auto_global(varname->u.constant.value.str.val, 
+                                varname->u.constant.value.str.len TSRMLS_CC);
+            }
         }
     }
 }
@@ -1821,8 +1822,10 @@ zend_op_array* apc_copy_op_array_for_execution(zend_op_array* src TSRMLS_DC)
 /* }}} */
 
 /* {{{ apc_copy_function_for_execution */
-zend_function* apc_copy_function_for_execution(zend_function* src TSRMLS_DC)
+zend_function* apc_copy_function_for_execution(zend_function* src)
 {
+    TSRMLS_FETCH();
+
     zend_function* dst = (zend_function*) emalloc(sizeof(src[0]));
     memcpy(dst, src, sizeof(src[0]));
     dst->op_array.static_variables = my_copy_static_variables(&dst->op_array, apc_php_malloc, apc_php_free);
@@ -1835,10 +1838,10 @@ zend_function* apc_copy_function_for_execution(zend_function* src TSRMLS_DC)
 /* }}} */
 
 /* {{{ apc_copy_function_for_execution_ex */
-zend_function* apc_copy_function_for_execution_ex(void *dummy, zend_function* src TSRMLS_DC)
+zend_function* apc_copy_function_for_execution_ex(void *dummy, zend_function* src)
 {
     if(src->type==ZEND_INTERNAL_FUNCTION || src->type==ZEND_OVERLOADED_FUNCTION) return src;
-    return apc_copy_function_for_execution(src TSRMLS_CC);
+    return apc_copy_function_for_execution(src);
 }
 /* }}} */
 
