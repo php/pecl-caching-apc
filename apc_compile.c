@@ -1824,9 +1824,10 @@ zend_op_array* apc_copy_op_array_for_execution(zend_op_array* src TSRMLS_DC)
 /* {{{ apc_copy_function_for_execution */
 zend_function* apc_copy_function_for_execution(zend_function* src)
 {
+    zend_function* dst;
     TSRMLS_FETCH();
 
-    zend_function* dst = (zend_function*) emalloc(sizeof(src[0]));
+    dst = (zend_function*) emalloc(sizeof(src[0]));
     memcpy(dst, src, sizeof(src[0]));
     dst->op_array.static_variables = my_copy_static_variables(&dst->op_array, apc_php_malloc, apc_php_free);
 #ifdef ZEND_ENGINE_2
