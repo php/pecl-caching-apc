@@ -38,11 +38,18 @@
 
 int apc_fcntl_create(const char* pathname)
 {
-	char *lock_file;
+	char *lock_file = emalloc(MAXPATHLEN);
 	HANDLE fd;
+	DWORD tmplen;
 	static int i=0;
 	
-	spprintf(&lock_file, 0, "/tmp/apc.lock.%d", i++);
+	tmplen = GetTempPath(MAXPATHLEN, lock_file);
+	if (!tmplen) {
+		efree(lock_file);
+		return -1;
+	}
+
+	snprintf(lock_file + tmplen, MAXPATHLEN - tmplen - 1, "apc.lock.%d", i++);
 	
 	fd = CreateFile(lock_file,
         GENERIC_READ | GENERIC_WRITE,
