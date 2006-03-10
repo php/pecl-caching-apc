@@ -649,6 +649,7 @@ int apc_cache_make_file_key(apc_cache_key_t* key,
 					   TSRMLS_DC)
 {
     struct stat buf, *tmp_buf=NULL;
+    int len;
 	
     assert(key != NULL);
 
@@ -659,9 +660,10 @@ int apc_cache_make_file_key(apc_cache_key_t* key,
         return 0;
 	}
 
-    if(APCG(fpstat)==0 && *filename=='/') {
+    len = strlen(filename);
+    if(APCG(fpstat)==0 && IS_ABSOLUTE_PATH(filename,len)) {
         key->data.fpfile.fullpath = filename;
-        key->data.fpfile.fullpath_len = strlen(filename);
+        key->data.fpfile.fullpath_len = len;
         key->mtime = t;
         key->type = APC_CACHE_KEY_FPFILE;
         return 1;
