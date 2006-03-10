@@ -25,28 +25,15 @@ hp.net/dtd/package-2.0 http://pear.php.net/dtd/package-2.0.xsd">
   <active>yes</active>
  </lead>
  
- <date>2006-03-04</date>
- <version><release>3.0.9</release><api>3.0.0</api></version>
+ <date>2006-03-??</date>
+ <version><release>3.0.10</release><api>3.0.0</api></version>
  <stability><release>stable</release><api>stable</api></stability>
  <license uri="http://www.php.net/license">PHP License</license>
  <notes>
-Eliminate rand() call when slam_defense is not set (Rasmus)
-Fix for __isset problem (Gopal)
-Rewrite allocator from a "best fit" to a "next fit" algorithm (Rasmus)
-Added a Cache Full counter so we have an idea how many times the segment has filled up causing an expunge (Rasmus)
-Report back the correct number of available bytes in the segment instead of the allocated bytes. (Rasmus)
-Add cache busy flag which is set when an expunge is underway (Rasmus)
-Add automatic serialization of objects in apc_store() (Marcus)
-64-bit .ini flag fix (Rasmus)
-Static members fix (Gopal)
-sma_cleanup() mem leak fix (Rasmus)
-Fix for http://pecl.php.net/bugs/5311 (Rasmus)
-Fix autoglobals JIT bug (Gopal)
-Fix instance bug (Gopal)
-Add a lock cleanup safety net to request shutdown (Rasmus)
-Fix apc.slam_defense edge-case bug (Rasmus)
-User entry memory usage tracking support (Ilia)
-Allow keys used in apc_store/apc_fetch/apc_delete to be binary safe and prevent conflicts between keys that are found at the start of other keys. (Ilia)
+  Add apc.stat ini flag which defaults to 1.  If set to 0, the main script and any fullpath
+  includes will not be stat'ed for any changes.  You will have to restart the server if you
+  change anything.  This mode increases performance quite a bit, especially if you have a
+  lot of includes.
  </notes>
 
  <contents>
@@ -241,6 +228,30 @@ Added apc.max_file_size INI setting that allows exclusion of large files from be
      <notes>
 Fix invalid free in globals destructor introduced in 3.0.7 (Rasmus)
 Cache corruption fix in cache-full cleanup code (Gopal)
+     </notes>
+    </release>
+    <release>
+     <stability><release>stable</release><api>stable</api></stability>
+     <version><release>3.0.9</release><api>3.0.0</api></version>
+     <date>2006-03-04</date>
+     <notes>
+Eliminate rand() call when slam_defense is not set (Rasmus)
+Fix for __isset problem (Gopal)
+Rewrite allocator from a "best fit" to a "next fit" algorithm (Rasmus)
+Added a Cache Full counter so we have an idea how many times the segment has filled up causing an expunge (Rasmus)
+Report back the correct number of available bytes in the segment instead of the allocated bytes. (Rasmus)
+Add cache busy flag which is set when an expunge is underway (Rasmus)
+Add automatic serialization of objects in apc_store() (Marcus)
+64-bit .ini flag fix (Rasmus)
+Static members fix (Gopal)
+sma_cleanup() mem leak fix (Rasmus)
+Fix for http://pecl.php.net/bugs/5311 (Rasmus)
+Fix autoglobals JIT bug (Gopal)
+Fix instance bug (Gopal)
+Add a lock cleanup safety net to request shutdown (Rasmus)
+Fix apc.slam_defense edge-case bug (Rasmus)
+User entry memory usage tracking support (Ilia)
+Allow keys used in apc_store/apc_fetch/apc_delete to be binary safe and prevent conflicts between keys that are found at the start of other keys. (Ilia)
      </notes>
     </release>
  </changelog>
