@@ -164,6 +164,8 @@ static void free_slot(slot_t* slot)
 {
     if(slot->value->type == APC_CACHE_ENTRY_USER) {
         apc_sma_free(slot->key.data.user.identifier);
+    } else if(slot->key.type == APC_CACHE_KEY_FPFILE) {
+        apc_sma_free(slot->key.data.fpfile.fullpath);
     }
     apc_cache_free_entry(slot->value);
     apc_sma_free(slot);
