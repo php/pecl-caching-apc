@@ -24,6 +24,36 @@ hp.net/dtd/package-2.0 http://pear.php.net/dtd/package-2.0.xsd">
   <email>rasmus@php.net</email>
   <active>yes</active>
  </lead>
+ <lead>
+  <name>Gopal Vijayaraghavan</name>
+  <user>gopalv</user>
+  <email>gopalv@php.net</email>
+  <active>yes</active>
+ </lead>
+ <developer>
+  <name>Edin Kadribasic</name>
+  <user>edink</user>
+  <email>edink@emini.dk</email>
+  <active>yes</active>
+ </developer>
+ <developer>
+  <name>Ilia Alshanetsky</name>
+  <user>ilia</user>
+  <email>ilia@prohost.org</email>
+  <active>yes</active>
+ </developer>
+ <developer>
+  <name>Marcus Börger</name>
+  <user>helly</user>
+  <email>helly@php.net</email>
+  <active>yes</active>
+ </developer>
+ <developer>
+  <name>Sara Golemon</name>
+  <user>pollita</user>
+  <email>pollita@php.net</email>
+  <active>yes</active>
+ </developer>
  
  <date>2006-03-11</date>
  <version><release>3.0.10</release><api>3.0.0</api></version>
