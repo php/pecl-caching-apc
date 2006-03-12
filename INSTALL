@@ -1,8 +1,10 @@
 Installation Instructions for APC
 ---------------------------------
 
-This version of APC should work on every version of PHP from 4.3.0 to 
-PHP 5.1.x.  
+This version of APC should work on PHP 4.3.0 - 4.4.x and
+5.1.0 - 5.1.x.  Yes, that means PHP 5.0.x is no longer 
+supported.  Upgrade to PHP 5.1.x.  You will notice all sorts
+of performance increases.
 
 CVS Instructions
 ----------------
