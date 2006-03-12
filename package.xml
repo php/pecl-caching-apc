@@ -25,15 +25,18 @@ hp.net/dtd/package-2.0 http://pear.php.net/dtd/package-2.0.xsd">
   <active>yes</active>
  </lead>
  
- <date>2006-03-??</date>
+ <date>2006-03-11</date>
  <version><release>3.0.10</release><api>3.0.0</api></version>
  <stability><release>stable</release><api>stable</api></stability>
  <license uri="http://www.php.net/license">PHP License</license>
  <notes>
-  Add apc.stat ini flag which defaults to 1.  If set to 0, the main script and any fullpath
+* Add apc.stat ini flag which defaults to 1.  If set to 0, the main script and any fullpath
   includes will not be stat'ed for any changes.  You will have to restart the server if you
   change anything.  This mode increases performance quite a bit, especially if you have a
   lot of includes.
+
+* Get rid of the lock safety net hack I added in 3.0.9.  It seems to cause more problems
+  than it solves.  I'll need to revisit locking and signal handling at some point soon.
  </notes>
 
  <contents>
