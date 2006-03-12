@@ -54,7 +54,7 @@
 /* pointer to the original Zend engine compile_file function */
 typedef zend_op_array* (zend_compile_t)(zend_file_handle*, int TSRMLS_DC);
 static zend_compile_t *old_compile_file;
-static int recursive_inheritance(zend_class_entry *class_entry);
+static int recursive_inheritance(const apc_class_t *cl);
 
 /* }}} */
 
@@ -80,7 +80,7 @@ static int install_function(apc_function_t fn TSRMLS_DC)
                       NULL);
 
     if (status == FAILURE) {
-        zend_error(E_ERROR, "Cannot redeclare %s()", fn.name);
+        /* zend_error(E_ERROR, "Cannot redeclare %s()", fn.name); */
     }
 
     return status;
@@ -89,7 +89,7 @@ static int install_function(apc_function_t fn TSRMLS_DC)
 
 typedef struct apc_hash_link_t apc_hash_link_t;
 struct apc_hash_link_t {
-    zend_class_entry *ce;
+    apc_class_t cl;
     apc_hash_link_t *next;
 };
 
@@ -122,10 +122,14 @@ static int install_class(apc_class_t cl TSRMLS_DC)
 {
     zend_class_entry *class_entry;
     zend_class_entry *parent;
-    apc_hash_link_t  *he;
     int status;
 
     class_entry = apc_copy_class_entry_for_execution(cl.class_entry, cl.is_derived);
+    
+    /* remember, this was passed by value. 
+       cached shm version isn't modified */
+    cl.class_entry = class_entry;
+    
     zend_error(E_WARNING, "%d classes in the class_table", zend_hash_num_elements(EG(class_table)));
 
     if(cl.parent_name != NULL) {
@@ -142,29 +146,32 @@ static int install_class(apc_class_t cl TSRMLS_DC)
 #endif 
             zend_do_inheritance(class_entry, parent TSRMLS_CC);
             zend_error(E_WARNING, "Inheriting into %s from parent %s", class_entry->name, parent->name);
-            status = recursive_inheritance(class_entry);
+            status = recursive_inheritance(&cl);
         } else {
+            apc_hash_link_t *hl = NULL;
+            int added = 0;
+            char *lower_parent = NULL;
             if(APCG(dynamic_error)) {
                 zend_error(E_WARNING, "Dynamic inheritance detected on %s extending %s", class_entry->name, cl.parent_name);
             }
-            apc_hash_link_t *hl = apc_php_malloc(sizeof(apc_hash_link_t *));
-            int added = 0;
-            char *lower_parent = estrndup(cl.parent_name, parent_len);
+            hl = apc_php_malloc(sizeof(apc_hash_link_t));
+            lower_parent = estrndup(cl.parent_name, parent_len);
             zend_str_tolower(lower_parent, parent_len);
-            hl->ce = class_entry;
+            hl->cl = cl;
+            hl->cl.class_entry = class_entry;
             hl->next = NULL;
             if(APCG(delayed_inheritance_hash).nNumOfElements) {
-                apc_hash_link_t **ehl;
+                apc_hash_link_t *ehl;
                 status = zend_hash_find(&APCG(delayed_inheritance_hash), lower_parent, parent_len+1, (void **)&ehl);
                 if(status == SUCCESS) {
                     /* It's already in the hash, so add the class_entry to the linked list */
-                    while((*ehl)->next) *ehl=(*ehl)->next;
-                    (*ehl)->next = hl;        
+                    while(ehl->next) ehl=ehl->next;
+                    ehl->next = hl;        
                     added = 1;
                 }
             }
             if(!added) {
-                zend_hash_add(&APCG(delayed_inheritance_hash), lower_parent, parent_len+1, (void *)&hl, sizeof(apc_hash_link_t *), NULL);
+                zend_hash_add(&APCG(delayed_inheritance_hash), lower_parent, parent_len+1, (void *)hl, sizeof(apc_hash_link_t), NULL);
             }
             class_entry->parent = NULL;
             efree(lower_parent);
@@ -172,7 +179,7 @@ static int install_class(apc_class_t cl TSRMLS_DC)
         }
     } else {
         status = SUCCESS;
-        status = recursive_inheritance(class_entry);
+        status = recursive_inheritance(&cl);
     }
     zend_error(E_WARNING, "now %d classes in the class_table", zend_hash_num_elements(EG(class_table)));
    
@@ -193,8 +200,11 @@ static int install_class(apc_class_t cl TSRMLS_DC)
  * the hash entry from the delayed inheritance list and finally we add the class
  * to the class table.
  */
-static int recursive_inheritance(zend_class_entry *class_entry) {
-    apc_hash_link_t  **ehl;
+static int recursive_inheritance(const apc_class_t *cl) {
+    zend_class_entry *class_entry = cl->class_entry;
+    const char * mangled_name = cl->mangled_name;
+    int mangled_name_len = cl->mangled_name_len;
+    apc_hash_link_t  *ehl;
     zend_class_entry **allocated_ce;
     int status;
     char *lower_cen = estrndup(class_entry->name, class_entry->name_length);
@@ -203,15 +213,15 @@ static int recursive_inheritance(zend_class_entry *class_entry) {
     zend_error(E_WARNING, "Recursive inheritance called for %s", class_entry->name);
     if(status == SUCCESS) {
         do {
-            zend_do_inheritance((*ehl)->ce, class_entry TSRMLS_CC);
-            zend_error(E_WARNING, "Inheriting into %s from parent %s", (*ehl)->ce->name, class_entry->name);
-            zend_error(E_WARNING, "Recursing for %s", (*ehl)->ce->name);
-            status = recursive_inheritance((*ehl)->ce);
+            zend_do_inheritance(ehl->cl.class_entry, class_entry TSRMLS_CC);
+            zend_error(E_WARNING, "Inheriting into %s from parent %s", ehl->cl.class_entry->name, class_entry->name);
+            zend_error(E_WARNING, "Recursing for %s", ehl->cl.class_entry->name);
+            status = recursive_inheritance(&ehl->cl);
             if(status == FAILURE) {
                 efree(lower_cen);
                 return status;
             }
-        } while(*ehl = (*ehl)->next);
+        } while((ehl = ehl->next) != NULL);
         zend_error(E_WARNING, "Removing %s from hash (%d)", lower_cen, APCG(delayed_inheritance_hash).nNumOfElements);
         zend_hash_del(&APCG(delayed_inheritance_hash), lower_cen, class_entry->name_length+1);
         zend_error(E_WARNING, "%d left", APCG(delayed_inheritance_hash).nNumOfElements);
@@ -225,7 +235,17 @@ static int recursive_inheritance(zend_class_entry *class_entry) {
         return FAILURE;
     }
     *allocated_ce = class_entry; 
-    status = zend_hash_add(EG(class_table), lower_cen, class_entry->name_length+1, allocated_ce, sizeof(zend_class_entry*), NULL);
+    if(mangled_name)
+    {
+        efree(lower_cen);
+        lower_cen = apc_xmemcpy(mangled_name, mangled_name_len, apc_php_malloc);
+        assert(lower_cen != NULL);
+        status = zend_hash_add(EG(class_table), lower_cen, mangled_name_len, allocated_ce, sizeof(zend_class_entry*), NULL);
+    }
+    else
+    {
+        status = zend_hash_add(EG(class_table), lower_cen, class_entry->name_length+1, allocated_ce, sizeof(zend_class_entry*), NULL);
+    }
 #else
     status = zend_hash_add(EG(class_table), lower_cen, class_entry->name_length+1, class_entry, sizeof(zend_class_entry), NULL);
 #endif        
@@ -241,6 +261,7 @@ static int recursive_inheritance(zend_class_entry *class_entry) {
 /* }}} */
 
 /* {{{ old_install_class */
+#if 0
 static int old_install_class(apc_class_t cl TSRMLS_DC)
 {
     zend_class_entry* class_entry = cl.class_entry;
@@ -347,6 +368,7 @@ static int old_install_class(apc_class_t cl TSRMLS_DC)
     } 
     return status;
 }
+#endif /* #if 0 */
 /* }}} */
 
 /* {{{ cached_compile */
@@ -370,7 +392,7 @@ static zend_op_array* cached_compile(TSRMLS_D)
         }
     }
 
-    return apc_copy_op_array_for_execution(cache_entry->data.file.op_array);
+    return apc_copy_op_array_for_execution(cache_entry->data.file.op_array TSRMLS_CC);
 }
 /* }}} */
 
@@ -390,7 +412,7 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
     char *path;
     size_t mem_size;
 
-    if (!APCG(enabled)) {
+    if (!APCG(enabled) || apc_cache_busy(apc_cache)) {
 		return old_compile_file(h, type TSRMLS_CC);
 	}
 
@@ -412,6 +434,10 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
 #endif
 #else 
     t = sapi_get_request_time(TSRMLS_C);
+#endif
+
+#ifdef __DEBUG_APC__
+    fprintf(stderr,"1. h->opened_path=[%s]  h->filename=[%s]\n", h->opened_path?h->opened_path:"null",h->filename);
 #endif
 
     /* try to create a cache key; if we fail, give up on caching */
@@ -451,11 +477,13 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
      * For example if apc.slam_defense is set to 66 then 2/3 of the attempts
      * to cache an uncached file will be ignored.
      */
-    if(APCG(slam_rand)==-1) {
-        APCG(slam_rand) = (int)(100.0*rand()/(RAND_MAX+1.0));
-    }
-    if(APCG(slam_defense) && APCG(slam_rand) < APCG(slam_defense)) {
-        return op_array;
+    if(APCG(slam_defense)) {
+        if(APCG(slam_rand)==-1) {
+            APCG(slam_rand) = (int)(100.0*rand()/(RAND_MAX+1.0));
+        }
+        if(APCG(slam_rand) < APCG(slam_defense)) {
+            return op_array;
+        }
     }
 
     HANDLE_BLOCK_INTERRUPTIONS();
@@ -489,6 +517,10 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
 
     path = h->opened_path;
     if(!path) path=h->filename;
+
+#ifdef __DEBUG_APC__
+    fprintf(stderr,"2. h->opened_path=[%s]  h->filename=[%s]\n", h->opened_path?h->opened_path:"null",h->filename);
+#endif
 
     if(!(cache_entry = apc_cache_make_file_entry(path, alloc_op_array, alloc_functions, alloc_classes))) {
         apc_free_op_array(alloc_op_array, apc_sma_free);
@@ -588,6 +620,11 @@ void apc_deactivate(TSRMLS_D)
     if(APCG(delayed_inheritance_hash).nNumOfElements) {
         zend_hash_clean(&APCG(delayed_inheritance_hash));
     }
+    /* Safety net */
+#if 0
+    apc_sma_unlock();
+    apc_cache_unlock(apc_cache);
+#endif
 }
 /* }}} */
 

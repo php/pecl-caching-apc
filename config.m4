@@ -2,6 +2,7 @@ dnl
 dnl $Id$
 dnl
 
+AC_MSG_CHECKING(whether apc needs to get compiler flags from apxs)
 AC_ARG_WITH(apxs,
 [  --with-apxs[=FILE]      Get compiler flags from apxs -q.  Provide the
                           pathname to the Apache apxs tool; defaults to "apxs".],[

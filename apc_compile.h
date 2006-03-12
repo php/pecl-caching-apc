@@ -55,6 +55,8 @@ typedef struct apc_class_t apc_class_t;
 struct apc_class_t {
     char* name;                     /* the class name */
     int name_len;                   /* length of name */
+    char* mangled_name;             /* the mangled internal name */
+    int mangled_name_len;           /* length of the mangled name */
     int is_derived;                 /* true if this is a derived class */
     char* parent_name;              /* the parent class name */
     zend_class_entry* class_entry;  /* the zend class data structure */
@@ -87,7 +89,7 @@ extern void apc_free_zval(zval* src, apc_free_t deallocate);
  * structures.
  */
 
-extern zend_op_array* apc_copy_op_array_for_execution(zend_op_array* src);
+extern zend_op_array* apc_copy_op_array_for_execution(zend_op_array* src TSRMLS_DC);
 extern zend_function* apc_copy_function_for_execution(zend_function* src);
 extern zend_class_entry* apc_copy_class_entry_for_execution(zend_class_entry* src, int is_derived);
 

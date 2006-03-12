@@ -2,7 +2,7 @@
   +----------------------------------------------------------------------+
   | APC                                                                  |
   +----------------------------------------------------------------------+
-  | Copyright (c) 2005 The PHP Group                                     |
+  | Copyright (c) 2006 The PHP Group                                     |
   +----------------------------------------------------------------------+
   | This source file is subject to version 3.0 of the PHP license,       |
   | that is bundled with this package in the file LICENSE, and is        |
@@ -34,7 +34,7 @@
 #ifndef APC_GLOBALS_H
 #define APC_GLOBALS_H
 
-#define APC_VERSION "3.0.9-dev"
+#define APC_VERSION "3.0.9"
 
 #include "apc_cache.h"
 #include "apc_stack.h"
@@ -42,32 +42,34 @@
 
 ZEND_BEGIN_MODULE_GLOBALS(apc)
     /* configuration parameters */
-    int enabled;            /* if true, apc is enabled (defaults to true) */
-    int shm_segments;       /* number of shared memory segments to use */
-    int shm_size;           /* size of each shared memory segment (in MB) */
-    int optimization;       /* optimizer level (higher = more aggressive) */
-    int num_files_hint;     /* parameter to apc_cache_create */
-    int user_entries_hint;
-    int gc_ttl;             /* parameter to apc_cache_create */
-    int ttl;                /* parameter to apc_cache_create */
-    int user_ttl;
+    zend_bool enabled;      /* if true, apc is enabled (defaults to true) */
+    long shm_segments;      /* number of shared memory segments to use */
+    long shm_size;          /* size of each shared memory segment (in MB) */
+    long optimization;      /* optimizer level (higher = more aggressive) */
+    long num_files_hint;    /* parameter to apc_cache_create */
+    long user_entries_hint;
+    long gc_ttl;            /* parameter to apc_cache_create */
+    long ttl;               /* parameter to apc_cache_create */
+    long user_ttl;
 #if APC_MMAP
     char *mmap_file_mask;   /* mktemp-style file-mask to pass to mmap */
 #endif
     char** filters;         /* array of regex filters that prevent caching */
 
     /* module variables */
-    int initialized;        /* true if module was initialized */
-    apc_stack_t* cache_stack; /* the stack of cached executable code */
-    int cache_by_default;   /* true if files should be cached unless filtered out */
-                            /* false if files should only be cached if filtered in */
-    int slam_defense;       /* Probability of a process not caching an uncached file */
-    size_t* mem_size_ptr;   /* size of blocks allocated to file being cached (NULL outside my_compile_file) */
-    int file_update_protection; /* Age in seconds before a file is eligible to be cached - 0 to disable */
-    int enable_cli;         /* Flag to override turning APC off for CLI */
-    long max_file_size;	    /* Maximum size of file, in bytes that APC will be allowed to cache */
+    zend_bool initialized;       /* true if module was initialized */
+    apc_stack_t* cache_stack;    /* the stack of cached executable code */
+    zend_bool cache_by_default;  /* true if files should be cached unless filtered out */
+                                 /* false if files should only be cached if filtered in */
+    zend_bool slam_defense;      /* Probability of a process not caching an uncached file */
+    size_t* mem_size_ptr;        /* size of blocks allocated to file being cached (NULL outside my_compile_file) */
+    long file_update_protection; /* Age in seconds before a file is eligible to be cached - 0 to disable */
+    zend_bool enable_cli;        /* Flag to override turning APC off for CLI */
+    long max_file_size;	         /* Maximum size of file, in bytes that APC will be allowed to cache */
+    long slam_rand;              /* A place to store the slam rand value for the request */
     int dynamic_error;      /* Error on runtime dynamic inheritance */
     HashTable delayed_inheritance_hash;
+    zend_bool fpstat;            /* true if fullpath includes should be stat'ed */
 ZEND_END_MODULE_GLOBALS(apc)
 
 /* (the following declaration is defined in php_apc.c) */
@@ -82,7 +84,7 @@ ZEND_EXTERN_MODULE_GLOBALS(apc)
 /* True globals */
 extern apc_cache_t* apc_cache;       /* the global compiler cache */
 extern apc_cache_t* apc_user_cache;  /* the global user content cache */
-extern void* apc_compiled_filters;       /* compiled filters */
+extern void* apc_compiled_filters;   /* compiled filters */
 
 #endif
 

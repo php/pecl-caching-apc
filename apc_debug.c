@@ -513,6 +513,7 @@ const char* optimizer_zend_util_opcode_to_string(int opcode)
 void dump(zend_op_array *op_array)
 {
   int i;
+  return;
 	if(op_array->filename) {
 		fprintf(stderr, "Ops for %s\n", op_array->filename);
   }

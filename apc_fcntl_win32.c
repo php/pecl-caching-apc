@@ -38,11 +38,18 @@
 
 int apc_fcntl_create(const char* pathname)
 {
-	char *lock_file;
+	char *lock_file = emalloc(MAXPATHLEN);
 	HANDLE fd;
+	DWORD tmplen;
 	static int i=0;
 	
-	spprintf(&lock_file, 0, "/tmp/apc.lock.%d", i++);
+	tmplen = GetTempPath(MAXPATHLEN, lock_file);
+	if (!tmplen) {
+		efree(lock_file);
+		return -1;
+	}
+
+	snprintf(lock_file + tmplen, MAXPATHLEN - tmplen - 1, "apc.lock.%d", i++);
 	
 	fd = CreateFile(lock_file,
         GENERIC_READ | GENERIC_WRITE,
@@ -91,7 +98,11 @@ void apc_fcntl_unlock(int fd)
 	OVERLAPPED offset =	{0, 0, 0, 0, NULL};
 
 	if (!UnlockFileEx((HANDLE)fd, 0, 1, 0, &offset)) {
-		apc_eprint("apc_fcntl_unlock failed errno:%d", GetLastError());
+		DWORD error_code = GetLastError();
+		/* Ignore already unlocked error */
+		if (error_code != ERROR_NOT_LOCKED) {
+			apc_eprint("apc_fcntl_unlock failed errno:%d", error_code);
+		}
 	}
 }
 

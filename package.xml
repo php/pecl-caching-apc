@@ -1,50 +1,49 @@
-<?xml version="1.0" encoding="ISO-8859-1" ?>
-<!DOCTYPE package SYSTEM "../pear/package.dtd">
-<package>
- <dep type="php" rel="ge" version="4.3.0" optional="no"/>
+<?xml version="1.0" encoding="UTF-8" ?>
+<package xmlns="http://pear.php.net/dtd/package-2.0" xmlns:tasks="http://pear.php.net/dtd/tasks-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-inst
+ance" packagerversion="1.4.7" version="2.0" xsi:schemaLocation="http://pear.php.net/dtd/tasks-1.0 http://pear.php.net/dtd/tasks-1.0.xsd http://pear.p
+hp.net/dtd/package-2.0 http://pear.php.net/dtd/package-2.0.xsd">
  <name>APC</name>
+ <channel>pecl.php.net</channel>
  <summary>Alternative PHP Cache</summary>
- <maintainers>
-  <maintainer>
-   <user>dcowgill</user>
-   <name>Daniel Cowgill</name>
-   <email>dan@mail.communityconnect.com</email>
-   <role>lead</role>
-  </maintainer>
-  <maintainer>
-   <user>gschlossnagle</user>
-   <name>George Schlossnagle</name>
-   <email>george@omniti.com</email>
-   <role>lead</role>
-  </maintainer>
-  <maintainer>
-   <user>rasmus</user>
-   <name>Rasmus Lerdorf</name>
-   <email>rasmus@php.net</email>
-   <role>lead</role>
-  </maintainer>
- </maintainers>
- <description> 
- APC is the Alternative PHP Cache. It was conceived of to provide a free, open, and robust framework for caching and optimizing PHP intermediate code.
- </description>
- <license>PHP</license>
- <release>
-  <state>stable</state>
-  <version>3.0.9</version>
-  <date>2005-08-??</date>
-  <notes>
-  </notes>
- </release>
-  <configureoptions>
-    <configureoption name="enable-apc-mmap" default="yes" prompt="Use mmap instead of shmget (usually a good idea)"/>
-    <configureoption name="with-apxs" default="yes" prompt="Use apxs to set compile flags (if using APC with Apache)?"/>
-  </configureoptions>
-  <filelist>
+ <description>APC is a free, open, and robust framework for caching and optimizing PHP intermediate code.</description>
+ <lead>
+  <name>Daniel Cowgill</name>
+  <user>dcowgill</user>
+  <email>dan@mail.communityconnect.com</email>
+  <active>no</active>
+ </lead>
+ <lead>
+  <name>George Schlossnagle</name>
+  <user>gschlossnagle</user>
+  <email>george@omniti.com</email>
+  <active>no</active>
+ </lead>
+ <lead>
+  <name>Rasmus Lerdorf</name>
+  <user>rasmus</user>
+  <email>rasmus@php.net</email>
+  <active>yes</active>
+ </lead>
+ 
+ <date>2006-03-??</date>
+ <version><release>3.0.10</release><api>3.0.0</api></version>
+ <stability><release>stable</release><api>stable</api></stability>
+ <license uri="http://www.php.net/license">PHP License</license>
+ <notes>
+  Add apc.stat ini flag which defaults to 1.  If set to 0, the main script and any fullpath
+  includes will not be stat'ed for any changes.  You will have to restart the server if you
+  change anything.  This mode increases performance quite a bit, especially if you have a
+  lot of includes.
+ </notes>
+
+ <contents>
+   <dir name="/">
     <file role="doc" name="CHANGELOG" />
     <file role="doc" name="INSTALL" />
     <file role="doc" name="LICENSE" />
     <file role="doc" name="NOTICE" />
     <file role="doc" name="TODO" />
+    <file role="doc" name="TECHNOTES.txt" />
     <file role="src" name="apc.c" />
     <file role="src" name="apc.dsp" />
     <file role="src" name="apc.h" />
@@ -81,90 +80,123 @@
     <file role="src" name="php_apc.h" />
     <file role="src" name="apc_fcntl_win32.c" />
     <file role="php" name="apc.php" />
-  </filelist>
-  <changelog>
-     <release>
-      <state>stable</state>
-      <version>2.0</version>
-      <date>2003-07-01</date>
-      <notes>
+    <dir name="tests">
+     <file role="test" name="apc_001.phpt" />
+     <file role="test" name="apc_002.phpt" />
+     <file role="test" name="apc_003.phpt" />
+     <file role="test" name="skipif.inc" />
+    </dir>
+   </dir>
+ </contents>
+
+ <dependencies>
+   <required>
+     <php>
+       <min>4.3.0</min>
+       <exclude>5.0.0</exclude>
+       <exclude>5.0.1</exclude>
+       <exclude>5.0.2</exclude>
+       <exclude>5.0.3</exclude>
+       <exclude>5.0.4</exclude>
+       <exclude>5.0.5</exclude>
+     </php>
+     <pearinstaller>
+       <min>1.4.0</min>
+     </pearinstaller>
+   </required>
+
+ </dependencies>
+
+ <providesextension>apc</providesextension>
+
+ <extsrcrelease>
+   <configureoption name="enable-apc-mmap" default="yes" prompt="Use mmap instead of shmget (usually a good idea)"/>
+   <configureoption name="with-apxs" default="yes" prompt="Use apxs to set compile flags (if using APC with Apache)?"/>
+ </extsrcrelease>
+
+ <changelog>
+   <release>
+     <stability><release>stable</release><api>stable</api></stability>
+     <version><release>2.0.0</release><api>2.0.0</api></version>
+     <date>2003-07-01</date>
+     <notes>
 Complete rework.  
+     </notes>
+    </release>
+    <release>
+     <stability><release>stable</release><api>stable</api></stability>
+     <version><release>2.0.1</release><api>2.0.0</api></version>
+     <date>2003-07-01</date>
+     <notes>
+Win32 support added.  
       </notes>
-     </release>
-     <release>
-      <state>stable</state>
-      <version>2.0.1</version>
-      <date>2003-07-01</date>
-      <notes>
-    Win32 support added.  
-      </notes>
-     </release>
-   <release>
-    <state>stable</state>
-    <version>2.0.2</version>
-    <date>2004-03-12</date>
-    <notes>
+    </release>
+    <release>
+     <stability><release>stable</release><api>stable</api></stability>
+     <version><release>2.0.2</release><api>2.0.0</api></version>
+     <date>2004-03-12</date>
+     <notes>
 Fixed non-existant class bug.
-    </notes>
-   </release>
-   <release>
-    <state>stable</state>
-    <version>3.0.0</version>
-    <date>2005-07-05</date>
-    <notes>
-    PHP-5.1 Support and numerous fixes
-    </notes>
-   </release>
-   <release>
-    <state>stable</state>
-    <version>3.0.1</version>
-    <date>2005-07-05</date>
-    <notes>
-    PHP4 build fix
-    </notes>
-   </release>
-   <release>
-    <state>stable</state>
-    <version>3.0.2</version>
-    <date>2005-07-05</date>
-    <notes>
+     </notes>
+    </release>
+    <release>
+     <stability><release>stable</release><api>stable</api></stability>
+     <version><release>3.0.0</release><api>3.0.0</api></version>
+     <date>2005-07-05</date>
+     <notes>
+PHP-5.1 Support and numerous fixes
+     </notes>
+    </release>
+    <release>
+     <stability><release>stable</release><api>stable</api></stability>
+     <version><release>3.0.1</release><api>3.0.0</api></version>
+     <date>2005-07-05</date>
+     <notes>
+PHP4 build fix
+     </notes>
+    </release>
+    <release>
+     <stability><release>stable</release><api>stable</api></stability>
+     <version><release>3.0.2</release><api>3.0.0</api></version>
+     <date>2005-07-05</date>
+     <notes>
 Default to mmap and add a better error message for shmget failures
-    </notes>
-   </release>
- <release>
-  <state>stable</state>
-  <version>3.0.3</version>
-  <date>2005-07-07</date>
-  <notes>
+     </notes>
+    </release>
+    <release>
+     <stability><release>stable</release><api>stable</api></stability>
+     <version><release>3.0.3</release><api>3.0.0</api></version>
+     <date>2005-07-07</date>
+     <notes>
 Fix compile problem against PHP 5.0.x
-  </notes>
- </release>
- <release>
-  <state>stable</state>
-  <version>3.0.4</version>
-  <date>2005-07-18</date>
-  <notes>
+     </notes>
+    </release>
+    <release>
+     <stability><release>stable</release><api>stable</api></stability>
+     <version><release>3.0.4</release><api>3.0.0</api></version>
+     <date>2005-07-18</date>
+     <notes>
 Add win32 support from Edin.
 Add --with-apxs switch to work around problem when loading APC into Apache binary compiled with LFS switches
 A couple of other minor fixes.
-  </notes>
- </release>
- <release>
-  <state>stable</state>
-  <version>3.0.5</version>
-  <date>2005-07-27</date>
-  <notes>
+     </notes>
+    </release>
+    <release>
+     <stability><release>stable</release><api>stable</api></stability>
+     <version><release>3.0.5</release><api>3.0.0</api></version>
+     <date>2005-07-27</date>
+     <notes>
 Make it easier for sapis that only populate file_handle->filename to use APC. (Rasmus)
 Support extensions such as bcompiler that need to hook into compile_file. (Val)
 Ralf Becker's apcgui code has now become the default apc.php status page. (Ralf, Rasmus, Ilia)
 Segfault in cache cleanup code (Ilia, Rasmus)
-  </notes>
- </release>
- <release>
-  <state>stable</state>
-  <version>3.0.6</version>
-  <date>2005-07-30</date>
-  <notes>
+     </notes>
+    </release>
+    <release>
+     <stability><release>stable</release><api>stable</api></stability>
+     <version><release>3.0.6</release><api>3.0.0</api></version>
+     <date>2005-07-30</date>
+     <notes>
 Added apc.php to package.xml file.
 Track per-entry memory usage. (Val)
 Various apc.php fixes and enhancements. (Ralf, Ilia, Rasmus)
@@ -172,13 +204,13 @@ fcntl locking robustness fixes. (Rasmus)
 Shared read-locks where possible. (Rasmus)
 Added file_update_protection configuration parameter. (Rasmus)
 Windows ZTS fixes (Frank)
-  </notes>
- </release>
- <release>
-  <state>stable</state>
-  <version>3.0.7</version>
-  <date>2005-08-16</date>
-  <notes>
+     </notes>
+    </release>
+    <release>
+     <stability><release>stable</release><api>stable</api></stability>
+     <version><release>3.0.7</release><api>3.0.0</api></version>
+     <date>2005-08-16</date>
+     <notes>
 Fix to apc.php to show final segment in frag chart. (Ilia)
 A couple of win32 fixes. (Frank)
 Add apc.enable_cli ini directive. (Rasmus)
@@ -187,26 +219,42 @@ Fix apc_define_constants() bug - http://pecl.php.net/bugs/5084 (Rasmus)
 Simplify user cache handling by removing the user_cache_stack (Rasmus)
 Fix apc_fetch() memory corruption (Andrei,Rasmus)
 Added apc.max_file_size INI setting that allows exclusion of large files from being cached. Default file size limit, 1 megabyte. (Ilia)
-  </notes>
- </release>
- <release>
-  <state>stable</state>
-  <version>3.0.8</version>
-  <date>2005-08-24</date>
-  <notes>
+     </notes>
+    </release>
+    <release>
+     <stability><release>stable</release><api>stable</api></stability>
+     <version><release>3.0.8</release><api>3.0.0</api></version>
+     <date>2005-08-24</date>
+     <notes>
 Fix invalid free in globals destructor introduced in 3.0.7 (Rasmus)
 Cache corruption fix in cache-full cleanup code (Gopal)
-  </notes>
- </release>
-  <release>
-  <state>stable</state>
-  <version>3.0.9</version>
-  <date>2005-??-??</date>
-  <notes>
+     </notes>
+    </release>
+    <release>
+     <stability><release>stable</release><api>stable</api></stability>
+     <version><release>3.0.9</release><api>3.0.0</api></version>
+     <date>2006-03-04</date>
+     <notes>
+Eliminate rand() call when slam_defense is not set (Rasmus)
+Fix for __isset problem (Gopal)
+Rewrite allocator from a "best fit" to a "next fit" algorithm (Rasmus)
+Added a Cache Full counter so we have an idea how many times the segment has filled up causing an expunge (Rasmus)
+Report back the correct number of available bytes in the segment instead of the allocated bytes. (Rasmus)
+Add cache busy flag which is set when an expunge is underway (Rasmus)
+Add automatic serialization of objects in apc_store() (Marcus)
+64-bit .ini flag fix (Rasmus)
+Static members fix (Gopal)
+sma_cleanup() mem leak fix (Rasmus)
+Fix for http://pecl.php.net/bugs/5311 (Rasmus)
+Fix autoglobals JIT bug (Gopal)
+Fix instance bug (Gopal)
+Add a lock cleanup safety net to request shutdown (Rasmus)
+Fix apc.slam_defense edge-case bug (Rasmus)
+User entry memory usage tracking support (Ilia)
 Allow keys used in apc_store/apc_fetch/apc_delete to be binary safe and prevent conflicts between keys that are found at the start of other keys. (Ilia)
-  </notes>
- </release>
-  </changelog>
+     </notes>
+    </release>
+ </changelog>
 </package>
 <!--
 vim:et:ts=1:sw=1

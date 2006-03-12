@@ -626,6 +626,7 @@ cleanup:
 static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_entry* src, apc_malloc_t allocate, apc_free_t deallocate)
 {
     int local_dst_alloc = 0;
+    int i = 0;
 
     assert(src != NULL);
 
@@ -648,6 +649,7 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
     dst->doc_comment = NULL;
     memset(&dst->properties_info, 0, sizeof(dst->properties_info));
     memset(&dst->constants_table, 0, sizeof(dst->constants_table));
+    memset(&dst->default_static_members, 0, sizeof(dst->default_static_members));
 #endif
 
     if (src->name) {
@@ -683,7 +685,18 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
 
     /* the interfaces are populated at runtime using ADD_INTERFACE */
     dst->interfaces = NULL; 
-   
+
+    /* the current count includes inherited interfaces as well,
+       the real dynamic ones are the first <n> which are zero'd
+       out in zend_do_end_class_declaration */
+    for(i = 0 ; i < src->num_interfaces ; i++) {
+        if(src->interfaces[i])
+        {
+            dst->num_interfaces = i;
+            break;
+        }
+    }
+
     /* these will either be set inside my_fixup_hashtable or 
      * they will be copied out from parent inside zend_do_inheritance 
      */
@@ -692,7 +705,13 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
     dst->clone = NULL;
     dst->__get = NULL;
     dst->__set = NULL;
+    dst->__unset = NULL;
+    dst->__isset = NULL;
     dst->__call = NULL;
+
+    /* unset function proxies */
+    dst->serialize_func = NULL;
+    dst->unserialize_func = NULL;
     
     my_fixup_hashtable(&dst->function_table, (ht_fixup_fun_t)my_fixup_function, src, dst);
 #endif
@@ -718,8 +737,20 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
                             src))) {
         goto cleanup;
     }
-
-    if(!(dst->static_members = my_copy_hashtable_ex(NULL,
+    
+    if(!my_copy_hashtable_ex(&dst->default_static_members,
+                            &src->default_static_members,
+                            (ht_copy_fun_t) my_copy_zval_ptr,
+                            (ht_free_fun_t) my_free_zval_ptr,
+                            1,
+                            allocate, deallocate,
+                            (ht_check_copy_fun_t) my_check_copy_static_member,
+                            src)) {
+        goto cleanup;
+    }
+    if(src->static_members != &src->default_static_members)
+    {
+        if(!(dst->static_members = my_copy_hashtable_ex(NULL,
                             src->static_members,
                             (ht_copy_fun_t) my_copy_zval_ptr,
                             (ht_free_fun_t) my_free_zval_ptr,
@@ -727,7 +758,12 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
                             allocate, deallocate,
                             (ht_check_copy_fun_t) my_check_copy_static_member,
                             src))) {
-        goto cleanup;
+            goto cleanup;
+        }
+    }
+    else
+    {
+        dst->static_members = &dst->default_static_members;
     }
 
     if(!(my_copy_hashtable(&dst->constants_table,
@@ -798,7 +834,15 @@ cleanup:
 
 #ifdef ZEND_ENGINE_2
     if(dst->properties_info.arBuckets) my_destroy_hashtable(&dst->properties_info, (ht_free_fun_t) my_free_property_info, deallocate);
-    if(dst->static_members) my_free_hashtable(dst->static_members, (ht_free_fun_t) my_free_zval_ptr, deallocate);
+    if(dst->default_static_members.arBuckets)
+    {
+        my_destroy_hashtable(dst->static_members, (ht_free_fun_t) my_free_zval_ptr, deallocate);
+    }
+    if(dst->static_members != &(dst->default_static_members))
+    {
+        my_destroy_hashtable(dst->static_members, (ht_free_fun_t) my_free_zval_ptr, deallocate);
+        deallocate(dst->static_members);
+    }
     if(dst->constants_table.arBuckets) my_destroy_hashtable(&dst->constants_table, (ht_free_fun_t) my_free_zval_ptr, deallocate);
 #endif
     if(local_dst_alloc) deallocate(dst);
@@ -975,7 +1019,15 @@ zval* apc_copy_zval(zval* dst, const zval* src, apc_malloc_t allocate, apc_free_
 #ifdef ZEND_ENGINE_2
 
 #undef MAKE_NOP
-#define MAKE_NOP(opline)        { opline->opcode = ZEND_NOP;  memset(&opline->result,0,sizeof(znode)); memset(&opline->op1,0,sizeof(znode)); memset(&opline->op2,0,sizeof(znode)); opline->result.op_type=opline->op1.op_type=opline->op2.op_type=IS_UNUSED;  }
+#define MAKE_NOP(opline)        do { \
+        opline->opcode = ZEND_NOP;\
+        memset(&opline->result,0,sizeof(znode));\
+        memset(&opline->op1,0,sizeof(znode));\
+        memset(&opline->op2,0,sizeof(znode));\
+        opline->result.op_type=\
+            opline->op1.op_type=opline->op2.op_type=IS_UNUSED;\
+        ZEND_VM_SET_OPCODE_HANDLER(opline);\
+        }while(0)
 
 /* {{{ apc_fixup_op_array_jumps */
 static void apc_fixup_op_array_jumps(zend_op_array *dst, zend_op_array *src )
@@ -998,8 +1050,35 @@ static void apc_fixup_op_array_jumps(zend_op_array *dst, zend_op_array *src )
                 zo->op2.u.jmp_addr = dst->opcodes + (zo->op2.u.jmp_addr - src->opcodes);
                 break;
             case ZEND_DECLARE_INHERITED_CLASS:
+                /* 
+                Takes a bit to explain why I *don't* nuke the ops.
+                Technically this prevents double instantiation of a
+                class, but the problem is that the class name in the
+                CG(class_table) != class name stored in here. For 
+                example 
+                  if($hello)
+                  {
+                    class BX  extends A
+                    {
+                    }
+                  }
+                  else
+                  {
+                    class BX extends B
+                    {
+                    }
+                  }
+                  is pushed out as two different class names in the
+                  CG(class_table), with corresponding declare inherited
+                  classes inline to declare 'BX' depending on code path.
+                  Therefore in that case, we do really need the fetch 
+                  & declare operations. Need more diving around in the
+                  op_array code in Zend.
+                */
+                /*
                 if(pzo->opcode == ZEND_FETCH_CLASS) MAKE_NOP(pzo);
                 MAKE_NOP(zo);
+                */
                 break;
             default:
                 break;
@@ -1157,7 +1236,7 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_mal
         }
     }
 #endif
-    
+
     return dst;
 
 cleanup_opcodes:
@@ -1361,7 +1440,17 @@ apc_class_t* apc_copy_new_classes(zend_op_array* op_array, int old_count, apc_ma
             array[i].parent_name = NULL;
             array[i].is_derived = is_derived_class(op_array, elem->name, elem->name_length);
         }
+        
+#ifdef ZEND_ENGINE_2
+        if(!(array[i].mangled_name = 
+                apc_xmemcpy(key, key_size, allocate))) {
+            // TODO: cleanup code re-org, pools/arenas anyone ?
+        }
+        // or is that key_size-1 ?
+        array[i].mangled_name_len = key_size;
+#endif
 
+        
         zend_hash_move_forward(CG(class_table));
     }
 
@@ -1541,10 +1630,16 @@ static void my_destroy_class_entry(zend_class_entry* src, apc_free_t deallocate)
     my_destroy_hashtable(&src->properties_info, 
                             (ht_free_fun_t) my_free_property_info,
                             deallocate);
-    my_destroy_hashtable(src->static_members,
+    if(src->static_members) 
+    {
+        my_destroy_hashtable(src->static_members,
                          (ht_free_fun_t) my_free_zval_ptr,
                          deallocate);
-    deallocate(src->static_members);
+        if(src->static_members != &(src->default_static_members))
+        {
+            deallocate(src->static_members);
+        }
+    }
 
     my_destroy_hashtable(&src->constants_table, 
                             (ht_free_fun_t) my_free_zval_ptr,
@@ -1739,12 +1834,89 @@ void apc_free_zval(zval* src, apc_free_t deallocate)
 }
 /* }}} */
 
+#ifdef ZEND_ENGINE_2
+/* {{{ my_fetch_global_vars */
+void my_fetch_global_vars(zend_op_array* src TSRMLS_DC)
+{
+    /* all jit_initialization variables (like $_SERVER) are created
+       on demand due to a fetch_simple_variable called during parsing.
+       The code below fakes it and makes a call to is_auto_global.
+    */
+    int i = 0;
+    for (i = 0; i < src->last; i++)
+    {
+        zend_op *opcode = src->opcodes+i; 
+        if(opcode->op2.u.EA.type == ZEND_FETCH_GLOBAL &&
+                opcode->op1.op_type == IS_CONST &&
+                opcode->op1.u.constant.type == IS_STRING) 
+        {
+            znode * varname = &opcode->op1;
+            if (varname->u.constant.value.str.val[0] == '_') {
+                (void)zend_is_auto_global(varname->u.constant.value.str.val, 
+                                varname->u.constant.value.str.len TSRMLS_CC);
+            }
+        }
+    }
+}
+/* }}} */
+
+/* {{{ my_copy_default_args */
+static int my_copy_default_args(zend_op_array* dst, zend_op_array* src)
+{
+    int i;
+    int needcopy = 0;
+    if(src->num_args == src->required_num_args)
+    {
+        /* yay !, no default args */
+        return 1; 
+    }
+    for (i = 0; i < src->last; i++)
+    {
+        zend_op *opcode = src->opcodes+i; 
+        if(opcode->opcode == ZEND_RECV_INIT &&
+                opcode->op2.u.constant.type == IS_CONSTANT_ARRAY) 
+        {
+            needcopy = 1;
+            break;
+        }
+    }
+    if(needcopy)
+    {
+        dst->opcodes = (zend_op*) apc_xmemcpy(src->opcodes, 
+                                    sizeof(zend_op) * src->last,
+                                    apc_php_malloc);
+        for (i = 0; i < src->last; i++)
+        {
+            zend_op *opcode = src->opcodes+i; 
+            if(opcode->opcode == ZEND_RECV_INIT &&
+                    opcode->op2.u.constant.type == IS_CONSTANT_ARRAY) 
+            {
+                if(!(my_copy_zend_op(dst->opcodes+i, src->opcodes+i, 
+                    apc_php_malloc, apc_php_free))) 
+                {
+                    //TODO: cleanup code
+                }
+            }
+        }
+
+        apc_fixup_op_array_jumps(dst,src);
+    }
+    return 1;
+}
+/* }}} */
+#endif
+
 /* {{{ apc_copy_op_array_for_execution */
-zend_op_array* apc_copy_op_array_for_execution(zend_op_array* src)
+
+zend_op_array* apc_copy_op_array_for_execution(zend_op_array* src TSRMLS_DC)
 {
     zend_op_array* dst = (zend_op_array*) emalloc(sizeof(src[0]));
     memcpy(dst, src, sizeof(src[0]));
     dst->static_variables = my_copy_static_variables(src, apc_php_malloc, apc_php_free);
+#ifdef ZEND_ENGINE_2
+    my_fetch_global_vars(dst TSRMLS_CC);
+    my_copy_default_args(dst, src);
+#endif
     /*check_op_array_integrity(dst);*/
     dump(dst);
     return dst;
@@ -1754,9 +1926,20 @@ zend_op_array* apc_copy_op_array_for_execution(zend_op_array* src)
 /* {{{ apc_copy_function_for_execution */
 zend_function* apc_copy_function_for_execution(zend_function* src)
 {
-    zend_function* dst = (zend_function*) emalloc(sizeof(src[0]));
+    zend_function* dst;
+    TSRMLS_FETCH();
+    
+    /* TODO: the refcount is set high, so that this isn't free'd
+       by the destroy_zend_function. There is no real way around 
+       it rather than just copying a shovelful of data in real mem.
+       Something I'd rather avoid */
+    dst = (zend_function*) emalloc(sizeof(src[0]));
     memcpy(dst, src, sizeof(src[0]));
     dst->op_array.static_variables = my_copy_static_variables(&dst->op_array, apc_php_malloc, apc_php_free);
+#ifdef ZEND_ENGINE_2
+    my_fetch_global_vars(&dst->op_array TSRMLS_CC);
+    my_copy_default_args(&dst->op_array, &src->op_array);
+#endif
     /*check_op_array_integrity(&dst->op_array);*/
     return dst;
 }
@@ -1775,6 +1958,12 @@ zend_class_entry* apc_copy_class_entry_for_execution(zend_class_entry* src, int 
 {
     zend_class_entry* dst = (zend_class_entry*) emalloc(sizeof(src[0]));
     memcpy(dst, src, sizeof(src[0]));
+
+    /*
+    dst->name = apc_xstrdup(src->name, apc_php_malloc);
+    dst->refcount = 0;
+    */
+
 
 #ifdef ZEND_ENGINE_2
     /* These are slots to be populated later by ADD_INTERFACE insns */
@@ -1825,13 +2014,27 @@ zend_class_entry* apc_copy_class_entry_for_execution(zend_class_entry* src, int 
                       1,
                       apc_php_malloc, apc_php_free);
 
-    dst->static_members = my_copy_hashtable(NULL,
-                      src->static_members,
+    my_copy_hashtable(&dst->default_static_members,
+                      &src->default_static_members,
                       (ht_copy_fun_t) my_copy_zval_ptr,
                       (ht_free_fun_t) my_free_zval_ptr,
                       1,
                       apc_php_malloc, apc_php_free);
 
+    if(src->static_members != &(src->default_static_members))
+    {
+        dst->static_members = my_copy_hashtable(NULL,
+                          src->static_members,
+                          (ht_copy_fun_t) my_copy_zval_ptr,
+                          (ht_free_fun_t) my_free_zval_ptr,
+                          1,
+                          apc_php_malloc, apc_php_free);
+    }
+    else 
+    {
+        dst->static_members = &(dst->default_static_members);
+    }
+    
 #endif
 
     return dst;
@@ -1870,6 +2073,8 @@ static void my_fixup_function(Bucket *p, zend_class_entry *src, zend_class_entry
         {
             SET_IF_SAME_NAME(__get);
             SET_IF_SAME_NAME(__set);
+            SET_IF_SAME_NAME(__unset);
+            SET_IF_SAME_NAME(__isset);
             SET_IF_SAME_NAME(__call);
         }
         zf->common.scope = dst;
@@ -1950,12 +2155,16 @@ static int my_check_copy_property_info(Bucket* p, va_list args)
 static int my_check_copy_static_member(Bucket* p, va_list args)
 {
     zend_class_entry* src = va_arg(args, zend_class_entry*);
+    HashTable * ht = va_arg(args, HashTable*);
     zend_class_entry* parent = src->parent;
+    HashTable * parent_ht = NULL;
     char * member_name;
-    char * class_name;
+    char * class_name = NULL;
 
     zend_property_info *parent_info = NULL;
     zend_property_info *child_info = NULL;
+    zval ** parent_prop = NULL;
+    zval ** child_prop = (zval**)(p->pData);
 
     if(!parent) {
         return 1;
@@ -1982,6 +2191,24 @@ static int my_check_copy_static_member(Bucket* p, va_list args)
              * TODO: decrement refcount or fixup when copying out for exec ? 
              */ 
             return 0;
+        }
+        if(ht == &(src->default_static_members))
+        {
+            parent_ht = &parent->default_static_members;
+        }
+        else
+        {
+            parent_ht = parent->static_members;
+        }
+
+        if(zend_hash_quick_find(parent_ht, p->arKey,
+                       p->nKeyLength, p->h, (void**)&parent_prop) == SUCCESS)
+        {
+            /* they point to the same zval */
+            if(*parent_prop == *child_prop)
+            {
+                return 0;
+            }
         }
     }
     

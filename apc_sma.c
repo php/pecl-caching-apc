@@ -45,13 +45,11 @@ void apc_unmap(void* shmaddr, int size);
 #define UNLOCK(c)       { apc_lck_unlock(c); HANDLE_UNBLOCK_INTERRUPTIONS(); }
 /* }}} */
 
-enum { POWER_OF_TWO_BLOCKSIZE=0 };  /* force allocated blocks to 2^n? */
-
 enum { DEFAULT_NUMSEG=1, DEFAULT_SEGSIZE=30*1024*1024 };
 
 static int sma_initialized = 0;     /* true if the sma has been initialized */
-static int sma_numseg;              /* number of shm segments to allow */
-static int sma_segsize;             /* size of each shm segment */
+static unsigned int sma_numseg;     /* number of shm segments to allow */
+static size_t sma_segsize;          /* size of each shm segment */
 static int* sma_segments;           /* array of shm segment ids */
 static void** sma_shmaddrs;         /* array of shm segment addresses */
 static int sma_lastseg = 0;         /* index of MRU segment */
@@ -59,14 +57,18 @@ static int sma_lock;                /* sempahore to serialize access */
 
 typedef struct header_t header_t;
 struct header_t {
-    int segsize;    /* size of entire segment */
-    int avail;      /* bytes available (not necessarily contiguous) */
+    size_t segsize;    /* size of entire segment */
+    size_t avail;      /* bytes available (not necessarily contiguous) */
+    size_t nfoffset;   /* start next fit search from this offset */
+#if ALLOC_DISTRIBUTION
+    size_t adist[30];
+#endif
 };
 
 typedef struct block_t block_t;
 struct block_t {
-    int size;       /* size of this block */
-    int next;       /* offset in segment of next free block */
+    size_t size;       /* size of this block */
+    size_t next;       /* offset in segment of next free block */
 };
 
 /* The macros BLOCKAT and OFFSET are used for convenience throughout this
@@ -74,7 +76,7 @@ struct block_t {
  * beginning of the shared memory segment in question. */
 
 #define BLOCKAT(offset) ((block_t*)((char *)shmaddr + offset))
-#define OFFSET(block) ((int)(((char*)block) - (char*)shmaddr))
+#define OFFSET(block) ((size_t)(((char*)block) - (char*)shmaddr))
 
 #ifdef max
 #undef max
@@ -90,31 +92,17 @@ static int alignword(int x)
 /* }}} */
 
 /* {{{ sma_allocate: tries to allocate size bytes in a segment */
-static int sma_allocate(void* shmaddr, int size)
+static int sma_allocate(void* shmaddr, size_t size)
 {
     header_t* header;       /* header of shared memory segment */
     block_t* prv;           /* block prior to working block */
     block_t* cur;           /* working block in list */
-    block_t* prvbestfit;    /* block before best fit */
-    int realsize;           /* actual size of block needed, including header */
-    int minsize;            /* for finding best fit */
+    block_t* prvnextfit;    /* block before next fit */
+    size_t realsize;        /* actual size of block needed, including header */
+    size_t last_offset;     /* save the last search offset */
+    int wrapped=0;
 
-    /* Realsize must be aligned to a word boundary on some architectures. */
     realsize = alignword(max(size + alignword(sizeof(int)), sizeof(block_t)));
-   
-    /*
-     * Set realsize to the smallest power of 2 greater than or equal to
-     * realsize. This increases the likelihood that neighboring blocks can be
-     * coalesced, reducing memory fragmentation.
-     */
-    if (POWER_OF_TWO_BLOCKSIZE) {
-        int p = 1;
-
-        while (p < realsize) {
-            p <<= 1;
-        }
-        realsize = p;
-    }
 
     /*
      * First, insure that the segment contains at least realsize free bytes,
@@ -125,55 +113,67 @@ static int sma_allocate(void* shmaddr, int size)
         return -1;
     }
 
-    prvbestfit = 0;     /* initially null (no fit) */
-    minsize = INT_MAX;  /* used to find best fit */
+    prvnextfit = 0;     /* initially null (no fit) */
+    last_offset = 0;
 
-    prv = BLOCKAT(sizeof(header_t));
-    while (prv->next != 0) {
+    /* If we have a next fit offset, start searching from there */
+    if(header->nfoffset) {
+        prv = BLOCKAT(header->nfoffset);
+    } else {    
+        prv = BLOCKAT(sizeof(header_t));
+    }
+    while (prv->next != header->nfoffset) {
         cur = BLOCKAT(prv->next);
-        if (cur->size == realsize) {
-            /* found a perfect fit, stop searching */
-            prvbestfit = prv;
+        /* If it fits perfectly or it fits after a split, stop searching */
+        if (cur->size == realsize || (cur->size > (sizeof(block_t) + realsize))) {
+            prvnextfit = prv;
             break;
         }
-        else if (cur->size > (sizeof(block_t) + realsize) &&
-                 cur->size < minsize)
-        {
-            /* cur is acceptable and is the smallest so far */
-            prvbestfit = prv;
-            minsize = cur->size;
-        }
+        last_offset = prv->next;
         prv = cur;
+        if(wrapped && (prv->next >= header->nfoffset)) break;
+
+        /* Check to see if we need to wrap around and search from the top */
+        if(header->nfoffset && prv->next == 0) {
+            prv = BLOCKAT(sizeof(header_t));
+            last_offset = 0;
+            wrapped = 1;
+        } 
     }
 
-    if (prvbestfit == 0) {
+    if (prvnextfit == 0) {
+        header->nfoffset = 0;
         return -1;
     }
 
-    prv = prvbestfit;
+    prv = prvnextfit;
     cur = BLOCKAT(prv->next);
 
     /* update the block header */
     header->avail -= realsize;
+#if ALLOC_DISTRIBUTION
+    header->adist[(int)(log(size)/log(2))]++;
+#endif
 
     if (cur->size == realsize) {
         /* cur is a perfect fit for realsize; just unlink it */
         prv->next = cur->next;
     }
     else {
-        block_t* nxt;   /* the new block (chopped part of cur) */
-        int nxtoffset;  /* offset of the block currently after cur */
-        int oldsize;    /* size of cur before split */
+        block_t* nxt;      /* the new block (chopped part of cur) */
+        size_t nxtoffset;  /* offset of the block currently after cur */
+        size_t oldsize;    /* size of cur before split */
 
-        /* bestfit is too big; split it into two smaller blocks */
+        /* nextfit is too big; split it into two smaller blocks */
         nxtoffset = cur->next;
         oldsize = cur->size;
-        prv->next += realsize;
-        cur->size = realsize;
+        prv->next += realsize;  /* skip over newly allocated block */
+        cur->size = realsize;   /* Set the size of this new block */
         nxt = BLOCKAT(prv->next);
-        nxt->next = nxtoffset;
-        nxt->size = oldsize - realsize;
+        nxt->next = nxtoffset;  /* Re-link the shortened block */
+        nxt->size = oldsize - realsize;  /* and fix the size */
     }
+    header->nfoffset = last_offset;
 
     return OFFSET(cur) + alignword(sizeof(int));
 }
@@ -186,9 +186,9 @@ static int sma_deallocate(void* shmaddr, int offset)
     block_t* cur;       /* the new block to insert */
     block_t* prv;       /* the block before cur */
     block_t* nxt;       /* the block after cur */
-    int size;           /* size of deallocated block */
+    size_t size;           /* size of deallocated block */
 
-    offset -= alignword(sizeof(int));
+    offset -= alignword(sizeof(size_t));
     assert(offset >= 0);
 
     /* find position of new block in free list */
@@ -220,6 +220,7 @@ static int sma_deallocate(void* shmaddr, int offset)
         cur->size += nxt->size;
         cur->next = nxt->next;
     }
+    header->nfoffset = 0;  /* Reset the next fit search marker */
 
     return size;
 }
@@ -277,11 +278,16 @@ void apc_sma_init(int numseg, int segsize, char *mmap_file_mask)
         header->segsize = sma_segsize;
         header->avail = sma_segsize - sizeof(header_t) - sizeof(block_t) -
                         alignword(sizeof(int));
-    
+        header->nfoffset = 0;
+#if ALLOC_DISTRIBUTION
+       	{
+           int j;
+           for(j=0; j<30; j++) header->adist[j] = 0; 
+        }
+#endif 
         block = BLOCKAT(sizeof(header_t));
         block->size = 0;
         block->next = sizeof(header_t) + sizeof(block_t);
-    
         block = BLOCKAT(block->next);
         block->size = header->avail;
         block->next = 0;
@@ -305,6 +311,8 @@ void apc_sma_cleanup()
     }
     apc_lck_destroy(sma_lock);
     sma_initialized = 0;
+    apc_efree(sma_segments);
+    apc_efree(sma_shmaddrs);
 }
 /* }}} */
 
@@ -373,7 +381,7 @@ char* apc_sma_strdup(const char* s)
 void apc_sma_free(void* p)
 {
     int i;
-	TSRMLS_FETCH();
+    TSRMLS_FETCH();
 
     if (p == NULL) {
         return;
@@ -383,7 +391,7 @@ void apc_sma_free(void* p)
     LOCK(sma_lock);
 
     for (i = 0; i < sma_numseg; i++) {
-        unsigned int d_size = (unsigned int)((char *)p - (char *)(sma_shmaddrs[i]));
+        size_t d_size = (size_t)((char *)p - (char *)(sma_shmaddrs[i]));
         if (p >= sma_shmaddrs[i] && d_size < sma_segsize) {
             sma_deallocate(sma_shmaddrs[i], d_size);
             if (APCG(mem_size_ptr) != NULL) { *(APCG(mem_size_ptr)) -= d_size; }
@@ -410,7 +418,7 @@ apc_sma_info_t* apc_sma_info()
 
     info = (apc_sma_info_t*) apc_emalloc(sizeof(apc_sma_info_t));
     info->num_seg = sma_numseg;
-    info->seg_size = sma_segsize;
+    info->seg_size = sma_segsize - sizeof(header_t) - sizeof(block_t) - alignword(sizeof(int));
 
     info->list = apc_emalloc(info->num_seg * sizeof(apc_sma_link_t*));
     for (i = 0; i < sma_numseg; i++) {
@@ -474,6 +482,19 @@ int apc_sma_get_avail_mem()
         avail_mem += header->avail;
     }
     return avail_mem;
+}
+/* }}} */
+
+#if ALLOC_DISTRIBUTION
+size_t *apc_sma_get_alloc_distribution(void) {
+    header_t* header = (header_t*) sma_shmaddrs[0];
+    return header->adist; 
+}
+#endif
+/* {{{ apc_sma_unlock */
+void apc_sma_unlock()
+{
+    UNLOCK(sma_lock);
 }
 /* }}} */
 

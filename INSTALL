@@ -4,6 +4,34 @@ Installation Instructions for APC
 This version of APC should work on every version of PHP from 4.3.0 to 
 PHP 5.1.x.  
 
+CVS Instructions
+----------------
+Building from CVS can be done like this:
+
+  cvs -d :pserver:cvsread@cvs.php.net:/repository login
+  Password: phpfi
+  cvs -d :pserver:cvsread@cvs.php.net:/repository co pecl/apc
+  cd pecl/apc
+  phpize
+  ./configure --enable-apc-mmap --with-apxs --with-php-config=/usr/local/php/bin/php-config
+  make
+  make install
+
+Suggested Configuration (in your php.ini file)
+----------------------------------------------
+  extension=apc.so
+  apc.enabled=1
+  apc.shm_segments=1
+  apc.optimization=0
+  apc.shm_size=128
+  apc.ttl=7200
+  apc.user_ttl=7200
+  apc.num_files_hint=1024
+  apc.mmap_file_mask=/tmp/apc.XXXXXX
+  apc.enable_cli=1
+
+These are fully described at the bottom of this file.
+
 PHP 4 Optimization
 ------------------
 If you are trying to get every little bit of speed out of PHP4+APC, you need
@@ -223,6 +251,11 @@ users should consider tuning the following parameters:
                             many thousands of source files.
                             (Default: 1000)
 
+    apc.user_entries_hint   Just like num_files_hint, a "hint" about the number
+                            of distinct user cache variables to store. 
+                            Set to zero or omit if you're not sure;
+                            (Default: 100)
+
     apc.ttl                 The number of seconds a cache entry is allowed to
                             idle in a slot in case this cache entry slot is 
                             needed by another entry.  Leaving this at zero
@@ -230,6 +263,15 @@ users should consider tuning the following parameters:
                             with stale entries while newer entries won't be
                             cached.  
                             (Default: 0)
+
+    apc.user_ttl            The number of seconds a user cache entry is allowed 
+                            to idle in a slot in case this cache entry slot is 
+                            needed by another entry.  Leaving this at zero
+                            means that your cache could potentially fill up
+                            with stale entries while newer entries won't be
+                            cached.  
+                            (Default: 0)
+
 
     apc.gc_ttl              The number of seconds that a cache entry may
                             remain on the garbage-collection list. This value
@@ -271,7 +313,7 @@ users should consider tuning the following parameters:
                             kernel's /dev/zero interface to anonymous mmap'ed 
                             memory.  Leaving it undefined will force an 
                             anonymous mmap.
-							(Default: "")
+							              (Default: "")
 
     apc.slam_defense        On very busy servers whenever you start the server or
                             modify files you can create a race of many processes
@@ -317,3 +359,8 @@ users should consider tuning the following parameters:
 
     apc.max_file_size       Prevents large files from being cached.  
                             (Default: 1M)
+
+    apc.stat                Whether to stat the main script file and the fullpath
+                            includes.  If you turn this off you will need to restart
+                            your server in order to update scripts.
+                            (Default: 1)

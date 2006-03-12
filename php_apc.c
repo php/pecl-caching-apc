@@ -2,7 +2,7 @@
   +----------------------------------------------------------------------+
   | APC                                                                  |
   +----------------------------------------------------------------------+
-  | Copyright (c) 2005 The PHP Group                                     |
+  | Copyright (c) 2006 The PHP Group                                     |
   +----------------------------------------------------------------------+
   | This source file is subject to version 3.0 of the PHP license,       |
   | that is bundled with this package in the file LICENSE, and is        |
@@ -81,6 +81,7 @@ static void php_apc_init_globals(zend_apc_globals* apc_globals TSRMLS_DC)
     apc_globals->mem_size_ptr = NULL;
 /*    zend_hash_init(&(apc_globals->delayed_inheritance_hash), 0, NULL, (void (*)(void *)) php_apc_hash_entry_destructor, 1); */
     zend_hash_init(&(apc_globals->delayed_inheritance_hash), 0, NULL, NULL, 1);
+    apc_globals->fpstat = 1;
 }
 
 static void php_apc_shutdown_globals(zend_apc_globals* apc_globals TSRMLS_DC)
@@ -141,24 +142,25 @@ static PHP_INI_MH(OnUpdate_filters)
 #endif
 
 PHP_INI_BEGIN()
-STD_PHP_INI_BOOLEAN("apc.enabled",      "1",    PHP_INI_ALL, OnUpdateInt,               enabled,        zend_apc_globals, apc_globals)
-STD_PHP_INI_ENTRY("apc.shm_segments",   "1",    PHP_INI_SYSTEM, OnUpdateInt,            shm_segments,   zend_apc_globals, apc_globals)
-STD_PHP_INI_ENTRY("apc.shm_size",       "30",   PHP_INI_SYSTEM, OnUpdateInt,            shm_size,       zend_apc_globals, apc_globals)
-STD_PHP_INI_BOOLEAN("apc.optimization", "0",    PHP_INI_ALL, OnUpdateInt,               optimization,   zend_apc_globals, apc_globals)
-STD_PHP_INI_ENTRY("apc.num_files_hint", "1000", PHP_INI_SYSTEM, OnUpdateInt,            num_files_hint, zend_apc_globals, apc_globals)
+STD_PHP_INI_BOOLEAN("apc.enabled",      "1",    PHP_INI_ALL, OnUpdateBool,              enabled,         zend_apc_globals, apc_globals)
+STD_PHP_INI_ENTRY("apc.shm_segments",   "1",    PHP_INI_SYSTEM, OnUpdateInt,            shm_segments,    zend_apc_globals, apc_globals)
+STD_PHP_INI_ENTRY("apc.shm_size",       "30",   PHP_INI_SYSTEM, OnUpdateInt,            shm_size,        zend_apc_globals, apc_globals)
+STD_PHP_INI_BOOLEAN("apc.optimization", "0",    PHP_INI_ALL, OnUpdateInt,               optimization,    zend_apc_globals, apc_globals)
+STD_PHP_INI_ENTRY("apc.num_files_hint", "1000", PHP_INI_SYSTEM, OnUpdateInt,            num_files_hint,  zend_apc_globals, apc_globals)
 STD_PHP_INI_ENTRY("apc.user_entries_hint", "100", PHP_INI_SYSTEM, OnUpdateInt,          user_entries_hint, zend_apc_globals, apc_globals)
-STD_PHP_INI_ENTRY("apc.gc_ttl",         "3600", PHP_INI_SYSTEM, OnUpdateInt,            gc_ttl,         zend_apc_globals, apc_globals)
-STD_PHP_INI_ENTRY("apc.ttl",            "0",    PHP_INI_SYSTEM, OnUpdateInt,            ttl,            zend_apc_globals, apc_globals)
-STD_PHP_INI_ENTRY("apc.user_ttl",       "0",    PHP_INI_SYSTEM, OnUpdateInt,            user_ttl,       zend_apc_globals, apc_globals)
+STD_PHP_INI_ENTRY("apc.gc_ttl",         "3600", PHP_INI_SYSTEM, OnUpdateInt,            gc_ttl,           zend_apc_globals, apc_globals)
+STD_PHP_INI_ENTRY("apc.ttl",            "0",    PHP_INI_SYSTEM, OnUpdateInt,            ttl,              zend_apc_globals, apc_globals)
+STD_PHP_INI_ENTRY("apc.user_ttl",       "0",    PHP_INI_SYSTEM, OnUpdateInt,            user_ttl,         zend_apc_globals, apc_globals)
 #if APC_MMAP
-STD_PHP_INI_ENTRY("apc.mmap_file_mask",  NULL,  PHP_INI_SYSTEM, OnUpdateString,         mmap_file_mask, zend_apc_globals, apc_globals)
+STD_PHP_INI_ENTRY("apc.mmap_file_mask",  NULL,  PHP_INI_SYSTEM, OnUpdateString,         mmap_file_mask,   zend_apc_globals, apc_globals)
 #endif
     PHP_INI_ENTRY("apc.filters",        NULL,     PHP_INI_SYSTEM, OnUpdate_filters)
-STD_PHP_INI_BOOLEAN("apc.cache_by_default", "1",  PHP_INI_SYSTEM, OnUpdateInt,          cache_by_default, zend_apc_globals, apc_globals)
+STD_PHP_INI_BOOLEAN("apc.cache_by_default", "1",  PHP_INI_SYSTEM, OnUpdateBool,         cache_by_default, zend_apc_globals, apc_globals)
 STD_PHP_INI_BOOLEAN("apc.slam_defense", "0",      PHP_INI_SYSTEM, OnUpdateInt,          slam_defense,     zend_apc_globals, apc_globals)
-STD_PHP_INI_ENTRY("apc.file_update_protection", "2", PHP_INI_SYSTEM, OnUpdateInt,file_update_protection, zend_apc_globals, apc_globals)
-STD_PHP_INI_BOOLEAN("apc.enable_cli", "0", PHP_INI_SYSTEM, OnUpdateInt, enable_cli, zend_apc_globals, apc_globals)
-STD_PHP_INI_ENTRY("apc.max_file_size", "1M",    PHP_INI_SYSTEM, OnUpdateInt,            max_file_size,       zend_apc_globals, apc_globals)
+STD_PHP_INI_ENTRY("apc.file_update_protection", "2", PHP_INI_SYSTEM, OnUpdateInt,file_update_protection,  zend_apc_globals, apc_globals)
+STD_PHP_INI_BOOLEAN("apc.enable_cli", "0",      PHP_INI_SYSTEM, OnUpdateBool,           enable_cli,       zend_apc_globals, apc_globals)
+STD_PHP_INI_ENTRY("apc.max_file_size", "1M",    PHP_INI_SYSTEM, OnUpdateInt,            max_file_size,    zend_apc_globals, apc_globals)
+STD_PHP_INI_BOOLEAN("apc.stat", "1",            PHP_INI_SYSTEM, OnUpdateBool,           fpstat,           zend_apc_globals, apc_globals)
 PHP_INI_END()
 
 /* }}} */
@@ -191,7 +193,7 @@ static PHP_MINIT_FUNCTION(apc)
 
     /* Disable APC in cli mode unless overridden by apc.enable_cli */
     if(!APCG(enable_cli) && !strcmp(sapi_module.name, "cli")) {
-        zend_alter_ini_entry("apc.enabled", sizeof("apc.enabled"), "0", 2, PHP_INI_SYSTEM, PHP_INI_STAGE_ACTIVATE);
+        zend_alter_ini_entry("apc.enabled", sizeof("apc.enabled"), "0", 1, PHP_INI_SYSTEM, PHP_INI_STAGE_ACTIVATE);
     }
 
     if (APCG(enabled)) {
@@ -268,6 +270,7 @@ PHP_FUNCTION(apc_cache_info)
     add_assoc_long(return_value, "num_hits", info->num_hits);
     add_assoc_long(return_value, "num_misses", info->num_misses);
     add_assoc_long(return_value, "start_time", info->start_time);
+    add_assoc_long(return_value, "expunges", info->expunges);
 
     ALLOC_INIT_ZVAL(list);
     array_init(list);
@@ -373,7 +376,18 @@ PHP_FUNCTION(apc_sma_info)
     add_assoc_long(return_value, "num_seg", info->num_seg);
     add_assoc_long(return_value, "seg_size", info->seg_size);
     add_assoc_long(return_value, "avail_mem", apc_sma_get_avail_mem());
-
+#if ALLOC_DISTRIBUTION
+    {
+        size_t *adist = apc_sma_get_alloc_distribution();
+        zval* list;
+        ALLOC_INIT_ZVAL(list);
+        array_init(list);
+        for(i=0; i<30; i++) {
+            add_next_index_long(list, adist[i]);
+        }
+        add_assoc_zval(return_value, "adist", list);
+    }
+#endif
     ALLOC_INIT_ZVAL(block_lists);
     array_init(block_lists);
 
@@ -439,7 +453,6 @@ static int _apc_store(char *strkey, int strkey_len, const zval *val, const unsig
 
     if (!apc_cache_user_insert(apc_user_cache, key, entry, t TSRMLS_CC)) {
         APCG(mem_size_ptr) = NULL;
-        apc_cache_free_user_key(&key);
         apc_cache_free_entry(entry);
         apc_cache_expunge(apc_cache,t);
         apc_cache_expunge(apc_user_cache,t);
@@ -447,7 +460,6 @@ static int _apc_store(char *strkey, int strkey_len, const zval *val, const unsig
     }
 
     APCG(mem_size_ptr) = NULL;
-    entry->mem_size = mem_size;
 
 
     return 1;
@@ -508,7 +520,7 @@ PHP_FUNCTION(apc_fetch) {
     entry = apc_cache_user_find(apc_user_cache, strkey, strkey_len + 1, t);
     if(entry) {
         /* deep-copy returned shm zval to emalloc'ed return_value */
-        apc_copy_zval(return_value, entry->data.user.val, apc_php_malloc, apc_php_free);
+        apc_cache_fetch_zval(return_value, entry->data.user.val, apc_php_malloc, apc_php_free);
         apc_cache_release(apc_user_cache, entry);
     } else {
         RETURN_FALSE;

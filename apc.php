@@ -167,13 +167,13 @@ EOB;
 	}
 }
 	
-// clear cache
-if ($AUTHENTICATED && isset($MYREQUEST['CC']) && $MYREQUEST['CC']) {
-	apc_clear_cache();
-}
 // select cache mode
 if ($AUTHENTICATED && $MYREQUEST['OB'] == OB_USER_CACHE) {
 	$cache_mode='user';
+}
+// clear cache
+if ($AUTHENTICATED && isset($MYREQUEST['CC']) && $MYREQUEST['CC']) {
+	apc_clear_cache($cache_mode);
 }
 
 
@@ -188,7 +188,29 @@ if(!$cache['num_hits']) { $cache['num_hits']=1; $time++; }  // Avoid division by
 //
 header("Cache-Control: no-store, no-cache, must-revalidate");  // HTTP/1.1
 header("Cache-Control: post-check=0, pre-check=0", false);
-header("Pragma: no-cache");       			                   // HTTP/1.0
+header("Pragma: no-cache");                                    // HTTP/1.0
+
+function duration($ts) {
+    global $time;
+    $years = (int)((($time - $ts)/(7*86400))/52.177457);
+    $rem = (int)(($time-$ts)-($years * 52.177457 * 7 * 86400));
+    $weeks = (int)(($rem)/(7*86400));
+    $days = (int)(($rem)/86400) - $weeks*7;
+    $hours = (int)(($rem)/3600) - $days*24 - $weeks*7*24;
+    $mins = (int)(($rem)/60) - $hours*60 - $days*24*60 - $weeks*7*24*60;
+    $str = '';
+    if($years==1) $str .= "$years year, ";
+    if($years>1) $str .= "$years years, ";
+    if($weeks==1) $str .= "$weeks week, ";
+    if($weeks>1) $str .= "$weeks weeks, ";
+    if($days==1) $str .= "$days day,";
+    if($days>1) $str .= "$days days,";
+    if($hours == 1) $str .= " $hours hour and";
+    if($hours>1) $str .= " $hours hours and";
+    if($mins == 1) $str .= " 1 minute";
+    else $str .= " $mins minutes";
+    return $str;
+}
 
 // create graphics
 //
@@ -284,7 +306,7 @@ if (isset($MYREQUEST['IMG']))
 
 	$size = GRAPH_SIZE; // image size
 	if ($MYREQUEST['IMG']==3)
-		$image = imagecreate(2*$size+50, $size+10);
+		$image = imagecreate(2*$size+150, $size+10);
 	else
 		$image = imagecreate($size+50, $size+10);
 
@@ -357,7 +379,7 @@ if (isset($MYREQUEST['IMG']))
 		$y=1;
 		$j=1;
 
-		// This block of code creates the pie chart.  It is a lot more complex than you
+		// This block of code creates the bar chart.  It is a lot more complex than you
 		// would expect because we try to visualize any memory fragmentation as well.
 		for($i=0; $i<$mem['num_seg']; $i++) {	
 			$ptr = 0;
@@ -365,13 +387,19 @@ if (isset($MYREQUEST['IMG']))
 			foreach($free as $block) {
 				if($block['offset']!=$ptr) {       // Used block
 					$h=(GRAPH_SIZE-5)*($block['offset']-$ptr)/$s;
-					if ($h>0)
-						fill_box($image,$x,$y,50,$h,$col_black,$col_red,bsize($block['offset']-$ptr),$j++);
+					if ($h>0) {
+                                                $j++;
+						if($j<75) fill_box($image,$x,$y,50,$h,$col_black,$col_red,bsize($block['offset']-$ptr),$j);
+                                                else fill_box($image,$x,$y,50,$h,$col_black,$col_red);
+                                        }
 					$y+=$h;
 				}
 				$h=(GRAPH_SIZE-5)*($block['size'])/$s;
-				if ($h>0)
-					fill_box($image,$x,$y,50,$h,$col_black,$col_green,bsize($block['size']),$j++);
+				if ($h>0) {
+                                        $j++;
+					if($j<75) fill_box($image,$x,$y,50,$h,$col_black,$col_green,bsize($block['size']),$j);
+					else fill_box($image,$x,$y,50,$h,$col_black,$col_green);
+                                }
 				$y+=$h;
 				$ptr = $block['offset']+$block['size'];
 			}
@@ -382,6 +410,13 @@ if (isset($MYREQUEST['IMG']))
 				}
 			}
 		}
+		break;
+	case 4: 
+		$s=$cache['num_hits']+$cache['num_misses'];
+		$a=$cache['num_hits'];
+	        	
+		fill_box($image, 30,$size,50,-$a*($size-21)/$s,$col_black,$col_green,sprintf("%.1f%%",$cache['num_hits']*100/$s));
+		fill_box($image,130,$size,50,-max(4,($s-$a)*($size-21)/$s),$col_black,$col_red,sprintf("%.1f%%",$cache['num_misses']*100/$s));
 		break;
 	
 	}
@@ -607,7 +642,7 @@ div.graph table td.td-1 { background:rgb(221,221,221); }
 div.graph table td { padding:0.2em 1em 0.4em 1em; }
 
 div.div1,div.div2 { margin-bottom:1em; width:35em; }
-div.div3 { position:absolute; left:37em; top:1em; width:580px; }
+div.div3 { position:absolute; left:40em; top:1em; width:580px; }
 //div.div3 { position:absolute; left:37em; top:1em; right:1em; }
 
 div.sorting { margin:1.5em 0em 1.5em 2em }
@@ -679,7 +714,7 @@ echo
 	
 if ($AUTHENTICATED) {
 	echo <<<EOB
-		<li><a class="aright" href="$MY_SELF&CC=1&OB={$MYREQUEST['OB']}" onClick="javascipt:return confirm('Are you sure?');">Clear Cache</a></li>
+		<li><a class="aright" href="$MY_SELF&CC=1&OB={$MYREQUEST['OB']}" onClick="javascipt:return confirm('Are you sure?');">Clear $cache_mode Cache</a></li>
 EOB;
 }
 echo <<<EOB
@@ -732,9 +767,10 @@ EOB;
 		<tr class=tr-1><td class=td-0>Request Rate</td><td>$req_rate cache requests/second</td></tr>
 		<tr class=tr-0><td class=td-0>Time To Live</td><td>{$cache['ttl']}</td></tr>
 		<tr class=tr-1><td class=td-0>Shared Memory</td><td>{$mem['num_seg']} Segment(s) with $seg_size</td></tr>
+		<tr class=tr-0><td class=td-0>Cache full count</td><td>{$cache['expunges']}</td></tr>
 EOB;
-	echo 
-		'<tr class=tr-0><td class=td-0>Start Time</td><td>',date(DATE_FORMAT,$cache['start_time']),'</td></tr>';
+	echo   '<tr class=tr-1><td class=td-0>Start Time</td><td>',date(DATE_FORMAT,$cache['start_time']),'</td></tr>';
+	echo   '<tr class=tr-0><td class=td-0>Uptime</td><td>',duration($cache['start_time']),'</td></tr>';
 	echo <<<EOB
 		</tbody></table>
 		</div>
@@ -744,7 +780,7 @@ EOB;
 
 	$j = 0;
 	foreach (ini_get_all('apc') as $k => $v) {
-		echo "<tr class=tr-$j><td class=td-0>",$k,"</td><td>",$v['local_value'],"</td></tr>\n";
+		echo "<tr class=tr-$j><td class=td-0>",$k,"</td><td>",str_replace(',',',<br />',$v['local_value']),"</td></tr>\n";
 		$j = 1 - $j;
 	}
 
@@ -793,7 +829,7 @@ EOB;
 EOB;
 
 	// Fragementation: (freeseg - 1) / total_seg
-	$nseg = $freeseg = 0;
+	$nseg = $freeseg = $fragsize = $freetotal = 0;
 	for($i=0; $i<$mem['num_seg']; $i++) {
 		$ptr = 0;
 		foreach($mem['block_lists'][$i] as $block) {
@@ -801,18 +837,21 @@ EOB;
 				++$nseg;
 			}
 			$ptr = $block['offset'] + $block['size'];
+                        /* Only consider blocks <5M for the fragmentation % */
+                        if($block['size']<(5*1024*1024)) $fragsize+=$block['size'];
+                        $freetotal+=$block['size'];
 		}
 		$freeseg += count($mem['block_lists'][$i]);
 	}
 	
 	if ($freeseg > 1) {
-		$frag = sprintf("%.2f%%", (($freeseg - 1) / ($freeseg + $nseg)) * 100);
+		$frag = sprintf("%.2f%% (%s out of %s in %d fragments)", ($fragsize/$freetotal)*100,bsize($fragsize),bsize($freetotal),$freeseg);
 	} else {
 		$frag = "0%";
 	}
 
 	if (graphics_avail()) {
-		$size='width='.(2*GRAPH_SIZE+50).' height='.(GRAPH_SIZE+10);
+		$size='width='.(2*GRAPH_SIZE+150).' height='.(GRAPH_SIZE+10);
 		echo <<<EOB
 			<img alt="" $size src="$PHP_SELF?IMG=3&$time">
 EOB;
@@ -821,6 +860,16 @@ EOB;
 		</br>Fragmentation: $frag
 		</td>
 		</tr>
+EOB;
+        if(isset($mem['adist'])) {
+          foreach($mem['adist'] as $i=>$v) {
+            $cur = pow(2,$i); $nxt = pow(2,$i+1)-1;
+            if($i==0) $range = "1";
+            else $range = "$cur - $nxt";
+            echo "<tr><th align=right>$range</th><td align=right>$v</td></tr>\n";
+          }
+        }
+        echo <<<EOB
 		</tbody></table>
 		</div>
 EOB;
