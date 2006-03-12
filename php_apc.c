@@ -542,7 +542,7 @@ PHP_FUNCTION(apc_delete) {
 
 static void _apc_define_constants(zval *constants, zend_bool case_sensitive TSRMLS_DC) {
     char *const_key;
-    int const_key_len;
+    unsigned int const_key_len;
     zval **entry;
     HashPosition pos;
 
