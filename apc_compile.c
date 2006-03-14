@@ -124,6 +124,7 @@ static void my_fixup_hashtable( HashTable *ht, ht_fixup_fun_t fixup, zend_class_
 #ifdef ZEND_ENGINE_2
 static int my_check_copy_function(Bucket* src, va_list args);
 static int my_check_copy_property_info(Bucket* src, va_list args);
+static int my_check_copy_default_property(Bucket* p, va_list args);
 static int my_check_copy_static_member(Bucket* src, va_list args);
 #endif
 
@@ -717,12 +718,18 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
     my_fixup_hashtable(&dst->function_table, (ht_fixup_fun_t)my_fixup_function, src, dst);
 #endif
 
-    if(!(my_copy_hashtable(&dst->default_properties,
+    if(!(my_copy_hashtable_ex(&dst->default_properties,
                             &src->default_properties,
                             (ht_copy_fun_t) my_copy_zval_ptr,
                             (ht_free_fun_t) my_free_zval_ptr,
                             1,
-                            allocate,deallocate))) {
+                            allocate,deallocate,
+#ifdef ZEND_ENGINE_2
+                            (ht_check_copy_fun_t) my_check_copy_default_property,
+#else
+                            NULL,
+#endif
+                            src))) {
         goto cleanup;
     }
 
@@ -1805,6 +1812,51 @@ void my_fetch_global_vars(zend_op_array* src TSRMLS_DC)
     }
 }
 /* }}} */
+
+/* {{{ my_copy_default_args */
+static int my_copy_default_args(zend_op_array* dst, zend_op_array* src)
+{
+    int i;
+    int needcopy = 0;
+    if(src->num_args == src->required_num_args)
+    {
+        /* yay !, no default args */
+        return 1; 
+    }
+    for (i = 0; i < src->last; i++)
+    {
+        zend_op *opcode = src->opcodes+i; 
+        if(opcode->opcode == ZEND_RECV_INIT &&
+                opcode->op2.u.constant.type == IS_CONSTANT_ARRAY) 
+        {
+            needcopy = 1;
+            break;
+        }
+    }
+    if(needcopy)
+    {
+        dst->opcodes = (zend_op*) apc_xmemcpy(src->opcodes, 
+                                    sizeof(zend_op) * src->last,
+                                    apc_php_malloc);
+        for (i = 0; i < src->last; i++)
+        {
+            zend_op *opcode = src->opcodes+i; 
+            if(opcode->opcode == ZEND_RECV_INIT &&
+                    opcode->op2.u.constant.type == IS_CONSTANT_ARRAY) 
+            {
+                if(!(my_copy_zend_op(dst->opcodes+i, src->opcodes+i, 
+                    apc_php_malloc, apc_php_free))) 
+                {
+                    //TODO: cleanup code
+                }
+            }
+        }
+
+        apc_fixup_op_array_jumps(dst,src);
+    }
+    return 1;
+}
+/* }}} */
 #endif
 
 /* {{{ apc_copy_op_array_for_execution */
@@ -1815,6 +1867,7 @@ zend_op_array* apc_copy_op_array_for_execution(zend_op_array* src TSRMLS_DC)
     dst->static_variables = my_copy_static_variables(src, apc_php_malloc, apc_php_free);
 #ifdef ZEND_ENGINE_2
     my_fetch_global_vars(dst TSRMLS_CC);
+    my_copy_default_args(dst, src);
 #endif
     /*check_op_array_integrity(dst);*/
     return dst;
@@ -1832,6 +1885,7 @@ zend_function* apc_copy_function_for_execution(zend_function* src)
     dst->op_array.static_variables = my_copy_static_variables(&dst->op_array, apc_php_malloc, apc_php_free);
 #ifdef ZEND_ENGINE_2
     my_fetch_global_vars(&dst->op_array TSRMLS_CC);
+    my_copy_default_args(&dst->op_array, &src->op_array);
 #endif
     /*check_op_array_integrity(&dst->op_array);*/
     return dst;
@@ -1839,7 +1893,7 @@ zend_function* apc_copy_function_for_execution(zend_function* src)
 /* }}} */
 
 /* {{{ apc_copy_function_for_execution_ex */
-zend_function* apc_copy_function_for_execution_ex(void *dummy, zend_function* src)
+zend_function* apc_copy_function_for_execution_ex(void *dummy, zend_function* src, apc_malloc_t allocate, apc_free_t deallocate)
 {
     if(src->type==ZEND_INTERNAL_FUNCTION || src->type==ZEND_OVERLOADED_FUNCTION) return src;
     return apc_copy_function_for_execution(src);
@@ -2017,8 +2071,8 @@ static int my_check_copy_property_info(Bucket* p, va_list args)
     zend_property_info* parent_info = NULL;
 
 	if (parent &&
-        zend_hash_quick_find(&src->properties_info, p->arKey, p->nKeyLength, 
-            p->h, (void **) &parent_info)==FAILURE) {
+        zend_hash_quick_find(&parent->properties_info, p->arKey, p->nKeyLength, 
+            p->h, (void **) &parent_info)==SUCCESS) {
         if(parent_info->flags & ZEND_ACC_PRIVATE)
         {
             return 1;
@@ -2034,6 +2088,29 @@ static int my_check_copy_property_info(Bucket* p, va_list args)
     }
     
     /* property doesn't exist in parent, copy into cached child */
+    return 1;
+}
+/* }}} */
+
+/* {{{ my_check_copy_default_property */
+static int my_check_copy_default_property(Bucket* p, va_list args)
+{
+    zend_class_entry* src = va_arg(args, zend_class_entry*);
+    zend_class_entry* parent = src->parent;
+    zval ** child_prop = (zval**)p->pData;
+    zval ** parent_prop = NULL;
+
+	if (parent &&
+        zend_hash_quick_find(&parent->default_properties, p->arKey, 
+            p->nKeyLength, p->h, (void **) &parent_prop)==SUCCESS) {
+
+        if((parent_prop && child_prop) && (*parent_prop) == (*child_prop))
+        {
+            return 0;
+        }
+    }
+    
+    /* possibly not in the parent */
     return 1;
 }
 /* }}} */
