@@ -30,10 +30,10 @@ if (file_exists("apc.conf.php")) include("apc.conf.php");
 
 ////////// BEGIN OF DEFAULT CONFIG AREA ///////////////////////////////////////////////////////////
 
-defaults('USE_AUTHENTIFICATION',1);			// Use (internal) authentification - best choice if 
-											// no other authentification is available
+defaults('USE_AUTHENTICATION',1);			// Use (internal) authentication - best choice if 
+											// no other authentication is available
 											// If set to 0:
-											//  There will be no further authentification. You 
+											//  There will be no further authentication. You 
 											//  will have to handle this by yourself!
 											// If set to 1:
 											//  You need to change ADMIN_PASSWORD to make
@@ -139,7 +139,7 @@ $MY_SELF_WO_SORT=
 
 // authentication needed?
 //
-if (!USE_AUTHENTIFICATION) {
+if (!USE_AUTHENTICATION) {
 	$AUTHENTICATED=1;
 } else {
 	$AUTHENTICATED=0;
@@ -460,10 +460,10 @@ function menu_entry($ob,$title) {
 
 function put_login_link($s="Login")
 {
-	global $MY_SELF,$MYREQUEST,$AUTHENTICATED,$PHP_AUTH_USER;
-	// need's ADMIN_PASSWORD to be changed!
+	global $MY_SELF,$MYREQUEST,$AUTHENTICATED;
+	// needs ADMIN_PASSWORD to be changed!
 	//
-	if (!USE_AUTHENTIFICATION) {
+	if (!USE_AUTHENTICATION) {
 		return;
 	} else if (ADMIN_PASSWORD=='password')
 	{
@@ -472,7 +472,7 @@ function put_login_link($s="Login")
 EOB;
 	} else if ($AUTHENTICATED) {
 		print <<<EOB
-			'$PHP_AUTH_USER'&nbsp;logged&nbsp;in!
+			'{$_SERVER['PHP_AUTH_USER']}'&nbsp;logged&nbsp;in!
 EOB;
 	} else{
 		print <<<EOB
@@ -963,7 +963,7 @@ EOB;
 		"<option value=H",$MYREQUEST['SORT1']=='H' ? " selected":"",">Hits</option>",
 		"<option value=Z",$MYREQUEST['SORT1']=='Z' ? " selected":"",">Size</option>",
 		"<option value=S",$MYREQUEST['SORT1']=='S' ? " selected":"",">$fieldheading</option>",
-		"<option value=M",$MYREQUEST['SORT1']=='A' ? " selected":"",">Last accessed</option>",
+		"<option value=A",$MYREQUEST['SORT1']=='A' ? " selected":"",">Last accessed</option>",
 		"<option value=M",$MYREQUEST['SORT1']=='M' ? " selected":"",">Last modified</option>",
 		"<option value=C",$MYREQUEST['SORT1']=='C' ? " selected":"",">Created at</option>",
 		"<option value=D",$MYREQUEST['SORT1']=='D' ? " selected":"",">Deleted at</option>";
