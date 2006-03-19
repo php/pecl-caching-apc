@@ -55,18 +55,13 @@ hp.net/dtd/package-2.0 http://pear.php.net/dtd/package-2.0.xsd">
   <active>yes</active>
  </developer>
  
- <date>2006-03-11</date>
- <version><release>3.0.10</release><api>3.0.0</api></version>
+ <date>2006-03-??</date>
+ <version><release>3.0.11</release><api>3.0.0</api></version>
  <stability><release>stable</release><api>stable</api></stability>
  <license uri="http://www.php.net/license">PHP License</license>
  <notes>
-* Add apc.stat ini flag which defaults to 1.  If set to 0, the main script and any fullpath
-  includes will not be stat'ed for any changes.  You will have to restart the server if you
-  change anything.  This mode increases performance quite a bit, especially if you have a
-  lot of includes.
+* Made --enable-apc-mmap the default compile option
 
-* Get rid of the lock safety net hack I added in 3.0.9.  It seems to cause more problems
-  than it solves.  I'll need to revisit locking and signal handling at some point soon.
  </notes>
 
  <contents>
@@ -285,6 +280,20 @@ Add a lock cleanup safety net to request shutdown (Rasmus)
 Fix apc.slam_defense edge-case bug (Rasmus)
 User entry memory usage tracking support (Ilia)
 Allow keys used in apc_store/apc_fetch/apc_delete to be binary safe and prevent conflicts between keys that are found at the start of other keys. (Ilia)
+     </notes>
+    </release>
+    <release>
+     <stability><release>stable</release><api>stable</api></stability>
+     <version><release>3.0.10</release><api>3.0.0</api></version>
+     <date>2006-03-11</date>
+     <notes>
+* Add apc.stat ini flag which defaults to 1.  If set to 0, the main script and any fullpath
+  includes will not be stat'ed for any changes.  You will have to restart the server if you
+  change anything.  This mode increases performance quite a bit, especially if you have a
+  lot of includes.
+
+* Get rid of the lock safety net hack I added in 3.0.9.  It seems to cause more problems
+  than it solves.  I'll need to revisit locking and signal handling at some point soon.
      </notes>
     </release>
  </changelog>
