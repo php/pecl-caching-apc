@@ -181,6 +181,7 @@ if(!$cache=@apc_cache_info($cache_mode)) {
 	echo "No cache info available.  APC does not appear to be running.";
 	exit;
 } 
+$cache_user = apc_cache_info('user', 1);  
 $mem=apc_sma_info();
 if(!$cache['num_hits']) { $cache['num_hits']=1; $time++; }  // Avoid division by 0 errors on a cache clear
 
@@ -746,7 +747,10 @@ case OB_HOST_STATS:
 	$req_rate = sprintf("%.2f",($cache['num_hits']+$cache['num_misses'])/($time-$cache['start_time']));
 	$apcversion = phpversion('apc');
 	$phpversion = phpversion();
-	$number_cached = count($cache['cache_list']);
+	$number_files = $cache['num_entries']; 
+    $size_files = bsize($cache['mem_size']);
+	$number_vars = $cache_user['num_entries'];
+    $size_vars = bsize($cache_user['mem_size']);
 	$i=0;
 	echo <<< EOB
 		<div class="info div1"><h2>General Cache Information</h2>
@@ -761,13 +765,14 @@ EOB;
 		echo "<tr class=tr-1><td class=td-0>Server Software</td><td>{$_SERVER['SERVER_SOFTWARE']}</td></tr>\n";
 
 	echo <<<EOB
-		<tr class=tr-0><td class=td-0>Cached Files</td><td>$number_cached</td></tr>
-		<tr class=tr-1><td class=td-0>Hits</td><td>{$cache['num_hits']}</td></tr>
-		<tr class=tr-0><td class=td-0>Misses</td><td>{$cache['num_misses']}</td></tr>
-		<tr class=tr-1><td class=td-0>Request Rate</td><td>$req_rate cache requests/second</td></tr>
-		<tr class=tr-0><td class=td-0>Time To Live</td><td>{$cache['ttl']}</td></tr>
-		<tr class=tr-1><td class=td-0>Shared Memory</td><td>{$mem['num_seg']} Segment(s) with $seg_size</td></tr>
-		<tr class=tr-0><td class=td-0>Cache full count</td><td>{$cache['expunges']}</td></tr>
+		<tr class=tr-0><td class=td-0>Cached Files</td><td>$number_files ($size_files)</td></tr>
+		<tr class=tr-1><td class=td-0>Cached Variables</td><td>$number_vars ($size_vars)</td></tr>
+		<tr class=tr-0><td class=td-0>Hits</td><td>{$cache['num_hits']}</td></tr>
+		<tr class=tr-1><td class=td-0>Misses</td><td>{$cache['num_misses']}</td></tr>
+		<tr class=tr-0><td class=td-0>Request Rate</td><td>$req_rate cache requests/second</td></tr>
+		<tr class=tr-1><td class=td-0>Time To Live</td><td>{$cache['ttl']}</td></tr>
+		<tr class=tr-0><td class=td-0>Shared Memory</td><td>{$mem['num_seg']} Segment(s) with $seg_size</td></tr>
+		<tr class=tr-1><td class=td-0>Cache full count</td><td>{$cache['expunges']}</td></tr>
 EOB;
 	echo   '<tr class=tr-1><td class=td-0>Start Time</td><td>',date(DATE_FORMAT,$cache['start_time']),'</td></tr>';
 	echo   '<tr class=tr-0><td class=td-0>Uptime</td><td>',duration($cache['start_time']),'</td></tr>';

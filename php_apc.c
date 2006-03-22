@@ -230,7 +230,7 @@ static PHP_RSHUTDOWN_FUNCTION(apc)
 }
 /* }}} */
 
-/* {{{ proto array apc_cache_info() */
+/* {{{ proto array apc_cache_info([string type], [bool limited]) */
 PHP_FUNCTION(apc_cache_info)
 {
     apc_cache_info_t* info;
@@ -238,18 +238,19 @@ PHP_FUNCTION(apc_cache_info)
     zval* list;
     char *cache_type;
     int ct_len;
+    zend_bool limited=0;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|s", &cache_type, &ct_len) == FAILURE) {
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|s|b", &cache_type, &ct_len, &limited) == FAILURE) {
         return;
     }
 
     if(ZEND_NUM_ARGS()) {
         if(!strcasecmp(cache_type,"user")) {
-            info = apc_cache_info(apc_user_cache);
+            info = apc_cache_info(apc_user_cache, limited);
         } else {
-            info = apc_cache_info(apc_cache);
+            info = apc_cache_info(apc_cache, limited);
         }
-    } else info = apc_cache_info(apc_cache);
+    } else info = apc_cache_info(apc_cache, limited);
 
     if(!info) {
         php_error_docref(NULL TSRMLS_CC, E_WARNING, "No APC info available.  Perhaps APC is not enabled? Check apc.enabled in your ini file");
@@ -263,7 +264,9 @@ PHP_FUNCTION(apc_cache_info)
     add_assoc_long(return_value, "num_misses", info->num_misses);
     add_assoc_long(return_value, "start_time", info->start_time);
     add_assoc_long(return_value, "expunges", info->expunges);
-
+    add_assoc_long(return_value, "mem_size", info->mem_size);
+    add_assoc_long(return_value, "num_entries", info->num_entries);
+    
     ALLOC_INIT_ZVAL(list);
     array_init(list);
 

@@ -271,10 +271,12 @@ struct apc_cache_info_t {
     apc_cache_link_t* deleted_list;
     time_t start_time;
     int expunges;
+    int num_entries;
+    size_t mem_size;
 };
 /* }}} */
 
-extern apc_cache_info_t* apc_cache_info(T cache);
+extern apc_cache_info_t* apc_cache_info(T cache, zend_bool limited);
 extern void apc_cache_free_info(apc_cache_info_t* info);
 extern void apc_cache_expunge(apc_cache_t* cache, time_t t);
 extern void apc_cache_unlock(apc_cache_t* cache);
