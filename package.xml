@@ -54,14 +54,23 @@ hp.net/dtd/package-2.0 http://pear.php.net/dtd/package-2.0.xsd">
   <email>pollita@php.net</email>
   <active>yes</active>
  </developer>
+ <developer>
+  <name>Brian Shire</name>
+  <user>shire</user>
+  <email>shire@php.net</email>
+  <active>yes</active>
+ </developer>
  
  <date>2006-03-??</date>
  <version><release>3.0.11</release><api>3.0.0</api></version>
  <stability><release>stable</release><api>stable</api></stability>
  <license uri="http://www.php.net/license">PHP License</license>
  <notes>
-* Made --enable-apc-mmap the default compile option
+* Made --enable-apc-mmap the default compile option (for real this time)
 
+* Add an optional flag to apc_cache_info() and some apc.php tweaks to make it
+  only fetch header information to make it useful when you have tens of
+  thousands of entries.  (Brian Shire)
  </notes>
 
  <contents>
