@@ -364,8 +364,6 @@ void* apc_regex_compile_array(char* patterns[])
             apc_wprint("apc_regex_compile_array: invalid expression '%s'",
                        pattern);
 
-            apc_efree(regs[i]->reg);
-            apc_efree(regs[i]);
             apc_regex_destroy_array(regs);
 
             return NULL;
