@@ -56,11 +56,11 @@ typedef union _apc_cache_key_data_t {
         ino_t inode;              /* the filesystem inode */
     } file;
     struct {
-        char *identifier;
+        const char *identifier;
         int identifier_len;
     } user;
     struct {
-        char *fullpath;
+        const char *fullpath;
         int fullpath_len;
     } fpfile;
 } apc_cache_key_data_t;

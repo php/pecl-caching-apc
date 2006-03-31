@@ -631,7 +631,7 @@ PHP_FUNCTION(apc_load_constants) {
     t = sapi_get_request_time(TSRMLS_C);
 #endif
 
-    entry = apc_cache_user_find(apc_user_cache, strkey, strkey_len, t);
+    entry = apc_cache_user_find(apc_user_cache, strkey, strkey_len + 1, t);
 
     if(entry) {
         _apc_define_constants(entry->data.user.val, case_sensitive TSRMLS_CC);
