@@ -312,7 +312,8 @@ PHP_FUNCTION(apc_cache_info)
             add_assoc_long(link, "inode", p->data.file.inode);
             add_assoc_string(link, "type", "file", 1);
         } else if(p->type == APC_CACHE_ENTRY_USER) {
-            add_assoc_string(link, "filename", p->data.user.info, 1);
+            add_assoc_string(link, "info", p->data.user.info, 1);
+            add_assoc_long(link, "ttl", (long)p->data.user.ttl);
             add_assoc_string(link, "type", "user", 1);
         }
         add_assoc_long(link, "num_hits", p->num_hits);
@@ -321,6 +322,7 @@ PHP_FUNCTION(apc_cache_info)
         add_assoc_long(link, "deletion_time", p->deletion_time);
         add_assoc_long(link, "access_time", p->access_time);
         add_assoc_long(link, "ref_count", p->ref_count);
+        add_assoc_long(link, "mem_size", p->mem_size);
         add_next_index_zval(list, link);
     }
     add_assoc_zval(return_value, "deleted_list", list);
