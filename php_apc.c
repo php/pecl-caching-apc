@@ -240,7 +240,7 @@ PHP_FUNCTION(apc_cache_info)
     int ct_len;
     zend_bool limited=0;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|s|b", &cache_type, &ct_len, &limited) == FAILURE) {
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|sb", &cache_type, &ct_len, &limited) == FAILURE) {
         return;
     }
 
@@ -601,7 +601,6 @@ PHP_FUNCTION(apc_define_constants) {
     if(!strkey_len) RETURN_FALSE;
 
     _apc_define_constants(constants, case_sensitive TSRMLS_CC);
-
     if(_apc_store(strkey, strkey_len, constants, 0 TSRMLS_CC)) RETURN_TRUE;
     RETURN_FALSE;
 } /* }}} */
@@ -616,7 +615,6 @@ PHP_FUNCTION(apc_load_constants) {
     zend_bool case_sensitive = 1;
 
     if(!APCG(enabled)) RETURN_FALSE;
-
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|b", &strkey, &strkey_len, &case_sensitive) == FAILURE) {
         return;
     }
