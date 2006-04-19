@@ -642,6 +642,7 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
 
     dst->name = NULL;
     dst->builtin_functions = NULL;
+    dst->filename = NULL;
     memset(&dst->function_table, 0, sizeof(dst->function_table));
     memset(&dst->default_properties, 0, sizeof(dst->default_properties));
 #ifndef ZEND_ENGINE_2
@@ -846,7 +847,7 @@ cleanup:
     {
         my_destroy_hashtable(dst->static_members, (ht_free_fun_t) my_free_zval_ptr, deallocate);
     }
-    if(dst->static_members != &(dst->default_static_members))
+    if(dst->static_members && dst->static_members != &(dst->default_static_members))
     {
         my_destroy_hashtable(dst->static_members, (ht_free_fun_t) my_free_zval_ptr, deallocate);
         deallocate(dst->static_members);
