@@ -441,6 +441,7 @@ int apc_cache_insert(apc_cache_t* cache,
     else slot = &cache->slots[string_nhash_8(key.data.fpfile.fullpath, key.data.fpfile.fullpath_len) % cache->num_slots];
 
     while(*slot) {
+        if(key.type == (*slot)->key.type) {
         if(key.type == APC_CACHE_KEY_FILE) {
             if(key_equals((*slot)->key.data.file, key.data.file)) {
                 /* If existing slot for the same device+inode is different, remove it and insert the new version */
@@ -455,7 +456,7 @@ int apc_cache_insert(apc_cache_t* cache,
                 continue;
             }
         } else {   /* APC_CACHE_KEY_FPFILE */
-            if(!memcmp((*slot)->key.data.fpfile.fullpath, key.data.fpfile.fullpath, key.data.fpfile.fullpath_len)) {
+                if(!memcmp((*slot)->key.data.fpfile.fullpath, key.data.fpfile.fullpath, key.data.fpfile.fullpath_len+1)) {
                 /* Hrm.. it's already here, remove it and insert new one */
                 remove_slot(cache, slot);
                 break;
@@ -463,6 +464,7 @@ int apc_cache_insert(apc_cache_t* cache,
                 remove_slot(cache, slot);
                 continue;
             }
+        }
         }
         slot = &(*slot)->next;
     }
@@ -551,6 +553,7 @@ apc_cache_entry_t* apc_cache_find(apc_cache_t* cache, apc_cache_key_t key, time_
     else slot = &cache->slots[string_nhash_8(key.data.fpfile.fullpath, key.data.fpfile.fullpath_len) % cache->num_slots];
 
     while (*slot) {
+        if(key.type == (*slot)->key.type) {
         if(key.type == APC_CACHE_KEY_FILE) {
             if(key_equals((*slot)->key.data.file, key.data.file)) {
                 if((*slot)->key.mtime != key.mtime) {
@@ -566,7 +569,7 @@ apc_cache_entry_t* apc_cache_find(apc_cache_t* cache, apc_cache_key_t key, time_
                 return (*slot)->value;
             }
         } else {  /* APC_CACHE_KEY_FPFILE */
-            if(!memcmp((*slot)->key.data.fpfile.fullpath, key.data.fpfile.fullpath, key.data.fpfile.fullpath_len)) {
+                if(!memcmp((*slot)->key.data.fpfile.fullpath, key.data.fpfile.fullpath, key.data.fpfile.fullpath_len+1)) {
                 /* TTL Check ? */
                 (*slot)->num_hits++;
                 (*slot)->value->ref_count++;
@@ -576,6 +579,7 @@ apc_cache_entry_t* apc_cache_find(apc_cache_t* cache, apc_cache_key_t key, time_
                 UNLOCK(cache);
                 return (*slot)->value;
             }
+        }
         }
         slot = &(*slot)->next;
     }

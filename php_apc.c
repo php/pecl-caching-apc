@@ -230,7 +230,7 @@ static PHP_RSHUTDOWN_FUNCTION(apc)
 }
 /* }}} */
 
-/* {{{ proto array apc_cache_info([string type], [bool limited]) */
+/* {{{ proto array apc_cache_info([string type], [bool] limited]) */
 PHP_FUNCTION(apc_cache_info)
 {
     apc_cache_info_t* info;
