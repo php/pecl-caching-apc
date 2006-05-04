@@ -175,7 +175,7 @@ static int sma_allocate(void* shmaddr, size_t size)
     }
     header->nfoffset = last_offset;
 
-    return OFFSET(cur) + alignword(sizeof(int));
+    return OFFSET(cur) + alignword(sizeof(size_t));
 }
 /* }}} */
 
