@@ -102,7 +102,7 @@ static int sma_allocate(void* shmaddr, size_t size)
     size_t last_offset;     /* save the last search offset */
     int wrapped=0;
 
-    realsize = alignword(max(size + alignword(sizeof(int)), sizeof(block_t)));
+    realsize = alignword(max(size + alignword(sizeof(size_t)), sizeof(block_t)));
 
     /*
      * First, insure that the segment contains at least realsize free bytes,
