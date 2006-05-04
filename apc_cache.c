@@ -583,7 +583,6 @@ apc_cache_entry_t* apc_cache_find(apc_cache_t* cache, apc_cache_key_t key, time_
         }
         slot = &(*slot)->next;
     }
-
     cache->header->num_misses++;
     UNLOCK(cache);
     return NULL;
@@ -663,6 +662,7 @@ int apc_cache_make_file_key(apc_cache_key_t* key,
                        time_t t
 					   TSRMLS_DC)
 {
+    static char canon_path[PATH_MAX];
     struct stat buf, *tmp_buf=NULL;
     int len;
 	
@@ -676,11 +676,22 @@ int apc_cache_make_file_key(apc_cache_key_t* key,
 	}
 
     len = strlen(filename);
-    if(APCG(fpstat)==0 && IS_ABSOLUTE_PATH(filename,len)) {
-        key->data.fpfile.fullpath = filename;
-        key->data.fpfile.fullpath_len = len;
-        key->mtime = t;
-        key->type = APC_CACHE_KEY_FPFILE;
+    if(APCG(fpstat)==0) {
+        if(IS_ABSOLUTE_PATH(filename,len)) {
+            key->data.fpfile.fullpath = filename;
+            key->data.fpfile.fullpath_len = len;
+            key->mtime = t;
+            key->type = APC_CACHE_KEY_FPFILE;
+        } else {
+            if(!realpath(filename, canon_path)) {
+                fprintf(stderr, "realpath failed to canonicalize %s - bailing\n", filename);
+                return 0;
+            }
+            key->data.fpfile.fullpath = canon_path;
+            key->data.fpfile.fullpath_len = strlen(canon_path);
+            key->mtime = t;
+            key->type = APC_CACHE_KEY_FPFILE;
+        }
         return 1;
     } 
 
