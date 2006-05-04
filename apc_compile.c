@@ -642,7 +642,9 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
 
     dst->name = NULL;
     dst->builtin_functions = NULL;
+#ifdef ZEND_ENGINE_2
     dst->filename = NULL;
+#endif
     memset(&dst->function_table, 0, sizeof(dst->function_table));
     memset(&dst->default_properties, 0, sizeof(dst->default_properties));
 #ifndef ZEND_ENGINE_2
