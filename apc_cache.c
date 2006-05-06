@@ -441,7 +441,7 @@ int apc_cache_insert(apc_cache_t* cache,
     else slot = &cache->slots[string_nhash_8(key.data.fpfile.fullpath, key.data.fpfile.fullpath_len) % cache->num_slots];
 
     while(*slot) {
-        if(key.type == (*slot)->key.type) {
+      if(key.type == (*slot)->key.type) {
         if(key.type == APC_CACHE_KEY_FILE) {
             if(key_equals((*slot)->key.data.file, key.data.file)) {
                 /* If existing slot for the same device+inode is different, remove it and insert the new version */
@@ -465,8 +465,8 @@ int apc_cache_insert(apc_cache_t* cache,
                 continue;
             }
         }
-        }
-        slot = &(*slot)->next;
+      }
+      slot = &(*slot)->next;
     }
 
     if ((*slot = make_slot(key, value, *slot, t)) == NULL) {
@@ -553,7 +553,7 @@ apc_cache_entry_t* apc_cache_find(apc_cache_t* cache, apc_cache_key_t key, time_
     else slot = &cache->slots[string_nhash_8(key.data.fpfile.fullpath, key.data.fpfile.fullpath_len) % cache->num_slots];
 
     while (*slot) {
-        if(key.type == (*slot)->key.type) {
+      if(key.type == (*slot)->key.type) {
         if(key.type == APC_CACHE_KEY_FILE) {
             if(key_equals((*slot)->key.data.file, key.data.file)) {
                 if((*slot)->key.mtime != key.mtime) {
@@ -580,8 +580,8 @@ apc_cache_entry_t* apc_cache_find(apc_cache_t* cache, apc_cache_key_t key, time_
                 return (*slot)->value;
             }
         }
-        }
-        slot = &(*slot)->next;
+      }
+      slot = &(*slot)->next;
     }
     cache->header->num_misses++;
     UNLOCK(cache);
