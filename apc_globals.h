@@ -61,7 +61,7 @@ ZEND_BEGIN_MODULE_GLOBALS(apc)
     apc_stack_t* cache_stack;    /* the stack of cached executable code */
     zend_bool cache_by_default;  /* true if files should be cached unless filtered out */
                                  /* false if files should only be cached if filtered in */
-    zend_bool slam_defense;      /* Probability of a process not caching an uncached file */
+    long slam_defense;           /* Probability of a process not caching an uncached file */
     size_t* mem_size_ptr;        /* size of blocks allocated to file being cached (NULL outside my_compile_file) */
     long file_update_protection; /* Age in seconds before a file is eligible to be cached - 0 to disable */
     zend_bool enable_cli;        /* Flag to override turning APC off for CLI */
