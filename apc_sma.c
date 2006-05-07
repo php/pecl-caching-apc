@@ -102,7 +102,7 @@ static int sma_allocate(void* shmaddr, size_t size)
     size_t last_offset;     /* save the last search offset */
     int wrapped=0;
 
-    realsize = alignword(max(size + alignword(sizeof(size_t)), sizeof(block_t)));
+    realsize = alignword(size + alignword(sizeof(struct block_t)));
 
     /*
      * First, insure that the segment contains at least realsize free bytes,
@@ -175,7 +175,7 @@ static int sma_allocate(void* shmaddr, size_t size)
     }
     header->nfoffset = last_offset;
 
-    return OFFSET(cur) + alignword(sizeof(size_t));
+    return OFFSET(cur) + alignword(sizeof(struct block_t));
 }
 /* }}} */
 
@@ -188,7 +188,7 @@ static int sma_deallocate(void* shmaddr, int offset)
     block_t* nxt;       /* the block after cur */
     size_t size;           /* size of deallocated block */
 
-    offset -= alignword(sizeof(size_t));
+    offset -= alignword(sizeof(struct block_t));
     assert(offset >= 0);
 
     /* find position of new block in free list */
