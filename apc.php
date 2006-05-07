@@ -528,7 +528,7 @@ h1.apc { background:rgb(153,153,204); margin:0; padding:0.5em 1em 0.5em 1em; }
 h1.apc a:hover { text-decoration:none; color:rgb(90,90,90); }
 h1.apc div.logo span.logo {
 	background:rgb(119,123,180);
-	color:black; rgb(153,153,204);
+	color:black;
 	border-right: solid black 1px;
 	border-bottom: solid black 1px;
 	font-style:italic;
