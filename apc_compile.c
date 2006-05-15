@@ -362,9 +362,13 @@ static zend_op* my_copy_zend_op(zend_op* dst, zend_op* src, apc_malloc_t allocat
     assert(src != NULL);
 
     memcpy(dst, src, sizeof(src[0]));
-    my_copy_znode(&dst->result, &src->result, allocate, deallocate);
-    my_copy_znode(&dst->op1, &src->op1, allocate, deallocate);
-    my_copy_znode(&dst->op2, &src->op2, allocate, deallocate);
+
+    if( my_copy_znode(&dst->result, &src->result, allocate, deallocate) == NULL 
+            || my_copy_znode(&dst->op1, &src->op1, allocate, deallocate) == NULL
+            || my_copy_znode(&dst->op2, &src->op2, allocate, deallocate) == NULL)
+    {
+        return NULL;
+    }
 
     return dst;
 }
@@ -1137,7 +1141,9 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_mal
     for (i = 0; i < src->last; i++) {
         if(!(my_copy_zend_op(dst->opcodes+i, src->opcodes+i, allocate, deallocate))) {
             int ii;
-            for(ii = i-1; i>=0; ii--) my_destroy_zend_op(dst->opcodes+ii, deallocate);
+            for(ii = i-1; ii>=0; ii--) {
+                my_destroy_zend_op(dst->opcodes+ii, deallocate);
+            }
             goto  cleanup;
         }
     }
