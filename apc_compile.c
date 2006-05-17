@@ -646,9 +646,6 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
 
     dst->name = NULL;
     dst->builtin_functions = NULL;
-#ifdef ZEND_ENGINE_2
-    dst->filename = NULL;
-#endif
     memset(&dst->function_table, 0, sizeof(dst->function_table));
     memset(&dst->default_properties, 0, sizeof(dst->default_properties));
 #ifndef ZEND_ENGINE_2
@@ -656,6 +653,7 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
 #else
     dst->static_members = NULL;
     dst->doc_comment = NULL;
+    dst->filename = NULL;
     memset(&dst->properties_info, 0, sizeof(dst->properties_info));
     memset(&dst->constants_table, 0, sizeof(dst->constants_table));
     memset(&dst->default_static_members, 0, sizeof(dst->default_static_members));
@@ -1578,6 +1576,7 @@ static void my_destroy_class_entry(zend_class_entry* src, apc_free_t deallocate)
     deallocate(src->refcount);
 #else
     if(src->doc_comment) deallocate(src->doc_comment);
+    if(src->filename) deallocate(src->filename);
 #endif
 
     my_destroy_hashtable(&src->function_table,

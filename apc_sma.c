@@ -65,10 +65,26 @@ struct header_t {
 #endif
 };
 
+
+/* do not enable for threaded http servers */
+/* #define __APC_SMA_DEBUG__ 1 */
+
+#ifdef __APC_SMA_DEBUG__
+/* global counter for identifying blocks 
+ * Technically it is possible to do the same
+ * using offsets, but double allocations of the
+ * same offset can happen. */
+static volatile size_t block_id = 0;
+#endif
+
 typedef struct block_t block_t;
 struct block_t {
     size_t size;       /* size of this block */
     size_t next;       /* offset in segment of next free block */
+#ifdef __APC_SMA_DEBUG__
+    size_t canary;     /* canary to check for memory overwrites */
+    size_t id;         /* identifier for the memory block */ 
+#endif
 };
 
 /* The macros BLOCKAT and OFFSET are used for convenience throughout this
@@ -175,6 +191,12 @@ static int sma_allocate(void* shmaddr, size_t size)
     }
     header->nfoffset = last_offset;
 
+#ifdef __APC_SMA_DEBUG__
+    cur->id = ++block_id;
+    cur->canary = 0x42424242;
+    fprintf(stderr, "allocate(realsize=%d,size=%d,id=%d)\n", (int)(size), (int)(cur->size), cur->id);
+#endif
+
     return OFFSET(cur) + alignword(sizeof(struct block_t));
 }
 /* }}} */
@@ -201,6 +223,11 @@ static int sma_deallocate(void* shmaddr, int offset)
     cur = BLOCKAT(offset);
     cur->next = prv->next;
     prv->next = offset;
+
+#ifdef __APC_SMA_DEBUG__
+    fprintf(stderr, "free(size=%d,id=%d)\n", (int)(cur->size), cur->id);
+    assert(cur->canary == 0x42424242);
+#endif
     
     /* update the block header */
     header = (header_t*) shmaddr;
