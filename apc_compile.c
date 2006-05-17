@@ -1216,7 +1216,7 @@ cleanup_opcodes:
     }
 cleanup:
     if(dst->function_name) deallocate(dst->function_name);
-    deallocate(dst->refcount);
+    if(dst->refcount) deallocate(dst->refcount);
     if(dst->filename) deallocate(dst->filename);
 #ifdef ZEND_ENGINE_2
     if(dst->arg_info) my_free_arg_info_array(dst->arg_info, dst->num_args, deallocate);
@@ -1868,9 +1868,11 @@ static int my_copy_default_args(zend_op_array* dst, zend_op_array* src)
 #endif
 
 /* {{{ apc_copy_op_array_for_execution */
-zend_op_array* apc_copy_op_array_for_execution(zend_op_array* src TSRMLS_DC)
+zend_op_array* apc_copy_op_array_for_execution(zend_op_array* dst, zend_op_array* src TSRMLS_DC)
 {
-    zend_op_array* dst = (zend_op_array*) emalloc(sizeof(src[0]));
+    if(dst == NULL) {
+        dst = (zend_op_array*) emalloc(sizeof(src[0]));
+    }
     memcpy(dst, src, sizeof(src[0]));
     dst->static_variables = my_copy_static_variables(src, apc_php_malloc, apc_php_free);
 #ifdef ZEND_ENGINE_2
@@ -1890,12 +1892,7 @@ zend_function* apc_copy_function_for_execution(zend_function* src)
 
     dst = (zend_function*) emalloc(sizeof(src[0]));
     memcpy(dst, src, sizeof(src[0]));
-    dst->op_array.static_variables = my_copy_static_variables(&dst->op_array, apc_php_malloc, apc_php_free);
-#ifdef ZEND_ENGINE_2
-    my_fetch_global_vars(&dst->op_array TSRMLS_CC);
-    my_copy_default_args(&dst->op_array, &src->op_array);
-#endif
-    /*check_op_array_integrity(&dst->op_array);*/
+    apc_copy_op_array_for_execution(&(dst->op_array), &(src->op_array) TSRMLS_CC);
     return dst;
 }
 /* }}} */

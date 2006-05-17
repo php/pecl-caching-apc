@@ -191,7 +191,7 @@ static zend_op_array* cached_compile(TSRMLS_D)
         }
     }
 
-    return apc_copy_op_array_for_execution(cache_entry->data.file.op_array TSRMLS_CC);
+    return apc_copy_op_array_for_execution(NULL, cache_entry->data.file.op_array TSRMLS_CC);
 }
 /* }}} */
 
