@@ -292,15 +292,128 @@ static void rewrite_constant_fold(zend_op* ops, Pair *p)
     if(const_op->result.u.var == fetch_op->op1.u.var) {
         fetch_op->op1.op_type = IS_CONST;
         fetch_op->op1.u.constant = *result;
+		efree(result);
         /* zval_copy_ctor(&fetch_op->op1.u.constant); */
     }
     else if(const_op->result.u.var == fetch_op->op2.u.var) {
         fetch_op->op2.op_type = IS_CONST;
         fetch_op->op2.u.constant = *result;
+		efree(result);
         /* zval_copy_ctor(&fetch_op->op2.u.constant); */
     }
     clear_zend_op(const_op);
 }
+
+static void rewrite_constant_resolve(zend_op* ops, Pair* p)
+{
+	Pair *t;
+	zval *constname;
+	zend_constant *c = NULL;
+	zend_uint resvar;
+	TSRMLS_FETCH();
+
+	assert(p);
+
+	constname = &(ops[car(p)].op2.u.constant);
+	resvar = ops[car(p)].result.u.var;
+
+	if (zend_hash_find(EG(zend_constants), Z_STRVAL_P(constname), Z_STRLEN_P(constname) + 1, (void**)&c) == FAILURE) {
+		/* CS version not defined */
+		char *lcase = estrndup(Z_STRVAL_P(constname), Z_STRLEN_P(constname));
+		php_strtolower(lcase, Z_STRLEN_P(constname));
+		if (zend_hash_find(EG(zend_constants), lcase, Z_STRLEN_P(constname) + 1, (void**)&c) == SUCCESS &&
+			(c->flags & CONST_CS)) {
+			c = NULL;
+		}
+		efree(lcase);
+	}
+	if (!c || (c->flags & CONST_PERSISTENT) == 0) {
+		/* Don't optimize non-persistent constants */
+		ops[car(p)].extended_value = 1;
+		return;
+	}
+
+	for(t = cdr(p); t; t = cdr(t)) {
+		zend_op *target = &ops[car(t)];
+
+		if (target->op1.op_type == IS_TMP_VAR && target->op1.u.var == resvar) {
+			target->op1.op_type = IS_CONST;
+			target->op1.u.constant = c->value;
+			zval_copy_ctor(&target->op1.u.constant);
+#ifdef ZEND_ENGINE_2_1
+			ZEND_VM_SET_OPCODE_HANDLER(target);
+#endif
+		}
+		if (target->op2.op_type == IS_TMP_VAR && target->op2.u.var == resvar) {
+			target->op2.op_type = IS_CONST;
+			target->op2.u.constant = c->value;
+			zval_copy_ctor(&target->op2.u.constant);
+#ifdef ZEND_ENGINE_2_1
+			ZEND_VM_SET_OPCODE_HANDLER(target);
+#endif
+		}
+	}
+
+	clear_zend_op(&ops[car(p)]);
+}
+
+#ifdef ZEND_ENGINE_2_1
+static void rewrite_class_constant_resolve(zend_op* ops, Pair* p)
+{
+	Pair *t;
+	zval *constname, *classname, **constval;
+	zend_uint resvar;
+	zend_class_entry **pce;
+	char *lcase;
+	TSRMLS_FETCH();
+
+	assert(p && cdr(p));
+
+	classname = &(ops[car(p)].op2.u.constant);
+	constname = &(ops[car(cdr(p))].op2.u.constant);
+	resvar = ops[car(cdr(p))].result.u.var;
+
+	/* It'd be nice to modify classname in place, but that could screw with autoload mechanisms */
+	lcase = estrndup(Z_STRVAL_P(classname), Z_STRLEN_P(classname));
+	php_strtolower(lcase, Z_STRLEN_P(classname));
+	if (zend_hash_find(EG(class_table), lcase, Z_STRLEN_P(classname) + 1, (void**)&pce) == FAILURE) {
+		/* Class does not exist, nothing to rewrite */
+		efree(lcase);
+		return;
+	}
+	efree(lcase);
+
+	if ((*pce)->type != ZEND_INTERNAL_CLASS) {
+		/* Only internal classes have persistent constants */
+		return;
+	}
+
+	if (zend_hash_find(&(*pce)->constants_table, Z_STRVAL_P(constname), Z_STRLEN_P(constname) + 1, (void**)&constval) == FAILURE) {
+		/* Constant not defined -- Will eventually result in a fatal error by the executor */
+		return;
+	}
+
+	for(t = cdr(cdr(p)); t; t = cdr(t)) {
+		zend_op *target = &ops[car(t)];
+
+		if (target->op1.op_type == IS_TMP_VAR && target->op1.u.var == resvar) {
+			target->op1.op_type = IS_CONST;
+			target->op1.u.constant = **constval;
+			zval_copy_ctor(&target->op1.u.constant);
+			ZEND_VM_SET_OPCODE_HANDLER(target);
+		}
+		if (target->op2.op_type == IS_TMP_VAR && target->op2.u.var == resvar) {
+			target->op2.op_type = IS_CONST;
+			target->op2.u.constant = **constval;
+			zval_copy_ctor(&target->op2.u.constant);
+			ZEND_VM_SET_OPCODE_HANDLER(target);
+		}
+	}
+
+	clear_zend_op(&ops[car(p)]);
+	clear_zend_op(&ops[car(cdr(p))]);
+}
+#endif
 
 static void rewrite_print(zend_op* ops, Pair* p)
 {
@@ -688,6 +801,59 @@ static Pair* peephole_constant_fold(zend_op* ops, int i, int num_ops)
     return 0;
 }
 
+/* Global constants */
+static Pair* peephole_constant_resolve(zend_op *ops, int i, int num_ops)
+{
+	Pair *p = NULL;
+	int j;
+
+	if (ops[i].opcode != ZEND_FETCH_CONSTANT ||
+		ops[i].result.op_type != IS_TMP_VAR ||
+		ops[i].op1.op_type != IS_UNUSED ||
+		ops[i].op2.op_type != IS_CONST ||
+		ops[i].extended_value) {
+		return NULL;
+	}
+
+	for (j = i + 1; j < num_ops; j++) {
+		if ((ops[j].op1.op_type == IS_TMP_VAR && ops[j].op1.u.var == ops[i].result.u.var) || 
+			(ops[j].op2.op_type == IS_TMP_VAR && ops[j].op2.u.var == ops[i].result.u.var)) { 
+			p = cons(j, p);
+		}
+	}
+
+	return cons(i, p);
+}
+
+#ifdef ZEND_ENGINE_2_1
+/* Class constants */
+static Pair* peephole_class_constant_resolve(zend_op *ops, int i, int num_ops)
+{
+	Pair *p = NULL;
+	int j = next_op(ops, i, num_ops), k;
+
+	if (j == num_ops ||
+		ops[i].opcode != ZEND_FETCH_CLASS ||
+		ops[i].op2.op_type != IS_CONST || /* Can't resolve variable class names at CT */
+		ops[i].result.op_type != IS_CONST || /* See note in Zend/zend_compile.c::zend_do_fetch_class */
+		ops[i].extended_value != ZEND_FETCH_CLASS_GLOBAL || /* TODO: Optimize self/parent as well */
+		ops[j].opcode != ZEND_FETCH_CONSTANT ||
+		ops[j].op1.op_type != IS_CONST || /* Not really CONST, see zend_compile.c */
+		ops[j].op1.u.var != ops[i].result.u.var) {
+		return NULL;
+	}
+
+	for (k = j + 1; k < num_ops; k++) {
+		if ((ops[k].op1.op_type == IS_TMP_VAR && ops[k].op1.u.var == ops[j].result.u.var) || 
+			(ops[k].op2.op_type == IS_TMP_VAR && ops[k].op2.u.var == ops[j].result.u.var)) {
+			p = cons(k, p);
+		}
+	}
+
+	return cons(i, cons(j, p));
+}
+#endif
+
 static Pair* peephole_add_string(zend_op* ops, int i, int num_ops)
 {
     int j;      /* next op after i */
@@ -845,7 +1011,6 @@ zend_op_array* apc_optimize_op_array(zend_op_array* op_array)
         pair_destroy(p); \
     } \
 }
-
     Pair** jumps;
     int i;
     int jump_array_size;
@@ -864,10 +1029,14 @@ zend_op_array* apc_optimize_op_array(zend_op_array* op_array)
     
         OPTIMIZE1(const_cast);
         OPTIMIZE1(is_equal_bool);
+       	OPTIMIZE1(constant_resolve);
+#ifdef ZEND_ENGINE_2_1
+		OPTIMIZE1(class_constant_resolve);
+#endif
         OPTIMIZE2(inc);
         OPTIMIZE2(print);
         OPTIMIZE2(multiple_echo);
-        /* OPTIMIZE2(constant_fold); */
+       	OPTIMIZE2(constant_fold);
         OPTIMIZE2(fcall);
         OPTIMIZE2(add_string);
         OPTIMIZE2(needless_bool);
