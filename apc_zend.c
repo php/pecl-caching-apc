@@ -163,6 +163,7 @@ static int apc_op_ZEND_INCLUDE_OR_EVAL(ZEND_OPCODE_HANDLER_ARGS)
 
 	wrapper = php_stream_locate_url_wrapper(Z_STRVAL_P(inc_filename), &path_for_open, 0 TSRMLS_CC);
 	if (wrapper != &php_plain_files_wrapper ||
+		!IS_ABSOLUTE_PATH(path_for_open, strlen(path_for_open)) ||
 		!expand_filepath(path_for_open, realpath TSRMLS_CC)) {
 		/* Fallback to original handler */
 		if (inc_filename == &tmp_inc_filename) {
