@@ -102,6 +102,9 @@ static void change_branch_target(zend_op* op, int old, int new)
             assert(0);
         }
         break;
+      case ZEND_NOP:
+        /* Source op was optimized away by rewrite_needless_jmp */
+		break;
       default:
         assert(0);
     }
@@ -419,6 +422,12 @@ static void rewrite_class_constant_resolve(zend_op* ops, Pair* p)
 	clear_zend_op(&ops[car(cdr(p))]);
 }
 #endif
+
+static void rewrite_needless_jmp(zend_op* ops, Pair* p)
+{
+	assert(pair_length(p) == 1);
+	clear_zend_op(ops + car(p));
+}
 
 static void rewrite_print(zend_op* ops, Pair* p)
 {
@@ -864,6 +873,16 @@ static Pair* peephole_class_constant_resolve(zend_op *ops, int i, int num_ops)
 }
 #endif
 
+static Pair* peephole_needless_jmp(zend_op *ops, int i, int num_ops)
+{
+	/* Usually produced by an if statement with no else clause */
+	if (ops[i].opcode == ZEND_JMP &&
+		ops[i].op1.u.opline_num == (i + 1)) {
+		return cons(i, 0);
+	}
+	return NULL;
+}		
+
 static Pair* peephole_add_string(zend_op* ops, int i, int num_ops)
 {
     int j;      /* next op after i */
@@ -1043,6 +1062,7 @@ zend_op_array* apc_optimize_op_array(zend_op_array* op_array)
 #ifdef ZEND_ENGINE_2_1
 		OPTIMIZE1(class_constant_resolve);
 #endif
+		OPTIMIZE1(needless_jmp);
         OPTIMIZE2(inc);
         OPTIMIZE2(print);
         OPTIMIZE2(multiple_echo);
