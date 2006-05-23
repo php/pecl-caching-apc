@@ -314,7 +314,12 @@ static void rewrite_constant_resolve(zend_op* ops, Pair* p)
 
 	assert(p);
 
+#ifdef ZEND_ENGINE_2
 	constname = &(ops[car(p)].op2.u.constant);
+#else /* ZE 1 */
+	constname = &(ops[car(p)].op1.u.constant);
+#endif
+
 	resvar = ops[car(p)].result.u.var;
 
 	if (zend_hash_find(EG(zend_constants), Z_STRVAL_P(constname), Z_STRLEN_P(constname) + 1, (void**)&c) == FAILURE) {
@@ -809,8 +814,13 @@ static Pair* peephole_constant_resolve(zend_op *ops, int i, int num_ops)
 
 	if (ops[i].opcode != ZEND_FETCH_CONSTANT ||
 		ops[i].result.op_type != IS_TMP_VAR ||
+#ifdef ZEND_ENGINE_2
 		ops[i].op1.op_type != IS_UNUSED ||
 		ops[i].op2.op_type != IS_CONST ||
+#else /* ZE 1 */
+		ops[i].op1.op_type != IS_CONST ||
+		ops[i].op2.op_type != IS_UNUSED ||
+#endif
 		ops[i].extended_value) {
 		return NULL;
 	}
