@@ -13,6 +13,7 @@
   | license@php.net so we can mail you a copy immediately.               |
   +----------------------------------------------------------------------+
   | Authors: George Schlossnagle <george@omniti.com>                     |
+  |          Rasmus Lerdorf <rasmus@php.net>                             |
   +----------------------------------------------------------------------+
 
    This software was contributed to PHP by Community Connect Inc. in 2002
@@ -32,11 +33,11 @@
 
 
 extern int apc_fcntl_create(const char* pathname);
-extern void apc_fcntl_destroy(int semid);
-extern void apc_fcntl_lock(int semid);
-extern void apc_fcntl_rdlock(int semid);
-extern void apc_fcntl_unlock(int semid);
-
+extern void apc_fcntl_destroy(int fd);
+extern void apc_fcntl_lock(int fd);
+extern void apc_fcntl_rdlock(int fd);
+extern void apc_fcntl_unlock(int fd);
+extern unsigned char apc_fcntl_nonblocking_lock(int fd);
 #endif
 
 /*

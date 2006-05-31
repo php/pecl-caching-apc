@@ -33,6 +33,7 @@
 #include "apc_cache.h"
 #include "apc_main.h"
 #include "apc_sma.h"
+#include "apc_lock.h"
 #include "php_globals.h"
 #include "php_ini.h"
 #include "zend_extensions.h"
@@ -74,6 +75,7 @@ static void php_apc_init_globals(zend_apc_globals* apc_globals TSRMLS_DC)
     apc_globals->slam_defense = 0;
     apc_globals->mem_size_ptr = NULL;
     apc_globals->fpstat = 1;
+    apc_globals->write_lock = 0;
 }
 
 static void php_apc_shutdown_globals(zend_apc_globals* apc_globals TSRMLS_DC)
@@ -153,6 +155,7 @@ STD_PHP_INI_ENTRY("apc.file_update_protection", "2", PHP_INI_SYSTEM, OnUpdateInt
 STD_PHP_INI_BOOLEAN("apc.enable_cli", "0",      PHP_INI_SYSTEM, OnUpdateBool,           enable_cli,       zend_apc_globals, apc_globals)
 STD_PHP_INI_ENTRY("apc.max_file_size", "1M",    PHP_INI_SYSTEM, OnUpdateInt,            max_file_size,    zend_apc_globals, apc_globals)
 STD_PHP_INI_BOOLEAN("apc.stat", "1",            PHP_INI_SYSTEM, OnUpdateBool,           fpstat,           zend_apc_globals, apc_globals)
+STD_PHP_INI_BOOLEAN("apc.write_lock", "1",      PHP_INI_SYSTEM, OnUpdateBool,           write_lock,       zend_apc_globals, apc_globals)
 PHP_INI_END()
 
 /* }}} */
@@ -433,11 +436,28 @@ static int _apc_store(char *strkey, int strkey_len, const zval *val, const unsig
 
     if(!APCG(enabled)) return 0;
 
+    HANDLE_BLOCK_INTERRUPTIONS();
+
+#if NONBLOCKING_LOCK_AVAILABLE
+    if(APCG(write_lock)) {
+        if(!apc_cache_write_lock(apc_cache)) {
+            HANDLE_UNBLOCK_INTERRUPTIONS();
+            return 0;
+        }
+    }
+#endif
+
     APCG(mem_size_ptr) = &mem_size;
     if (!(entry = apc_cache_make_user_entry(strkey, strkey_len + 1, val, ttl))) {
         APCG(mem_size_ptr) = NULL;
         apc_cache_expunge(apc_cache,t);
         apc_cache_expunge(apc_user_cache,t);
+#if NONBLOCKING_LOCK_AVAILABLE
+        if(APCG(write_lock)) {
+            apc_cache_write_unlock(apc_cache);
+        }
+#endif
+        HANDLE_UNBLOCK_INTERRUPTIONS();
         return 0;
     }
 
@@ -446,6 +466,12 @@ static int _apc_store(char *strkey, int strkey_len, const zval *val, const unsig
         apc_cache_free_entry(entry);
         apc_cache_expunge(apc_cache,t);
         apc_cache_expunge(apc_user_cache,t);
+#if NONBLOCKING_LOCK_AVAILABLE
+        if(APCG(write_lock)) {
+            apc_cache_write_unlock(apc_cache);
+        }
+#endif
+        HANDLE_UNBLOCK_INTERRUPTIONS();
         return 0;
     }
 
@@ -455,11 +481,23 @@ static int _apc_store(char *strkey, int strkey_len, const zval *val, const unsig
         apc_cache_free_entry(entry);
         apc_cache_expunge(apc_cache,t);
         apc_cache_expunge(apc_user_cache,t);
+#if NONBLOCKING_LOCK_AVAILABLE
+        if(APCG(write_lock)) {
+            apc_cache_write_unlock(apc_cache);
+        }
+#endif
+        HANDLE_UNBLOCK_INTERRUPTIONS();
         return 0;
     }
 
     APCG(mem_size_ptr) = NULL;
 
+#if NONBLOCKING_LOCK_AVAILABLE
+    if(APCG(write_lock)) {
+        apc_cache_write_unlock(apc_cache);
+    }
+#endif
+    HANDLE_UNBLOCK_INTERRUPTIONS();
 
     return 1;
 }

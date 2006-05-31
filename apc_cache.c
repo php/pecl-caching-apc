@@ -85,7 +85,8 @@ struct apc_cache_t {
     int num_slots;              /* number of slots in cache */
     int gc_ttl;                 /* maximum time on GC list for a slot */
     int ttl;                    /* if slot is needed and entry's access time is older than this ttl, remove it */
-    int lock;                   /* global semaphore lock */
+    int lock;                   /* read/write lock (exclusive blocking cache lock) */
+    int wrlock;                 /* write lock (non-blocking used to prevent cache slams) */
 };
 /* }}} */
 
@@ -302,8 +303,10 @@ apc_cache_t* apc_cache_create(int size_hint, int gc_ttl, int ttl)
     cache->num_slots = num_slots;
     cache->gc_ttl = gc_ttl;
     cache->ttl = ttl;
-    cache->lock = CREATE_LOCK;
-
+    cache->lock   = CREATE_LOCK;
+#if NONBLOCKING_LOCK_AVAILABLE
+    cache->wrlock = CREATE_LOCK;
+#endif
     for (i = 0; i < num_slots; i++) {
         cache->slots[i] = NULL;
     }
@@ -548,7 +551,6 @@ apc_cache_entry_t* apc_cache_find(apc_cache_t* cache, apc_cache_key_t key, time_
     slot_t** slot;
 
     LOCK(cache);
-
     if(key.type == APC_CACHE_KEY_FILE) slot = &cache->slots[hash(key) % cache->num_slots];
     else slot = &cache->slots[string_nhash_8(key.data.fpfile.fullpath, key.data.fpfile.fullpath_len) % cache->num_slots];
 
@@ -558,7 +560,9 @@ apc_cache_entry_t* apc_cache_find(apc_cache_t* cache, apc_cache_key_t key, time_
             if(key_equals((*slot)->key.data.file, key.data.file)) {
                 if((*slot)->key.mtime != key.mtime) {
                     remove_slot(cache, slot);
-                    break;
+                    cache->header->num_misses++;
+                    UNLOCK(cache);
+                    return NULL;
                 }
                 (*slot)->num_hits++;
                 (*slot)->value->ref_count++;
@@ -569,7 +573,7 @@ apc_cache_entry_t* apc_cache_find(apc_cache_t* cache, apc_cache_key_t key, time_
                 return (*slot)->value;
             }
         } else {  /* APC_CACHE_KEY_FPFILE */
-                if(!memcmp((*slot)->key.data.fpfile.fullpath, key.data.fpfile.fullpath, key.data.fpfile.fullpath_len+1)) {
+            if(!memcmp((*slot)->key.data.fpfile.fullpath, key.data.fpfile.fullpath, key.data.fpfile.fullpath_len+1)) {
                 /* TTL Check ? */
                 (*slot)->num_hits++;
                 (*slot)->value->ref_count++;
@@ -603,7 +607,8 @@ apc_cache_entry_t* apc_cache_user_find(apc_cache_t* cache, char *strkey, int key
             /* Check to make sure this entry isn't expired by a hard TTL */
             if((*slot)->value->data.user.ttl && ((*slot)->creation_time + (*slot)->value->data.user.ttl) < t) {
                 remove_slot(cache, slot);
-                break;
+                UNLOCK(cache);
+                return NULL;
             }
             /* Otherwise we are fine, increase counters and return the cache entry */
             (*slot)->num_hits++;
@@ -616,8 +621,7 @@ apc_cache_entry_t* apc_cache_user_find(apc_cache_t* cache, char *strkey, int key
         }
         slot = &(*slot)->next;
     }
-
-    cache->header->num_misses++;
+ 
     UNLOCK(cache);
     return NULL;
 }
@@ -932,7 +936,7 @@ apc_cache_info_t* apc_cache_info(apc_cache_t* cache, zend_bool limited)
 
     if(!cache) return NULL;
 
-    RDLOCK(cache);
+    LOCK(cache);
 
     info = (apc_cache_info_t*) apc_emalloc(sizeof(apc_cache_info_t));
     if(!info) {
@@ -1044,6 +1048,23 @@ zend_bool apc_cache_busy(apc_cache_t* cache)
     return cache->header->busy;
 }
 /* }}} */
+
+#if NONBLOCKING_LOCK_AVAILABLE
+/* {{{ apc_cache_write_lock */
+zend_bool apc_cache_write_lock(apc_cache_t* cache)
+{
+    if(apc_lck_nb_lock(cache->wrlock)==0) return 1;
+    else return 0;
+}
+/* }}} */
+
+/* {{{ apc_cache_write_unlock */
+void apc_cache_write_unlock(apc_cache_t* cache)
+{
+    apc_lck_unlock(cache->wrlock);
+}
+/* }}} */
+#endif
 
 /*
  * Local variables:

@@ -281,6 +281,8 @@ extern void apc_cache_free_info(apc_cache_info_t* info);
 extern void apc_cache_expunge(apc_cache_t* cache, time_t t);
 extern void apc_cache_unlock(apc_cache_t* cache);
 extern zend_bool apc_cache_busy(apc_cache_t* cache);
+extern zend_bool apc_cache_write_lock(apc_cache_t* cache);
+extern void apc_cache_write_unlock(apc_cache_t* cache);
 
 #undef T
 #endif

@@ -286,12 +286,27 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
     }
 
     HANDLE_BLOCK_INTERRUPTIONS();
+
+#if NONBLOCKING_LOCK_AVAILABLE
+    if(APCG(write_lock)) {
+        if(!apc_cache_write_lock(apc_cache)) {
+            HANDLE_UNBLOCK_INTERRUPTIONS();
+            return op_array;
+        }
+    }
+#endif
+
     mem_size = 0;
     APCG(mem_size_ptr) = &mem_size;
     if(!(alloc_op_array = apc_copy_op_array(NULL, op_array, apc_sma_malloc, apc_sma_free TSRMLS_CC))) {
         apc_cache_expunge(apc_cache,t);
         apc_cache_expunge(apc_user_cache,t);
         APCG(mem_size_ptr) = NULL;
+#if NONBLOCKING_LOCK_AVAILABLE
+        if(APCG(write_lock)) {
+            apc_cache_write_unlock(apc_cache);
+        }
+#endif
         HANDLE_UNBLOCK_INTERRUPTIONS();
         return op_array;
     }
@@ -301,6 +316,11 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
         apc_cache_expunge(apc_cache,t);
         apc_cache_expunge(apc_user_cache,t);
         APCG(mem_size_ptr) = NULL;
+#if NONBLOCKING_LOCK_AVAILABLE
+        if(APCG(write_lock)) {
+            apc_cache_write_unlock(apc_cache);
+        }
+#endif
         HANDLE_UNBLOCK_INTERRUPTIONS();
         return op_array;
     }
@@ -310,6 +330,11 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
         apc_cache_expunge(apc_cache,t);
         apc_cache_expunge(apc_user_cache,t);
         APCG(mem_size_ptr) = NULL;
+#if NONBLOCKING_LOCK_AVAILABLE
+        if(APCG(write_lock)) {
+            apc_cache_write_unlock(apc_cache);
+        }
+#endif
         HANDLE_UNBLOCK_INTERRUPTIONS();
         return op_array;
     }
@@ -328,12 +353,16 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
         apc_cache_expunge(apc_cache,t);
         apc_cache_expunge(apc_user_cache,t);
         APCG(mem_size_ptr) = NULL;
+#if NONBLOCKING_LOCK_AVAILABLE
+        if(APCG(write_lock)) {
+            apc_cache_write_unlock(apc_cache);
+        }
+#endif
         HANDLE_UNBLOCK_INTERRUPTIONS();
         return op_array;
     }
     APCG(mem_size_ptr) = NULL;
     cache_entry->mem_size = mem_size;
-    HANDLE_UNBLOCK_INTERRUPTIONS();
 
     if ((ret = apc_cache_insert(apc_cache, key, cache_entry, t)) != 1) {
         apc_cache_free_entry(cache_entry);
@@ -342,6 +371,13 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
             apc_cache_expunge(apc_user_cache,t);
         }
     }
+
+#if NONBLOCKING_LOCK_AVAILABLE
+    if(APCG(write_lock)) {
+        apc_cache_write_unlock(apc_cache);
+    }
+#endif
+    HANDLE_UNBLOCK_INTERRUPTIONS();
 
     return op_array;
 }

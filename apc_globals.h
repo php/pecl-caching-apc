@@ -68,6 +68,7 @@ ZEND_BEGIN_MODULE_GLOBALS(apc)
     long max_file_size;	         /* Maximum size of file, in bytes that APC will be allowed to cache */
     long slam_rand;              /* A place to store the slam rand value for the request */
     zend_bool fpstat;            /* true if fullpath includes should be stat'ed */
+    zend_bool write_lock;        /* true for a global write lock */
 ZEND_END_MODULE_GLOBALS(apc)
 
 /* (the following declaration is defined in php_apc.c) */

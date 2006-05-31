@@ -13,6 +13,7 @@
   | license@php.net so we can mail you a copy immediately.               |
   +----------------------------------------------------------------------+
   | Authors: George Schlossnagle <george@omniti.com>                     |
+  |          Rasmus Lerdorf <rasmus@php.net>                             |
   +----------------------------------------------------------------------+
 
    This software was contributed to PHP by Community Connect Inc. in 2002
@@ -35,18 +36,15 @@
 int apc_fcntl_create(const char* pathname)
 {
     int fd;
-    char *lock_path = NULL;
     if(pathname == NULL) {
-        lock_path = malloc(strlen("/tmp/.apc.") + 6);
-        snprintf(lock_path, strlen("/tmp/.apc.") + 6, "/tmp/.apc.%d", getpid());
+        char lock_path[] = "/tmp/.apc.XXXXXX";
+        mktemp(lock_path);
         fd = open(lock_path, O_RDWR|O_CREAT, 0666);
         if(fd > 0 ) {
             unlink(lock_path);
-            free(lock_path);
             return fd;
         } else {
             apc_eprint("apc_fcntl_create: open(%s, O_RDWR|O_CREAT, 0666) failed:", lock_path);
-            free(lock_path);
             return -1;
         }
     }
@@ -83,21 +81,30 @@ static int lock_reg(int fd, int cmd, int type, off_t offset, int whence, off_t l
 void apc_fcntl_lock(int fd)
 {
     if(lock_reg(fd, F_SETLKW, F_WRLCK, 0, SEEK_SET, 0) < 0) {
-        apc_eprint("apc_fcntl_lock failed errno:%d", errno);
+        apc_eprint("apc_fcntl_lock failed:");
     }
 }
 
 void apc_fcntl_rdlock(int fd)
 {
     if(lock_reg(fd, F_SETLKW, F_RDLCK, 0, SEEK_SET, 0) < 0) {
-        apc_eprint("apc_fcntl_rdlock failed errno:%d", errno);
+        apc_eprint("apc_fcntl_rdlock failed:");
     }
+}
+
+zend_bool apc_fcntl_nonblocking_lock(int fd)
+{
+    if(lock_reg(fd, F_SETLK, F_WRLCK, 0, SEEK_SET, 0) < 0) {
+        if(errno==EACCES) return 0;
+        else apc_eprint("apc_fcntl_lock failed:");
+    }
+    return 1;
 }
 
 void apc_fcntl_unlock(int fd)
 {
     if(lock_reg(fd, F_SETLKW, F_UNLCK, 0, SEEK_SET, 0) < 0) {
-        apc_eprint("apc_fcntl_unlock failed errno:%d", errno);
+        apc_eprint("apc_fcntl_unlock failed:");
     }
 }
 
