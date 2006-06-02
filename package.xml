@@ -72,6 +72,10 @@ hp.net/dtd/package-2.0 http://pear.php.net/dtd/package-2.0.xsd">
   only fetch header information to make it useful when you have tens of
   thousands of entries.  (Brian Shire)
 
+* 64-bit fixes (George)
+
+* Don't mix Full Path and Inode keys (George)
+
 * Override ZEND_INCLUDE_OR_EVAL opcode (when possible) to speed up use of
   require_once() and include_once() statements. (Sara)
 
