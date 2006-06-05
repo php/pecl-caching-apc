@@ -193,6 +193,7 @@ static PHP_MINIT_FUNCTION(apc)
 
     if (APCG(enabled)) {
         apc_module_init(module_number TSRMLS_CC);
+		apc_zend_init();
     }
 
     return SUCCESS;
@@ -203,6 +204,7 @@ static PHP_MINIT_FUNCTION(apc)
 static PHP_MSHUTDOWN_FUNCTION(apc)
 {
     if(APCG(enabled)) {
+		apc_zend_shutdown();
         apc_module_shutdown(TSRMLS_C);
 #ifndef ZTS
         php_apc_shutdown_globals(&apc_globals);

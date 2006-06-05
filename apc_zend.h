@@ -38,6 +38,9 @@
 extern void* apc_php_malloc(size_t n);
 extern void apc_php_free(void* p);
 
+extern void apc_zend_init(void);
+extern void apc_zend_shutdown(void);
+
 #endif
 
 /*
