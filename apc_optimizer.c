@@ -30,6 +30,7 @@
 
 #include "apc_php.h"
 #include "apc_pair.h"
+#include "ext/standard/php_string.h"
 #include <assert.h>
 
 /* {{{ rewrite helper functions */
