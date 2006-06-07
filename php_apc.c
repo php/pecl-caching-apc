@@ -82,7 +82,7 @@ static void php_apc_shutdown_globals(zend_apc_globals* apc_globals TSRMLS_DC)
 {
     /* deallocate the ignore patterns */
     if (apc_globals->filters != NULL) {
-		int i;
+        int i;
         for (i=0; apc_globals->filters[i] != NULL; i++) {
             apc_efree(apc_globals->filters[i]);
         }
@@ -163,19 +163,19 @@ PHP_INI_END()
 /* {{{ PHP_MINFO_FUNCTION(apc) */
 static PHP_MINFO_FUNCTION(apc)
 {
-	php_info_print_table_start();
-	php_info_print_table_row(2, "APC Support", APCG(enabled) ? "enabled" : "disabled");
-	php_info_print_table_row(2, "Version", APC_VERSION);
+    php_info_print_table_start();
+    php_info_print_table_row(2, "APC Support", APCG(enabled) ? "enabled" : "disabled");
+    php_info_print_table_row(2, "Version", APC_VERSION);
 #if APC_MMAP
-	php_info_print_table_row(2, "MMAP Support", "Enabled");
-	php_info_print_table_row(2, "MMAP File Mask", APCG(mmap_file_mask));
+    php_info_print_table_row(2, "MMAP Support", "Enabled");
+    php_info_print_table_row(2, "MMAP File Mask", APCG(mmap_file_mask));
 #else
-	php_info_print_table_row(2, "MMAP Support", "Disabled");
+    php_info_print_table_row(2, "MMAP Support", "Disabled");
 #endif
-	php_info_print_table_row(2, "Revision", "$Revision$");
-	php_info_print_table_row(2, "Build Date", __DATE__ " " __TIME__);
-	php_info_print_table_end();
-	DISPLAY_INI_ENTRIES();
+    php_info_print_table_row(2, "Revision", "$Revision$");
+    php_info_print_table_row(2, "Build Date", __DATE__ " " __TIME__);
+    php_info_print_table_end();
+    DISPLAY_INI_ENTRIES();
 }
 /* }}} */
 
@@ -193,7 +193,7 @@ static PHP_MINIT_FUNCTION(apc)
 
     if (APCG(enabled)) {
         apc_module_init(module_number TSRMLS_CC);
-		apc_zend_init();
+        apc_zend_init();
     }
 
     return SUCCESS;
@@ -204,7 +204,7 @@ static PHP_MINIT_FUNCTION(apc)
 static PHP_MSHUTDOWN_FUNCTION(apc)
 {
     if(APCG(enabled)) {
-		apc_zend_shutdown();
+        apc_zend_shutdown();
         apc_module_shutdown(TSRMLS_C);
 #ifndef ZTS
         php_apc_shutdown_globals(&apc_globals);
