@@ -252,6 +252,7 @@ static zval** my_copy_zval_ptr(zval** dst, const zval** src, apc_malloc_t alloca
 
     /* deep-copying ensures that there is only one reference to this in memory */
     (*dst)->refcount = 1;
+    (*dst)->is_ref = 0;
     
     return dst;
 }
@@ -1821,21 +1822,31 @@ void my_fetch_global_vars(zend_op_array* src TSRMLS_DC)
 }
 /* }}} */
 
-/* {{{ my_copy_default_args */
-static int my_copy_default_args(zend_op_array* dst, zend_op_array* src)
+/* {{{ my_copy_data_exceptions */
+static int my_copy_data_exceptions(zend_op_array* dst, zend_op_array* src)
 {
+    /* check for troublesome opcodes and copy the entire 
+       opcode array if detected */
     int i;
     int needcopy = 0;
+#if 0
     if(src->num_args == src->required_num_args)
     {
         /* yay !, no default args */
         return 1; 
     }
+#endif
     for (i = 0; i < src->last; i++)
     {
         zend_op *opcode = src->opcodes+i; 
         if(opcode->opcode == ZEND_RECV_INIT &&
                 opcode->op2.u.constant.type == IS_CONSTANT_ARRAY) 
+        {
+            needcopy = 1;
+            break;
+        }
+        if(opcode->opcode == ZEND_ASSIGN_DIM ||
+            opcode->opcode == ZEND_ASSIGN)
         {
             needcopy = 1;
             break;
@@ -1875,9 +1886,13 @@ zend_op_array* apc_copy_op_array_for_execution(zend_op_array* dst, zend_op_array
     }
     memcpy(dst, src, sizeof(src[0]));
     dst->static_variables = my_copy_static_variables(src, apc_php_malloc, apc_php_free);
+
+    dst->refcount = apc_xmemcpy(src->refcount,
+                                      sizeof(src->refcount[0]),
+                                      apc_php_malloc);
 #ifdef ZEND_ENGINE_2
     my_fetch_global_vars(dst TSRMLS_CC);
-    my_copy_default_args(dst, src);
+    my_copy_data_exceptions(dst, src);
 #endif
     /*check_op_array_integrity(dst);*/
     return dst;
