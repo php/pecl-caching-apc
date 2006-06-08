@@ -1821,6 +1821,7 @@ void my_fetch_global_vars(zend_op_array* src TSRMLS_DC)
     }
 }
 /* }}} */
+#endif
 
 /* {{{ my_copy_data_exceptions */
 static int my_copy_data_exceptions(zend_op_array* dst, zend_op_array* src)
@@ -1835,7 +1836,6 @@ static int my_copy_data_exceptions(zend_op_array* dst, zend_op_array* src)
         /* yay !, no default args */
         return 1; 
     }
-#endif
     for (i = 0; i < src->last; i++)
     {
         zend_op *opcode = src->opcodes+i; 
@@ -1852,6 +1852,8 @@ static int my_copy_data_exceptions(zend_op_array* dst, zend_op_array* src)
             break;
         }
     }
+#endif
+    needcopy = 1;
     if(needcopy)
     {
         dst->opcodes = (zend_op*) apc_xmemcpy(src->opcodes, 
@@ -1870,13 +1872,13 @@ static int my_copy_data_exceptions(zend_op_array* dst, zend_op_array* src)
                 }
             }
         }
-
+#ifdef ZEND_ENGINE_2
         apc_fixup_op_array_jumps(dst,src);
+#endif
     }
     return 1;
 }
 /* }}} */
-#endif
 
 /* {{{ apc_copy_op_array_for_execution */
 zend_op_array* apc_copy_op_array_for_execution(zend_op_array* dst, zend_op_array* src TSRMLS_DC)
@@ -1892,8 +1894,9 @@ zend_op_array* apc_copy_op_array_for_execution(zend_op_array* dst, zend_op_array
                                       apc_php_malloc);
 #ifdef ZEND_ENGINE_2
     my_fetch_global_vars(dst TSRMLS_CC);
-    my_copy_data_exceptions(dst, src);
 #endif
+
+    my_copy_data_exceptions(dst, src);
     /*check_op_array_integrity(dst);*/
     return dst;
 }
@@ -1932,6 +1935,12 @@ zend_class_entry* apc_copy_class_entry_for_execution(zend_class_entry* src, int 
                                         src->num_interfaces);
     memset(dst->interfaces, 0, sizeof(zend_class_entry*) * src->num_interfaces);
 #endif
+
+#ifndef ZEND_ENGINE_2    
+    dst->refcount = apc_xmemcpy(src->refcount,
+                                      sizeof(src->refcount[0]),
+                                      apc_php_malloc);
+#endif        
 
     /* Deep-copy the class properties, because they will be modified */
 
