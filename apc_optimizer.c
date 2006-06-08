@@ -189,11 +189,10 @@ static int compress_ops(zend_op_array* op_array, Pair** jumps)
 }
 
 /* op must be 'pure' and have two constant operands; returns its value */
-static zval* compute_result_of_constant_op(zend_op* op)
+static zval* compute_result_of_constant_op(zend_op* op TSRMLS_DC)
 {
     zval* result = 0;
     int (*binary_op)(zval*, zval*, zval* TSRMLS_DC) = 0;
-    TSRMLS_FETCH();
 
     // TODO: extend to this work with the few unary ops
 
@@ -213,7 +212,7 @@ static zval* compute_result_of_constant_op(zend_op* op)
 
 /* {{{ rewrite functions */
 
-static void rewrite_inc(zend_op* ops, Pair* p)
+static void rewrite_inc(zend_op* ops, Pair* p TSRMLS_DC)
 {
     assert(pair_length(p) == 3);
     switch (ops[cadr(p)].opcode) {
@@ -236,7 +235,7 @@ static void rewrite_inc(zend_op* ops, Pair* p)
 }
 
 
-static void rewrite_const_cast(zend_op* ops, Pair* p)
+static void rewrite_const_cast(zend_op* ops, Pair* p TSRMLS_DC)
 {
     zend_op* cur;
     zval convert;
@@ -269,7 +268,7 @@ static void rewrite_const_cast(zend_op* ops, Pair* p)
     cur->op2.op_type = IS_UNUSED;
 }
 
-static void rewrite_add_string(zend_op* ops, Pair* p)
+static void rewrite_add_string(zend_op* ops, Pair* p TSRMLS_DC)
 {
     zend_op* first;
     zend_op* second;
@@ -286,13 +285,13 @@ static void rewrite_add_string(zend_op* ops, Pair* p)
     clear_zend_op(second);
 }
 
-static void rewrite_constant_fold(zend_op* ops, Pair *p)
+static void rewrite_constant_fold(zend_op* ops, Pair *p TSRMLS_DC)
 {
     zval *result;
     zend_op *const_op = &ops[car(p)];
     zend_op *fetch_op = &ops[cadr(p)];
 
-    result = compute_result_of_constant_op(const_op);
+    result = compute_result_of_constant_op(const_op TSRMLS_CC);
     if(const_op->result.u.var == fetch_op->op1.u.var) {
         fetch_op->op1.op_type = IS_CONST;
         fetch_op->op1.u.constant = *result;
@@ -308,13 +307,12 @@ static void rewrite_constant_fold(zend_op* ops, Pair *p)
     clear_zend_op(const_op);
 }
 
-static void rewrite_constant_resolve(zend_op* ops, Pair* p)
+static void rewrite_constant_resolve(zend_op* ops, Pair* p TSRMLS_DC)
 {
     Pair *t;
     zval *constname;
     zend_constant *c = NULL;
     zend_uint resvar;
-    TSRMLS_FETCH();
 
     assert(p);
 
@@ -367,14 +365,13 @@ static void rewrite_constant_resolve(zend_op* ops, Pair* p)
 }
 
 #ifdef ZEND_ENGINE_2_1
-static void rewrite_class_constant_resolve(zend_op* ops, Pair* p)
+static void rewrite_class_constant_resolve(zend_op* ops, Pair* p TSRMLS_DC)
 {
     Pair *t;
     zval *constname, *classname, **constval;
     zend_uint resvar;
     zend_class_entry **pce;
     char *lcase;
-    TSRMLS_FETCH();
 
     assert(p && cdr(p));
 
@@ -424,33 +421,33 @@ static void rewrite_class_constant_resolve(zend_op* ops, Pair* p)
 }
 #endif
 
-static void rewrite_needless_jmp(zend_op* ops, Pair* p)
+static void rewrite_needless_jmp(zend_op* ops, Pair* p TSRMLS_DC)
 {
     assert(pair_length(p) == 1);
     clear_zend_op(ops + car(p));
 }
 
-static void rewrite_print(zend_op* ops, Pair* p)
+static void rewrite_print(zend_op* ops, Pair* p TSRMLS_DC)
 {
     assert(pair_length(p) == 2);
     ops[car(p)].opcode = ZEND_ECHO;
     clear_zend_op(&ops[cadr(p)]);  // don't need this anymore
 }
 
-static void rewrite_multiple_echo(zend_op* ops, Pair* p)
+static void rewrite_multiple_echo(zend_op* ops, Pair* p TSRMLS_DC)
 {
     add_string_to_string(&ops[car(p)].op1.u.constant, &ops[car(p)].op1.u.constant, &ops[cadr(p)].op1.u.constant);
     clear_zend_op(&ops[cadr(p)]);
 }
 
-static void rewrite_fcall(zend_op* ops, Pair* p) 
+static void rewrite_fcall(zend_op* ops, Pair* p TSRMLS_DC)
 {
     assert(pair_length(p) == 2);
     clear_zend_op(ops + car(p));
     ops[cadr(p)].opcode = ZEND_DO_FCALL;
 }
 
-static void rewrite_is_equal_bool(zend_op* ops, Pair* p)
+static void rewrite_is_equal_bool(zend_op* ops, Pair* p TSRMLS_DC)
 {
     zend_op* op;
 
@@ -471,7 +468,7 @@ static void rewrite_is_equal_bool(zend_op* ops, Pair* p)
 #undef DETERMINE_VALUE
 }
 
-static void rewrite_needless_bool(zend_op* ops, Pair* p)
+static void rewrite_needless_bool(zend_op* ops, Pair* p TSRMLS_DC)
 {
     clear_zend_op(&ops[car(p)]);
     clear_zend_op(&ops[cadr(p)]);
@@ -1022,12 +1019,12 @@ static void apc_do_pass_two(zend_op_array *op_array)
 /* }}} */
 
 /* {{{ apc_optimize_op_array */
-zend_op_array* apc_optimize_op_array(zend_op_array* op_array)
+zend_op_array* apc_optimize_op_array(zend_op_array* op_array TSRMLS_DC)
 {
 #define RESTART_PEEPHOLE_LOOP { pair_destroy(p); i = -1; continue; }
 #define OPTIMIZE1(name) { \
     if ((p = peephole_ ## name(op_array->opcodes, i, op_array->last))) { \
-        rewrite_ ## name(op_array->opcodes, p); \
+        rewrite_ ## name(op_array->opcodes, p TSRMLS_CC); \
         pair_destroy(p); \
     } \
 }
@@ -1035,7 +1032,7 @@ zend_op_array* apc_optimize_op_array(zend_op_array* op_array)
 #define OPTIMIZE2(name) { \
     if ((p = peephole_ ## name(op_array->opcodes, i, op_array->last))) { \
         if (!are_branch_targets(cdr(p), jumps)) { \
-            rewrite_ ## name(op_array->opcodes, p); \
+            rewrite_ ## name(op_array->opcodes, p TSRMLS_CC); \
             RESTART_PEEPHOLE_LOOP; \
         } \
         pair_destroy(p); \

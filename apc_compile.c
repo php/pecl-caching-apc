@@ -1071,7 +1071,7 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_mal
         local_dst_alloc = 1;
     }
     if(APCG(optimization)) {
-        apc_optimize_op_array(src);
+        apc_optimize_op_array(src TSRMLS_CC);
     }
 
     /* start with a bitwise copy of the array */

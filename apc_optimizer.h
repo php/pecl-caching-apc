@@ -29,7 +29,7 @@
 #ifndef APC_OPTIMIZER_H
 #define APC_OPTIMIZER_H
 
-extern zend_op_array* apc_optimize_op_array(zend_op_array* op_array);
+extern zend_op_array* apc_optimize_op_array(zend_op_array* op_array TSRMLS_DC);
 
 #endif
 
