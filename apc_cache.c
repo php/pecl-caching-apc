@@ -569,8 +569,11 @@ apc_cache_entry_t* apc_cache_find(apc_cache_t* cache, apc_cache_key_t key, time_
                 (*slot)->access_time = t;
                 prevent_garbage_collection((*slot)->value);
                 cache->header->num_hits++;
-                UNLOCK(cache);
-                return (*slot)->value;
+                if(1) {
+                    apc_cache_entry_t* value = (*slot)->value;
+                    UNLOCK(cache);
+                    return value;
+                }
             }
         } else {  /* APC_CACHE_KEY_FPFILE */
             if(!memcmp((*slot)->key.data.fpfile.fullpath, key.data.fpfile.fullpath, key.data.fpfile.fullpath_len+1)) {
@@ -580,8 +583,11 @@ apc_cache_entry_t* apc_cache_find(apc_cache_t* cache, apc_cache_key_t key, time_
                 (*slot)->access_time = t;
                 prevent_garbage_collection((*slot)->value);
                 cache->header->num_hits++;
-                UNLOCK(cache);
-                return (*slot)->value;
+                if(1) {
+                    apc_cache_entry_t* value = (*slot)->value;
+                    UNLOCK(cache);
+                    return value;
+                }
             }
         }
       }
@@ -616,8 +622,11 @@ apc_cache_entry_t* apc_cache_user_find(apc_cache_t* cache, char *strkey, int key
             (*slot)->access_time = t;
 
             cache->header->num_hits++;
-            UNLOCK(cache);
-            return (*slot)->value;
+            if(1) {
+                apc_cache_entry_t * value = (*slot)->value;
+                UNLOCK(cache);
+                return value;
+            }
         }
         slot = &(*slot)->next;
     }
