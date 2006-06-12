@@ -106,23 +106,15 @@ static unsigned int string_nhash_8(const char *s, size_t len)
 {
     register const unsigned int *iv = (const unsigned int *)s;
     register unsigned int h = 0;
-    register unsigned int n;
+    register const unsigned int *e  = (const unsigned int *)(s + len - (len % sizeof(unsigned int)));
 
-    if(len > 3) {
-        if(len & 3) {
-            h = *(unsigned int *)(s + len - 4);
-        }
-        len /= 4;
-        for (n = 0; n < len; n++) {
-            h+= iv[n];
-            h = (h << 7) | (h >> (32 - 7));
-        }
-    } else {
-        if (len > 1) {
-            h += s[1];
-            if (len == 3) h += s[2];
-        }
-        h += s[0];
+    for(;iv<e;iv++) {
+        h += *iv;
+        h = (h << 7) | (h >> ((8*sizeof(unsigned int)) - 7));
+    }
+    s = (const char *)iv;
+    for(len %= sizeof(unsigned int);len;len--) {
+        h += *(s++);
     }
     h ^= (h >> 13);
     h ^= (h >> 7);
