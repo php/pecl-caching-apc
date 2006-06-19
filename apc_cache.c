@@ -1054,8 +1054,7 @@ zend_bool apc_cache_busy(apc_cache_t* cache)
 /* {{{ apc_cache_write_lock */
 zend_bool apc_cache_write_lock(apc_cache_t* cache)
 {
-    if(apc_lck_nb_lock(cache->wrlock)==0) return 1;
-    else return 0;
+    return apc_lck_nb_lock(cache->wrlock);
 }
 /* }}} */
 

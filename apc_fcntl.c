@@ -95,7 +95,7 @@ void apc_fcntl_rdlock(int fd)
 zend_bool apc_fcntl_nonblocking_lock(int fd)
 {
     if(lock_reg(fd, F_SETLK, F_WRLCK, 0, SEEK_SET, 0) < 0) {
-        if(errno==EACCES) return 0;
+        if(errno==EACCES||errno==EAGAIN) return 0;
         else apc_eprint("apc_fcntl_lock failed:");
     }
     return 1;

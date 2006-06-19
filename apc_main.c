@@ -33,6 +33,7 @@
 #include "apc_php.h"
 #include "apc_main.h"
 #include "apc.h"
+#include "apc_lock.h"
 #include "apc_cache.h"
 #include "apc_compile.h"
 #include "apc_globals.h"
