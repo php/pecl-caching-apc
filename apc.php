@@ -82,7 +82,8 @@ $vardom=array(
 	'SCOPE'	=> '/^[AD]$/',			// list view scope
 	'SORT1'	=> '/^[AHSMCDTZ]$/',	// first sort key
 	'SORT2'	=> '/^[DA]$/',			// second sort key
-	'AGGR'	=> '/^\d+$/'			// aggregation by dir level
+	'AGGR'	=> '/^\d+$/',			// aggregation by dir level
+	'SEARCH'	=> '/^.*$/'			// aggregation by dir level
 );
 
 // default cache mode
@@ -990,6 +991,7 @@ EOB;
 		'<option value=500',$MYREQUEST['COUNT']=='500'? ' selected':'','>Top 500</option>',
 		'<option value=0  ',$MYREQUEST['COUNT']=='0'  ? ' selected':'','>All</option>',
 		'</select>',
+    '&nbsp; Search: <input name=SEARCH value="',$MYREQUEST['SEARCH'],'" type=text size=25/>',
 		'&nbsp;<input type=submit value="GO!">',
 		'</form></div>',
 
@@ -1042,27 +1044,29 @@ EOB;
 		// output list
 		$i=0;
 		foreach($list as $k => $entry) {
-			echo
-				'<tr class=tr-',$i%2,'>',
-				"<td class=td-0><a href=\"$MY_SELF&OB=",$MYREQUEST['OB'],"&SH=",md5($entry[$fieldkey]),"\">",$entry[$fieldname],'</a></td>',
-				'<td class="td-n center">',$entry['num_hits'],'</td>',
-				'<td class="td-n right">',$entry['mem_size'],'</td>',
-				'<td class="td-n center">',date(DATE_FORMAT,$entry['access_time']),'</td>',
-				'<td class="td-n center">',date(DATE_FORMAT,$entry['mtime']),'</td>',
-				'<td class="td-n center">',date(DATE_FORMAT,$entry['creation_time']),'</td>';
+      if(!$MYREQUEST['SEARCH'] || preg_match('/'.$MYREQUEST['SEARCH'].'/i', $entry[$fieldname]) != 0) {  
+        echo
+          '<tr class=tr-',$i%2,'>',
+          "<td class=td-0><a href=\"$MY_SELF&OB=",$MYREQUEST['OB'],"&SH=",md5($entry[$fieldkey]),"\">",$entry[$fieldname],'</a></td>',
+          '<td class="td-n center">',$entry['num_hits'],'</td>',
+          '<td class="td-n right">',$entry['mem_size'],'</td>',
+          '<td class="td-n center">',date(DATE_FORMAT,$entry['access_time']),'</td>',
+          '<td class="td-n center">',date(DATE_FORMAT,$entry['mtime']),'</td>',
+          '<td class="td-n center">',date(DATE_FORMAT,$entry['creation_time']),'</td>';
 
-			if($fieldname=='info') {
-				if($entry['ttl'])
-					echo '<td class="td-n center">'.$entry['ttl'].' seconds</td>';
-				else
-					echo '<td class="td-n center">None</td>';
-			}
-			echo
-				'<td class="td-last center">',$entry['deletion_time'] ? date(DATE_FORMAT,$entry['deletion_time']) : '-','</td>',
-				'</tr>';
-			$i++;
-			if ($i == $MYREQUEST['COUNT'])
-				break;
+        if($fieldname=='info') {
+          if($entry['ttl'])
+            echo '<td class="td-n center">'.$entry['ttl'].' seconds</td>';
+          else
+            echo '<td class="td-n center">None</td>';
+        }
+        echo
+          '<td class="td-last center">',$entry['deletion_time'] ? date(DATE_FORMAT,$entry['deletion_time']) : '-','</td>',
+          '</tr>';
+        $i++;
+        if ($i == $MYREQUEST['COUNT'])
+          break;
+      }
 		}
 		
 	} else {
