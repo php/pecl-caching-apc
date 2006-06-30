@@ -286,8 +286,10 @@ int apc_win32_stat(const char *path, struct stat *buf TSRMLS_DC)
 
 int apc_stat_paths(const char* filename, const char* path, struct stat* buf)
 {
-    char filepath[1024];
+    char filepath[MAXPATHLEN];
     char** paths;
+    char *exec_fname;
+    int exec_fname_length;
     int found = 0;
     int i;
 
@@ -303,13 +305,31 @@ int apc_stat_paths(const char* filename, const char* path, struct stat* buf)
 
     /* for each directory in paths, look for filename inside */
     for (i = 0; paths[i]; i++) {
-        snprintf(filepath, sizeof(filepath), "%s/%s", paths[i], filename);
+        snprintf(filepath, sizeof(filepath), "%s%c%s", paths[i], DEFAULT_SLASH, filename);
         if (apc_stat(filepath, buf) == 0) {
             found = 1;
             break;
         }
     }
 
+    /* check in path of the calling scripts' current working directory */
+    /* modified from main/streams/plain_wrapper.c */
+    if(!found && zend_is_executing(TSRMLS_C)) {
+        exec_fname = zend_get_executed_filename(TSRMLS_C);
+        exec_fname_length = strlen(exec_fname);
+        while((--exec_fname_length >= 0) && !IS_SLASH(exec_fname[exec_fname_length]));
+        if((exec_fname && exec_fname[0] != '[') && exec_fname_length > 0) {
+            /* not: [no active file] or no path */
+            memcpy(filepath, exec_fname, exec_fname_length);
+            filepath[exec_fname_length] = DEFAULT_SLASH;
+            strcpy(filepath +exec_fname_length +1, filename);
+            php_error(E_WARNING, "filename: %s, exec_fname: %s, filepath: %s", filename, exec_fname, filepath);
+            if (apc_stat(filepath, buf) == 0) {
+                found = 1;
+            }
+        }
+    }
+    
     /* free the value returned by apc_tokenize */
     for (i = 0; paths[i]; i++) {
         apc_efree(paths[i]);
