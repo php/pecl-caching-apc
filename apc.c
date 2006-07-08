@@ -292,6 +292,7 @@ int apc_stat_paths(const char* filename, const char* path, struct stat* buf)
     int exec_fname_length;
     int found = 0;
     int i;
+    TSRMLS_FETCH();
 
     assert(filename && buf);
 
