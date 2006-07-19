@@ -2,12 +2,12 @@
   +----------------------------------------------------------------------+
   | APC                                                                  |
   +----------------------------------------------------------------------+
-  | Copyright (c) 2005 The PHP Group                                     |
+  | Copyright (c) 2006 The PHP Group                                     |
   +----------------------------------------------------------------------+
-  | This source file is subject to version 3.0 of the PHP license,       |
+  | This source file is subject to version 3.01 of the PHP license,      |
   | that is bundled with this package in the file LICENSE, and is        |
   | available through the world-wide-web at the following url:           |
-  | http://www.php.net/license/3_0.txt.                                  |
+  | http://www.php.net/license/3_01.txt                                  |
   | If you did not receive a copy of the PHP license and are unable to   |
   | obtain it through the world-wide-web, please send a note to          |
   | license@php.net so we can mail you a copy immediately.               |
@@ -59,16 +59,33 @@ typedef struct header_t header_t;
 struct header_t {
     size_t segsize;    /* size of entire segment */
     size_t avail;      /* bytes available (not necessarily contiguous) */
-    size_t nfoffset;   /* start next fit search from this offset */
+    size_t nfoffset;   /* start next fit search from this offset       */
+    size_t padding;    /* Unused - just padding up to an even boundary */
 #if ALLOC_DISTRIBUTION
     size_t adist[30];
 #endif
 };
 
+
+/* do not enable for threaded http servers */
+/* #define __APC_SMA_DEBUG__ 1 */
+
+#ifdef __APC_SMA_DEBUG__
+/* global counter for identifying blocks 
+ * Technically it is possible to do the same
+ * using offsets, but double allocations of the
+ * same offset can happen. */
+static volatile size_t block_id = 0;
+#endif
+
 typedef struct block_t block_t;
 struct block_t {
     size_t size;       /* size of this block */
     size_t next;       /* offset in segment of next free block */
+#ifdef __APC_SMA_DEBUG__
+    size_t canary;     /* canary to check for memory overwrites */
+    size_t id;         /* identifier for the memory block */ 
+#endif
 };
 
 /* The macros BLOCKAT and OFFSET are used for convenience throughout this
@@ -102,7 +119,7 @@ static int sma_allocate(void* shmaddr, size_t size)
     size_t last_offset;     /* save the last search offset */
     int wrapped=0;
 
-    realsize = alignword(max(size + alignword(sizeof(int)), sizeof(block_t)));
+    realsize = alignword(size + alignword(sizeof(struct block_t)));
 
     /*
      * First, insure that the segment contains at least realsize free bytes,
@@ -175,7 +192,13 @@ static int sma_allocate(void* shmaddr, size_t size)
     }
     header->nfoffset = last_offset;
 
-    return OFFSET(cur) + alignword(sizeof(int));
+#ifdef __APC_SMA_DEBUG__
+    cur->id = ++block_id;
+    cur->canary = 0x42424242;
+    fprintf(stderr, "allocate(realsize=%d,size=%d,id=%d)\n", (int)(size), (int)(cur->size), cur->id);
+#endif
+
+    return OFFSET(cur) + alignword(sizeof(struct block_t));
 }
 /* }}} */
 
@@ -188,7 +211,7 @@ static int sma_deallocate(void* shmaddr, int offset)
     block_t* nxt;       /* the block after cur */
     size_t size;           /* size of deallocated block */
 
-    offset -= alignword(sizeof(size_t));
+    offset -= alignword(sizeof(struct block_t));
     assert(offset >= 0);
 
     /* find position of new block in free list */
@@ -201,6 +224,11 @@ static int sma_deallocate(void* shmaddr, int offset)
     cur = BLOCKAT(offset);
     cur->next = prv->next;
     prv->next = offset;
+
+#ifdef __APC_SMA_DEBUG__
+    fprintf(stderr, "free(size=%d,id=%d)\n", (int)(cur->size), cur->id);
+    assert(cur->canary == 0x42424242);
+#endif
     
     /* update the block header */
     header = (header_t*) shmaddr;
@@ -268,6 +296,7 @@ void apc_sma_init(int numseg, int segsize, char *mmap_file_mask)
 #if APC_MMAP
         sma_segments[i] = sma_segsize;
         sma_shmaddrs[i] = apc_mmap(mmap_file_mask, sma_segsize);
+        if(sma_numseg != 1) memcpy(&mmap_file_mask[strlen(mmap_file_mask)-6], "XXXXXX", 6);
 #else
         sma_segments[i] = apc_shm_create(NULL, i, sma_segsize);
         sma_shmaddrs[i] = apc_shm_attach(sma_segments[i]);

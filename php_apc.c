@@ -4,10 +4,10 @@
   +----------------------------------------------------------------------+
   | Copyright (c) 2006 The PHP Group                                     |
   +----------------------------------------------------------------------+
-  | This source file is subject to version 3.0 of the PHP license,       |
+  | This source file is subject to version 3.01 of the PHP license,      |
   | that is bundled with this package in the file LICENSE, and is        |
   | available through the world-wide-web at the following url:           |
-  | http://www.php.net/license/3_0.txt.                                  |
+  | http://www.php.net/license/3_01.txt                                  |
   | If you did not receive a copy of the PHP license and are unable to   |
   | obtain it through the world-wide-web, please send a note to          |
   | license@php.net so we can mail you a copy immediately.               |
@@ -33,6 +33,7 @@
 #include "apc_cache.h"
 #include "apc_main.h"
 #include "apc_sma.h"
+#include "apc_lock.h"
 #include "php_globals.h"
 #include "php_ini.h"
 #include "zend_extensions.h"
@@ -82,13 +83,14 @@ static void php_apc_init_globals(zend_apc_globals* apc_globals TSRMLS_DC)
 /*    zend_hash_init(&(apc_globals->delayed_inheritance_hash), 0, NULL, (void (*)(void *)) php_apc_hash_entry_destructor, 1); */
     zend_hash_init(&(apc_globals->delayed_inheritance_hash), 0, NULL, NULL, 1);
     apc_globals->fpstat = 1;
+    apc_globals->write_lock = 0;
 }
 
 static void php_apc_shutdown_globals(zend_apc_globals* apc_globals TSRMLS_DC)
 {
     /* deallocate the ignore patterns */
     if (apc_globals->filters != NULL) {
-		int i;
+        int i;
         for (i=0; apc_globals->filters[i] != NULL; i++) {
             apc_efree(apc_globals->filters[i]);
         }
@@ -156,11 +158,12 @@ STD_PHP_INI_ENTRY("apc.mmap_file_mask",  NULL,  PHP_INI_SYSTEM, OnUpdateString, 
 #endif
     PHP_INI_ENTRY("apc.filters",        NULL,     PHP_INI_SYSTEM, OnUpdate_filters)
 STD_PHP_INI_BOOLEAN("apc.cache_by_default", "1",  PHP_INI_SYSTEM, OnUpdateBool,         cache_by_default, zend_apc_globals, apc_globals)
-STD_PHP_INI_BOOLEAN("apc.slam_defense", "0",      PHP_INI_SYSTEM, OnUpdateInt,          slam_defense,     zend_apc_globals, apc_globals)
+STD_PHP_INI_ENTRY("apc.slam_defense", "0",      PHP_INI_SYSTEM, OnUpdateInt,            slam_defense,     zend_apc_globals, apc_globals)
 STD_PHP_INI_ENTRY("apc.file_update_protection", "2", PHP_INI_SYSTEM, OnUpdateInt,file_update_protection,  zend_apc_globals, apc_globals)
 STD_PHP_INI_BOOLEAN("apc.enable_cli", "0",      PHP_INI_SYSTEM, OnUpdateBool,           enable_cli,       zend_apc_globals, apc_globals)
 STD_PHP_INI_ENTRY("apc.max_file_size", "1M",    PHP_INI_SYSTEM, OnUpdateInt,            max_file_size,    zend_apc_globals, apc_globals)
 STD_PHP_INI_BOOLEAN("apc.stat", "1",            PHP_INI_SYSTEM, OnUpdateBool,           fpstat,           zend_apc_globals, apc_globals)
+STD_PHP_INI_BOOLEAN("apc.write_lock", "1",      PHP_INI_SYSTEM, OnUpdateBool,           write_lock,       zend_apc_globals, apc_globals)
 PHP_INI_END()
 
 /* }}} */
@@ -168,19 +171,19 @@ PHP_INI_END()
 /* {{{ PHP_MINFO_FUNCTION(apc) */
 static PHP_MINFO_FUNCTION(apc)
 {
-	php_info_print_table_start();
-	php_info_print_table_row(2, "APC Support", APCG(enabled) ? "enabled" : "disabled");
-	php_info_print_table_row(2, "Version", APC_VERSION);
+    php_info_print_table_start();
+    php_info_print_table_row(2, "APC Support", APCG(enabled) ? "enabled" : "disabled");
+    php_info_print_table_row(2, "Version", APC_VERSION);
 #if APC_MMAP
-	php_info_print_table_row(2, "MMAP Support", "Enabled");
-	php_info_print_table_row(2, "MMAP File Mask", APCG(mmap_file_mask));
+    php_info_print_table_row(2, "MMAP Support", "Enabled");
+    php_info_print_table_row(2, "MMAP File Mask", APCG(mmap_file_mask));
 #else
-	php_info_print_table_row(2, "MMAP Support", "Disabled");
+    php_info_print_table_row(2, "MMAP Support", "Disabled");
 #endif
-	php_info_print_table_row(2, "Revision", "$Revision$");
-	php_info_print_table_row(2, "Build Date", __DATE__ " " __TIME__);
-	php_info_print_table_end();
-	DISPLAY_INI_ENTRIES();
+    php_info_print_table_row(2, "Revision", "$Revision$");
+    php_info_print_table_row(2, "Build Date", __DATE__ " " __TIME__);
+    php_info_print_table_end();
+    DISPLAY_INI_ENTRIES();
 }
 /* }}} */
 
@@ -198,6 +201,7 @@ static PHP_MINIT_FUNCTION(apc)
 
     if (APCG(enabled)) {
         apc_module_init(module_number TSRMLS_CC);
+        apc_zend_init();
     }
 
     return SUCCESS;
@@ -208,6 +212,7 @@ static PHP_MINIT_FUNCTION(apc)
 static PHP_MSHUTDOWN_FUNCTION(apc)
 {
     if(APCG(enabled)) {
+        apc_zend_shutdown();
         apc_module_shutdown(TSRMLS_C);
 #ifndef ZTS
         php_apc_shutdown_globals(&apc_globals);
@@ -238,7 +243,7 @@ static PHP_RSHUTDOWN_FUNCTION(apc)
 }
 /* }}} */
 
-/* {{{ proto array apc_cache_info() */
+/* {{{ proto array apc_cache_info([string type] [, bool limited]) */
 PHP_FUNCTION(apc_cache_info)
 {
     apc_cache_info_t* info;
@@ -246,18 +251,19 @@ PHP_FUNCTION(apc_cache_info)
     zval* list;
     char *cache_type;
     int ct_len;
+    zend_bool limited=0;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|s", &cache_type, &ct_len) == FAILURE) {
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|sb", &cache_type, &ct_len, &limited) == FAILURE) {
         return;
     }
 
     if(ZEND_NUM_ARGS()) {
         if(!strcasecmp(cache_type,"user")) {
-            info = apc_cache_info(apc_user_cache);
+            info = apc_cache_info(apc_user_cache, limited);
         } else {
-            info = apc_cache_info(apc_cache);
+            info = apc_cache_info(apc_cache, limited);
         }
-    } else info = apc_cache_info(apc_cache);
+    } else info = apc_cache_info(apc_cache, limited);
 
     if(!info) {
         php_error_docref(NULL TSRMLS_CC, E_WARNING, "No APC info available.  Perhaps APC is not enabled? Check apc.enabled in your ini file");
@@ -271,7 +277,9 @@ PHP_FUNCTION(apc_cache_info)
     add_assoc_long(return_value, "num_misses", info->num_misses);
     add_assoc_long(return_value, "start_time", info->start_time);
     add_assoc_long(return_value, "expunges", info->expunges);
-
+    add_assoc_long(return_value, "mem_size", info->mem_size);
+    add_assoc_long(return_value, "num_entries", info->num_entries);
+    
     ALLOC_INIT_ZVAL(list);
     array_init(list);
 
@@ -317,7 +325,8 @@ PHP_FUNCTION(apc_cache_info)
             add_assoc_long(link, "inode", p->data.file.inode);
             add_assoc_string(link, "type", "file", 1);
         } else if(p->type == APC_CACHE_ENTRY_USER) {
-            add_assoc_string(link, "filename", p->data.user.info, 1);
+            add_assoc_string(link, "info", p->data.user.info, 1);
+            add_assoc_long(link, "ttl", (long)p->data.user.ttl);
             add_assoc_string(link, "type", "user", 1);
         }
         add_assoc_long(link, "num_hits", p->num_hits);
@@ -326,6 +335,7 @@ PHP_FUNCTION(apc_cache_info)
         add_assoc_long(link, "deletion_time", p->deletion_time);
         add_assoc_long(link, "access_time", p->access_time);
         add_assoc_long(link, "ref_count", p->ref_count);
+        add_assoc_long(link, "mem_size", p->mem_size);
         add_next_index_zval(list, link);
     }
     add_assoc_zval(return_value, "deleted_list", list);
@@ -434,11 +444,14 @@ static int _apc_store(char *strkey, int strkey_len, const zval *val, const unsig
 
     if(!APCG(enabled)) return 0;
 
+    HANDLE_BLOCK_INTERRUPTIONS();
+
     APCG(mem_size_ptr) = &mem_size;
     if (!(entry = apc_cache_make_user_entry(strkey, strkey_len + 1, val, ttl))) {
         APCG(mem_size_ptr) = NULL;
         apc_cache_expunge(apc_cache,t);
         apc_cache_expunge(apc_user_cache,t);
+        HANDLE_UNBLOCK_INTERRUPTIONS();
         return 0;
     }
 
@@ -447,6 +460,7 @@ static int _apc_store(char *strkey, int strkey_len, const zval *val, const unsig
         apc_cache_free_entry(entry);
         apc_cache_expunge(apc_cache,t);
         apc_cache_expunge(apc_user_cache,t);
+        HANDLE_UNBLOCK_INTERRUPTIONS();
         return 0;
     }
 
@@ -456,11 +470,13 @@ static int _apc_store(char *strkey, int strkey_len, const zval *val, const unsig
         apc_cache_free_entry(entry);
         apc_cache_expunge(apc_cache,t);
         apc_cache_expunge(apc_user_cache,t);
+        HANDLE_UNBLOCK_INTERRUPTIONS();
         return 0;
     }
 
     APCG(mem_size_ptr) = NULL;
 
+    HANDLE_UNBLOCK_INTERRUPTIONS();
 
     return 1;
 }
@@ -553,7 +569,7 @@ PHP_FUNCTION(apc_delete) {
 /* {{{ _apc_define_constants */
 static void _apc_define_constants(zval *constants, zend_bool case_sensitive TSRMLS_DC) {
     char *const_key;
-    int const_key_len;
+    unsigned int const_key_len;
     zval **entry;
     HashPosition pos;
 
@@ -608,7 +624,6 @@ PHP_FUNCTION(apc_define_constants) {
     if(!strkey_len) RETURN_FALSE;
 
     _apc_define_constants(constants, case_sensitive TSRMLS_CC);
-
     if(_apc_store(strkey, strkey_len, constants, 0 TSRMLS_CC)) RETURN_TRUE;
     RETURN_FALSE;
 } /* }}} */
@@ -623,7 +638,6 @@ PHP_FUNCTION(apc_load_constants) {
     zend_bool case_sensitive = 1;
 
     if(!APCG(enabled)) RETURN_FALSE;
-
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|b", &strkey, &strkey_len, &case_sensitive) == FAILURE) {
         return;
     }
@@ -640,7 +654,7 @@ PHP_FUNCTION(apc_load_constants) {
     t = sapi_get_request_time(TSRMLS_C);
 #endif
 
-    entry = apc_cache_user_find(apc_user_cache, strkey, strkey_len, t);
+    entry = apc_cache_user_find(apc_user_cache, strkey, strkey_len + 1, t);
 
     if(entry) {
         _apc_define_constants(entry->data.user.val, case_sensitive TSRMLS_CC);

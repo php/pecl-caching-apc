@@ -1,5 +1,5 @@
 --TEST--
-APC: apc_store/fecth with objects
+APC: apc_store/fetch with objects
 --SKIPIF--
 <?php require_once(dirname(__FILE__) . '/skipif.inc'); ?>
 --INI--

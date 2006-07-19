@@ -2,12 +2,12 @@
   +----------------------------------------------------------------------+
   | APC                                                                  |
   +----------------------------------------------------------------------+
-  | Copyright (c) 2005 The PHP Group                                     |
+  | Copyright (c) 2006 The PHP Group                                     |
   +----------------------------------------------------------------------+
-  | This source file is subject to version 3.0 of the PHP license,       |
+  | This source file is subject to version 3.01 of the PHP license,      |
   | that is bundled with this package in the file LICENSE, and is        |
   | available through the world-wide-web at the following url:           |
-  | http://www.php.net/license/3_0.txt.                                  |
+  | http://www.php.net/license/3_01.txt                                  |
   | If you did not receive a copy of the PHP license and are unable to   |
   | obtain it through the world-wide-web, please send a note to          |
   | license@php.net so we can mail you a copy immediately.               |
@@ -89,7 +89,7 @@ extern void apc_free_zval(zval* src, apc_free_t deallocate);
  * structures.
  */
 
-extern zend_op_array* apc_copy_op_array_for_execution(zend_op_array* src TSRMLS_DC);
+extern zend_op_array* apc_copy_op_array_for_execution(zend_op_array* dst, zend_op_array* src TSRMLS_DC);
 extern zend_function* apc_copy_function_for_execution(zend_function* src);
 extern zend_class_entry* apc_copy_class_entry_for_execution(zend_class_entry* src, int is_derived);
 

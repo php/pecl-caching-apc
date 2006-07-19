@@ -1,9 +1,80 @@
-3.0:
-- PHP 5.1 support [arunc,gopalv,rasmus 2005-06-23]
-- Major Inheritance bug fix [arunc,gopalv 2005-06-23]
+3.0.10: 2006-03-11
+- Add apc.stat ini flag which defaults to 1.  If set to 0, the main script and any fullpath
+  includes will not be stat'ed for any changes.  You will have to restart the server if you
+  change anything.  This mode increases performance quite a bit, especially if you have a
+  lot of includes.
 
-2.0:
-- ground-up rewrite sharing none of the original source code [djc 2003-02-10]
+- Get rid of the lock safety net hack I added in 3.0.9.  It seems to cause more problems
+  than it solves.  I'll need to revisit locking and signal handling at some point soon.
+
+3.0.9: 2006-03-04
+- Eliminate rand() call when slam_defense is not set (Rasmus)
+- Fix for __isset problem (Gopal)
+- Rewrite allocator from a "best fit" to a "next fit" algorithm (Rasmus)
+- Added a Cache Full counter so we have an idea how many times the segment has filled up causing an expunge (Rasmus)
+- Report back the correct number of available bytes in the segment instead of the allocated bytes. (Rasmus)
+- Add cache busy flag which is set when an expunge is underway (Rasmus)
+- Add automatic serialization of objects in apc_store() (Marcus)
+- 64-bit .ini flag fix (Rasmus)
+- Static members fix (Gopal)
+- sma_cleanup() mem leak fix (Rasmus)
+- Fix for http://pecl.php.net/bugs/5311 (Rasmus)
+- Fix autoglobals JIT bug (Gopal)
+- Fix instance bug (Gopal)
+- Add a lock cleanup safety net to request shutdown (Rasmus)
+- Fix apc.slam_defense edge-case bug (Rasmus)
+- User entry memory usage tracking support (Ilia)
+- Allow keys used in apc_store/apc_fetch/apc_delete to be binary safe and prevent conflicts between keys that are found at the start of other keys. (Ilia)
+
+3.0.8: 2005-08-24
+Fix invalid free in globals destructor introduced in 3.0.7 (Rasmus)
+Cache corruption fix in cache-full cleanup code (Gopal)
+
+3.0.7: 2005-08-16
+- Fix to apc.php to show final segment in frag chart. (Ilia)
+- A couple of win32 fixes. (Frank)
+- Add apc.enable_cli ini directive. (Rasmus)
+- Add test cases. (Marcus)
+- Fix apc_define_constants() bug - http://pecl.php.net/bugs/5084 (Rasmus)
+- Simplify user cache handling by removing the user_cache_stack (Rasmus)
+- Fix apc_fetch() memory corruption (Andrei,Rasmus)
+- Added apc.max_file_size INI setting that allows exclusion of large files from being cached. Default file size limit, 1 megabyte. (Ilia)
+
+3.0.6: 2005-07-30
+- Added apc.php to package.xml file.
+- Track per-entry memory usage. (Val)
+- Various apc.php fixes and enhancements. (Ralf, Ilia, Rasmus)
+- fcntl locking robustness fixes. (Rasmus)
+- Shared read-locks where possible. (Rasmus)
+- Added file_update_protection configuration parameter. (Rasmus)
+- Windows ZTS fixes (Frank)
+
+3.0.5: 2005-07-27
+- Make it easier for sapis that only populate file_handle->filename to use APC. (Rasmus)
+- Support extensions such as bcompiler that need to hook into compile_file. (Val)
+- Ralf Becker's apcgui code has now become the default apc.php status page. (Ralf, Rasmus, Ilia)
+- Segfault in cache cleanup code (Ilia, Rasmus)
+
+3.0.4: 2005-07-18
+- Add win32 support (Edin )
+- Add --with-apxs switch to work around problem when loading APC into Apache binary compiled with LFS switches (Rasmus)
+- A couple of other minor fixes
+
+3.0.3: 2005-07-05
+- Fix compile problem against PHP 5.0.x
+
+3.0.2: 2005-07-05
+- Better shm error message
+
+3.0.1: 2005-07-05
+- PHP4 build fix
+
+3.0: 2005-06-23
+- PHP 5.1 support (Arun, Gopal, Rasmus)
+- Major Inheritance bug fix (Arun, Gopal)
+
+2.0: 2003-02-10
+- ground-up rewrite sharing none of the original source code (djc)
 
 1.0.10:
 - merge mmap / shm code to be in one file, module supports both modes now [mpb 2001-05-15]

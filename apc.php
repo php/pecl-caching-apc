@@ -3,12 +3,12 @@
   +----------------------------------------------------------------------+
   | APC                                                                  |
   +----------------------------------------------------------------------+
-  | Copyright (c) 2005 The PHP Group                                     |
+  | Copyright (c) 2006 The PHP Group                                     |
   +----------------------------------------------------------------------+
-  | This source file is subject to version 3.0 of the PHP license,       |
+  | This source file is subject to version 3.01 of the PHP license,      |
   | that is bundled with this package in the file LICENSE, and is        |
   | available through the world-wide-web at the following url:           |
-  | http://www.php.net/license/3_0.txt.                                  |
+  | http://www.php.net/license/3_01.txt                                  |
   | If you did not receive a copy of the PHP license and are unable to   |
   | obtain it through the world-wide-web, please send a note to          |
   | license@php.net so we can mail you a copy immediately.               |
@@ -30,10 +30,10 @@ if (file_exists("apc.conf.php")) include("apc.conf.php");
 
 ////////// BEGIN OF DEFAULT CONFIG AREA ///////////////////////////////////////////////////////////
 
-defaults('USE_AUTHENTIFICATION',1);			// Use (internal) authentification - best choice if 
-											// no other authentification is available
+defaults('USE_AUTHENTICATION',1);			// Use (internal) authentication - best choice if 
+											// no other authentication is available
 											// If set to 0:
-											//  There will be no further authentification. You 
+											//  There will be no further authentication. You 
 											//  will have to handle this by yourself!
 											// If set to 1:
 											//  You need to change ADMIN_PASSWORD to make
@@ -82,7 +82,8 @@ $vardom=array(
 	'SCOPE'	=> '/^[AD]$/',			// list view scope
 	'SORT1'	=> '/^[AHSMCDTZ]$/',	// first sort key
 	'SORT2'	=> '/^[DA]$/',			// second sort key
-	'AGGR'	=> '/^\d+$/'			// aggregation by dir level
+	'AGGR'	=> '/^\d+$/',			// aggregation by dir level
+	'SEARCH'	=> '/^.*$/'			// aggregation by dir level
 );
 
 // default cache mode
@@ -139,7 +140,7 @@ $MY_SELF_WO_SORT=
 
 // authentication needed?
 //
-if (!USE_AUTHENTIFICATION) {
+if (!USE_AUTHENTICATION) {
 	$AUTHENTICATED=1;
 } else {
 	$AUTHENTICATED=0;
@@ -181,6 +182,7 @@ if(!$cache=@apc_cache_info($cache_mode)) {
 	echo "No cache info available.  APC does not appear to be running.";
 	exit;
 } 
+$cache_user = apc_cache_info('user', 1);  
 $mem=apc_sma_info();
 if(!$cache['num_hits']) { $cache['num_hits']=1; $time++; }  // Avoid division by 0 errors on a cache clear
 
@@ -460,10 +462,10 @@ function menu_entry($ob,$title) {
 
 function put_login_link($s="Login")
 {
-	global $MY_SELF,$MYREQUEST,$AUTHENTICATED,$PHP_AUTH_USER;
-	// need's ADMIN_PASSWORD to be changed!
+	global $MY_SELF,$MYREQUEST,$AUTHENTICATED;
+	// needs ADMIN_PASSWORD to be changed!
 	//
-	if (!USE_AUTHENTIFICATION) {
+	if (!USE_AUTHENTICATION) {
 		return;
 	} else if (ADMIN_PASSWORD=='password')
 	{
@@ -472,7 +474,7 @@ function put_login_link($s="Login")
 EOB;
 	} else if ($AUTHENTICATED) {
 		print <<<EOB
-			'$PHP_AUTH_USER'&nbsp;logged&nbsp;in!
+			'{$_SERVER['PHP_AUTH_USER']}'&nbsp;logged&nbsp;in!
 EOB;
 	} else{
 		print <<<EOB
@@ -527,7 +529,7 @@ h1.apc { background:rgb(153,153,204); margin:0; padding:0.5em 1em 0.5em 1em; }
 h1.apc a:hover { text-decoration:none; color:rgb(90,90,90); }
 h1.apc div.logo span.logo {
 	background:rgb(119,123,180);
-	color:black; #rgb(153,153,204);
+	color:black;
 	border-right: solid black 1px;
 	border-bottom: solid black 1px;
 	font-style:italic;
@@ -746,7 +748,10 @@ case OB_HOST_STATS:
 	$req_rate = sprintf("%.2f",($cache['num_hits']+$cache['num_misses'])/($time-$cache['start_time']));
 	$apcversion = phpversion('apc');
 	$phpversion = phpversion();
-	$number_cached = count($cache['cache_list']);
+	$number_files = $cache['num_entries']; 
+    $size_files = bsize($cache['mem_size']);
+	$number_vars = $cache_user['num_entries'];
+    $size_vars = bsize($cache_user['mem_size']);
 	$i=0;
 	echo <<< EOB
 		<div class="info div1"><h2>General Cache Information</h2>
@@ -761,13 +766,14 @@ EOB;
 		echo "<tr class=tr-1><td class=td-0>Server Software</td><td>{$_SERVER['SERVER_SOFTWARE']}</td></tr>\n";
 
 	echo <<<EOB
-		<tr class=tr-0><td class=td-0>Cached Files</td><td>$number_cached</td></tr>
-		<tr class=tr-1><td class=td-0>Hits</td><td>{$cache['num_hits']}</td></tr>
-		<tr class=tr-0><td class=td-0>Misses</td><td>{$cache['num_misses']}</td></tr>
-		<tr class=tr-1><td class=td-0>Request Rate</td><td>$req_rate cache requests/second</td></tr>
-		<tr class=tr-0><td class=td-0>Time To Live</td><td>{$cache['ttl']}</td></tr>
-		<tr class=tr-1><td class=td-0>Shared Memory</td><td>{$mem['num_seg']} Segment(s) with $seg_size</td></tr>
-		<tr class=tr-0><td class=td-0>Cache full count</td><td>{$cache['expunges']}</td></tr>
+		<tr class=tr-0><td class=td-0>Cached Files</td><td>$number_files ($size_files)</td></tr>
+		<tr class=tr-1><td class=td-0>Cached Variables</td><td>$number_vars ($size_vars)</td></tr>
+		<tr class=tr-0><td class=td-0>Hits</td><td>{$cache['num_hits']}</td></tr>
+		<tr class=tr-1><td class=td-0>Misses</td><td>{$cache['num_misses']}</td></tr>
+		<tr class=tr-0><td class=td-0>Request Rate</td><td>$req_rate cache requests/second</td></tr>
+		<tr class=tr-1><td class=td-0>Time To Live</td><td>{$cache['ttl']}</td></tr>
+		<tr class=tr-0><td class=td-0>Shared Memory</td><td>{$mem['num_seg']} Segment(s) with $seg_size</td></tr>
+		<tr class=tr-1><td class=td-0>Cache full count</td><td>{$cache['expunges']}</td></tr>
 EOB;
 	echo   '<tr class=tr-1><td class=td-0>Start Time</td><td>',date(DATE_FORMAT,$cache['start_time']),'</td></tr>';
 	echo   '<tr class=tr-0><td class=td-0>Uptime</td><td>',duration($cache['start_time']),'</td></tr>';
@@ -963,7 +969,7 @@ EOB;
 		"<option value=H",$MYREQUEST['SORT1']=='H' ? " selected":"",">Hits</option>",
 		"<option value=Z",$MYREQUEST['SORT1']=='Z' ? " selected":"",">Size</option>",
 		"<option value=S",$MYREQUEST['SORT1']=='S' ? " selected":"",">$fieldheading</option>",
-		"<option value=M",$MYREQUEST['SORT1']=='A' ? " selected":"",">Last accessed</option>",
+		"<option value=A",$MYREQUEST['SORT1']=='A' ? " selected":"",">Last accessed</option>",
 		"<option value=M",$MYREQUEST['SORT1']=='M' ? " selected":"",">Last modified</option>",
 		"<option value=C",$MYREQUEST['SORT1']=='C' ? " selected":"",">Created at</option>",
 		"<option value=D",$MYREQUEST['SORT1']=='D' ? " selected":"",">Deleted at</option>";
@@ -985,6 +991,7 @@ EOB;
 		'<option value=500',$MYREQUEST['COUNT']=='500'? ' selected':'','>Top 500</option>',
 		'<option value=0  ',$MYREQUEST['COUNT']=='0'  ? ' selected':'','>All</option>',
 		'</select>',
+    '&nbsp; Search: <input name=SEARCH value="',$MYREQUEST['SEARCH'],'" type=text size=25/>',
 		'&nbsp;<input type=submit value="GO!">',
 		'</form></div>',
 
@@ -1037,27 +1044,29 @@ EOB;
 		// output list
 		$i=0;
 		foreach($list as $k => $entry) {
-			echo
-				'<tr class=tr-',$i%2,'>',
-				"<td class=td-0><a href=\"$MY_SELF&OB=",$MYREQUEST['OB'],"&SH=",md5($entry[$fieldkey]),"\">",$entry[$fieldname],'</a></td>',
-				'<td class="td-n center">',$entry['num_hits'],'</td>',
-				'<td class="td-n right">',$entry['mem_size'],'</td>',
-				'<td class="td-n center">',date(DATE_FORMAT,$entry['access_time']),'</td>',
-				'<td class="td-n center">',date(DATE_FORMAT,$entry['mtime']),'</td>',
-				'<td class="td-n center">',date(DATE_FORMAT,$entry['creation_time']),'</td>';
+      if(!$MYREQUEST['SEARCH'] || preg_match('/'.$MYREQUEST['SEARCH'].'/i', $entry[$fieldname]) != 0) {  
+        echo
+          '<tr class=tr-',$i%2,'>',
+          "<td class=td-0><a href=\"$MY_SELF&OB=",$MYREQUEST['OB'],"&SH=",md5($entry[$fieldkey]),"\">",$entry[$fieldname],'</a></td>',
+          '<td class="td-n center">',$entry['num_hits'],'</td>',
+          '<td class="td-n right">',$entry['mem_size'],'</td>',
+          '<td class="td-n center">',date(DATE_FORMAT,$entry['access_time']),'</td>',
+          '<td class="td-n center">',date(DATE_FORMAT,$entry['mtime']),'</td>',
+          '<td class="td-n center">',date(DATE_FORMAT,$entry['creation_time']),'</td>';
 
-			if($fieldname=='info') {
-				if($entry['ttl'])
-					echo '<td class="td-n center">'.$entry['ttl'].' seconds</td>';
-				else
-					echo '<td class="td-n center">None</td>';
-			}
-			echo
-				'<td class="td-last center">',$entry['deletion_time'] ? date(DATE_FORMAT,$entry['deletion_time']) : '-','</td>',
-				'</tr>';
-			$i++;
-			if ($i == $MYREQUEST['COUNT'])
-				break;
+        if($fieldname=='info') {
+          if($entry['ttl'])
+            echo '<td class="td-n center">'.$entry['ttl'].' seconds</td>';
+          else
+            echo '<td class="td-n center">None</td>';
+        }
+        echo
+          '<td class="td-last center">',$entry['deletion_time'] ? date(DATE_FORMAT,$entry['deletion_time']) : '-','</td>',
+          '</tr>';
+        $i++;
+        if ($i == $MYREQUEST['COUNT'])
+          break;
+      }
 		}
 		
 	} else {

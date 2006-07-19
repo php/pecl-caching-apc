@@ -43,12 +43,29 @@ AC_ARG_WITH(apxs,
 PHP_ARG_ENABLE(apc, whether to enable APC support,
 [  --enable-apc           Enable APC support])
 
-PHP_ARG_ENABLE(apc-mmap, whether to enable mmap support instead of IPC shm,
-[  --enable-apc-mmap        APC: Enable mmap support instead of IPC shm], no, no)
+AC_MSG_CHECKING(Checking whether we should use mmap)
+AC_ARG_ENABLE(apc-mmap,
+[  --disable-apc-mmap
+                          Disable mmap support and use IPC shm instead],
+[
+  PHP_APC_MMAP=$enableval
+  AC_MSG_RESULT($enableval)
+], [
+  PHP_APC_MMAP=yes
+  AC_MSG_RESULT(yes)
+])
 
-PHP_ARG_ENABLE(apc-sem, whether to prefer semaphore based locks,
-[  --enable-apc-sem         APC: Enable IPC semamphore based locks
-                                instead of standard locks], no, no)
+AC_MSG_CHECKING(Checking whether we should use semaphore locking instead of fcntl)
+AC_ARG_ENABLE(apc-sem,
+[  --enable-apc-sem
+                          Enable semaphore locks instead of fcntl],
+[
+  PHP_APC_SEM=$enableval
+  AC_MSG_RESULT($enableval)
+], [
+  PHP_APC_SEM=no
+  AC_MSG_RESULT(no)
+])
 
 if test "$PHP_APC" != "no"; then
   test "$PHP_APC_MMAP" != "no" && AC_DEFINE(APC_MMAP, 1, [ ])

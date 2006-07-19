@@ -2,12 +2,12 @@
   +----------------------------------------------------------------------+
   | APC                                                                  |
   +----------------------------------------------------------------------+
-  | Copyright (c) 2005 The PHP Group                                     |
+  | Copyright (c) 2006 The PHP Group                                     |
   +----------------------------------------------------------------------+
-  | This source file is subject to version 3.0 of the PHP license,       |
+  | This source file is subject to version 3.01 of the PHP license,      |
   | that is bundled with this package in the file LICENSE, and is        |
   | available through the world-wide-web at the following url:           |
-  | http://www.php.net/license/3_0.txt.                                  |
+  | http://www.php.net/license/3_01.txt.                                 |
   | If you did not receive a copy of the PHP license and are unable to   |
   | obtain it through the world-wide-web, please send a note to          |
   | license@php.net so we can mail you a copy immediately.               |
@@ -124,6 +124,7 @@ static void my_fixup_hashtable( HashTable *ht, ht_fixup_fun_t fixup, zend_class_
 #ifdef ZEND_ENGINE_2
 static int my_check_copy_function(Bucket* src, va_list args);
 static int my_check_copy_property_info(Bucket* src, va_list args);
+static int my_check_copy_default_property(Bucket* p, va_list args);
 static int my_check_copy_static_member(Bucket* src, va_list args);
 #endif
 
@@ -250,6 +251,7 @@ static zval** my_copy_zval_ptr(zval** dst, const zval** src, apc_malloc_t alloca
 
     /* deep-copying ensures that there is only one reference to this in memory */
     (*dst)->refcount = 1;
+    (*dst)->is_ref = 0;
     
     return dst;
 }
@@ -360,9 +362,13 @@ static zend_op* my_copy_zend_op(zend_op* dst, zend_op* src, apc_malloc_t allocat
     assert(src != NULL);
 
     memcpy(dst, src, sizeof(src[0]));
-    my_copy_znode(&dst->result, &src->result, allocate, deallocate);
-    my_copy_znode(&dst->op1, &src->op1, allocate, deallocate);
-    my_copy_znode(&dst->op2, &src->op2, allocate, deallocate);
+
+    if( my_copy_znode(&dst->result, &src->result, allocate, deallocate) == NULL 
+            || my_copy_znode(&dst->op1, &src->op1, allocate, deallocate) == NULL
+            || my_copy_znode(&dst->op2, &src->op2, allocate, deallocate) == NULL)
+    {
+        return NULL;
+    }
 
     return dst;
 }
@@ -647,6 +653,7 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
 #else
     dst->static_members = NULL;
     dst->doc_comment = NULL;
+    dst->filename = NULL;
     memset(&dst->properties_info, 0, sizeof(dst->properties_info));
     memset(&dst->constants_table, 0, sizeof(dst->constants_table));
     memset(&dst->default_static_members, 0, sizeof(dst->default_static_members));
@@ -716,12 +723,18 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
     my_fixup_hashtable(&dst->function_table, (ht_fixup_fun_t)my_fixup_function, src, dst);
 #endif
 
-    if(!(my_copy_hashtable(&dst->default_properties,
+    if(!(my_copy_hashtable_ex(&dst->default_properties,
                             &src->default_properties,
                             (ht_copy_fun_t) my_copy_zval_ptr,
                             (ht_free_fun_t) my_free_zval_ptr,
                             1,
-                            allocate,deallocate))) {
+                            allocate,deallocate,
+#ifdef ZEND_ENGINE_2
+                            (ht_check_copy_fun_t) my_check_copy_default_property,
+#else
+                            NULL,
+#endif
+                            src))) {
         goto cleanup;
     }
 
@@ -838,7 +851,7 @@ cleanup:
     {
         my_destroy_hashtable(dst->static_members, (ht_free_fun_t) my_free_zval_ptr, deallocate);
     }
-    if(dst->static_members != &(dst->default_static_members))
+    if(dst->static_members && dst->static_members != &(dst->default_static_members))
     {
         my_destroy_hashtable(dst->static_members, (ht_free_fun_t) my_free_zval_ptr, deallocate);
         deallocate(dst->static_members);
@@ -1101,7 +1114,7 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_mal
         local_dst_alloc = 1;
     }
     if(APCG(optimization)) {
-        apc_optimize_op_array(src);
+        apc_optimize_op_array(src TSRMLS_CC);
     }
 
     /* start with a bitwise copy of the array */
@@ -1170,7 +1183,9 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_mal
     for (i = 0; i < src->last; i++) {
         if(!(my_copy_zend_op(dst->opcodes+i, src->opcodes+i, allocate, deallocate))) {
             int ii;
-            for(ii = i-1; i>=0; ii--) my_destroy_zend_op(dst->opcodes+ii, deallocate);
+            for(ii = i-1; ii>=0; ii--) {
+                my_destroy_zend_op(dst->opcodes+ii, deallocate);
+            }
             goto  cleanup;
         }
     }
@@ -1245,7 +1260,7 @@ cleanup_opcodes:
     }
 cleanup:
     if(dst->function_name) deallocate(dst->function_name);
-    deallocate(dst->refcount);
+    if(dst->refcount) deallocate(dst->refcount);
     if(dst->filename) deallocate(dst->filename);
 #ifdef ZEND_ENGINE_2
     if(dst->arg_info) my_free_arg_info_array(dst->arg_info, dst->num_args, deallocate);
@@ -1616,6 +1631,7 @@ static void my_destroy_class_entry(zend_class_entry* src, apc_free_t deallocate)
     deallocate(src->refcount);
 #else
     if(src->doc_comment) deallocate(src->doc_comment);
+    if(src->filename) deallocate(src->filename);
 #endif
 
     my_destroy_hashtable(&src->function_table,
@@ -1859,12 +1875,16 @@ void my_fetch_global_vars(zend_op_array* src TSRMLS_DC)
     }
 }
 /* }}} */
+#endif
 
-/* {{{ my_copy_default_args */
-static int my_copy_default_args(zend_op_array* dst, zend_op_array* src)
+/* {{{ my_copy_data_exceptions */
+static int my_copy_data_exceptions(zend_op_array* dst, zend_op_array* src)
 {
+    /* check for troublesome opcodes and copy the entire 
+       opcode array if detected */
     int i;
     int needcopy = 0;
+#if 0
     if(src->num_args == src->required_num_args)
     {
         /* yay !, no default args */
@@ -1879,7 +1899,15 @@ static int my_copy_default_args(zend_op_array* dst, zend_op_array* src)
             needcopy = 1;
             break;
         }
+        if(opcode->opcode == ZEND_ASSIGN_DIM ||
+            opcode->opcode == ZEND_ASSIGN)
+        {
+            needcopy = 1;
+            break;
+        }
     }
+#endif
+    needcopy = 1;
     if(needcopy)
     {
         dst->opcodes = (zend_op*) apc_xmemcpy(src->opcodes, 
@@ -1898,25 +1926,31 @@ static int my_copy_default_args(zend_op_array* dst, zend_op_array* src)
                 }
             }
         }
-
+#ifdef ZEND_ENGINE_2
         apc_fixup_op_array_jumps(dst,src);
+#endif
     }
     return 1;
 }
 /* }}} */
-#endif
 
 /* {{{ apc_copy_op_array_for_execution */
-
-zend_op_array* apc_copy_op_array_for_execution(zend_op_array* src TSRMLS_DC)
+zend_op_array* apc_copy_op_array_for_execution(zend_op_array* dst, zend_op_array* src TSRMLS_DC)
 {
-    zend_op_array* dst = (zend_op_array*) emalloc(sizeof(src[0]));
+    if(dst == NULL) {
+        dst = (zend_op_array*) emalloc(sizeof(src[0]));
+    }
     memcpy(dst, src, sizeof(src[0]));
     dst->static_variables = my_copy_static_variables(src, apc_php_malloc, apc_php_free);
+
+    dst->refcount = apc_xmemcpy(src->refcount,
+                                      sizeof(src->refcount[0]),
+                                      apc_php_malloc);
 #ifdef ZEND_ENGINE_2
     my_fetch_global_vars(dst TSRMLS_CC);
-    my_copy_default_args(dst, src);
 #endif
+
+    my_copy_data_exceptions(dst, src);
     /*check_op_array_integrity(dst);*/
     dump(dst);
     return dst;
@@ -1928,25 +1962,16 @@ zend_function* apc_copy_function_for_execution(zend_function* src)
 {
     zend_function* dst;
     TSRMLS_FETCH();
-    
-    /* TODO: the refcount is set high, so that this isn't free'd
-       by the destroy_zend_function. There is no real way around 
-       it rather than just copying a shovelful of data in real mem.
-       Something I'd rather avoid */
+
     dst = (zend_function*) emalloc(sizeof(src[0]));
     memcpy(dst, src, sizeof(src[0]));
-    dst->op_array.static_variables = my_copy_static_variables(&dst->op_array, apc_php_malloc, apc_php_free);
-#ifdef ZEND_ENGINE_2
-    my_fetch_global_vars(&dst->op_array TSRMLS_CC);
-    my_copy_default_args(&dst->op_array, &src->op_array);
-#endif
-    /*check_op_array_integrity(&dst->op_array);*/
+    apc_copy_op_array_for_execution(&(dst->op_array), &(src->op_array) TSRMLS_CC);
     return dst;
 }
 /* }}} */
 
 /* {{{ apc_copy_function_for_execution_ex */
-zend_function* apc_copy_function_for_execution_ex(void *dummy, zend_function* src)
+zend_function* apc_copy_function_for_execution_ex(void *dummy, zend_function* src, apc_malloc_t allocate, apc_free_t deallocate)
 {
     if(src->type==ZEND_INTERNAL_FUNCTION || src->type==ZEND_OVERLOADED_FUNCTION) return src;
     return apc_copy_function_for_execution(src);
@@ -1971,6 +1996,12 @@ zend_class_entry* apc_copy_class_entry_for_execution(zend_class_entry* src, int 
                                         src->num_interfaces);
     memset(dst->interfaces, 0, sizeof(zend_class_entry*) * src->num_interfaces);
 #endif
+
+#ifndef ZEND_ENGINE_2    
+    dst->refcount = apc_xmemcpy(src->refcount,
+                                      sizeof(src->refcount[0]),
+                                      apc_php_malloc);
+#endif        
 
     /* Deep-copy the class properties, because they will be modified */
 
@@ -2034,7 +2065,7 @@ zend_class_entry* apc_copy_class_entry_for_execution(zend_class_entry* src, int 
     {
         dst->static_members = &(dst->default_static_members);
     }
-    
+
 #endif
 
     return dst;
@@ -2130,8 +2161,8 @@ static int my_check_copy_property_info(Bucket* p, va_list args)
     zend_property_info* parent_info = NULL;
 
 	if (parent &&
-        zend_hash_quick_find(&src->properties_info, p->arKey, p->nKeyLength, 
-            p->h, (void **) &parent_info)==FAILURE) {
+        zend_hash_quick_find(&parent->properties_info, p->arKey, p->nKeyLength, 
+            p->h, (void **) &parent_info)==SUCCESS) {
         if(parent_info->flags & ZEND_ACC_PRIVATE)
         {
             return 1;
@@ -2147,6 +2178,29 @@ static int my_check_copy_property_info(Bucket* p, va_list args)
     }
     
     /* property doesn't exist in parent, copy into cached child */
+    return 1;
+}
+/* }}} */
+
+/* {{{ my_check_copy_default_property */
+static int my_check_copy_default_property(Bucket* p, va_list args)
+{
+    zend_class_entry* src = va_arg(args, zend_class_entry*);
+    zend_class_entry* parent = src->parent;
+    zval ** child_prop = (zval**)p->pData;
+    zval ** parent_prop = NULL;
+
+	if (parent &&
+        zend_hash_quick_find(&parent->default_properties, p->arKey, 
+            p->nKeyLength, p->h, (void **) &parent_prop)==SUCCESS) {
+
+        if((parent_prop && child_prop) && (*parent_prop) == (*child_prop))
+        {
+            return 0;
+        }
+    }
+    
+    /* possibly not in the parent */
     return 1;
 }
 /* }}} */

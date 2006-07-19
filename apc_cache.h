@@ -2,12 +2,12 @@
   +----------------------------------------------------------------------+
   | APC                                                                  |
   +----------------------------------------------------------------------+
-  | Copyright (c) 2005 The PHP Group                                     |
+  | Copyright (c) 2006 The PHP Group                                     |
   +----------------------------------------------------------------------+
-  | This source file is subject to version 3.0 of the PHP license,       |
+  | This source file is subject to version 3.01 of the PHP license,      |
   | that is bundled with this package in the file LICENSE, and is        |
   | available through the world-wide-web at the following url:           |
-  | http://www.php.net/license/3_0.txt.                                  |
+  | http://www.php.net/license/3_01.txt.                                 |
   | If you did not receive a copy of the PHP license and are unable to   |
   | obtain it through the world-wide-web, please send a note to          |
   | license@php.net so we can mail you a copy immediately.               |
@@ -56,11 +56,11 @@ typedef union _apc_cache_key_data_t {
         ino_t inode;              /* the filesystem inode */
     } file;
     struct {
-        char *identifier;
+        const char *identifier;
         int identifier_len;
     } user;
     struct {
-        char *fullpath;
+        const char *fullpath;
         int fullpath_len;
     } fpfile;
 } apc_cache_key_data_t;
@@ -271,14 +271,18 @@ struct apc_cache_info_t {
     apc_cache_link_t* deleted_list;
     time_t start_time;
     int expunges;
+    int num_entries;
+    size_t mem_size;
 };
 /* }}} */
 
-extern apc_cache_info_t* apc_cache_info(T cache);
+extern apc_cache_info_t* apc_cache_info(T cache, zend_bool limited);
 extern void apc_cache_free_info(apc_cache_info_t* info);
 extern void apc_cache_expunge(apc_cache_t* cache, time_t t);
 extern void apc_cache_unlock(apc_cache_t* cache);
 extern zend_bool apc_cache_busy(apc_cache_t* cache);
+extern zend_bool apc_cache_write_lock(apc_cache_t* cache);
+extern void apc_cache_write_unlock(apc_cache_t* cache);
 
 #undef T
 #endif

@@ -4,10 +4,10 @@
   +----------------------------------------------------------------------+
   | Copyright (c) 2006 The PHP Group                                     |
   +----------------------------------------------------------------------+
-  | This source file is subject to version 3.0 of the PHP license,       |
+  | This source file is subject to version 3.01 of the PHP license,      |
   | that is bundled with this package in the file LICENSE, and is        |
   | available through the world-wide-web at the following url:           |
-  | http://www.php.net/license/3_0.txt.                                  |
+  | http://www.php.net/license/3_01.txt.                                 |
   | If you did not receive a copy of the PHP license and are unable to   |
   | obtain it through the world-wide-web, please send a note to          |
   | license@php.net so we can mail you a copy immediately.               |
@@ -34,7 +34,7 @@
 #ifndef APC_GLOBALS_H
 #define APC_GLOBALS_H
 
-#define APC_VERSION "3.0.9"
+#define APC_VERSION "3.0.11-dev"
 
 #include "apc_cache.h"
 #include "apc_stack.h"
@@ -61,15 +61,16 @@ ZEND_BEGIN_MODULE_GLOBALS(apc)
     apc_stack_t* cache_stack;    /* the stack of cached executable code */
     zend_bool cache_by_default;  /* true if files should be cached unless filtered out */
                                  /* false if files should only be cached if filtered in */
-    zend_bool slam_defense;      /* Probability of a process not caching an uncached file */
+    long slam_defense;           /* Probability of a process not caching an uncached file */
     size_t* mem_size_ptr;        /* size of blocks allocated to file being cached (NULL outside my_compile_file) */
     long file_update_protection; /* Age in seconds before a file is eligible to be cached - 0 to disable */
     zend_bool enable_cli;        /* Flag to override turning APC off for CLI */
     long max_file_size;	         /* Maximum size of file, in bytes that APC will be allowed to cache */
     long slam_rand;              /* A place to store the slam rand value for the request */
-    int dynamic_error;      /* Error on runtime dynamic inheritance */
-    HashTable delayed_inheritance_hash;
     zend_bool fpstat;            /* true if fullpath includes should be stat'ed */
+    int dynamic_error;           /* Error on runtime dynamic inheritance */
+    HashTable delayed_inheritance_hash; 
+    zend_bool write_lock;        /* true for a global write lock */
 ZEND_END_MODULE_GLOBALS(apc)
 
 /* (the following declaration is defined in php_apc.c) */

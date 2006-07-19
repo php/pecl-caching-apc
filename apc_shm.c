@@ -2,12 +2,12 @@
   +----------------------------------------------------------------------+
   | APC                                                                  |
   +----------------------------------------------------------------------+
-  | Copyright (c) 2005 The PHP Group                                     |
+  | Copyright (c) 2006 The PHP Group                                     |
   +----------------------------------------------------------------------+
-  | This source file is subject to version 3.0 of the PHP license,       |
+  | This source file is subject to version 3.01 of the PHP license,      |
   | that is bundled with this package in the file LICENSE, and is        |
   | available through the world-wide-web at the following url:           |
-  | http://www.php.net/license/3_0.txt.                                  |
+  | http://www.php.net/license/3_01.txt                                  |
   | If you did not receive a copy of the PHP license and are unable to   |
   | obtain it through the world-wide-web, please send a note to          |
   | license@php.net so we can mail you a copy immediately.               |
@@ -66,7 +66,7 @@ int apc_shm_create(const char* pathname, int proj, int size)
 
     oflag = IPC_CREAT | SHM_R | SHM_A;
     if ((shmid = shmget(key, size, oflag)) < 0) {
-        apc_eprint("apc_shm_create: shmget(%d, %d,%d) failed: %s. It is possible that the chosen SHM segment size is higher than the operation system allows. Linux has usually a default limit of 32MB per segment.", key, size, oflag, strerror(errno));
+        apc_eprint("apc_shm_create: shmget(%d, %d, %d) failed: %s. It is possible that the chosen SHM segment size is higher than the operation system allows. Linux has usually a default limit of 32MB per segment.", key, size, oflag, strerror(errno));
     }
 
     return shmid;

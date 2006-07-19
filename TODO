@@ -17,8 +17,7 @@ Known Bugs
      }
 
      in the apc_store() function in php_apc.c but I am wondering if it needs to do more
-     than that.  And apc_store() currently doesn't work at all for classes in PHP5 right
-     now.
+     than that.
 
 Enhancements
 
@@ -29,4 +28,3 @@ Enhancements
 
 3.   Assert() elimination in the optimizer when some debug flag somewhere isn't set.
 
-4.   Proper __sleep, __wakeup and __autoload support for apc_fetch/store on objects.

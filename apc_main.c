@@ -2,12 +2,12 @@
   +----------------------------------------------------------------------+
   | APC                                                                  |
   +----------------------------------------------------------------------+
-  | Copyright (c) 2005 The PHP Group                                     |
+  | Copyright (c) 2006 The PHP Group                                     |
   +----------------------------------------------------------------------+
-  | This source file is subject to version 3.0 of the PHP license,       |
+  | This source file is subject to version 3.01 of the PHP license,      |
   | that is bundled with this package in the file LICENSE, and is        |
   | available through the world-wide-web at the following url:           |
-  | http://www.php.net/license/3_0.txt.                                  |
+  | http://www.php.net/license/3_01.txt                                  |
   | If you did not receive a copy of the PHP license and are unable to   |
   | obtain it through the world-wide-web, please send a note to          |
   | license@php.net so we can mail you a copy immediately.               |
@@ -33,6 +33,7 @@
 #include "apc_php.h"
 #include "apc_main.h"
 #include "apc.h"
+#include "apc_lock.h"
 #include "apc_cache.h"
 #include "apc_compile.h"
 #include "apc_globals.h"
@@ -392,7 +393,7 @@ static zend_op_array* cached_compile(TSRMLS_D)
         }
     }
 
-    return apc_copy_op_array_for_execution(cache_entry->data.file.op_array TSRMLS_CC);
+    return apc_copy_op_array_for_execution(NULL, cache_entry->data.file.op_array TSRMLS_CC);
 }
 /* }}} */
 
@@ -487,12 +488,27 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
     }
 
     HANDLE_BLOCK_INTERRUPTIONS();
+
+#if NONBLOCKING_LOCK_AVAILABLE
+    if(APCG(write_lock)) {
+        if(!apc_cache_write_lock(apc_cache)) {
+            HANDLE_UNBLOCK_INTERRUPTIONS();
+            return op_array;
+        }
+    }
+#endif
+
     mem_size = 0;
     APCG(mem_size_ptr) = &mem_size;
     if(!(alloc_op_array = apc_copy_op_array(NULL, op_array, apc_sma_malloc, apc_sma_free TSRMLS_CC))) {
         apc_cache_expunge(apc_cache,t);
         apc_cache_expunge(apc_user_cache,t);
         APCG(mem_size_ptr) = NULL;
+#if NONBLOCKING_LOCK_AVAILABLE
+        if(APCG(write_lock)) {
+            apc_cache_write_unlock(apc_cache);
+        }
+#endif
         HANDLE_UNBLOCK_INTERRUPTIONS();
         return op_array;
     }
@@ -502,6 +518,11 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
         apc_cache_expunge(apc_cache,t);
         apc_cache_expunge(apc_user_cache,t);
         APCG(mem_size_ptr) = NULL;
+#if NONBLOCKING_LOCK_AVAILABLE
+        if(APCG(write_lock)) {
+            apc_cache_write_unlock(apc_cache);
+        }
+#endif
         HANDLE_UNBLOCK_INTERRUPTIONS();
         return op_array;
     }
@@ -511,6 +532,11 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
         apc_cache_expunge(apc_cache,t);
         apc_cache_expunge(apc_user_cache,t);
         APCG(mem_size_ptr) = NULL;
+#if NONBLOCKING_LOCK_AVAILABLE
+        if(APCG(write_lock)) {
+            apc_cache_write_unlock(apc_cache);
+        }
+#endif
         HANDLE_UNBLOCK_INTERRUPTIONS();
         return op_array;
     }
@@ -529,12 +555,16 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
         apc_cache_expunge(apc_cache,t);
         apc_cache_expunge(apc_user_cache,t);
         APCG(mem_size_ptr) = NULL;
+#if NONBLOCKING_LOCK_AVAILABLE
+        if(APCG(write_lock)) {
+            apc_cache_write_unlock(apc_cache);
+        }
+#endif
         HANDLE_UNBLOCK_INTERRUPTIONS();
         return op_array;
     }
     APCG(mem_size_ptr) = NULL;
     cache_entry->mem_size = mem_size;
-    HANDLE_UNBLOCK_INTERRUPTIONS();
 
     if ((ret = apc_cache_insert(apc_cache, key, cache_entry, t)) != 1) {
         apc_cache_free_entry(cache_entry);
@@ -543,6 +573,13 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
             apc_cache_expunge(apc_user_cache,t);
         }
     }
+
+#if NONBLOCKING_LOCK_AVAILABLE
+    if(APCG(write_lock)) {
+        apc_cache_write_unlock(apc_cache);
+    }
+#endif
+    HANDLE_UNBLOCK_INTERRUPTIONS();
 
     return op_array;
 }
