@@ -2164,7 +2164,11 @@ static int my_check_copy_static_member(Bucket* p, va_list args)
     }
 
     /* these do not need free'ing */
+#ifdef ZEND_ENGINE_2_2
+    zend_unmangle_property_name(p->arKey, p->nKeyLength-1, &class_name, &member_name);
+#else
     zend_unmangle_property_name(p->arKey, &class_name, &member_name);
+#endif
 
     /* please refer do_inherit_property_access_check in zend_compile.c
      * to understand why we lookup in properties_info.

@@ -46,6 +46,9 @@
 #include "zend_compile.h"
 #include "zend_hash.h"
 
+#if PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION >= 2
+#define ZEND_ENGINE_2_2
+#endif
 #if PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION >= 1
 #define ZEND_ENGINE_2_1
 #endif
