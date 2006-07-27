@@ -241,7 +241,9 @@ static void prevent_garbage_collection(apc_cache_entry_t* entry)
 
     enum { BIG_VALUE = 1000 };
 
-    entry->data.file.op_array->refcount[0] = BIG_VALUE;
+    if(entry->data.file.op_array) {
+        entry->data.file.op_array->refcount[0] = BIG_VALUE;
+    }
     if (entry->data.file.functions) {
         int i;
         apc_function_t* fns = entry->data.file.functions;

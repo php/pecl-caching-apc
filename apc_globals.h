@@ -69,6 +69,7 @@ ZEND_BEGIN_MODULE_GLOBALS(apc)
     long slam_rand;              /* A place to store the slam rand value for the request */
     zend_bool fpstat;            /* true if fullpath includes should be stat'ed */
     zend_bool write_lock;        /* true for a global write lock */
+    zend_bool report_autofilter; /* true for auto-filter warnings */
 ZEND_END_MODULE_GLOBALS(apc)
 
 /* (the following declaration is defined in php_apc.c) */

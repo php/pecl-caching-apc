@@ -134,7 +134,11 @@ static int install_class(apc_class_t cl TSRMLS_DC)
                                 (void**) &parent);
 #endif
         if (status == FAILURE) {
+            if(APCG(report_autofilter)) {
+                zend_error(E_WARNING, "Dynamic inheritance detected for class %s", cl.name);
+            }
             class_entry->parent = NULL;
+            return status;
         }
         else {
 #ifdef ZEND_ENGINE_2            
@@ -164,6 +168,7 @@ static int install_class(apc_class_t cl TSRMLS_DC)
                            sizeof(zend_class_entry),
                            NULL);
 #endif                           
+
     if (status == FAILURE) {
         zend_error(E_ERROR, "Cannot redeclare class %s", cl.name);
     } 
@@ -171,14 +176,56 @@ static int install_class(apc_class_t cl TSRMLS_DC)
 }
 /* }}} */
 
+/* {{{ uninstall_class */
+static int uninstall_class(apc_class_t cl TSRMLS_DC)
+{
+    zend_class_entry* class_entry = cl.class_entry;
+    int status;
+
+#ifdef ZEND_ENGINE_2                           
+    status = zend_hash_del(EG(class_table),
+                           cl.name,
+                           cl.name_len+1);
+#else                           
+    status = zend_hash_del(EG(class_table),
+                           cl.name,
+                           cl.name_len+1);
+#endif                           
+    if (status == FAILURE) {
+        zend_error(E_ERROR, "Cannot delete class %s", cl.name);
+    } 
+    return status;
+}
+/* }}} */
+
+/* {{{ compare_file_handles */
+static int compare_file_handles(void* a, void* b)
+{
+    zend_file_handle* fh1 = (zend_file_handle*)a;
+    zend_file_handle* fh2 = (zend_file_handle*)b;
+    return (fh1->type == fh2->type && 
+            fh1->filename == fh2->filename &&
+            fh1->opened_path == fh2->opened_path);
+}
+/* }}} */
+
 /* {{{ cached_compile */
-static zend_op_array* cached_compile(TSRMLS_D)
+static zend_op_array* cached_compile(zend_file_handle* h,
+                                        int type TSRMLS_DC)
 {
     apc_cache_entry_t* cache_entry;
-    int i;
+    int i, ii;
 
     cache_entry = (apc_cache_entry_t*) apc_stack_top(APCG(cache_stack));
     assert(cache_entry != NULL);
+
+    if (cache_entry->data.file.classes) {
+        for (i = 0; cache_entry->data.file.classes[i].class_entry != NULL; i++) {
+            if(install_class(cache_entry->data.file.classes[i] TSRMLS_CC) == FAILURE) {
+                goto default_compile;
+            }
+        }
+    }
 
     if (cache_entry->data.file.functions) {
         for (i = 0; cache_entry->data.file.functions[i].function != NULL; i++) {
@@ -186,13 +233,36 @@ static zend_op_array* cached_compile(TSRMLS_D)
         }
     }
 
-    if (cache_entry->data.file.classes) {
-        for (i = 0; cache_entry->data.file.classes[i].class_entry != NULL; i++) {
-            install_class(cache_entry->data.file.classes[i] TSRMLS_CC);
+
+    return apc_copy_op_array_for_execution(NULL, cache_entry->data.file.op_array TSRMLS_CC);
+
+default_compile:
+
+    cache_entry->autofiltered = 1;
+    if(APCG(report_autofilter)) {
+        zend_error(E_WARNING, "Autofiltering %s", h->opened_path);
+    }
+
+    if(cache_entry->data.file.classes) {
+        for(ii = 0; ii < i ; ii++) {
+            uninstall_class(cache_entry->data.file.classes[i] TSRMLS_CC);
         }
     }
 
-    return apc_copy_op_array_for_execution(NULL, cache_entry->data.file.op_array TSRMLS_CC);
+    /* free up cache data */
+    apc_free_op_array(cache_entry->data.file.op_array, apc_sma_free);
+    apc_free_functions(cache_entry->data.file.functions, apc_sma_free);
+    apc_free_classes(cache_entry->data.file.classes, apc_sma_free);
+
+    cache_entry->data.file.op_array = NULL;
+    cache_entry->data.file.functions = NULL;
+    cache_entry->data.file.classes = NULL;
+
+    zend_llist_del_element(&CG(open_files), h, compare_file_handles); /* XXX: kludge */
+    
+    h->type = ZEND_HANDLE_FILENAME;
+    
+    return old_compile_file(h, type TSRMLS_CC);
 }
 /* }}} */
 
@@ -247,7 +317,7 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
     
     /* search for the file in the cache */
     cache_entry = apc_cache_find(apc_cache, key, t);
-    if (cache_entry != NULL) {
+    if (cache_entry != NULL && !cache_entry->autofiltered) {
         int dummy = 1;
         if (h->opened_path == NULL) {
             h->opened_path = estrdup(cache_entry->data.file.filename);
@@ -255,7 +325,7 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
         zend_hash_add(&EG(included_files), h->opened_path, strlen(h->opened_path)+1, (void *)&dummy, sizeof(int), NULL);
         zend_llist_add_element(&CG(open_files), h); /* XXX kludge */
         apc_stack_push(APCG(cache_stack), cache_entry);
-        return cached_compile(TSRMLS_C);
+        return cached_compile(h, type TSRMLS_CC);
     }
 
     /* remember how many functions and classes existed before compilation */
@@ -364,6 +434,7 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
     }
     APCG(mem_size_ptr) = NULL;
     cache_entry->mem_size = mem_size;
+    cache_entry->autofiltered = 0;
 
     if ((ret = apc_cache_insert(apc_cache, key, cache_entry, t)) != 1) {
         apc_cache_free_entry(cache_entry);
