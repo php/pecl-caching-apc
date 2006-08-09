@@ -775,8 +775,8 @@ EOB;
 		<tr class=tr-0><td class=td-0>Shared Memory</td><td>{$mem['num_seg']} Segment(s) with $seg_size</td></tr>
 		<tr class=tr-1><td class=td-0>Cache full count</td><td>{$cache['expunges']}</td></tr>
 EOB;
-	echo   '<tr class=tr-1><td class=td-0>Start Time</td><td>',date(DATE_FORMAT,$cache['start_time']),'</td></tr>';
-	echo   '<tr class=tr-0><td class=td-0>Uptime</td><td>',duration($cache['start_time']),'</td></tr>';
+	echo   '<tr class=tr-0><td class=td-0>Start Time</td><td>',date(DATE_FORMAT,$cache['start_time']),'</td></tr>';
+	echo   '<tr class=tr-1><td class=td-0>Uptime</td><td>',duration($cache['start_time']),'</td></tr>';
 	echo <<<EOB
 		</tbody></table>
 		</div>

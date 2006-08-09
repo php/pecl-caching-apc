@@ -27,13 +27,12 @@ We would like to thank Community Connect Inc. and Yahoo! Inc. for supporting
 this project and providing a challenging and stimulating environment in 
 which exciting projects can happen.
 
-Major Contributors:
+Contributors:
     Mike Bretz          bug fixes, GUI, and lots of work
     Ricardo Galli       changed read-write locks to prefer readers
-
-Contributors:
     Yann Grossel        bug fixes
     Thies Arntzen       bug fixes
+    Sara Golemon        optimizer work
 
 Special Thanks:
     Florian Baumert     help debugging phplib problems
@@ -42,4 +41,3 @@ Special Thanks:
     Angel Li            diffs for ANSI comment compliance
     Christian Rishøj    help debugging phplib problems
     Sascha Schumann     memory error bug fix
-
