@@ -249,15 +249,8 @@ default_compile:
         }
     }
 
-    /* free up cache data */
-    apc_free_op_array(cache_entry->data.file.op_array, apc_sma_free);
-    apc_free_functions(cache_entry->data.file.functions, apc_sma_free);
-    apc_free_classes(cache_entry->data.file.classes, apc_sma_free);
-
-    cache_entry->data.file.op_array = NULL;
-    cache_entry->data.file.functions = NULL;
-    cache_entry->data.file.classes = NULL;
-
+    /* cannot free up cache data yet, it maybe in use */
+    
     zend_llist_del_element(&CG(open_files), h, compare_file_handles); /* XXX: kludge */
     
     h->type = ZEND_HANDLE_FILENAME;
@@ -327,6 +320,27 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
         apc_stack_push(APCG(cache_stack), cache_entry);
         return cached_compile(h, type TSRMLS_CC);
     }
+    else if(cache_entry != NULL && cache_entry->autofiltered) {
+        /* nobody else is using this cache_entry */ 
+        if(cache_entry->ref_count == 1) {
+            if(cache_entry->data.file.op_array) {
+                apc_free_op_array(cache_entry->data.file.op_array, apc_sma_free);
+                cache_entry->data.file.op_array = NULL;
+            }
+            if(cache_entry->data.file.functions) {
+                apc_free_functions(cache_entry->data.file.functions, apc_sma_free);
+                cache_entry->data.file.functions = NULL;
+            }
+            if(cache_entry->data.file.classes) {
+                apc_free_classes(cache_entry->data.file.classes, apc_sma_free);
+                cache_entry->data.file.classes = NULL;        
+            }
+        }
+        /* We never push this into the cache_stack, so we have to do a release */
+        apc_cache_release(apc_cache, cache_entry);
+        return old_compile_file(h, type TSRMLS_CC);
+    }
+    
 
     /* remember how many functions and classes existed before compilation */
     num_functions = zend_hash_num_elements(CG(function_table));
