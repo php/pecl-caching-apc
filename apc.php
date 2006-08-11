@@ -906,7 +906,8 @@ case OB_SYS_CACHE:
 	{
 		$fieldname='filename';
 		$fieldheading='Script Filename';
-		$fieldkey='inode';
+		if(ini_get("apc.stat")) $fieldkey='inode';
+		else $fieldkey='filename'; 
 	}
 	if (!empty($MYREQUEST['SH']))
 	{
