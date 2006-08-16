@@ -61,7 +61,7 @@ hp.net/dtd/package-2.0 http://pear.php.net/dtd/package-2.0.xsd">
   <active>yes</active>
  </developer>
  
- <date>2006-03-??</date>
+ <date>2006-08-16</date>
  <version><release>3.0.11</release><api>3.0.0</api></version>
  <stability><release>stable</release><api>stable</api></stability>
  <license uri="http://www.php.net/license">PHP License</license>
