@@ -324,7 +324,7 @@ int apc_stat_paths(const char* filename, const char* path, struct stat* buf)
             memcpy(filepath, exec_fname, exec_fname_length);
             filepath[exec_fname_length] = DEFAULT_SLASH;
             strcpy(filepath +exec_fname_length +1, filename);
-            php_error(E_WARNING, "filename: %s, exec_fname: %s, filepath: %s", filename, exec_fname, filepath);
+            /* php_error(E_WARNING, "filename: %s, exec_fname: %s, filepath: %s", filename, exec_fname, filepath); */
             if (apc_stat(filepath, buf) == 0) {
                 found = 1;
             }
