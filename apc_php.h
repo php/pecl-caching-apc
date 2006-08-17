@@ -46,10 +46,10 @@
 #include "zend_compile.h"
 #include "zend_hash.h"
 
-#if PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION >= 2
+#if ZEND_MODULE_API_NO > 20050922
 #define ZEND_ENGINE_2_2
 #endif
-#if PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION >= 1
+#if ZEND_MODULE_API_NO > 20050921
 #define ZEND_ENGINE_2_1
 #endif
 #ifdef ZEND_ENGINE_2_1

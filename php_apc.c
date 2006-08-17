@@ -36,7 +36,6 @@
 #include "apc_lock.h"
 #include "php_globals.h"
 #include "php_ini.h"
-#include "zend_extensions.h"
 #include "ext/standard/info.h"
 #include "SAPI.h"
 #if PHP_API_VERSION <= 20020918
