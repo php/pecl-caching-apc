@@ -91,13 +91,32 @@ static int install_function(apc_function_t fn TSRMLS_DC)
 static int install_class(apc_class_t cl TSRMLS_DC)
 {
     zend_class_entry* class_entry = cl.class_entry;
-    zend_class_entry* parent;
+    zend_class_entry* parent = NULL;
     int status;
+#ifdef ZEND_ENGINE_2
+    zend_class_entry** allocated_ce = NULL;
+#endif
+
 #ifdef ZEND_ENGINE_2    
+
+    /* Special case for mangled names. Mangled names are unique to a file.
+     * There is no way two classes with the same mangled name will occur,
+     * unless a file is included twice. And if in case, a file is included
+     * twice, all mangled name conflicts can be ignored and the class redeclaration
+     * error may be deferred till runtime of the corresponding DECLARE_CLASS
+     * calls.
+     */
+
+    if(cl.name_len != 0 && cl.name[0] == '\0') {
+        if(zend_hash_exists(CG(class_table), cl.name, cl.name_len+1)) {
+            return SUCCESS;
+        }
+    }
+    
     /*
      * XXX: We need to free this somewhere...
      */
-    zend_class_entry** allocated_ce = apc_php_malloc(sizeof(zend_class_entry*));    
+    allocated_ce = apc_php_malloc(sizeof(zend_class_entry*));    
 
     if(!allocated_ce) {
         return FAILURE;
