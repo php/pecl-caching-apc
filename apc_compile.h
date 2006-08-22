@@ -61,6 +61,15 @@ struct apc_class_t {
 };
 /* }}} */
 
+/* {{{ struct definition: apc_opflags_t */
+typedef struct apc_opflags_t apc_opflags_t;
+struct apc_opflags_t {
+    unsigned int has_jumps      : 1; /* has jump offsets */
+    unsigned int deep_copy      : 1; /* needs deep copy */
+    unsigned int use_globals    : 1; /* uses a global like $_SERVER */
+};
+/* }}} */
+
 /*
  * These are the top-level copy functions.
  */

@@ -1063,6 +1063,9 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_mal
 {
     int i;
     int local_dst_alloc = 0;
+#ifdef ZEND_ENGINE_2
+    apc_opflags_t * flags = NULL;
+#endif
 
     assert(src != NULL);
 
@@ -1136,8 +1139,50 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_mal
     if(!(dst->opcodes = (zend_op*) allocate(sizeof(zend_op) * src->last))) {
         goto cleanup;
     }
+
+#ifdef ZEND_ENGINE_2
+    flags = (apc_opflags_t*) & (dst->reserved);
+    memset(flags, 0, sizeof(apc_opflags_t));
+    /* assert(sizeof(apc_opflags_t) < sizeof(dst->reserved)); */
+#endif
     
     for (i = 0; i < src->last; i++) {
+#ifdef ZEND_ENGINE_2
+        zend_op *zo = &(src->opcodes[i]);
+        /* a lot of files are merely constant arrays with no jumps */
+        switch (zo->opcode) {
+            case ZEND_JMP:
+            case ZEND_JMPZ:
+            case ZEND_JMPNZ:
+            case ZEND_JMPZ_EX:
+            case ZEND_JMPNZ_EX:
+                flags->has_jumps = 1;
+                break;
+            case ZEND_FETCH_GLOBAL:
+                if(zo->op1.op_type == IS_CONST && 
+                    zo->op1.u.constant.type == IS_STRING) {
+                    znode * varname = &zo->op1;
+                    if (varname->u.constant.value.str.val[0] == '_') {
+                        flags->use_globals = 1;
+                    }
+                }
+                break;
+            case ZEND_RECV_INIT:
+                if(zo->op2.op_type == IS_CONST &&
+                    zo->op2.u.constant.type == IS_CONSTANT_ARRAY) {
+                    flags->deep_copy = 1;
+                }
+                break;
+            default:
+                if((zo->op1.op_type == IS_CONST &&
+                    zo->op1.u.constant.type == IS_CONSTANT_ARRAY) ||
+                    (zo->op2.op_type == IS_CONST &&
+                        zo->op2.u.constant.type == IS_CONSTANT_ARRAY)) {
+                    flags->deep_copy = 1;
+                }
+                break;
+        }
+#endif
         if(!(my_copy_zend_op(dst->opcodes+i, src->opcodes+i, allocate, deallocate))) {
             int ii;
             for(ii = i-1; ii>=0; ii--) {
@@ -1148,7 +1193,9 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_mal
     }
 
 #ifdef ZEND_ENGINE_2
-    apc_fixup_op_array_jumps(dst,src);
+    if(flags->has_jumps) {
+        apc_fixup_op_array_jumps(dst,src);
+    }
 #endif
 
     /* copy the break-continue array */
@@ -1830,6 +1877,9 @@ static int my_copy_data_exceptions(zend_op_array* dst, zend_op_array* src)
        opcode array if detected */
     int i;
     int needcopy = 0;
+#ifdef ZEND_ENGINE_2
+    apc_opflags_t * flags = (apc_opflags_t*)&(src->reserved);
+#endif
 #if 0
     if(src->num_args == src->required_num_args)
     {
@@ -1853,7 +1903,12 @@ static int my_copy_data_exceptions(zend_op_array* dst, zend_op_array* src)
         }
     }
 #endif
+#ifdef ZEND_ENGINE_2
+    needcopy = flags->deep_copy;
+#else
     needcopy = 1;
+#endif
+
     if(needcopy)
     {
         dst->opcodes = (zend_op*) apc_xmemcpy(src->opcodes, 
@@ -1862,18 +1917,22 @@ static int my_copy_data_exceptions(zend_op_array* dst, zend_op_array* src)
         for (i = 0; i < src->last; i++)
         {
             zend_op *opcode = src->opcodes+i; 
-            if(opcode->opcode == ZEND_RECV_INIT &&
-                    opcode->op2.u.constant.type == IS_CONSTANT_ARRAY) 
-            {
+            if((opcode->op1.op_type == IS_CONST &&
+                opcode->op1.u.constant.type == IS_CONSTANT_ARRAY) ||
+                (opcode->op2.op_type == IS_CONST &&
+                 opcode->op2.u.constant.type == IS_CONSTANT_ARRAY)) {
+                
                 if(!(my_copy_zend_op(dst->opcodes+i, src->opcodes+i, 
-                    apc_php_malloc, apc_php_free))) 
+                     apc_php_malloc, apc_php_free))) 
                 {
                     //TODO: cleanup code
                 }
             }
         }
 #ifdef ZEND_ENGINE_2
-        apc_fixup_op_array_jumps(dst,src);
+        if(flags->has_jumps) {
+            apc_fixup_op_array_jumps(dst,src);
+        }
 #endif
     }
     return 1;
@@ -1883,6 +1942,9 @@ static int my_copy_data_exceptions(zend_op_array* dst, zend_op_array* src)
 /* {{{ apc_copy_op_array_for_execution */
 zend_op_array* apc_copy_op_array_for_execution(zend_op_array* dst, zend_op_array* src TSRMLS_DC)
 {
+#ifdef ZEND_ENGINE_2
+    apc_opflags_t * flags = (apc_opflags_t*)&(src->reserved);
+#endif
     if(dst == NULL) {
         dst = (zend_op_array*) emalloc(sizeof(src[0]));
     }
@@ -1893,7 +1955,9 @@ zend_op_array* apc_copy_op_array_for_execution(zend_op_array* dst, zend_op_array
                                       sizeof(src->refcount[0]),
                                       apc_php_malloc);
 #ifdef ZEND_ENGINE_2
-    my_fetch_global_vars(dst TSRMLS_CC);
+    if(flags->use_globals) {
+        my_fetch_global_vars(dst TSRMLS_CC);
+    }
 #endif
 
     my_copy_data_exceptions(dst, src);
