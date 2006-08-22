@@ -988,8 +988,7 @@ apc_cache_info_t* apc_cache_info(apc_cache_t* cache, zend_bool limited)
 
         /* For each slot pending deletion */
         for (p = cache->header->deleted_list; p != NULL; p = p->next) {
-            apc_cache_link_t* link = (apc_cache_link_t*)
-            apc_emalloc(sizeof(apc_cache_link_t));
+            apc_cache_link_t* link = (apc_cache_link_t*) apc_emalloc(sizeof(apc_cache_link_t));
 
             if(p->value->type == APC_CACHE_ENTRY_FILE) {
                 link->data.file.filename = apc_xstrdup(p->value->data.file.filename, apc_emalloc);
@@ -1027,8 +1026,17 @@ apc_cache_info_t* apc_cache_info(apc_cache_t* cache, zend_bool limited)
 void apc_cache_free_info(apc_cache_info_t* info)
 {
     apc_cache_link_t* p = info->list;
+    apc_cache_link_t* q = NULL;
     while (p != NULL) {
-        apc_cache_link_t* q = p;
+        q = p;
+        p = p->next;
+        if(q->type == APC_CACHE_ENTRY_FILE) apc_efree(q->data.file.filename);
+        else if(q->type == APC_CACHE_ENTRY_USER) apc_efree(q->data.user.info);
+        apc_efree(q);
+    }
+    p = info->deleted_list;
+    while (p != NULL) {
+        q = p;
         p = p->next;
         if(q->type == APC_CACHE_ENTRY_FILE) apc_efree(q->data.file.filename);
         else if(q->type == APC_CACHE_ENTRY_USER) apc_efree(q->data.user.info);
