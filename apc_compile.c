@@ -114,6 +114,12 @@ static void my_fixup_hashtable( HashTable *ht, ht_fixup_fun_t fixup, zend_class_
  * but named differently for clarity
  */
 #define my_fixup_function_for_execution my_fixup_function
+
+#ifdef ZEND_ENGINE_2_2
+static void my_fixup_property_info( Bucket *p, zend_class_entry *src, zend_class_entry *dst );
+#define my_fixup_property_info_for_execution my_fixup_property_info
+#endif
+
 #endif
 
 /*
@@ -716,6 +722,9 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
     dst->__unset = NULL;
     dst->__isset = NULL;
     dst->__call = NULL;
+#ifdef ZEND_ENGINE_2_2
+    dst->__tostring = NULL;
+#endif
 
     /* unset function proxies */
     dst->serialize_func = NULL;
@@ -751,6 +760,11 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
                             src))) {
         goto cleanup;
     }
+
+#ifdef ZEND_ENGINE_2_2
+    /* php5.2 introduced a scope attribute for property info */
+    my_fixup_hashtable(&dst->properties_info, (ht_fixup_fun_t)my_fixup_property_info_for_execution, src, dst);
+#endif
     
     if(!my_copy_hashtable_ex(&dst->default_static_members,
                             &src->default_static_members,
@@ -2037,6 +2051,11 @@ zend_class_entry* apc_copy_class_entry_for_execution(zend_class_entry* src, int 
                       0,
                       apc_php_malloc, apc_php_free);
 
+#ifdef ZEND_ENGINE_2_2
+    /* php5.2 introduced a scope attribute for property info */
+    my_fixup_hashtable(&dst->properties_info, (ht_fixup_fun_t)my_fixup_property_info_for_execution, src, dst);
+#endif
+
     /* if inheritance results in a hash_del, it might result in
      * a pefree() of the pointers here. Deep copying required. 
      */
@@ -2110,6 +2129,9 @@ static void my_fixup_function(Bucket *p, zend_class_entry *src, zend_class_entry
             SET_IF_SAME_NAME(__unset);
             SET_IF_SAME_NAME(__isset);
             SET_IF_SAME_NAME(__call);
+#ifdef ZEND_ENGINE_2_2
+            SET_IF_SAME_NAME(__tostring);
+#endif
         }
         zf->common.scope = dst;
     }
@@ -2122,6 +2144,24 @@ static void my_fixup_function(Bucket *p, zend_class_entry *src, zend_class_entry
     #undef SET_IF_SAME_NAME
 }
 /* }}} */
+
+#ifdef ZEND_ENGINE_2_2
+/* {{{ my_fixup_property_info */
+static void my_fixup_property_info(Bucket *p, zend_class_entry *src, zend_class_entry *dst)
+{
+    zend_property_info* property_info = (zend_property_info*)p->pData;
+
+    if(property_info->ce == src)
+    {
+        property_info->ce = dst;
+    }
+    else
+    {
+        assert(0); /* should never happen */
+    }
+}
+/* }}} */
+#endif
 
 /* {{{ my_fixup_hashtable */
 static void my_fixup_hashtable(HashTable *ht, ht_fixup_fun_t fixup, zend_class_entry *src, zend_class_entry *dst)
@@ -2162,6 +2202,11 @@ static int my_check_copy_property_info(Bucket* p, va_list args)
     zend_class_entry* parent = src->parent;
     zend_property_info* child_info = (zend_property_info*)p->pData;
     zend_property_info* parent_info = NULL;
+
+#ifdef ZEND_ENGINE_2_2
+    /* so much easier */
+    return (child_info->ce == src);
+#endif
 
 	if (parent &&
         zend_hash_quick_find(&parent->properties_info, p->arKey, p->nKeyLength, 
