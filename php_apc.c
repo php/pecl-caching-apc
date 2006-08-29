@@ -207,7 +207,9 @@ static PHP_MSHUTDOWN_FUNCTION(apc)
     if(APCG(enabled)) {
         apc_zend_shutdown();
         apc_module_shutdown(TSRMLS_C);
-#ifndef ZTS
+#ifdef ZTS
+        ts_free_id(apc_globals_id);
+#else
         php_apc_shutdown_globals(&apc_globals);
 #endif
     }
