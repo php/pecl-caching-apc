@@ -519,6 +519,36 @@ int apc_module_shutdown(TSRMLS_D)
     /* restore compilation */
     zend_compile_file = old_compile_file;
 
+    /* 
+     * In case we got interrupted by a SIGTERM or something else during execution
+     * we may have cache entries left on the stack that we need to check to make
+     * sure that any functions or classes these may have added to the global function
+     * and class tables are removed before we blow away the memory that hold them.
+     * 
+     * This is merely to remove memory leak warnings - as the process is terminated
+     * immediately after shutdown. The following while loop can be removed without
+     * affecting anything else.
+     */
+    while (apc_stack_size(APCG(cache_stack)) > 0) {
+        int i;
+        apc_cache_entry_t* cache_entry = (apc_cache_entry_t*) apc_stack_pop(APCG(cache_stack));
+        if (cache_entry->data.file.functions) {
+            for (i = 0; cache_entry->data.file.functions[i].function != NULL; i++) {
+                zend_hash_del(EG(function_table),
+                    cache_entry->data.file.functions[i].name,
+                    cache_entry->data.file.functions[i].name_len+1);
+            }
+        }
+        if (cache_entry->data.file.classes) {
+            for (i = 0; cache_entry->data.file.classes[i].class_entry != NULL; i++) {
+                zend_hash_del(EG(class_table),
+                    cache_entry->data.file.classes[i].name,
+                    cache_entry->data.file.classes[i].name_len+1);
+            }
+        }
+        apc_cache_release(apc_cache, cache_entry);
+    }
+
     apc_cache_destroy(apc_cache);
     apc_cache_destroy(apc_user_cache);
     apc_sma_cleanup();

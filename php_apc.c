@@ -89,31 +89,8 @@ static void php_apc_shutdown_globals(zend_apc_globals* apc_globals TSRMLS_DC)
         apc_efree(apc_globals->filters);
     }
 
-    /* 
-     * In case we got interrupted by a SIGTERM or something else during execution
-     * we may have cache entries left on the stack that we need to check to make
-     * sure that any functions or classes these may have added to the global function
-     * and class tables are removed before we blow away the memory that hold them
-     */
-    while (apc_stack_size(apc_globals->cache_stack) > 0) {
-        int i;
-        apc_cache_entry_t* cache_entry = (apc_cache_entry_t*) apc_stack_pop(apc_globals->cache_stack);
-        if (cache_entry->data.file.functions) {
-            for (i = 0; cache_entry->data.file.functions[i].function != NULL; i++) {
-                zend_hash_del(EG(function_table),
-                cache_entry->data.file.functions[i].name,
-                cache_entry->data.file.functions[i].name_len+1);
-            }
-        }
-        if (cache_entry->data.file.classes) {
-            for (i = 0; cache_entry->data.file.classes[i].class_entry != NULL; i++) {
-                zend_hash_del(EG(class_table),
-                cache_entry->data.file.classes[i].name,
-                cache_entry->data.file.classes[i].name_len+1);
-            }
-        }
-        apc_cache_free_entry(cache_entry);
-    }
+    /* the stack should be empty */
+    assert(apc_stack_size(apc_globals->cache_stack) == 0); 
 
     /* apc cleanup */
     apc_stack_destroy(apc_globals->cache_stack);
