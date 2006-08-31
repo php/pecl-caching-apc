@@ -148,6 +148,15 @@ static int compress_ops(zend_op_array* op_array, Pair** jumps)
                 for (branches = jumps[j]; branches; branches = cdr(branches)) {
                     change_branch_target(&ops[car(branches)], j, i);
                 }
+		for (k = 0; k < op_array->last_try_catch; k++) {
+			if(op_array->try_catch_array[k].try_op == j) {
+				op_array->try_catch_array[k].try_op = i;
+			}
+			if (op_array->try_catch_array[k].catch_op == j) {
+				op_array->try_catch_array[k].catch_op = i;
+			}
+		}
+
                 for (k = 0; k < op_array->last_brk_cont; k++) {
                     if(op_array->brk_cont_array[k].brk == j) {
                         op_array->brk_cont_array[k].brk = i;
@@ -1053,7 +1062,7 @@ zend_op_array* apc_optimize_op_array(zend_op_array* op_array TSRMLS_DC)
     jumps = build_jump_array(op_array);
     for (i = 0; i < op_array->last; i++) {
         Pair* p;
-    
+
         OPTIMIZE1(const_cast);
         OPTIMIZE1(is_equal_bool);
         OPTIMIZE1(constant_resolve);
@@ -1071,6 +1080,7 @@ zend_op_array* apc_optimize_op_array(zend_op_array* op_array TSRMLS_DC)
     }
 
     op_array->last = compress_ops(op_array, jumps);
+    /* We probably need this: op_array->size = op_array->last; */
     destroy_jump_array(jumps, jump_array_size);
     apc_do_pass_two(op_array); 
 
