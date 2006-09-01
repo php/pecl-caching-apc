@@ -89,6 +89,7 @@ static void change_branch_target(zend_op* op, int old, int new)
       case ZEND_JMP_NO_CTOR:
 #endif
       case ZEND_FE_FETCH:
+      case ZEND_FE_RESET:
         assert(op->op2.u.opline_num == old);
         op->op2.u.opline_num = new;
         break;
@@ -124,6 +125,7 @@ static int is_branch_op(int opcode)
       case ZEND_JMP_NO_CTOR:
 #endif
       case ZEND_FE_FETCH:
+      case ZEND_FE_RESET:
       case ZEND_JMPZNZ:
         return 1;
     }
@@ -566,6 +568,7 @@ static Pair* extract_branch_targets(zend_op_array* op_array, int i)
       case ZEND_JMP_NO_CTOR:
 #endif
       case ZEND_FE_FETCH:
+      case ZEND_FE_RESET:
         return cons(op->op2.u.opline_num, 0);
       case ZEND_JMPZNZ:
         return cons(op->op2.u.opline_num, cons(op->extended_value, 0));
