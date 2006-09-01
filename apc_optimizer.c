@@ -148,15 +148,16 @@ static int compress_ops(zend_op_array* op_array, Pair** jumps)
                 for (branches = jumps[j]; branches; branches = cdr(branches)) {
                     change_branch_target(&ops[car(branches)], j, i);
                 }
-		for (k = 0; k < op_array->last_try_catch; k++) {
-			if(op_array->try_catch_array[k].try_op == j) {
-				op_array->try_catch_array[k].try_op = i;
-			}
-			if (op_array->try_catch_array[k].catch_op == j) {
-				op_array->try_catch_array[k].catch_op = i;
-			}
-		}
-
+#ifdef ZEND_ENGINE_2
+                for (k = 0; k < op_array->last_try_catch; k++) {
+                    if(op_array->try_catch_array[k].try_op == j) {
+                        op_array->try_catch_array[k].try_op = i;
+                    }
+                    if (op_array->try_catch_array[k].catch_op == j) {
+                        op_array->try_catch_array[k].catch_op = i;
+                    }
+                }
+#endif
                 for (k = 0; k < op_array->last_brk_cont; k++) {
                     if(op_array->brk_cont_array[k].brk == j) {
                         op_array->brk_cont_array[k].brk = i;
