@@ -1172,8 +1172,10 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_mal
             case ZEND_JMPNZ_EX:
                 flags->has_jumps = 1;
                 break;
-            case ZEND_FETCH_GLOBAL:
-                if(zo->op1.op_type == IS_CONST && 
+            case ZEND_FETCH_R:
+            case ZEND_FETCH_W:
+                if(zo->op2.u.EA.type == ZEND_FETCH_GLOBAL &&
+                    zo->op1.op_type == IS_CONST && 
                     zo->op1.u.constant.type == IS_STRING) {
                     znode * varname = &zo->op1;
                     if (varname->u.constant.value.str.val[0] == '_') {
@@ -1869,7 +1871,8 @@ void my_fetch_global_vars(zend_op_array* src TSRMLS_DC)
     for (i = 0; i < src->last; i++)
     {
         zend_op *opcode = src->opcodes+i; 
-        if(opcode->op2.u.EA.type == ZEND_FETCH_GLOBAL &&
+        if((opcode->opcode == ZEND_FETCH_W || opcode->opcode == ZEND_FETCH_R) &&
+                opcode->op2.u.EA.type == ZEND_FETCH_GLOBAL &&
                 opcode->op1.op_type == IS_CONST &&
                 opcode->op1.u.constant.type == IS_STRING) 
         {
