@@ -28,6 +28,7 @@
 /* $Id$ */
 
 #include "apc_zend.h"
+#include "apc_globals.h"
 
 void* apc_php_malloc(size_t n)
 {
@@ -201,8 +202,13 @@ static int apc_op_ZEND_INCLUDE_OR_EVAL(ZEND_OPCODE_HANDLER_ARGS)
 	return ret;
 }
 
-void apc_zend_init(void)
+void apc_zend_init(TSRMLS_D)
 {
+	if (!APCG(include_once)) {
+		/* If we're not overriding the INCLUDE_OR_EVAL handler, then just skip this malarkey */
+		return;
+	}
+
 	memcpy(apc_opcode_handlers, zend_opcode_handlers, sizeof(apc_opcode_handlers));
 
 	/* 5.0 exposes zend_opcode_handlers differently than 5.1 and later */
@@ -216,8 +222,13 @@ void apc_zend_init(void)
 	APC_REPLACE_OPCODE(ZEND_INCLUDE_OR_EVAL);
 }
 
-void apc_zend_shutdown(void)
+void apc_zend_shutdown(TSRMLS_D)
 {
+	if (!APCG(include_once)) {
+		/* Nothing changed, nothing to restore */
+		return;
+	}
+
 #ifdef ZEND_ENGINE_2_1
 	zend_opcode_handlers = apc_original_opcode_handlers;
 #else
