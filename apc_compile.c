@@ -123,14 +123,13 @@ static void my_fixup_property_info( Bucket *p, zend_class_entry *src, zend_class
 #endif
 
 /*
- * The "check for copy" functions need for ZEND_ENGINE_2
  * These functions return "1" if the member/function is
- * defined/overridden in the 'current' class and not inherited
+ * defined/overridden in the 'current' class and not inherited.
  */
-#ifdef ZEND_ENGINE_2
 static int my_check_copy_function(Bucket* src, va_list args);
-static int my_check_copy_property_info(Bucket* src, va_list args);
 static int my_check_copy_default_property(Bucket* p, va_list args);
+#ifdef ZEND_ENGINE_2
+static int my_check_copy_property_info(Bucket* src, va_list args);
 static int my_check_copy_static_member(Bucket* src, va_list args);
 #endif
 
@@ -686,11 +685,7 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
                             (ht_free_fun_t) my_free_function,
                             0,
                             allocate, deallocate,
-#ifdef ZEND_ENGINE_2
                             (ht_check_copy_fun_t) my_check_copy_function,
-#else
-                            NULL,
-#endif
                             src))) {
         goto cleanup;
     }
@@ -739,11 +734,7 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
                             (ht_free_fun_t) my_free_zval_ptr,
                             1,
                             allocate,deallocate,
-#ifdef ZEND_ENGINE_2
                             (ht_check_copy_fun_t) my_check_copy_default_property,
-#else
-                            NULL,
-#endif
                             src))) {
         goto cleanup;
     }
@@ -2184,19 +2175,60 @@ static void my_fixup_hashtable(HashTable *ht, ht_fixup_fun_t fixup, zend_class_e
 }
 /* }}} */
 
+#endif
+
 /* {{{ my_check_copy_function */
 static int my_check_copy_function(Bucket* p, va_list args)
 {
     zend_class_entry* src = va_arg(args, zend_class_entry*);
+    zend_class_entry* parent = src->parent;
     zend_function* zf = (zend_function*)p->pData;
-    
-    if (zf->common.scope == src) {
-        return 1;
+#ifndef ZEND_ENGINE_2
+    zend_function* parent_fn = NULL;
+#endif
+
+#ifdef ZEND_ENGINE_2
+    return (zf->common.scope == src);
+#else
+	if (parent &&
+        zend_hash_quick_find(&parent->function_table, p->arKey, 
+            p->nKeyLength, p->h, (void **) &parent_fn)==SUCCESS) {
+        
+        if((parent_fn && zf) && 
+                (parent_fn->op_array.refcount == zf->op_array.refcount))
+        {
+            return 0;
+        }
     }
-    
-    return 0;
+    return 1;
+#endif 
 }
 /* }}} */
+
+/* {{{ my_check_copy_default_property */
+static int my_check_copy_default_property(Bucket* p, va_list args)
+{
+    zend_class_entry* src = va_arg(args, zend_class_entry*);
+    zend_class_entry* parent = src->parent;
+    zval ** child_prop = (zval**)p->pData;
+    zval ** parent_prop = NULL;
+
+	if (parent &&
+        zend_hash_quick_find(&parent->default_properties, p->arKey, 
+            p->nKeyLength, p->h, (void **) &parent_prop)==SUCCESS) {
+
+        if((parent_prop && child_prop) && (*parent_prop) == (*child_prop))
+        {
+            return 0;
+        }
+    }
+    
+    /* possibly not in the parent */
+    return 1;
+}
+/* }}} */
+
+#ifdef ZEND_ENGINE_2
 
 /* {{{ my_check_copy_property_info */
 static int my_check_copy_property_info(Bucket* p, va_list args)
@@ -2229,29 +2261,6 @@ static int my_check_copy_property_info(Bucket* p, va_list args)
     }
     
     /* property doesn't exist in parent, copy into cached child */
-    return 1;
-}
-/* }}} */
-
-/* {{{ my_check_copy_default_property */
-static int my_check_copy_default_property(Bucket* p, va_list args)
-{
-    zend_class_entry* src = va_arg(args, zend_class_entry*);
-    zend_class_entry* parent = src->parent;
-    zval ** child_prop = (zval**)p->pData;
-    zval ** parent_prop = NULL;
-
-	if (parent &&
-        zend_hash_quick_find(&parent->default_properties, p->arKey, 
-            p->nKeyLength, p->h, (void **) &parent_prop)==SUCCESS) {
-
-        if((parent_prop && child_prop) && (*parent_prop) == (*child_prop))
-        {
-            return 0;
-        }
-    }
-    
-    /* possibly not in the parent */
     return 1;
 }
 /* }}} */

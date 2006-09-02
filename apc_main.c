@@ -164,9 +164,7 @@ static int install_class(apc_class_t cl TSRMLS_DC)
             parent = *parent_ptr;
 #endif 
             class_entry->parent = parent;
-#ifdef ZEND_ENGINE_2            
             zend_do_inheritance(class_entry, parent TSRMLS_CC);
-#endif            
         }
 
 
