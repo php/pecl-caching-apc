@@ -1857,98 +1857,86 @@ void apc_free_zval(zval* src, apc_free_t deallocate)
 }
 /* }}} */
 
-#ifdef ZEND_ENGINE_2
-/* {{{ my_fetch_global_vars */
-void my_fetch_global_vars(zend_op_array* src TSRMLS_DC)
+/* {{{ my_prepare_op_array_for_execution */
+static int my_prepare_op_array_for_execution(zend_op_array* dst, zend_op_array* src TSRMLS_DC) 
 {
-    /* all jit_initialization variables (like $_SERVER) are created
-       on demand due to a fetch_simple_variable called during parsing.
-       The code below fakes it and makes a call to is_auto_global.
-    */
-    int i = 0;
-    for (i = 0; i < src->last; i++)
-    {
-        zend_op *opcode = src->opcodes+i; 
-        if((opcode->opcode == ZEND_FETCH_W || opcode->opcode == ZEND_FETCH_R) &&
-                opcode->op2.u.EA.type == ZEND_FETCH_GLOBAL &&
-                opcode->op1.op_type == IS_CONST &&
-                opcode->op1.u.constant.type == IS_STRING) 
-        {
-            znode * varname = &opcode->op1;
-            if (varname->u.constant.value.str.val[0] == '_') {
-                (void)zend_is_auto_global(varname->u.constant.value.str.val, 
-                                varname->u.constant.value.str.len TSRMLS_CC);
-            }
-        }
-    }
-}
-/* }}} */
-#endif
-
-/* {{{ my_copy_data_exceptions */
-static int my_copy_data_exceptions(zend_op_array* dst, zend_op_array* src)
-{
-    /* check for troublesome opcodes and copy the entire 
-       opcode array if detected */
+    /* combine my_fetch_global_vars and my_copy_data_exceptions.
+     *   - Pre-fetch superglobals which would've been pre-fetched in parse phase.
+     *   - If the opcode stream contain mutable data, ensure a copy.
+     *   - Fixup array jumps in the same loop.
+     */
     int i;
     int needcopy = 0;
 #ifdef ZEND_ENGINE_2
     apc_opflags_t * flags = (apc_opflags_t*)&(src->reserved);
 #endif
-#if 0
-    if(src->num_args == src->required_num_args)
-    {
-        /* yay !, no default args */
-        return 1; 
-    }
-    for (i = 0; i < src->last; i++)
-    {
-        zend_op *opcode = src->opcodes+i; 
-        if(opcode->opcode == ZEND_RECV_INIT &&
-                opcode->op2.u.constant.type == IS_CONSTANT_ARRAY) 
-        {
-            needcopy = 1;
-            break;
-        }
-        if(opcode->opcode == ZEND_ASSIGN_DIM ||
-            opcode->opcode == ZEND_ASSIGN)
-        {
-            needcopy = 1;
-            break;
-        }
-    }
-#endif
+
 #ifdef ZEND_ENGINE_2
     needcopy = flags->deep_copy;
 #else
     needcopy = 1;
 #endif
 
-    if(needcopy)
-    {
+    if(needcopy) {
         dst->opcodes = (zend_op*) apc_xmemcpy(src->opcodes, 
                                     sizeof(zend_op) * src->last,
                                     apc_php_malloc);
-        for (i = 0; i < src->last; i++)
-        {
-            zend_op *opcode = src->opcodes+i; 
-            if((opcode->op1.op_type == IS_CONST &&
-                opcode->op1.u.constant.type == IS_CONSTANT_ARRAY) ||
-                (opcode->op2.op_type == IS_CONST &&
-                 opcode->op2.u.constant.type == IS_CONSTANT_ARRAY)) {
-                
-                if(!(my_copy_zend_op(dst->opcodes+i, src->opcodes+i, 
-                     apc_php_malloc, apc_php_free))) 
-                {
-                    //TODO: cleanup code
-                }
+    }
+
+    for (i = 0; i < src->last; i++) {
+        zend_op *zo = src->opcodes+i;
+        zend_op *dzo = dst->opcodes+i;
+
+        if(needcopy && 
+            ((zo->op1.op_type == IS_CONST &&
+              zo->op1.u.constant.type == IS_CONSTANT_ARRAY) ||
+             (zo->op1.op_type == IS_CONST &&
+              zo->op1.u.constant.type == IS_CONSTANT_ARRAY))) {
+
+            if(!(my_copy_zend_op(dzo, zo, apc_php_malloc, apc_php_free))) {
+                assert(0); /* emalloc failed or a bad constant array */
             }
         }
+        
+        switch(zo->opcode) {
+            case ZEND_JMP:
+                if(needcopy) {
+                    dzo->op1.u.jmp_addr = dst->opcodes + 
+                                            (zo->op1.u.jmp_addr - src->opcodes);
+                }
+                break;
+            case ZEND_JMPZ:
+            case ZEND_JMPNZ:
+            case ZEND_JMPZ_EX:
+            case ZEND_JMPNZ_EX:
+                if(needcopy) {
+                    dzo->op2.u.jmp_addr = dst->opcodes + 
+                                            (zo->op2.u.jmp_addr - src->opcodes);
+                }
+                break;
 #ifdef ZEND_ENGINE_2
-        if(flags->has_jumps) {
-            apc_fixup_op_array_jumps(dst,src);
-        }
+            /* auto_globals_jit was not in php4 */
+            case ZEND_FETCH_R:
+            case ZEND_FETCH_W:
+                if(PG(auto_globals_jit) && flags->use_globals)
+                {
+                     /* The fetch is only required if auto_globals_jit=1  */
+                    if(zo->op2.u.EA.type == ZEND_FETCH_GLOBAL &&
+                        zo->op1.op_type == IS_CONST && 
+                        zo->op1.u.constant.type == IS_STRING &&
+                        zo->op1.u.constant.value.str.val[0] == '_') {
+
+                        znode* varname = &zo->op1; 
+                        (void)zend_is_auto_global(varname->u.constant.value.str.val, 
+                                                      varname->u.constant.value.str.len 
+                                                      TSRMLS_CC);
+                    }
+                }
+                break;
 #endif
+            default:
+                break;
+        }
     }
     return 1;
 }
@@ -1969,14 +1957,9 @@ zend_op_array* apc_copy_op_array_for_execution(zend_op_array* dst, zend_op_array
     dst->refcount = apc_xmemcpy(src->refcount,
                                       sizeof(src->refcount[0]),
                                       apc_php_malloc);
-#ifdef ZEND_ENGINE_2
-    if(flags->use_globals) {
-        my_fetch_global_vars(dst TSRMLS_CC);
-    }
-#endif
+    
+    my_prepare_op_array_for_execution(dst,src TSRMLS_CC);
 
-    my_copy_data_exceptions(dst, src);
-    /*check_op_array_integrity(dst);*/
     return dst;
 }
 /* }}} */
