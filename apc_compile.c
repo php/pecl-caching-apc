@@ -1163,17 +1163,24 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_mal
             case ZEND_JMPNZ_EX:
                 flags->has_jumps = 1;
                 break;
+#ifdef ZEND_ENGINE_2
+            /* auto_globals_jit was not in php-4.3.* */
             case ZEND_FETCH_R:
             case ZEND_FETCH_W:
-                if(zo->op2.u.EA.type == ZEND_FETCH_GLOBAL &&
-                    zo->op1.op_type == IS_CONST && 
-                    zo->op1.u.constant.type == IS_STRING) {
-                    znode * varname = &zo->op1;
-                    if (varname->u.constant.value.str.val[0] == '_') {
-                        flags->use_globals = 1;
+                if(PG(auto_globals_jit))
+                {
+                     /* The fetch is only required if auto_globals_jit=1  */
+                    if(zo->op2.u.EA.type == ZEND_FETCH_GLOBAL &&
+                            zo->op1.op_type == IS_CONST && 
+                            zo->op1.u.constant.type == IS_STRING) {
+                        znode * varname = &zo->op1;
+                        if (varname->u.constant.value.str.val[0] == '_') {
+                            flags->use_globals = 1;
+                        }
                     }
                 }
                 break;
+#endif
             case ZEND_RECV_INIT:
                 if(zo->op2.op_type == IS_CONST &&
                     zo->op2.u.constant.type == IS_CONSTANT_ARRAY) {
