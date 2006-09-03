@@ -104,6 +104,16 @@ static void change_branch_target(zend_op* op, int old, int new)
             assert(0);
         }
         break;
+#ifdef ZEND_ENGINE_2
+      case ZEND_CATCH:
+        if(op->extended_value == old) {
+            op->extended_value = new;
+        }
+        else {
+            assert(0);
+        }
+        break;
+#endif
       case ZEND_NOP:
         /* Source op was optimized away by rewrite_needless_jmp */
         break;
@@ -127,6 +137,9 @@ static int is_branch_op(int opcode)
       case ZEND_FE_FETCH:
       case ZEND_FE_RESET:
       case ZEND_JMPZNZ:
+#ifdef ZEND_ENGINE_2
+      case ZEND_CATCH:
+#endif
         return 1;
     }
     return 0;
@@ -572,6 +585,10 @@ static Pair* extract_branch_targets(zend_op_array* op_array, int i)
         return cons(op->op2.u.opline_num, 0);
       case ZEND_JMPZNZ:
         return cons(op->op2.u.opline_num, cons(op->extended_value, 0));
+#ifdef ZEND_ENGINE_2
+      case ZEND_CATCH:
+        return cons(op->extended_value, 0);
+#endif
     }
     return 0;
 }
