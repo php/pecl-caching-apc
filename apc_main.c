@@ -196,7 +196,6 @@ static int install_class(apc_class_t cl TSRMLS_DC)
 /* {{{ uninstall_class */
 static int uninstall_class(apc_class_t cl TSRMLS_DC)
 {
-    zend_class_entry* class_entry = cl.class_entry;
     int status;
 
 #ifdef ZEND_ENGINE_2                           
