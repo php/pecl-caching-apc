@@ -1899,6 +1899,7 @@ static int my_prepare_op_array_for_execution(zend_op_array* dst, zend_op_array* 
         }
         
         switch(zo->opcode) {
+#ifdef ZEND_ENGINE_2
             case ZEND_JMP:
                 if(needcopy) {
                     dzo->op1.u.jmp_addr = dst->opcodes + 
@@ -1914,7 +1915,6 @@ static int my_prepare_op_array_for_execution(zend_op_array* dst, zend_op_array* 
                                             (zo->op2.u.jmp_addr - src->opcodes);
                 }
                 break;
-#ifdef ZEND_ENGINE_2
             /* auto_globals_jit was not in php4 */
             case ZEND_FETCH_R:
             case ZEND_FETCH_W:
