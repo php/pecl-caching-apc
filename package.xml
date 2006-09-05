@@ -55,12 +55,12 @@ hp.net/dtd/package-2.0 http://pear.php.net/dtd/package-2.0.xsd">
   <active>yes</active>
  </developer>
  
- <date>2006-09-05</date>
- <version><release>3.0.12p2</release><api>3.0.0</api></version>
+ <date>2006-??-??</date>
+ <version><release>3.0.13</release><api>3.0.0</api></version>
  <stability><release>stable</release><api>stable</api></stability>
  <license uri="http://www.php.net/license">PHP License</license>
  <notes>
-* Let's get the version number right.  3.0.12p2 now.
+* 
  </notes>
 
  <contents>
@@ -367,6 +367,16 @@ Allow keys used in apc_store/apc_fetch/apc_delete to be binary safe and prevent 
      <date>2006-09-05</date>
      <notes>
 * The only change here is a trivial PHP 4 build fix.  
+     </notes>
+    </release>
+
+    <release>
+     <stability><release>stable</release><api>stable</api></stability>
+     <version><release>3.0.12p2</release><api>3.0.0</api></version>
+     <date>2006-09-05</date>
+
+     <notes>
+* Let's get the version number right.  3.0.12p2 now.
      </notes>
     </release>
  </changelog>
