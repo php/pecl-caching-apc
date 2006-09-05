@@ -55,30 +55,43 @@ hp.net/dtd/package-2.0 http://pear.php.net/dtd/package-2.0.xsd">
   <active>yes</active>
  </developer>
  
- <date>2006-08-16</date>
- <version><release>3.0.11</release><api>3.0.0</api></version>
+ <date>2006-09-04</date>
+ <version><release>3.0.12</release><api>3.0.0</api></version>
  <stability><release>stable</release><api>stable</api></stability>
  <license uri="http://www.php.net/license">PHP License</license>
  <notes>
-* Made --enable-apc-mmap the default compile option (for real this time)
+* Fix stray debug message
 
-* Add an optional flag to apc_cache_info() and some apc.php tweaks to make it
-  only fetch header information to make it useful when you have tens of
-  thousands of entries.  (Brian Shire)
+* Work on the optimizer - still not stable (Gopal, Ilia, Sara)
 
-* 64-bit fixes (George)
+* Performance boost - Replace multiple loops over the opcode
+  array with a single loop for copying, jump fixups and auto
+  global pre-fetches. (Gopal)
 
-* Don't mix Full Path and Inode keys (George)
+* Perform fetch_global checks only in php5 and only if 
+  auto_globals_jit is enabled. (Gopal)
 
-* Override ZEND_INCLUDE_OR_EVAL opcode (when possible) to speed up use of
-  require_once() and include_once() statements. (Sara)
+* Fix bug #8579 - scrub php4 classes' function_table and default
+  properties before inserting into cache. (Gopal)
 
-* Add a non-blocking write_lock for cache inserts.  This is a better approach
-  to prevent cache slams and deprecates the slam_defense setting. (Rasmus)
+* Fix bug #8606 - ZEND_FETCH_GLOBAL is not an opcode, but is a 
+  op1->type.  The opcodes applicable are ZEND_FETCH_R and 
+  ZEND_FETCH_W. (Gopal)
 
-* A bit of work on the optimizer.  (Sara)
+* PHP 5.2 Compatibility (Gopal)
 
-* Various memory issues resolved. (Gopal)
+* Make the include_once override optional - default off (Sara)
+
+* Fixed crash when apc run in CLI, but enable_cli is off. (Ilia)
+
+* Ensure that the apc_globals->cache_stack is cleared before the 
+  shm cache is destroyed. Fixes segfault for corner-case i.e request
+  shutdown (apc_deactivate) is not called before module shutdown 
+  calls (php_apc_shutdown_globals)  (Gopal)
+
+* TSRM fixes (ensure ts_free_id before apc.so is dlclosed) (Gopal)
+
+* Fix memory leak of apc_cache_info_t->deleted_list (Gopal)
  </notes>
 
  <contents>
@@ -311,6 +324,32 @@ Allow keys used in apc_store/apc_fetch/apc_delete to be binary safe and prevent 
 
 * Get rid of the lock safety net hack I added in 3.0.9.  It seems to cause more problems
   than it solves.  I'll need to revisit locking and signal handling at some point soon.
+     </notes>
+    </release>
+    <release>
+     <stability><release>stable</release><api>stable</api></stability>
+     <version><release>3.0.11</release><api>3.0.0</api></version>
+     <date>2006-08-16</date>
+     <notes>
+* Made --enable-apc-mmap the default compile option (for real this time)
+
+* Add an optional flag to apc_cache_info() and some apc.php tweaks to make it
+  only fetch header information to make it useful when you have tens of
+  thousands of entries.  (Brian Shire)
+
+* 64-bit fixes (George)
+
+* Don't mix Full Path and Inode keys (George)
+
+* Override ZEND_INCLUDE_OR_EVAL opcode (when possible) to speed up use of
+  require_once() and include_once() statements. (Sara)
+
+* Add a non-blocking write_lock for cache inserts.  This is a better approach
+  to prevent cache slams and deprecates the slam_defense setting. (Rasmus)
+
+* A bit of work on the optimizer.  (Sara)
+
+* Various memory issues resolved. (Gopal)
      </notes>
     </release>
  </changelog>
