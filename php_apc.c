@@ -53,6 +53,7 @@ PHP_FUNCTION(apc_clear_cache);
 PHP_FUNCTION(apc_sma_info);
 PHP_FUNCTION(apc_store);
 PHP_FUNCTION(apc_fetch);
+PHP_FUNCTION(apc_delete);
 PHP_FUNCTION(apc_define_constants);
 PHP_FUNCTION(apc_load_constants);
 /* }}} */
