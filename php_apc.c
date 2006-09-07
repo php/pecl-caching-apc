@@ -260,14 +260,14 @@ PHP_FUNCTION(apc_cache_info)
     add_assoc_long(return_value, "num_entries", info->num_entries);
     add_assoc_long(return_value, "num_inserts", info->num_inserts);
 #if APC_MMAP
-    add_assoc_stringl(return_value, "memory_type", "mmap", sizeof("mmap"), 0);
+    add_assoc_stringl(return_value, "memory_type", "mmap", sizeof("mmap"), 1);
 #else
-    add_assoc_stringl(return_value, "memory_type", "IPC shared", sizeof("IPC shared"), 0);
+    add_assoc_stringl(return_value, "memory_type", "IPC shared", sizeof("IPC shared"), 1);
 #endif
 #if APC_SEM_LOCKS
-    add_assoc_stringl(return_value, "locking_type", "IPC semaphore", sizeof("IPC semaphore"), 0);
+    add_assoc_stringl(return_value, "locking_type", "IPC semaphore", sizeof("IPC semaphore"), 1);
 #else
-    add_assoc_stringl(return_value, "locking_type", "file", sizeof("file"), 0);
+    add_assoc_stringl(return_value, "locking_type", "file", sizeof("file"), 1);
 #endif
 
     if(limited) {
