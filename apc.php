@@ -61,6 +61,8 @@ function defaults($d,$v) {
 //
 $PHP_SELF= isset($_SERVER['PHP_SELF']) ? htmlentities(strip_tags($_SERVER['PHP_SELF'],'')) : '';
 $time = time();
+$host = getenv('HOSTNAME');
+if($host) { $host = '('.$host.')'; }
 
 // operation constants
 define('OB_HOST_STATS',1);
@@ -487,7 +489,7 @@ EOB;
 ?>
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html>
-<head><title>APC INFO</title>
+<head><title>APC INFO <?= $host ?></title>
 <style><!--
 body { background:white; font-size:100.01%; margin:0; padding:0; }
 body,p,td,th,input,submit { font-size:0.8em;font-family:arial,helvetica,sans-serif; }
@@ -746,6 +748,13 @@ case OB_HOST_STATS:
 	$mem_used = $mem_size-$mem_avail;
 	$seg_size = bsize($mem['seg_size']);
 	$req_rate = sprintf("%.2f",($cache['num_hits']+$cache['num_misses'])/($time-$cache['start_time']));
+	$hit_rate = sprintf("%.2f",($cache['num_hits'])/($time-$cache['start_time']));
+	$miss_rate = sprintf("%.2f",($cache['num_misses'])/($time-$cache['start_time']));
+	$insert_rate = sprintf("%.2f",($cache['num_inserts'])/($time-$cache['start_time']));
+	$req_rate_user = sprintf("%.2f",($cache_user['num_hits']+$cache_user['num_misses'])/($time-$cache_user['start_time']));
+	$hit_rate_user = sprintf("%.2f",($cache_user['num_hits'])/($time-$cache_user['start_time']));
+	$miss_rate_user = sprintf("%.2f",($cache_user['num_misses'])/($time-$cache_user['start_time']));
+	$insert_rate_user = sprintf("%.2f",($cache_user['num_inserts'])/($time-$cache_user['start_time']));
 	$apcversion = phpversion('apc');
 	$phpversion = phpversion();
 	$number_files = $cache['num_entries']; 
@@ -761,23 +770,45 @@ case OB_HOST_STATS:
 EOB;
 
 	if(!empty($_SERVER['SERVER_NAME']))
-		echo "<tr class=tr-0><td class=td-0>APC Host</td><td>{$_SERVER['SERVER_NAME']}</td></tr>\n";
+		echo "<tr class=tr-0><td class=td-0>APC Host</td><td>{$_SERVER['SERVER_NAME']} $host</td></tr>\n";
 	if(!empty($_SERVER['SERVER_SOFTWARE']))
 		echo "<tr class=tr-1><td class=td-0>Server Software</td><td>{$_SERVER['SERVER_SOFTWARE']}</td></tr>\n";
 
 	echo <<<EOB
-		<tr class=tr-0><td class=td-0>Cached Files</td><td>$number_files ($size_files)</td></tr>
-		<tr class=tr-1><td class=td-0>Cached Variables</td><td>$number_vars ($size_vars)</td></tr>
-		<tr class=tr-0><td class=td-0>Hits</td><td>{$cache['num_hits']}</td></tr>
-		<tr class=tr-1><td class=td-0>Misses</td><td>{$cache['num_misses']}</td></tr>
-		<tr class=tr-0><td class=td-0>Request Rate</td><td>$req_rate cache requests/second</td></tr>
-		<tr class=tr-1><td class=td-0>Time To Live</td><td>{$cache['ttl']}</td></tr>
-		<tr class=tr-0><td class=td-0>Shared Memory</td><td>{$mem['num_seg']} Segment(s) with $seg_size</td></tr>
-		<tr class=tr-1><td class=td-0>Cache full count</td><td>{$cache['expunges']}</td></tr>
+		<tr class=tr-0><td class=td-0>Shared Memory</td><td>{$mem['num_seg']} Segment(s) with $seg_size 
+    <br/> ({$cache['memory_type']} memory, {$cache['locking_type']} locking)
+    </td></tr>
 EOB;
-	echo   '<tr class=tr-0><td class=td-0>Start Time</td><td>',date(DATE_FORMAT,$cache['start_time']),'</td></tr>';
-	echo   '<tr class=tr-1><td class=td-0>Uptime</td><td>',duration($cache['start_time']),'</td></tr>';
+	echo   '<tr class=tr-1><td class=td-0>Start Time</td><td>',date(DATE_FORMAT,$cache['start_time']),'</td></tr>';
+	echo   '<tr class=tr-0><td class=td-0>Uptime</td><td>',duration($cache['start_time']),'</td></tr>';
 	echo <<<EOB
+		</tbody></table>
+		</div>
+
+		<div class="info div1"><h2>File Cache Information</h2>
+		<table cellspacing=0><tbody>
+		<tr class=tr-0><td class=td-0>Cached Files</td><td>$number_files ($size_files)</td></tr>
+		<tr class=tr-1><td class=td-0>Hits</td><td>{$cache['num_hits']}</td></tr>
+		<tr class=tr-0><td class=td-0>Misses</td><td>{$cache['num_misses']}</td></tr>
+		<tr class=tr-1><td class=td-0>Request Rate (hits, misses)</td><td>$req_rate cache requests/second</td></tr>
+		<tr class=tr-0><td class=td-0>Hit Rate</td><td>$hit_rate cache requests/second</td></tr>
+		<tr class=tr-1><td class=td-0>Miss Rate</td><td>$miss_rate cache requests/second</td></tr>
+		<tr class=tr-0><td class=td-0>Insert Rate</td><td>$insert_rate cache requests/second</td></tr>
+		<tr class=tr-1><td class=td-0>Cache full count</td><td>{$cache['expunges']}</td></tr>
+		</tbody></table>
+		</div>
+
+		<div class="info div1"><h2>User Cache Information</h2>
+		<table cellspacing=0><tbody>
+    <tr class=tr-0><td class=td-0>Cached Variables</td><td>$number_vars ($size_vars)</td></tr>
+		<tr class=tr-1><td class=td-0>Hits</td><td>{$cache_user['num_hits']}</td></tr>
+		<tr class=tr-0><td class=td-0>Misses</td><td>{$cache_user['num_misses']}</td></tr>
+		<tr class=tr-1><td class=td-0>Request Rate (hits, misses)</td><td>$req_rate_user cache requests/second</td></tr>
+		<tr class=tr-0><td class=td-0>Hit Rate</td><td>$hit_rate_user cache requests/second</td></tr>
+		<tr class=tr-1><td class=td-0>Miss Rate</td><td>$miss_rate_user cache requests/second</td></tr>
+		<tr class=tr-0><td class=td-0>Insert Rate</td><td>$insert_rate_user cache requests/second</td></tr>
+		<tr class=tr-1><td class=td-0>Cache full count</td><td>{$cache_user['expunges']}</td></tr>
+
 		</tbody></table>
 		</div>
 

@@ -273,6 +273,7 @@ struct apc_cache_info_t {
     time_t start_time;
     int expunges;
     int num_entries;
+    int num_inserts;
     size_t mem_size;
 };
 /* }}} */

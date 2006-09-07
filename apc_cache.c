@@ -68,6 +68,7 @@ typedef struct header_t header_t;
 struct header_t {
     int num_hits;               /* total successful hits in cache */
     int num_misses;             /* total unsuccessful hits in cache */
+    int num_inserts;            /* total successful inserts in cache */
     slot_t* deleted_list;       /* linked list of to-be-deleted slots */
     time_t start_time;          /* time the above counters were reset */
     int expunges;               /* total number of expunges */
@@ -473,6 +474,7 @@ int apc_cache_insert(apc_cache_t* cache,
    
     cache->header->mem_size += value->mem_size;
     cache->header->num_entries++;
+    cache->header->num_inserts++;
     
     UNLOCK(cache);
     return 1;
@@ -533,6 +535,7 @@ int apc_cache_user_insert(apc_cache_t* cache, apc_cache_key_t key, apc_cache_ent
         cache->header->mem_size += *APCG(mem_size_ptr);
     }
     cache->header->num_entries++;
+    cache->header->num_inserts++;
 
     UNLOCK(cache);
     return 1;
@@ -956,6 +959,7 @@ apc_cache_info_t* apc_cache_info(apc_cache_t* cache, zend_bool limited)
     info->expunges = cache->header->expunges;
     info->mem_size = cache->header->mem_size;
     info->num_entries = cache->header->num_entries;
+    info->num_inserts = cache->header->num_inserts;
 
     if(!limited) {
         /* For each hashtable slot */

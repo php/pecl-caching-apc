@@ -151,6 +151,11 @@ static PHP_MINFO_FUNCTION(apc)
 #else
     php_info_print_table_row(2, "MMAP Support", "Disabled");
 #endif
+#if APC_SEM
+    php_info_print_table_row(2, "Locking type", "IPC Semaphore");
+#else
+    php_info_print_table_row(2, "Locking type", "File Locks");
+#endif
     php_info_print_table_row(2, "Revision", "$Revision$");
     php_info_print_table_row(2, "Build Date", __DATE__ " " __TIME__);
     php_info_print_table_end();
@@ -252,6 +257,22 @@ PHP_FUNCTION(apc_cache_info)
     add_assoc_long(return_value, "expunges", info->expunges);
     add_assoc_long(return_value, "mem_size", info->mem_size);
     add_assoc_long(return_value, "num_entries", info->num_entries);
+    add_assoc_long(return_value, "num_inserts", info->num_inserts);
+#if APC_MMAP
+    add_assoc_stringl(return_value, "memory_type", "mmap", sizeof("mmap"), 0);
+#else
+    add_assoc_stringl(return_value, "memory_type", "IPC shared", sizeof("IPC shared"), 0);
+#endif
+#if APC_SEM_LOCKS
+    add_assoc_stringl(return_value, "locking_type", "IPC semaphore", sizeof("IPC semaphore"), 0);
+#else
+    add_assoc_stringl(return_value, "locking_type", "file", sizeof("file"), 0);
+#endif
+
+    if(limited) {
+        apc_cache_free_info(info);
+        return;
+    }
     
     ALLOC_INIT_ZVAL(list);
     array_init(list);
