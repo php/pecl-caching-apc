@@ -500,9 +500,15 @@ void *apc_erealloc_wrapper(void *ptr, size_t size) {
     return _erealloc(ptr, size, 0 ZEND_FILE_LINE_CC ZEND_FILE_LINE_EMPTY_CC);
 }
 
-/* {{{ proto mixed apc_fetch(string key)
+/* {{{ proto mixed apc_fetch(mixed key)
  */
 PHP_FUNCTION(apc_fetch) {
+    zval *key;
+    HashTable *hash;
+    HashPosition hpos;
+    zval **hentry;
+    zval *result;
+    zval *result_entry;
     char *strkey;
     int strkey_len;
     apc_cache_entry_t* entry;
@@ -510,11 +516,9 @@ PHP_FUNCTION(apc_fetch) {
 
     if(!APCG(enabled)) RETURN_FALSE;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &strkey, &strkey_len) == FAILURE) {
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &key) == FAILURE) {
         return;
     }
-
-    if(!strkey_len) RETURN_FALSE;
 
 #if PHP_API_VERSION <= 20041225
 #if HAVE_APACHE && defined(APC_PHP4_STAT)
@@ -526,6 +530,10 @@ PHP_FUNCTION(apc_fetch) {
     t = sapi_get_request_time(TSRMLS_C);
 #endif
 
+    if(Z_TYPE_P(key) == IS_STRING) {
+        strkey = Z_STRVAL_P(key);
+        strkey_len = Z_STRLEN_P(key);
+        if(!strkey_len) RETURN_FALSE;
     entry = apc_cache_user_find(apc_user_cache, strkey, strkey_len + 1, t);
     if(entry) {
         /* deep-copy returned shm zval to emalloc'ed return_value */
@@ -534,6 +542,33 @@ PHP_FUNCTION(apc_fetch) {
     } else {
         RETURN_FALSE;
     }
+    } else if(Z_TYPE_P(key) == IS_ARRAY) {
+        hash = Z_ARRVAL_P(key);
+        MAKE_STD_ZVAL(result);
+        array_init(result); 
+        zend_hash_internal_pointer_reset_ex(hash, &hpos);
+        while(zend_hash_get_current_data_ex(hash, (void**)&hentry, &hpos) == SUCCESS) {
+            if(Z_TYPE_PP(hentry) != IS_STRING) {
+                zend_error(E_WARNING, "apc_fetch() expects a string or array of strings.");
+                RETURN_FALSE;
+            }
+            entry = apc_cache_user_find(apc_user_cache, Z_STRVAL_PP(hentry), Z_STRLEN_PP(hentry) + 1, t);
+            if(entry) {
+                /* deep-copy returned shm zval to emalloc'ed return_value */
+                MAKE_STD_ZVAL(result_entry);
+                apc_cache_fetch_zval(result_entry, entry->data.user.val, apc_php_malloc, apc_php_free);
+                apc_cache_release(apc_user_cache, entry);
+                zend_hash_add(Z_ARRVAL_P(result), Z_STRVAL_PP(hentry), Z_STRLEN_PP(hentry) +1, &result_entry, sizeof(zval*), NULL);
+            } /* don't set values we didn't find */
+            zend_hash_move_forward_ex(hash, &hpos);
+        }
+        RETURN_ZVAL(result, 0, 1);
+    } else {
+        zend_error(E_WARNING, "apc_fetch() expects a string or array of strings.");
+        RETURN_FALSE;
+    }
+
+    return;
 }
 /* }}} */
 
