@@ -1167,6 +1167,8 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_mal
             /* auto_globals_jit was not in php-4.3.* */
             case ZEND_FETCH_R:
             case ZEND_FETCH_W:
+            case ZEND_FETCH_IS:
+            case ZEND_FETCH_FUNC_ARG:
                 if(PG(auto_globals_jit))
                 {
                      /* The fetch is only required if auto_globals_jit=1  */
@@ -1918,6 +1920,8 @@ static int my_prepare_op_array_for_execution(zend_op_array* dst, zend_op_array* 
             /* auto_globals_jit was not in php4 */
             case ZEND_FETCH_R:
             case ZEND_FETCH_W:
+            case ZEND_FETCH_IS:
+            case ZEND_FETCH_FUNC_ARG:
                 if(PG(auto_globals_jit) && flags->use_globals)
                 {
                      /* The fetch is only required if auto_globals_jit=1  */
