@@ -60,7 +60,7 @@ int apc_rfc1867_progress(unsigned int event, void *event_data, void **extra TSRM
 			{
                 multipart_event_formdata *data = (multipart_event_formdata *) event_data;
 
-				if(data->name && !strncasecmp(data->name,"php_upload_progress",19) && data->value && data->length && data->length < 58) {
+				if(data->name && !strncasecmp(data->name,"apc_upload_progress",19) && data->value && data->length && data->length < 58) {
                     strlcat(tracking_key, "upload_", 63);
                     strlcat(tracking_key, *data->value, 63);
                     key_length = data->length+7;
