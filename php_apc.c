@@ -38,6 +38,7 @@
 #include "php_ini.h"
 #include "ext/standard/info.h"
 #include "SAPI.h"
+#include "rfc1867.h"
 #if PHP_API_VERSION <= 20020918
 #if HAVE_APACHE
 #ifdef APC_PHP4_STAT
@@ -164,6 +165,10 @@ static PHP_MINFO_FUNCTION(apc)
 }
 /* }}} */
 
+#ifdef MULTIPART_EVENT_FORMDATA
+extern int apc_rfc1867_progress(unsigned int event, void *event_data, void **extra TSRMLS_DC);
+#endif
+
 /* {{{ PHP_MINIT_FUNCTION(apc) */
 static PHP_MINIT_FUNCTION(apc)
 {
@@ -180,6 +185,11 @@ static PHP_MINIT_FUNCTION(apc)
         apc_module_init(module_number TSRMLS_CC);
         apc_zend_init(TSRMLS_C);
     }
+
+#ifdef MULTIPART_EVENT_FORMDATA
+    /* File upload progress tracking */
+    php_rfc1867_callback = apc_rfc1867_progress;
+#endif
 
     return SUCCESS;
 }
@@ -421,7 +431,7 @@ PHP_FUNCTION(apc_sma_info)
 /* }}} */
 
 /* {{{ _apc_store */
-static int _apc_store(char *strkey, int strkey_len, const zval *val, const unsigned int ttl TSRMLS_DC) {
+int _apc_store(char *strkey, int strkey_len, const zval *val, const unsigned int ttl TSRMLS_DC) {
     apc_cache_entry_t *entry;
     apc_cache_key_t key;
     time_t t;
@@ -458,7 +468,6 @@ static int _apc_store(char *strkey, int strkey_len, const zval *val, const unsig
         HANDLE_UNBLOCK_INTERRUPTIONS();
         return 0;
     }
-
 
     if (!apc_cache_user_insert(apc_user_cache, key, entry, t TSRMLS_CC)) {
         APCG(mem_size_ptr) = NULL;

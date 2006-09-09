@@ -66,7 +66,7 @@ hp.net/dtd/package-2.0 http://pear.php.net/dtd/package-2.0.xsd">
  <stability><release>stable</release><api>stable</api></stability>
  <license uri="http://www.php.net/license">PHP License</license>
  <notes>
-* 
+* PHP 5.2 file upload progress tracking support (Rasmus)
  </notes>
 
  <contents>
@@ -112,6 +112,7 @@ hp.net/dtd/package-2.0 http://pear.php.net/dtd/package-2.0.xsd">
     <file role="src" name="php_apc.c" />
     <file role="src" name="php_apc.h" />
     <file role="src" name="apc_fcntl_win32.c" />
+    <file role="src" name="apc_rfc1867.c" />
     <file role="php" name="apc.php" />
     <dir name="tests">
      <file role="test" name="apc_001.phpt" />

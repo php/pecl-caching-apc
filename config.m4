@@ -102,7 +102,8 @@ if test "$PHP_APC" != "no"; then
                apc_shm.c \
                apc_sma.c \
                apc_stack.c \
-               apc_zend.c"
+               apc_zend.c \
+               apc_rfc1867.c"
 
   PHP_CHECK_LIBRARY(rt, shm_open, [PHP_ADD_LIBRARY(rt,,APC_SHARED_LIBADD)])
   PHP_NEW_EXTENSION(apc, $apc_sources, $ext_shared,, \\$(APC_CFLAGS))
