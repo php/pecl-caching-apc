@@ -28,11 +28,20 @@
 /* $Id$*/
 
 #include "apc.h"
-#include <rfc1867.h>
+#include "rfc1867.h"
 
 #ifdef MULTIPART_EVENT_FORMDATA
+extern int _apc_store(char *strkey, int strkey_len, const zval *val, const unsigned int ttl TSRMLS_DC);
 
-int apc_rfc1867_progress(unsigned int event, void *event_data, void **extra TSRMLS_DC) {
+static double my_time() {
+    struct timeval a;
+    double t;
+    gettimeofday(&a, NULL);
+    t = a.tv_sec + (a.tv_usec/1000000);
+    return t;
+}
+
+void apc_rfc1867_progress(unsigned int event, void *event_data, void **extra TSRMLS_DC) {
     static char tracking_key[64];
     static int  key_length = 0;
     static size_t content_length = 0;
@@ -40,6 +49,9 @@ int apc_rfc1867_progress(unsigned int event, void *event_data, void **extra TSRM
     static char name[64];
     static char *temp_filename=NULL;
     static int cancel_upload = 0;
+    static double start_time;
+    static size_t bytes_processed = 0;
+    static double rate;
     zval *track = NULL;
 
 	switch (event) {
@@ -53,6 +65,9 @@ int apc_rfc1867_progress(unsigned int event, void *event_data, void **extra TSRM
                 temp_filename = NULL;
                 *filename= '\0';
                 key_length = 0;
+                start_time = my_time();
+                bytes_processed = 0;
+                rate = 0;
 			}
 			break;
 
@@ -64,6 +79,7 @@ int apc_rfc1867_progress(unsigned int event, void *event_data, void **extra TSRM
                     strlcat(tracking_key, "upload_", 63);
                     strlcat(tracking_key, *data->value, 63);
                     key_length = data->length+7;
+                    bytes_processed = data->post_bytes_processed;
 				}
 			}
 			break;
@@ -72,13 +88,14 @@ int apc_rfc1867_progress(unsigned int event, void *event_data, void **extra TSRM
             if(*tracking_key) {
                 multipart_event_file_start *data = (multipart_event_file_start *) event_data;
 
+                bytes_processed = data->post_bytes_processed;
                 strncpy(filename,*data->filename,127);
                 temp_filename = NULL;
                 strncpy(name,data->name,63);
                 ALLOC_INIT_ZVAL(track);
                 array_init(track);
                 add_assoc_long(track, "total", content_length);
-                add_assoc_long(track, "current", data->post_bytes_processed);
+                add_assoc_long(track, "current", bytes_processed);
                 add_assoc_string(track, "filename", filename, 1);
                 add_assoc_string(track, "name", name, 1);
                 add_assoc_long(track, "done", 0);
@@ -90,10 +107,11 @@ int apc_rfc1867_progress(unsigned int event, void *event_data, void **extra TSRM
 		case MULTIPART_EVENT_FILE_DATA:
             if(*tracking_key) {
                 multipart_event_file_data *data = (multipart_event_file_data *) event_data;
+                bytes_processed = data->post_bytes_processed;
                 ALLOC_INIT_ZVAL(track);
                 array_init(track);
                 add_assoc_long(track, "total", content_length);
-                add_assoc_long(track, "current", data->post_bytes_processed);
+                add_assoc_long(track, "current", bytes_processed);
                 add_assoc_string(track, "filename", filename, 1);
                 add_assoc_string(track, "name", name, 1);
                 add_assoc_long(track, "done", 0);
@@ -105,12 +123,13 @@ int apc_rfc1867_progress(unsigned int event, void *event_data, void **extra TSRM
 		case MULTIPART_EVENT_FILE_END:
             if(*tracking_key) {
                 multipart_event_file_end *data = (multipart_event_file_end *) event_data;
+                bytes_processed = data->post_bytes_processed;
                 cancel_upload = data->cancel_upload;
                 temp_filename = data->temp_filename;
                 ALLOC_INIT_ZVAL(track);
                 array_init(track);
                 add_assoc_long(track, "total", content_length);
-                add_assoc_long(track, "current", data->post_bytes_processed);
+                add_assoc_long(track, "current", bytes_processed);
                 add_assoc_string(track, "filename", filename, 1);
                 add_assoc_string(track, "name", name, 1);
                 add_assoc_string(track, "temp_filename", temp_filename, 1);
@@ -123,11 +142,16 @@ int apc_rfc1867_progress(unsigned int event, void *event_data, void **extra TSRM
 
 		case MULTIPART_EVENT_END:
             if(*tracking_key) {
+                double now = my_time(); 
                 multipart_event_end *data = (multipart_event_end *) event_data;
+                bytes_processed = data->post_bytes_processed;
+                if(now>start_time) rate = 8.0*bytes_processed/(now-start_time);
+                else rate = 8.0*bytes_processed;  /* Too quick */
                 ALLOC_INIT_ZVAL(track);
                 array_init(track);
                 add_assoc_long(track, "total", content_length);
-                add_assoc_long(track, "current", data->post_bytes_processed);
+                add_assoc_long(track, "current", bytes_processed);
+                add_assoc_double(track, "rate", rate);
                 add_assoc_string(track, "filename", filename, 1);
                 add_assoc_string(track, "name", name, 1);
                 add_assoc_string(track, "temp_filename", temp_filename, 1);

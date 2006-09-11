@@ -269,6 +269,11 @@ PHP_FUNCTION(apc_cache_info)
     add_assoc_long(return_value, "mem_size", info->mem_size);
     add_assoc_long(return_value, "num_entries", info->num_entries);
     add_assoc_long(return_value, "num_inserts", info->num_inserts);
+#ifdef MULTIPART_EVENT_FORMDATA
+    add_assoc_long(return_value, "file_upload_progress", 1);
+#else
+    add_assoc_long(return_value, "file_upload_progress", 0);
+#endif
 #if APC_MMAP
     add_assoc_stringl(return_value, "memory_type", "mmap", sizeof("mmap"), 1);
 #else
@@ -279,7 +284,6 @@ PHP_FUNCTION(apc_cache_info)
 #else
     add_assoc_stringl(return_value, "locking_type", "file", sizeof("file"), 1);
 #endif
-
     if(limited) {
         apc_cache_free_info(info);
         return;
