@@ -70,7 +70,10 @@ ZEND_BEGIN_MODULE_GLOBALS(apc)
     zend_bool fpstat;            /* true if fullpath includes should be stat'ed */
     zend_bool write_lock;        /* true for a global write lock */
     zend_bool report_autofilter; /* true for auto-filter warnings */
-    zend_bool include_once;	 /* Override the ZEND_INCLUDE_OR_EVAL opcode handler to avoid pointless fopen()s [still experimental] */
+    zend_bool include_once;	     /* Override the ZEND_INCLUDE_OR_EVAL opcode handler to avoid pointless fopen()s [still experimental] */
+#ifdef MULTIPART_EVENT_FORMDATA
+    zend_bool rfc1867;           /* Flag to enable rfc1867 handler */
+#endif
 ZEND_END_MODULE_GLOBALS(apc)
 
 /* (the following declaration is defined in php_apc.c) */

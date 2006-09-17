@@ -28,7 +28,6 @@
 
 /* $Id$ */
 
-#include "php_apc.h"
 #include "apc_zend.h"
 #include "apc_cache.h"
 #include "apc_main.h"
@@ -39,6 +38,7 @@
 #include "ext/standard/info.h"
 #include "SAPI.h"
 #include "rfc1867.h"
+#include "php_apc.h"
 #if PHP_API_VERSION <= 20020918
 #if HAVE_APACHE
 #ifdef APC_PHP4_STAT
@@ -78,6 +78,7 @@ static void php_apc_init_globals(zend_apc_globals* apc_globals TSRMLS_DC)
     apc_globals->fpstat = 1;
     apc_globals->write_lock = 0;
     apc_globals->report_autofilter = 0;
+    apc_globals->rfc1867 = 0;
 }
 
 static void php_apc_shutdown_globals(zend_apc_globals* apc_globals TSRMLS_DC)
@@ -137,6 +138,9 @@ STD_PHP_INI_ENTRY("apc.max_file_size", "1M",    PHP_INI_SYSTEM, OnUpdateInt,    
 STD_PHP_INI_BOOLEAN("apc.stat", "1",            PHP_INI_SYSTEM, OnUpdateBool,           fpstat,           zend_apc_globals, apc_globals)
 STD_PHP_INI_BOOLEAN("apc.write_lock", "1",      PHP_INI_SYSTEM, OnUpdateBool,           write_lock,       zend_apc_globals, apc_globals)
 STD_PHP_INI_BOOLEAN("apc.report_autofilter", "0", PHP_INI_SYSTEM, OnUpdateBool,         report_autofilter,zend_apc_globals, apc_globals)
+#ifdef MULTIPART_EVENT_FORMDATA
+STD_PHP_INI_BOOLEAN("apc.rfc1867", "0", PHP_INI_SYSTEM, OnUpdateBool, rfc1867, zend_apc_globals, apc_globals)
+#endif
 PHP_INI_END()
 
 /* }}} */
@@ -188,7 +192,9 @@ static PHP_MINIT_FUNCTION(apc)
 
 #ifdef MULTIPART_EVENT_FORMDATA
     /* File upload progress tracking */
-    php_rfc1867_callback = apc_rfc1867_progress;
+    if(APCG(rfc1867)) {
+        php_rfc1867_callback = apc_rfc1867_progress;
+    }
 #endif
 
     return SUCCESS;
