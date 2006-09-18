@@ -238,8 +238,8 @@ void apc_zend_shutdown(TSRMLS_D)
 
 #else /* Opcode Overrides unavailable */
 
-void apc_zend_init(void) { }
-void apc_zend_shutdown(void) { }
+void apc_zend_init(TSRMLS_D) { }
+void apc_zend_shutdown(TSRMLS_D) { }
 
 #endif /* APC_OPCODE_OVERRIDE */
 
