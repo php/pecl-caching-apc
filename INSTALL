@@ -317,7 +317,8 @@ users should consider tuning the following parameters:
                             anonymous mmap.
 							              (Default: "")
 
-    apc.slam_defense        On very busy servers whenever you start the server or
+    apc.slam_defense        ** DEPRECATED - Use apc.write_lock instead **
+                            On very busy servers whenever you start the server or
                             modify files you can create a race of many processes
                             all trying to cache the same file at the same time.
                             This option sets the percentage of processes that will
@@ -366,3 +367,24 @@ users should consider tuning the following parameters:
                             includes.  If you turn this off you will need to restart
                             your server in order to update scripts.
                             (Default: 1)
+
+    apc.write_lock          On busy servers when you first start up the server, or when
+                            many files are modified, you can end up with all your processes
+                            trying to compile and cache the same files.  With write_lock 
+                            enabled, only one process at a time will try to compile an
+                            uncached script while the other processes will run uncached
+                            instead of sitting around waiting on a lock.
+                            (Default: 1)
+
+    apc.report_autofilter   Logs any scripts that were automatically excluded from being
+                            cached due to early/late binding issues.
+                            (Default: 0)
+
+    apc.rfc1867             RFC1867 File Upload Progress hook handler is only available
+                            if you compiled APC against PHP 5.2.0 or later.  When enabled
+                            any file uploads which includes a field called 
+                            APC_UPLOAD_PROGRESS before the file field in an upload form
+                            will cause APC to automatically create an upload_<key>
+                            user cache entry where <key> is the value of the 
+                            APC_UPLOAD_PROGRESS form entry.
+                            (Default: 0)

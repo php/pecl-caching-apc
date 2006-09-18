@@ -76,7 +76,7 @@ static void php_apc_init_globals(zend_apc_globals* apc_globals TSRMLS_DC)
     apc_globals->slam_defense = 0;
     apc_globals->mem_size_ptr = NULL;
     apc_globals->fpstat = 1;
-    apc_globals->write_lock = 0;
+    apc_globals->write_lock = 1;
     apc_globals->report_autofilter = 0;
     apc_globals->rfc1867 = 0;
 }
