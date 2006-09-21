@@ -764,7 +764,8 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
                             1,
                             allocate, deallocate,
                             (ht_check_copy_fun_t) my_check_copy_static_member,
-                            src)) {
+                            src,
+                            &src->default_static_members)) {
         goto cleanup;
     }
     if(src->static_members != &src->default_static_members)
@@ -776,7 +777,8 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
                             1,
                             allocate, deallocate,
                             (ht_check_copy_fun_t) my_check_copy_static_member,
-                            src))) {
+                            src,
+                            src->static_members))) {
             goto cleanup;
         }
     }
