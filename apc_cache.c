@@ -672,7 +672,7 @@ int apc_cache_make_file_key(apc_cache_key_t* key,
                        time_t t
 					   TSRMLS_DC)
 {
-    static char canon_path[PATH_MAX];
+    static char canon_path[MAXPATHLEN];
     struct stat buf, *tmp_buf=NULL;
     int len;
 	
