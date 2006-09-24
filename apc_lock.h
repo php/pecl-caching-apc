@@ -56,7 +56,11 @@
 #define apc_lck_unlock(a)     apc_sem_unlock(a)
 #else
 #define RDLOCK_AVAILABLE 1
+#ifdef PHP_WIN32
+#define NONBLOCKING_LOCK_AVAILABLE 0
+#else
 #define NONBLOCKING_LOCK_AVAILABLE 1
+#endif
 #define apc_lck_create(a,b,c) apc_fcntl_create((a))
 #define apc_lck_destroy(a)    apc_fcntl_destroy(a)
 #define apc_lck_lock(a)       apc_fcntl_lock(a)

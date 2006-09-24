@@ -15,6 +15,7 @@ if (PHP_APC != "no") {
 							 apc_shm.c \
 							 apc_sma.c \
 							 apc_stack.c \
+							 apc_rfc1867.c \
 							 apc_zend.c";
                
 	EXTENSION('apc', apc_sources);
