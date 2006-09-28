@@ -43,10 +43,10 @@
 
 /* {{{ locking macros */
 #define CREATE_LOCK     apc_lck_create(NULL, 0, 1)
-#define DESTROY_LOCK(c) apc_lck_destroy(c->lock)
-#define LOCK(c)         { HANDLE_BLOCK_INTERRUPTIONS(); apc_lck_lock(c->lock); }
-#define RDLOCK(c)       { HANDLE_BLOCK_INTERRUPTIONS(); apc_lck_rdlock(c->lock); }
-#define UNLOCK(c)       { apc_lck_unlock(c->lock); HANDLE_UNBLOCK_INTERRUPTIONS(); }
+#define DESTROY_LOCK(c) apc_lck_destroy(c->header->lock)
+#define LOCK(c)         { HANDLE_BLOCK_INTERRUPTIONS(); apc_lck_lock(c->header->lock); }
+#define RDLOCK(c)       { HANDLE_BLOCK_INTERRUPTIONS(); apc_lck_rdlock(c->header->lock); }
+#define UNLOCK(c)       { apc_lck_unlock(c->header->lock); HANDLE_UNBLOCK_INTERRUPTIONS(); }
 /* }}} */
 
 /* {{{ struct definition: slot_t */
@@ -66,6 +66,8 @@ struct slot_t {
    Any values that must be shared among processes should go in here. */
 typedef struct header_t header_t;
 struct header_t {
+    int lock;                   /* read/write lock (exclusive blocking cache lock) */
+    int wrlock;                 /* write lock (non-blocking used to prevent cache slams) */
     int num_hits;               /* total successful hits in cache */
     int num_misses;             /* total unsuccessful hits in cache */
     int num_inserts;            /* total successful inserts in cache */
@@ -86,8 +88,6 @@ struct apc_cache_t {
     int num_slots;              /* number of slots in cache */
     int gc_ttl;                 /* maximum time on GC list for a slot */
     int ttl;                    /* if slot is needed and entry's access time is older than this ttl, remove it */
-    int lock;                   /* read/write lock (exclusive blocking cache lock) */
-    int wrlock;                 /* write lock (non-blocking used to prevent cache slams) */
 };
 /* }}} */
 
@@ -298,9 +298,9 @@ apc_cache_t* apc_cache_create(int size_hint, int gc_ttl, int ttl)
     cache->num_slots = num_slots;
     cache->gc_ttl = gc_ttl;
     cache->ttl = ttl;
-    cache->lock   = CREATE_LOCK;
+    cache->header->lock   = CREATE_LOCK;
 #if NONBLOCKING_LOCK_AVAILABLE
-    cache->wrlock = CREATE_LOCK;
+    cache->header->wrlock = CREATE_LOCK;
 #endif
     for (i = 0; i < num_slots; i++) {
         cache->slots[i] = NULL;
@@ -1068,14 +1068,14 @@ zend_bool apc_cache_busy(apc_cache_t* cache)
 /* {{{ apc_cache_write_lock */
 zend_bool apc_cache_write_lock(apc_cache_t* cache)
 {
-    return apc_lck_nb_lock(cache->wrlock);
+    return apc_lck_nb_lock(cache->header->wrlock);
 }
 /* }}} */
 
 /* {{{ apc_cache_write_unlock */
 void apc_cache_write_unlock(apc_cache_t* cache)
 {
-    apc_lck_unlock(cache->wrlock);
+    apc_lck_unlock(cache->header->wrlock);
 }
 /* }}} */
 #endif

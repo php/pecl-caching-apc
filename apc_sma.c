@@ -53,10 +53,10 @@ static size_t sma_segsize;          /* size of each shm segment */
 static int* sma_segments;           /* array of shm segment ids */
 static void** sma_shmaddrs;         /* array of shm segment addresses */
 static int sma_lastseg = 0;         /* index of MRU segment */
-static int sma_lock;                /* sempahore to serialize access */
 
 typedef struct header_t header_t;
 struct header_t {
+    int sma_lock;        /* segment lock, MUST BE ALIGNED for futex locks */
     size_t segsize;    /* size of entire segment */
     size_t avail;      /* bytes available (not necessarily contiguous) */
     size_t nfoffset;   /* start next fit search from this offset       */
@@ -286,8 +286,6 @@ void apc_sma_init(int numseg, int segsize, char *mmap_file_mask)
     sma_segments = (int*) apc_emalloc(sma_numseg*sizeof(int));
     sma_shmaddrs = (void**) apc_emalloc(sma_numseg*sizeof(void*));
     
-    sma_lock = apc_lck_create(NULL, 0, 1);
-
     for (i = 0; i < sma_numseg; i++) {
         header_t*   header;
         block_t*    block;
@@ -304,6 +302,7 @@ void apc_sma_init(int numseg, int segsize, char *mmap_file_mask)
         shmaddr = sma_shmaddrs[i];
     
         header = (header_t*) shmaddr;
+        header->sma_lock = apc_lck_create(NULL, 0, 1);
         header->segsize = sma_segsize;
         header->avail = sma_segsize - sizeof(header_t) - sizeof(block_t) -
                         alignword(sizeof(int));
@@ -332,13 +331,13 @@ void apc_sma_cleanup()
     assert(sma_initialized);
 
     for (i = 0; i < sma_numseg; i++) {
+        apc_lck_destroy(((header_t*)sma_shmaddrs[i])->sma_lock);
 #if APC_MMAP
         apc_unmap(sma_shmaddrs[i], sma_segments[i]);
 #else
         apc_shm_detach(sma_shmaddrs[i]);
 #endif
     }
-    apc_lck_destroy(sma_lock);
     sma_initialized = 0;
     apc_efree(sma_segments);
     apc_efree(sma_shmaddrs);
@@ -353,17 +352,19 @@ void* apc_sma_malloc(size_t n)
 
     TSRMLS_FETCH();
     assert(sma_initialized);
-    LOCK(sma_lock);
+    LOCK(((header_t*)sma_shmaddrs[sma_lastseg])->sma_lock);
 
     off = sma_allocate(sma_shmaddrs[sma_lastseg], n);
     if (off != -1) {
         void* p = (void *)(((char *)(sma_shmaddrs[sma_lastseg])) + off);
         if (APCG(mem_size_ptr) != NULL) { *(APCG(mem_size_ptr)) += n; }
-        UNLOCK(sma_lock);
+        UNLOCK(((header_t*)sma_shmaddrs[sma_lastseg])->sma_lock);
         return p;
     }
+    UNLOCK(((header_t*)sma_shmaddrs[sma_lastseg])->sma_lock);
 
     for (i = 0; i < sma_numseg; i++) {
+        LOCK(((header_t*)sma_shmaddrs[i])->sma_lock);
         if (i == sma_lastseg) {
             continue;
         }
@@ -371,13 +372,13 @@ void* apc_sma_malloc(size_t n)
         if (off != -1) {
             void* p = (void *)(((char *)(sma_shmaddrs[i])) + off);
             if (APCG(mem_size_ptr) != NULL) { *(APCG(mem_size_ptr)) += n; }
-            UNLOCK(sma_lock);
+            UNLOCK(((header_t*)sma_shmaddrs[i])->sma_lock);
             sma_lastseg = i;
             return p;
         }
+        UNLOCK(((header_t*)sma_shmaddrs[i])->sma_lock);
     }
 
-    UNLOCK(sma_lock);
     return NULL;
 }
 /* }}} */
@@ -417,20 +418,20 @@ void apc_sma_free(void* p)
     }
 
     assert(sma_initialized);
-    LOCK(sma_lock);
 
     for (i = 0; i < sma_numseg; i++) {
+        LOCK(((header_t*)sma_shmaddrs[i])->sma_lock);
         size_t d_size = (size_t)((char *)p - (char *)(sma_shmaddrs[i]));
         if (p >= sma_shmaddrs[i] && d_size < sma_segsize) {
             sma_deallocate(sma_shmaddrs[i], d_size);
             if (APCG(mem_size_ptr) != NULL) { *(APCG(mem_size_ptr)) -= d_size; }
-            UNLOCK(sma_lock);
+            UNLOCK(((header_t*)sma_shmaddrs[i])->sma_lock);
             return;
         }
+        UNLOCK(((header_t*)sma_shmaddrs[i])->sma_lock);
     }
 
     apc_eprint("apc_sma_free: could not locate address %p", p);
-    UNLOCK(sma_lock);
 }
 /* }}} */
 
@@ -454,10 +455,9 @@ apc_sma_info_t* apc_sma_info()
         info->list[i] = NULL;
     }
 
-    RDLOCK(sma_lock);
-
     /* For each segment */
     for (i = 0; i < sma_numseg; i++) {
+        RDLOCK(((header_t*)sma_shmaddrs[i])->sma_lock);
         char* shmaddr = sma_shmaddrs[i];
         block_t* prv = BLOCKAT(sizeof(header_t));
 
@@ -475,9 +475,9 @@ apc_sma_info_t* apc_sma_info()
 
             prv = cur;
         }
+        UNLOCK(((header_t*)sma_shmaddrs[i])->sma_lock);
     }
 
-    UNLOCK(sma_lock);
     return info;
 }
 /* }}} */
@@ -520,12 +520,6 @@ size_t *apc_sma_get_alloc_distribution(void) {
     return header->adist; 
 }
 #endif
-/* {{{ apc_sma_unlock */
-void apc_sma_unlock()
-{
-    UNLOCK(sma_lock);
-}
-/* }}} */
 
 #if 0
 /* {{{ apc_sma_check_integrity */

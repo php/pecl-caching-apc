@@ -67,9 +67,27 @@ AC_ARG_ENABLE(apc-sem,
   AC_MSG_RESULT(no)
 ])
 
+AC_MSG_CHECKING(Checking whether we should use futex locking)
+AC_ARG_ENABLE(apc-futex,
+[  --enable-apc-futex
+                          Enable linux futex based locks ],
+[
+  PHP_APC_FUTEX=$enableval
+  AC_MSG_RESULT($enableval)
+],
+[
+  PHP_APC_FUTEX=no
+  AC_MSG_RESULT(no)
+])
+
+if test "$PHP_APC_FUTEX" != "no"; then
+	AC_CHECK_HEADER(linux/futex.h, , [ AC_MSG_ERROR([futex.h not found.  Please verify you that are running a 2.5 or older linux kernel and that futex support is enabled.]); ] )
+fi
+
 if test "$PHP_APC" != "no"; then
   test "$PHP_APC_MMAP" != "no" && AC_DEFINE(APC_MMAP, 1, [ ])
   test "$PHP_APC_SEM"  != "no" && AC_DEFINE(APC_SEM_LOCKS, 1, [ ])
+  test "$PHP_APC_FUTEX" != "no" && AC_DEFINE(APC_FUTEX_LOCKS, 1, [ ])
 
   AC_CACHE_CHECK(for union semun, php_cv_semun,
   [
@@ -100,6 +118,7 @@ if test "$PHP_APC" != "no"; then
                apc_pair.c \
                apc_sem.c \
                apc_shm.c \
+               apc_futex.c \
                apc_sma.c \
                apc_stack.c \
                apc_zend.c \

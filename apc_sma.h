@@ -42,7 +42,6 @@ extern void* apc_sma_malloc(size_t size);
 extern void* apc_sma_realloc(void* p, size_t size);
 extern char* apc_sma_strdup(const char *s);
 extern void apc_sma_free(void* p);
-extern void apc_sma_unlock();
 #if ALLOC_DISTRIBUTION 
 extern size_t *apc_sma_get_alloc_distribution();
 #endif

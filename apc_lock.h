@@ -54,6 +54,14 @@
 #define apc_lck_lock(a)       apc_sem_lock(a)
 #define apc_lck_rdlock(a)     apc_sem_lock(a)
 #define apc_lck_unlock(a)     apc_sem_unlock(a)
+#elif defined(APC_FUTEX_LOCKS)
+#define NONBLOCKING_LOCK_AVAILABLE 1 
+#define apc_lck_create(a,b,c) apc_futex_create()
+#define apc_lck_destroy(a)    apc_futex_destroy(&a)
+#define apc_lck_lock(a)       apc_futex_lock(&a)
+#define apc_lck_nb_lock(a)    apc_futex_nonblocking_lock(&a)
+#define apc_lck_rdlock(a)     apc_futex_lock(&a)
+#define apc_lck_unlock(a)     apc_futex_unlock(&a)
 #else
 #define RDLOCK_AVAILABLE 1
 #ifdef PHP_WIN32
