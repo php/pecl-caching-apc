@@ -70,7 +70,7 @@ AC_ARG_ENABLE(apc-sem,
 AC_MSG_CHECKING(Checking whether we should use futex locking)
 AC_ARG_ENABLE(apc-futex,
 [  --enable-apc-futex
-                          Enable linux futex based locks ],
+                          Enable linux futex based locks  EXPERIMENTAL ],
 [
   PHP_APC_FUTEX=$enableval
   AC_MSG_RESULT($enableval)
