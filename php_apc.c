@@ -555,18 +555,22 @@ PHP_FUNCTION(apc_fetch) {
     t = sapi_get_request_time(TSRMLS_C);
 #endif
 
+    if(Z_TYPE_P(key) != IS_STRING && Z_TYPE_P(key) != IS_ARRAY) {
+        convert_to_string(key);
+    }
+    
     if(Z_TYPE_P(key) == IS_STRING) {
         strkey = Z_STRVAL_P(key);
         strkey_len = Z_STRLEN_P(key);
         if(!strkey_len) RETURN_FALSE;
-    entry = apc_cache_user_find(apc_user_cache, strkey, strkey_len + 1, t);
-    if(entry) {
-        /* deep-copy returned shm zval to emalloc'ed return_value */
-        apc_cache_fetch_zval(return_value, entry->data.user.val, apc_php_malloc, apc_php_free);
-        apc_cache_release(apc_user_cache, entry);
-    } else {
-        RETURN_FALSE;
-    }
+        entry = apc_cache_user_find(apc_user_cache, strkey, strkey_len + 1, t);
+        if(entry) {
+            /* deep-copy returned shm zval to emalloc'ed return_value */
+            apc_cache_fetch_zval(return_value, entry->data.user.val, apc_php_malloc, apc_php_free);
+            apc_cache_release(apc_user_cache, entry);
+        } else {
+            RETURN_FALSE;
+        }
     } else if(Z_TYPE_P(key) == IS_ARRAY) {
         hash = Z_ARRVAL_P(key);
         MAKE_STD_ZVAL(result);
