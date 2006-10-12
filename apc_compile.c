@@ -857,7 +857,7 @@ cleanup:
     if(dst->properties_info.arBuckets) my_destroy_hashtable(&dst->properties_info, (ht_free_fun_t) my_free_property_info, deallocate);
     if(dst->default_static_members.arBuckets)
     {
-        my_destroy_hashtable(dst->static_members, (ht_free_fun_t) my_free_zval_ptr, deallocate);
+        my_destroy_hashtable(&dst->default_static_members, (ht_free_fun_t) my_free_zval_ptr, deallocate);
     }
     if(dst->static_members && dst->static_members != &(dst->default_static_members))
     {
