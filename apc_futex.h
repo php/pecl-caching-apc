@@ -19,10 +19,12 @@
 
 /* $Id$ */
 
-#ifdef APC_FUTEX
-
 #ifndef APC_FUTEX_H
 #define APC_FUTEX_H
+
+#include "apc.h"
+
+#ifdef APC_FUTEX_LOCKS 
 
 #include <asm/types.h>
 #include <unistd.h>

@@ -19,8 +19,6 @@
 
 /* $Id$ */
 
-#ifdef APC_FUTEX
-
 /***************************************************************************
 * Futex (Fast Userspace Mutex) support for APC
 * 
@@ -46,8 +44,11 @@
 *
 ***************************************************************************/
 
-#include "apc_futex.h"
 #include "apc.h"
+#include "apc_futex.h"
+
+#ifdef APC_FUTEX_LOCKS
+
 
 inline int apc_futex_create()
 {

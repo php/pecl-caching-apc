@@ -33,6 +33,7 @@
 
 #include "apc_sem.h"
 #include "apc_fcntl.h"
+#include "apc_futex.h"
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
