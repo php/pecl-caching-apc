@@ -241,7 +241,8 @@ static zend_function* my_bitwise_copy_function(zend_function* dst, zend_function
 static zval** my_copy_zval_ptr(zval** dst, const zval** src, apc_malloc_t allocate, apc_free_t deallocate)
 {
     int local_dst_alloc = 0;
-
+    zval* dst_new;
+    
     assert(src != NULL);
 
     if (!dst) {
@@ -253,7 +254,15 @@ static zval** my_copy_zval_ptr(zval** dst, const zval** src, apc_malloc_t alloca
         if(local_dst_alloc) deallocate(dst);
         return NULL;
     }
-    if(!my_copy_zval(*dst, *src, allocate, deallocate)) return NULL;
+    dst_new = my_copy_zval(*dst, *src, allocate, deallocate);
+    if(!dst) {
+        deallocate(dst);
+        return NULL;
+    }
+    if(dst_new != *dst) {
+        deallocate(*dst);
+        *dst = dst_new;
+    }
 
     /* deep-copying ensures that there is only one reference to this in memory */
     (*dst)->refcount = 1;
@@ -266,9 +275,26 @@ static zval** my_copy_zval_ptr(zval** dst, const zval** src, apc_malloc_t alloca
 /* {{{ my_copy_zval */
 static zval* my_copy_zval(zval* dst, const zval* src, apc_malloc_t allocate, apc_free_t deallocate)
 {
+    zval **tmp;
+    int destroy_zvallist = 0;
+    TSRMLS_FETCH();
+    
     assert(dst != NULL);
     assert(src != NULL);
 
+    /* Maintain a list of zvals we've copied to properly handle recursive structures */
+    if(!APCG(copied_zvals)) {
+        APCG(copied_zvals) = emalloc(sizeof(HashTable));
+        zend_hash_init(APCG(copied_zvals), 0, NULL, NULL, 0);
+        destroy_zvallist = 1;
+    } else {
+        if(zend_hash_index_find(APCG(copied_zvals), (ulong)src, (void**)&tmp) == SUCCESS) {
+            (*tmp)->refcount++;
+            return *tmp;
+        } 
+    }
+    zend_hash_index_update(APCG(copied_zvals), (ulong)src, (void**)&dst, sizeof(zval*), NULL);
+ 
     memcpy(dst, src, sizeof(src[0]));
 
     switch (src->type & ~IS_CONSTANT_INDEX) {
@@ -314,6 +340,11 @@ static zval* my_copy_zval(zval* dst, const zval* src, apc_malloc_t allocate, apc
                               1,
                               allocate, deallocate))) {
             my_destroy_class_entry(dst->value.obj.ce, deallocate);
+            if(destroy_zvallist) {
+                zend_hash_destroy(APCG(copied_zvals));
+                efree(APCG(copied_zvals));
+                APCG(copied_zvals) = NULL;
+            } 
             return NULL;
         }
         break;
@@ -326,6 +357,12 @@ static zval* my_copy_zval(zval* dst, const zval* src, apc_malloc_t allocate, apc
         assert(0);
     }
 
+    if(destroy_zvallist) {
+        zend_hash_destroy(APCG(copied_zvals));
+        efree(APCG(copied_zvals));
+        APCG(copied_zvals) = NULL;
+    } 
+    
     return dst;
 }
 /* }}} */
@@ -1029,7 +1066,8 @@ zval* apc_copy_zval(zval* dst, const zval* src, apc_malloc_t allocate, apc_free_
         local_dst_alloc = 1;
     }
 
-    if(!my_copy_zval(dst, src, allocate, deallocate)) {
+    dst = my_copy_zval(dst, src, allocate, deallocate);
+    if(!dst) {
         if(local_dst_alloc) deallocate(dst);
         return NULL;
     }
