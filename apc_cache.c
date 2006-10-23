@@ -546,6 +546,7 @@ int apc_cache_user_insert(apc_cache_t* cache, apc_cache_key_t key, apc_cache_ent
 apc_cache_entry_t* apc_cache_find(apc_cache_t* cache, apc_cache_key_t key, time_t t)
 {
     slot_t** slot;
+    volatile apc_cache_entry_t* value = NULL;
 
     LOCK(cache);
     if(key.type == APC_CACHE_KEY_FILE) slot = &cache->slots[hash(key) % cache->num_slots];
@@ -566,11 +567,9 @@ apc_cache_entry_t* apc_cache_find(apc_cache_t* cache, apc_cache_key_t key, time_
                 (*slot)->access_time = t;
                 prevent_garbage_collection((*slot)->value);
                 cache->header->num_hits++;
-                if(1) {
-                    apc_cache_entry_t* value = (*slot)->value;
-                    UNLOCK(cache);
-                    return value;
-                }
+                value = (*slot)->value;
+                UNLOCK(cache);
+                return (apc_cache_entry_t*)value;
             }
         } else {  /* APC_CACHE_KEY_FPFILE */
             if(!memcmp((*slot)->key.data.fpfile.fullpath, key.data.fpfile.fullpath, key.data.fpfile.fullpath_len+1)) {
@@ -580,11 +579,9 @@ apc_cache_entry_t* apc_cache_find(apc_cache_t* cache, apc_cache_key_t key, time_
                 (*slot)->access_time = t;
                 prevent_garbage_collection((*slot)->value);
                 cache->header->num_hits++;
-                if(1) {
-                    apc_cache_entry_t* value = (*slot)->value;
-                    UNLOCK(cache);
-                    return value;
-                }
+                value = (*slot)->value;
+                UNLOCK(cache);
+                return (apc_cache_entry_t*)value;
             }
         }
       }
@@ -600,6 +597,7 @@ apc_cache_entry_t* apc_cache_find(apc_cache_t* cache, apc_cache_key_t key, time_
 apc_cache_entry_t* apc_cache_user_find(apc_cache_t* cache, char *strkey, int keylen, time_t t)
 {
     slot_t** slot;
+    volatile apc_cache_entry_t* value = NULL;
 
     LOCK(cache);
 
@@ -619,11 +617,9 @@ apc_cache_entry_t* apc_cache_user_find(apc_cache_t* cache, char *strkey, int key
             (*slot)->access_time = t;
 
             cache->header->num_hits++;
-            if(1) {
-                apc_cache_entry_t * value = (*slot)->value;
-                UNLOCK(cache);
-                return value;
-            }
+            value = (*slot)->value;
+            UNLOCK(cache);
+            return (apc_cache_entry_t*)value;
         }
         slot = &(*slot)->next;
     }
