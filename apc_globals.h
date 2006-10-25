@@ -74,7 +74,10 @@ ZEND_BEGIN_MODULE_GLOBALS(apc)
 #ifdef MULTIPART_EVENT_FORMDATA
     zend_bool rfc1867;           /* Flag to enable rfc1867 handler */
 #endif
-    HashTable *copied_zvals;         /* my_copy recursion detection list */
+    HashTable *copied_zvals;     /* my_copy recursion detection list */
+#ifdef ZEND_ENGINE_2
+    int reserved_offset;         /* offset for apc info in op_array->reserved[] */
+#endif
 ZEND_END_MODULE_GLOBALS(apc)
 
 /* (the following declaration is defined in php_apc.c) */

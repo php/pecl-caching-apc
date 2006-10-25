@@ -1186,9 +1186,13 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_mal
     }
 
 #ifdef ZEND_ENGINE_2
-    flags = (apc_opflags_t*) & (dst->reserved);
-    memset(flags, 0, sizeof(apc_opflags_t));
-    /* assert(sizeof(apc_opflags_t) < sizeof(dst->reserved)); */
+    if(APCG(reserved_offset) != -1) {
+        /* Insanity alert: the void* pointer is cast into an apc_opflags_t 
+         * struct. apc_zend_init() checks to ensure that it fits in a void* */
+        flags = (apc_opflags_t*) & (dst->reserved[APCG(reserved_offset)]);
+        memset(flags, 0, sizeof(apc_opflags_t));
+        /* assert(sizeof(apc_opflags_t) < sizeof(dst->reserved)); */
+    }
 #endif
     
     for (i = 0; i < src->last; i++) {
@@ -1201,7 +1205,9 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_mal
             case ZEND_JMPNZ:
             case ZEND_JMPZ_EX:
             case ZEND_JMPNZ_EX:
-                flags->has_jumps = 1;
+                if(flags != NULL) {
+                    flags->has_jumps = 1;
+                }
                 break;
 #ifdef ZEND_ENGINE_2
             /* auto_globals_jit was not in php-4.3.* */
@@ -1209,7 +1215,7 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_mal
             case ZEND_FETCH_W:
             case ZEND_FETCH_IS:
             case ZEND_FETCH_FUNC_ARG:
-                if(PG(auto_globals_jit))
+                if(PG(auto_globals_jit) && flags != NULL)
                 {
                      /* The fetch is only required if auto_globals_jit=1  */
                     if(zo->op2.u.EA.type == ZEND_FETCH_GLOBAL &&
@@ -1226,7 +1232,9 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_mal
             case ZEND_RECV_INIT:
                 if(zo->op2.op_type == IS_CONST &&
                     zo->op2.u.constant.type == IS_CONSTANT_ARRAY) {
-                    flags->deep_copy = 1;
+                    if(flags != NULL) {
+                        flags->deep_copy = 1;
+                    }
                 }
                 break;
             default:
@@ -1234,7 +1242,9 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_mal
                     zo->op1.u.constant.type == IS_CONSTANT_ARRAY) ||
                     (zo->op2.op_type == IS_CONST &&
                         zo->op2.u.constant.type == IS_CONSTANT_ARRAY)) {
-                    flags->deep_copy = 1;
+                    if(flags != NULL) {
+                        flags->deep_copy = 1;
+                    }
                 }
                 break;
         }
@@ -1249,7 +1259,7 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_mal
     }
 
 #ifdef ZEND_ENGINE_2
-    if(flags->has_jumps) {
+    if(flags == NULL || flags->has_jumps) {
         apc_fixup_op_array_jumps(dst,src);
     }
 #endif
@@ -1910,11 +1920,12 @@ static int my_prepare_op_array_for_execution(zend_op_array* dst, zend_op_array* 
     int i;
     int needcopy = 0;
 #ifdef ZEND_ENGINE_2
-    apc_opflags_t * flags = (apc_opflags_t*)&(src->reserved);
+    apc_opflags_t * flags = APCG(reserved_offset) != -1 ? 
+                                (apc_opflags_t*) & (src->reserved[APCG(reserved_offset)]) : NULL;
 #endif
 
 #ifdef ZEND_ENGINE_2
-    needcopy = flags->deep_copy;
+    needcopy = flags ? flags->deep_copy : 1;
 #else
     needcopy = 1;
 #endif
@@ -1962,7 +1973,7 @@ static int my_prepare_op_array_for_execution(zend_op_array* dst, zend_op_array* 
             case ZEND_FETCH_W:
             case ZEND_FETCH_IS:
             case ZEND_FETCH_FUNC_ARG:
-                if(PG(auto_globals_jit) && flags->use_globals)
+                if(PG(auto_globals_jit) && (flags == NULL || flags->use_globals))
                 {
                      /* The fetch is only required if auto_globals_jit=1  */
                     if(zo->op2.u.EA.type == ZEND_FETCH_GLOBAL &&
@@ -1989,9 +2000,6 @@ static int my_prepare_op_array_for_execution(zend_op_array* dst, zend_op_array* 
 /* {{{ apc_copy_op_array_for_execution */
 zend_op_array* apc_copy_op_array_for_execution(zend_op_array* dst, zend_op_array* src TSRMLS_DC)
 {
-#ifdef ZEND_ENGINE_2
-    apc_opflags_t * flags = (apc_opflags_t*)&(src->reserved);
-#endif
     if(dst == NULL) {
         dst = (zend_op_array*) emalloc(sizeof(src[0]));
     }

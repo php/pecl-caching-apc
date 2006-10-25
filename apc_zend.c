@@ -204,6 +204,13 @@ static int apc_op_ZEND_INCLUDE_OR_EVAL(ZEND_OPCODE_HANDLER_ARGS)
 
 void apc_zend_init(TSRMLS_D)
 {
+    zend_extension dummy_ext;
+#ifdef ZEND_ENGINE_2
+    APCG(reserved_offset) = zend_get_resource_handle(&dummy_ext); 
+    assert(APCG(reserved_offset) == dummy_ext.resource_number);
+    assert(APCG(reserved_offset) != -1);
+    assert(sizeof(apc_opflags_t) <= sizeof(void*));
+#endif
 	if (!APCG(include_once)) {
 		/* If we're not overriding the INCLUDE_OR_EVAL handler, then just skip this malarkey */
 		return;

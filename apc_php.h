@@ -45,6 +45,7 @@
 #include "zend_API.h"
 #include "zend_compile.h"
 #include "zend_hash.h"
+#include "zend_extensions.h"
 
 #if ZEND_MODULE_API_NO > 20050922
 #define ZEND_ENGINE_2_2

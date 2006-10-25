@@ -82,6 +82,9 @@ static void php_apc_init_globals(zend_apc_globals* apc_globals TSRMLS_DC)
     apc_globals->rfc1867 = 0;
 #endif
     apc_globals->copied_zvals = NULL;
+#ifdef ZEND_ENGINE_2
+    apc_globals->reserved_offset = -1;
+#endif
 }
 
 static void php_apc_shutdown_globals(zend_apc_globals* apc_globals TSRMLS_DC)
