@@ -580,8 +580,56 @@ void apc_deactivate(TSRMLS_D)
      * the reference counts on active cache entries in `my_execute`.
      */
     while (apc_stack_size(APCG(cache_stack)) > 0) {
+        int i;
+        zend_function *zf = NULL;
+        zend_class_entry* zce = NULL;
+#ifdef ZEND_ENGINE_2
+        zend_class_entry** pzce = NULL;
+#endif
+        
         apc_cache_entry_t* cache_entry =
             (apc_cache_entry_t*) apc_stack_pop(APCG(cache_stack));
+
+        if (cache_entry->data.file.functions) {
+            for (i = 0; cache_entry->data.file.functions[i].function != NULL; i++) {
+                zend_hash_find(EG(function_table), 
+                    cache_entry->data.file.functions[i].name,
+                    cache_entry->data.file.functions[i].name_len+1,
+                    (void**)&zf);
+
+                zend_hash_del(EG(function_table),
+                    cache_entry->data.file.functions[i].name,
+                    cache_entry->data.file.functions[i].name_len+1);
+
+                apc_free_function_after_execution(zf);
+            }
+        }
+        if (cache_entry->data.file.classes) {
+            for (i = 0; cache_entry->data.file.classes[i].class_entry != NULL; i++) {
+#ifdef ZEND_ENGINE_2
+                zend_hash_find(EG(class_table), 
+                    cache_entry->data.file.classes[i].name,
+                    cache_entry->data.file.classes[i].name_len+1,
+                    (void**)&pzce);
+                zce = *pzce;
+#else
+                zend_hash_find(EG(class_table), 
+                    cache_entry->data.file.classes[i].name,
+                    cache_entry->data.file.classes[i].name_len+1,
+                    (void**)&zce);
+#endif
+                zend_hash_del(EG(class_table),
+                    cache_entry->data.file.classes[i].name,
+                    cache_entry->data.file.classes[i].name_len+1);
+                
+                apc_free_class_entry_after_execution(zce);
+            }
+        }
+        
+        if(cache_entry->data.file.op_array) {
+            apc_free_op_array_after_execution(cache_entry->data.file.op_array, 1);
+        }
+
         apc_cache_release(apc_cache, cache_entry);
     }
 }

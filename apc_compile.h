@@ -100,6 +100,16 @@ extern zend_op_array* apc_copy_op_array_for_execution(zend_op_array* dst, zend_o
 extern zend_function* apc_copy_function_for_execution(zend_function* src);
 extern zend_class_entry* apc_copy_class_entry_for_execution(zend_class_entry* src, int is_derived);
 
+/*
+ * These "free-after-execution" functions must be called when you're done
+ * with an object obtained from the "copy-for-execution" functions. These are
+ * required to minimize memory leak warnings and to ensure correct destructor
+ * ordering of some variables.
+ */
+extern void apc_free_op_array_after_execution(zend_op_array* src, int free_self);
+extern void apc_free_function_after_execution(zend_function* src);
+extern void apc_free_class_entry_after_execution(zend_class_entry* src);
+
 #endif
 
 /*
