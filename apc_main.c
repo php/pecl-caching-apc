@@ -626,10 +626,6 @@ void apc_deactivate(TSRMLS_D)
             }
         }
         
-        if(cache_entry->data.file.op_array) {
-            apc_free_op_array_after_execution(cache_entry->data.file.op_array, 1);
-        }
-
         apc_cache_release(apc_cache, cache_entry);
     }
 }
