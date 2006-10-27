@@ -179,11 +179,11 @@ if ($AUTHENTICATED && isset($MYREQUEST['CC']) && $MYREQUEST['CC']) {
 	apc_clear_cache($cache_mode);
 }
 
-
-if(!$cache=@apc_cache_info($cache_mode)) {
+if(!function_exists('apc_cache_info') || !($cache=@apc_cache_info($cache_mode))) {
 	echo "No cache info available.  APC does not appear to be running.";
-	exit;
-} 
+  exit;
+}
+
 $cache_user = apc_cache_info('user', 1);  
 $mem=apc_sma_info();
 if(!$cache['num_hits']) { $cache['num_hits']=1; $time++; }  // Avoid division by 0 errors on a cache clear
