@@ -2175,6 +2175,7 @@ void apc_free_class_entry_after_execution(zend_class_entry* src)
     
     /* my_destroy_hashtable() does not play nice with refcounts */
 
+#ifdef ZEND_ENGINE_2
     zend_hash_destroy(&src->default_static_members);
     if(src->static_members != &(src->default_static_members))
     {
@@ -2183,6 +2184,7 @@ void apc_free_class_entry_after_execution(zend_class_entry* src)
     }
     zend_hash_destroy(&src->default_properties);
     zend_hash_destroy(&src->constants_table);
+#endif
 
     /* TODO: more cleanup */
 }
