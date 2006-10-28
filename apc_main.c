@@ -80,7 +80,7 @@ static int install_function(apc_function_t fn TSRMLS_DC)
                       NULL);
 
     if (status == FAILURE) {
-        /* zend_error(E_ERROR, "Cannot redeclare %s()", fn.name); */
+        /* apc_eprint("Cannot redeclare %s()", fn.name); */
     }
 
     return status;
@@ -154,7 +154,7 @@ static int install_class(apc_class_t cl TSRMLS_DC)
 #endif
         if (status == FAILURE) {
             if(APCG(report_autofilter)) {
-                zend_error(E_WARNING, "Dynamic inheritance detected for class %s", cl.name);
+                apc_wprint("Dynamic inheritance detected for class %s", cl.name);
             }
             class_entry->parent = NULL;
             return status;
@@ -187,7 +187,7 @@ static int install_class(apc_class_t cl TSRMLS_DC)
 #endif                           
 
     if (status == FAILURE) {
-        zend_error(E_ERROR, "Cannot redeclare class %s", cl.name);
+        apc_eprint("Cannot redeclare class %s", cl.name);
     } 
     return status;
 }
@@ -208,7 +208,7 @@ static int uninstall_class(apc_class_t cl TSRMLS_DC)
                            cl.name_len+1);
 #endif                           
     if (status == FAILURE) {
-        zend_error(E_ERROR, "Cannot delete class %s", cl.name);
+        apc_eprint("Cannot delete class %s", cl.name);
     } 
     return status;
 }
@@ -256,7 +256,7 @@ default_compile:
 
     cache_entry->autofiltered = 1;
     if(APCG(report_autofilter)) {
-        zend_error(E_WARNING, "Autofiltering %s", h->opened_path);
+        apc_wprint("Autofiltering %s", h->opened_path);
     }
 
     if(cache_entry->data.file.classes) {

@@ -536,7 +536,7 @@ static void convert_switch(zend_op_array *op_array)
         array_offset = opline->op1.u.opline_num;
         do {
             if (array_offset < 0) {
-                zend_error(E_ERROR, "Cannot break/continue %d level (%s#%d)", 
+                apc_eprint("Cannot break/continue %d level (%s#%d)", 
                            original_nest_levels,op_array->filename,opline->lineno);
             }
             jmp_to = &op_array->brk_cont_array[array_offset];

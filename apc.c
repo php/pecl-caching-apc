@@ -164,6 +164,14 @@ void apc_wprint(const char* fmt, ...)
     va_end(args);
 }
 
+void apc_nprint(const char* fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+    my_log(APC_NOTICE, fmt, args);
+    va_end(args);
+}
+
 void apc_dprint(const char* fmt, ...)
 {
 #ifdef APC_DBG
@@ -324,7 +332,7 @@ int apc_stat_paths(const char* filename, const char* path, struct stat* buf)
             memcpy(filepath, exec_fname, exec_fname_length);
             filepath[exec_fname_length] = DEFAULT_SLASH;
             strcpy(filepath +exec_fname_length +1, filename);
-            /* php_error(E_WARNING, "filename: %s, exec_fname: %s, filepath: %s", filename, exec_fname, filepath); */
+            /* apc_wprint("filename: %s, exec_fname: %s, filepath: %s", filename, exec_fname, filepath); */
             if (apc_stat(filepath, buf) == 0) {
                 found = 1;
             }

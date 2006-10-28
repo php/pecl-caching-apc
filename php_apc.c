@@ -582,7 +582,7 @@ PHP_FUNCTION(apc_fetch) {
         zend_hash_internal_pointer_reset_ex(hash, &hpos);
         while(zend_hash_get_current_data_ex(hash, (void**)&hentry, &hpos) == SUCCESS) {
             if(Z_TYPE_PP(hentry) != IS_STRING) {
-                zend_error(E_WARNING, "apc_fetch() expects a string or array of strings.");
+                apc_wprint("apc_fetch() expects a string or array of strings.");
                 RETURN_FALSE;
             }
             entry = apc_cache_user_find(apc_user_cache, Z_STRVAL_PP(hentry), Z_STRLEN_PP(hentry) + 1, t);
@@ -597,7 +597,7 @@ PHP_FUNCTION(apc_fetch) {
         }
         RETURN_ZVAL(result, 0, 1);
     } else {
-        zend_error(E_WARNING, "apc_fetch() expects a string or array of strings.");
+        apc_wprint("apc_fetch() expects a string or array of strings.");
         RETURN_FALSE;
     }
 

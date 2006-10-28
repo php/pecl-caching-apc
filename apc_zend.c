@@ -126,7 +126,7 @@ static zval *apc_get_zval_ptr(znode *node, zval **freeval, zend_execute_data *ex
 				zend_compiled_variable *cv = &EG(active_op_array)->vars[node->u.var];
 
 				if (zend_hash_quick_find(EG(active_symbol_table), cv->name, cv->name_len+1, cv->hash_value, (void**)ret)==FAILURE) {
-					zend_error(E_NOTICE, "Undefined variable: %s", cv->name);
+					apc_nprint("Undefined variable: %s", cv->name);
 					return &EG(uninitialized_zval);
 				}
 			}
