@@ -56,11 +56,10 @@ static int sma_lastseg = 0;         /* index of MRU segment */
 
 typedef struct header_t header_t;
 struct header_t {
-    int sma_lock;        /* segment lock, MUST BE ALIGNED for futex locks */
+    int sma_lock;      /* segment lock, MUST BE ALIGNED for futex locks */
     size_t segsize;    /* size of entire segment */
     size_t avail;      /* bytes available (not necessarily contiguous) */
     size_t nfoffset;   /* start next fit search from this offset       */
-    size_t padding;    /* Unused - just padding up to an even boundary */
 #if ALLOC_DISTRIBUTION
     size_t adist[30];
 #endif
