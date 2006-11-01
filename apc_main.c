@@ -581,7 +581,6 @@ void apc_deactivate(TSRMLS_D)
      */
     while (apc_stack_size(APCG(cache_stack)) > 0) {
         int i;
-        zend_function *zf = NULL;
         zend_class_entry* zce = NULL;
 #ifdef ZEND_ENGINE_2
         zend_class_entry** pzce = NULL;
@@ -592,18 +591,12 @@ void apc_deactivate(TSRMLS_D)
 
         if (cache_entry->data.file.functions) {
             for (i = 0; cache_entry->data.file.functions[i].function != NULL; i++) {
-                zend_hash_find(EG(function_table), 
-                    cache_entry->data.file.functions[i].name,
-                    cache_entry->data.file.functions[i].name_len+1,
-                    (void**)&zf);
-
                 zend_hash_del(EG(function_table),
                     cache_entry->data.file.functions[i].name,
                     cache_entry->data.file.functions[i].name_len+1);
-
-                apc_free_function_after_execution(zf);
             }
         }
+
         if (cache_entry->data.file.classes) {
             for (i = 0; cache_entry->data.file.classes[i].class_entry != NULL; i++) {
 #ifdef ZEND_ENGINE_2
@@ -625,7 +618,6 @@ void apc_deactivate(TSRMLS_D)
                 apc_free_class_entry_after_execution(zce);
             }
         }
-        
         apc_cache_release(apc_cache, cache_entry);
     }
 }

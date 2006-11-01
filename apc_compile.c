@@ -2130,54 +2130,17 @@ zend_class_entry* apc_copy_class_entry_for_execution(zend_class_entry* src, int 
 }
 /* }}} */
 
-/* {{{ apc_free_op_array_after_execution */
-void apc_free_op_array_after_execution(zend_op_array* src, int free_self)
-{
-    if(src->refcount) {
-        apc_php_free(src->refcount);
-        src->refcount = NULL;
-    }
-    /* TODO: expand on the deep_copy flag (and such) */
-    if(free_self) {
-        /* if the op_array is part of a struct, like zend_function, 
-         * this shouldn't be free'd */
-        apc_php_free(src);
-    }
-}
-/* }}} */
-
-/* {{{ apc_free_function_after_execution */
-void apc_free_function_after_execution(zend_function* src)
-{
-    if(src->type==ZEND_INTERNAL_FUNCTION || src->type==ZEND_OVERLOADED_FUNCTION) {
-        /* move along, nothing to free here */
-        return;
-    }
-
-    apc_free_op_array_after_execution(&(src->op_array), 0);
-
-    /* Caveat: do not free self.
-     * double inclusions of a file insert only one copy. */
-}
-/* }}} */
-
 /* {{{ apc_free_class_entry_after_execution */
 void apc_free_class_entry_after_execution(zend_class_entry* src)
 {
-#ifndef ZEND_ENGINE_2
-    if(src->refcount) {
-        apc_php_free(src->refcount);
-    }
-#else
+#ifdef ZEND_ENGINE_2
     if(src->num_interfaces > 0 && src->interfaces) {
         apc_php_free(src->interfaces);
         src->interfaces = NULL;
+        src->num_interfaces = 0;
     }
-#endif
-    
     /* my_destroy_hashtable() does not play nice with refcounts */
 
-#ifdef ZEND_ENGINE_2
     zend_hash_destroy(&src->default_static_members);
     if(src->static_members != &(src->default_static_members))
     {
