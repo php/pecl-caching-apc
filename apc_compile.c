@@ -2135,6 +2135,7 @@ void apc_free_op_array_after_execution(zend_op_array* src, int free_self)
 {
     if(src->refcount) {
         apc_php_free(src->refcount);
+        src->refcount = NULL;
     }
     /* TODO: expand on the deep_copy flag (and such) */
     if(free_self) {
@@ -2155,7 +2156,8 @@ void apc_free_function_after_execution(zend_function* src)
 
     apc_free_op_array_after_execution(&(src->op_array), 0);
 
-    apc_php_free(src);
+    /* Caveat: do not free self.
+     * double inclusions of a file insert only one copy. */
 }
 /* }}} */
 
