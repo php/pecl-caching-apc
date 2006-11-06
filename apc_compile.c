@@ -1545,6 +1545,23 @@ static void my_destroy_zval_ptr(zval** src, apc_free_t deallocate)
 /* {{{ my_destroy_zval */
 static void my_destroy_zval(zval* src, apc_free_t deallocate)
 {
+    zval **tmp;
+    int destroy_zvallist=0;
+
+    /* Maintain a list of zvals we've copied to properly handle recursive structures */
+    if(!APCG(copied_zvals)) {
+        APCG(copied_zvals) = emalloc(sizeof(HashTable));
+        zend_hash_init(APCG(copied_zvals), 0, NULL, NULL, 0);
+        destroy_zvallist = 1;
+    } else {
+        if(zend_hash_index_find(APCG(copied_zvals), (ulong)src, (void**)&tmp) == SUCCESS) {
+            (*tmp)->refcount--;
+            return;
+        } 
+    }
+    zend_hash_index_update(APCG(copied_zvals), (ulong)src, (void**)&src, sizeof(zval*), NULL);
+ 
+
     switch (src->type & ~IS_CONSTANT_INDEX) {
     case IS_RESOURCE:
     case IS_BOOL:
@@ -1581,6 +1598,12 @@ static void my_destroy_zval(zval* src, apc_free_t deallocate)
     default:
         assert(0);
     }
+
+    if(destroy_zvallist) {
+        zend_hash_destroy(APCG(copied_zvals));
+        efree(APCG(copied_zvals));
+        APCG(copied_zvals) = NULL;
+    } 
 }
 /* }}} */
 
