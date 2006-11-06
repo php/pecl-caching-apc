@@ -661,6 +661,9 @@ static void _apc_define_constants(zval *constants, zend_bool case_sensitive TSRM
         c.flags = case_sensitive;
         c.name = zend_strndup(const_key, const_key_len);
         c.name_len = const_key_len;
+#ifdef ZEND_ENGINE_2
+        c.module_number = PHP_USER_CONSTANT;
+#endif
         zend_register_constant(&c TSRMLS_CC);
 
         zend_hash_move_forward_ex(Z_ARRVAL_P(constants), &pos);
