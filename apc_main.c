@@ -261,9 +261,11 @@ default_compile:
 
     if(cache_entry->data.file.classes) {
         for(ii = 0; ii < i ; ii++) {
-            uninstall_class(cache_entry->data.file.classes[i] TSRMLS_CC);
+            uninstall_class(cache_entry->data.file.classes[ii] TSRMLS_CC);
         }
     }
+    
+    apc_stack_pop(APCG(cache_stack)); /* pop out cache_entry */
 
     /* cannot free up cache data yet, it maybe in use */
     
