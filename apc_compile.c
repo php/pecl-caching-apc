@@ -1547,6 +1547,7 @@ static void my_destroy_zval(zval* src, apc_free_t deallocate)
 {
     zval **tmp;
     int destroy_zvallist=0;
+    TSRMLS_FETCH();
 
     /* Maintain a list of zvals we've copied to properly handle recursive structures */
     if(!APCG(copied_zvals)) {
