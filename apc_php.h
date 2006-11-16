@@ -57,6 +57,8 @@
 #include "zend_vm.h"
 #endif
 
+#include "rfc1867.h"
+
 #endif
 
 /*
