@@ -163,7 +163,7 @@ static PHP_MINFO_FUNCTION(apc)
 #else
     php_info_print_table_row(2, "MMAP Support", "Disabled");
 #endif
-#if APC_SEM
+#if APC_SEM_LOCKS
     php_info_print_table_row(2, "Locking type", "IPC Semaphore");
 #elif APC_FUTEX_LOCKS
     php_info_print_table_row(2, "Locking type", "Linux Futex Locks");
