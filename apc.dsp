@@ -120,10 +120,6 @@ SOURCE=.\apc_rfc1867.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\apc_pair.c
-# End Source File
-# Begin Source File
-
 SOURCE=.\apc_shm.c
 # End Source File
 # Begin Source File
@@ -177,10 +173,6 @@ SOURCE=.\apc_lock.h
 # Begin Source File
 
 SOURCE=.\apc_main.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\apc_pair.h
 # End Source File
 # Begin Source File
 

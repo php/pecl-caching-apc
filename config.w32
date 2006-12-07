@@ -10,7 +10,6 @@ if (PHP_APC != "no") {
 							 apc_debug.c \
 							 apc_fcntl_win32.c \
 							 apc_main.c \
-							 apc_pair.c \
 							 apc_shm.c \
 							 apc_sma.c \
 							 apc_stack.c \
