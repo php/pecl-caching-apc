@@ -45,7 +45,6 @@ ZEND_BEGIN_MODULE_GLOBALS(apc)
     zend_bool enabled;      /* if true, apc is enabled (defaults to true) */
     long shm_segments;      /* number of shared memory segments to use */
     long shm_size;          /* size of each shared memory segment (in MB) */
-    long optimization;      /* optimizer level (higher = more aggressive) */
     long num_files_hint;    /* parameter to apc_cache_create */
     long user_entries_hint;
     long gc_ttl;            /* parameter to apc_cache_create */

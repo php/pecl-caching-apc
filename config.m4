@@ -114,7 +114,6 @@ if test "$PHP_APC" != "no"; then
                apc_fcntl.c \
                apc_main.c \
                apc_mmap.c \
-               apc_optimizer.c \
                apc_pair.c \
                apc_sem.c \
                apc_shm.c \

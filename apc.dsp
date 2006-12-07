@@ -116,7 +116,7 @@ SOURCE=.\apc_main.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\apc_optimizer.c
+SOURCE=.\apc_rfc1867.c
 # End Source File
 # Begin Source File
 
@@ -177,10 +177,6 @@ SOURCE=.\apc_lock.h
 # Begin Source File
 
 SOURCE=.\apc_main.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\apc_optimizer.h
 # End Source File
 # Begin Source File
 

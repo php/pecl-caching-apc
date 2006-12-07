@@ -93,8 +93,6 @@ hp.net/dtd/package-2.0 http://pear.php.net/dtd/package-2.0.xsd">
     <file role="src" name="apc_main.c" />
     <file role="src" name="apc_main.h" />
     <file role="src" name="apc_mmap.c" />
-    <file role="src" name="apc_optimizer.c" />
-    <file role="src" name="apc_optimizer.h" />
     <file role="src" name="apc_pair.c" />
     <file role="src" name="apc_pair.h" />
     <file role="src" name="apc_php.h" />

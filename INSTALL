@@ -24,7 +24,6 @@ Suggested Configuration (in your php.ini file)
   extension=apc.so
   apc.enabled=1
   apc.shm_segments=1
-  apc.optimization=0
   apc.shm_size=128
   apc.ttl=7200
   apc.user_ttl=7200
@@ -240,10 +239,7 @@ users should consider tuning the following parameters:
                             shared memory segment.
                             (Default: 30)
                             
-    apc.optimization        The optimization level. Zero disables the
-                            optimizer, and higher values use more aggressive
-                            optimizations. Expect very modest speed
-                            improvements. This is experimental.
+    apc.optimization        This option has been deprecated.
                             (Default: 0)
     
     apc.num_files_hint      A "hint" about the number of distinct source files

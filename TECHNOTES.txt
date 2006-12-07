@@ -349,34 +349,8 @@ form of a quick-start guide to start hacking on APC.
    operations were described in the previous section.  
 
 8. The Optimizer
-
-   We basically don't use the optimizer currently.  It isn't very advanced and doesn't
-   help things much.  The idea behind it is that in apc_copy_op_array() in apc_compile.c
-   we do:
-
-    if(APCG(optimization)) {
-        apc_optimize_op_array(src);
-    } 
-
-   That is, we check to see if the user has turned on the optimizer by checking the global
-   optimization variable via the APCG macro.  If it is on we call the optimizer function
-   which walks through the opcode array and tries to get rid of useless opcodes or
-   replace certain combinations of opcodes with more efficient versions.  For example, imagine
-   the userspace code:
-
-    $a = 1;
-    $a = 2;
-
-   That first assignment is completely useless, but the 1-pass compiler doesn't know that.
-   It will blindly create the corresponding opcodes.  The optimizer tries to find redundant
-   opcodes like that and get rid of them before we copy the opcode array into shared memory.
-   Without an opcode cache doing a second pass of the opcode array to get rid of these before
-   execution is much more expensive than just executing those redundant opcodes, so we don't
-   have such an optimization phase right in the compiler.  With an opcode cache, of course,
-   we have the luxury of spending a bit more time in the compile phase since once the opcode
-   array has been created and stored in shared memory it will be re-used many times and any
-   slight performance increase we can get through opcode optimization is going to be noticable.
-   But, as I said, the current optimizer in APC is not very advanced.
+   
+   The optimizer has been deprecated.
 
 If you made it to the end of this, you should have a pretty good idea of where things are in
 the code.  I skimmed over a lot of things, so plan on spending some time reading through the code.

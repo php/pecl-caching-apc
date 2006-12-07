@@ -33,7 +33,6 @@
 #include "apc_compile.h"
 #include "apc_globals.h"
 #include "apc_zend.h"
-#include "apc_optimizer.h"
 
 typedef void* (*ht_copy_fun_t)(void*, void*, apc_malloc_t, apc_free_t);
 typedef void  (*ht_free_fun_t)(void*, apc_free_t);
@@ -1117,9 +1116,6 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_mal
     if (!dst) {
         CHECK(dst = (zend_op_array*) allocate(sizeof(src[0])));
         local_dst_alloc = 1;
-    }
-    if(APCG(optimization)) {
-        apc_optimize_op_array(src TSRMLS_CC);
     }
 
     /* start with a bitwise copy of the array */
