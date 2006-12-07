@@ -2068,10 +2068,18 @@ zend_class_entry* apc_copy_class_entry_for_execution(zend_class_entry* src, int 
     memcpy(dst, src, sizeof(src[0]));
 
 #ifdef ZEND_ENGINE_2
-    /* These are slots to be populated later by ADD_INTERFACE insns */
-    dst->interfaces = apc_php_malloc(sizeof(zend_class_entry*) * 
-                                        src->num_interfaces);
-    memset(dst->interfaces, 0, sizeof(zend_class_entry*) * src->num_interfaces);
+    if(src->num_interfaces)
+    {
+        /* These are slots to be populated later by ADD_INTERFACE insns */
+        dst->interfaces = apc_php_malloc(
+                            sizeof(zend_class_entry*) * src->num_interfaces);
+        memset(dst->interfaces, 0, 
+                            sizeof(zend_class_entry*) * src->num_interfaces);
+    }
+    else
+    {
+        /* assert(dst->interfaces == NULL); */
+    }
 #endif
 
 #ifndef ZEND_ENGINE_2    
