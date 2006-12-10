@@ -67,6 +67,7 @@ ZEND_BEGIN_MODULE_GLOBALS(apc)
     long max_file_size;	         /* Maximum size of file, in bytes that APC will be allowed to cache */
     long slam_rand;              /* A place to store the slam rand value for the request */
     zend_bool fpstat;            /* true if fullpath includes should be stat'ed */
+    zend_bool stat_ctime;        /* true if ctime in addition to mtime should be checked */
     zend_bool write_lock;        /* true for a global write lock */
     zend_bool report_autofilter; /* true for auto-filter warnings */
     zend_bool include_once;	     /* Override the ZEND_INCLUDE_OR_EVAL opcode handler to avoid pointless fopen()s [still experimental] */

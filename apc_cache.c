@@ -752,11 +752,13 @@ int apc_cache_make_file_key(apc_cache_key_t* key,
      * I generally disagree with using the ctime here because you lose the 
      * ability to warm up new content by saving it to a temporary file, hitting
      * it once to cache it and then renaming it into its permanent location so
-     * I am leaving this commented out by default.  If you need this, uncomment
-     * it.
+     * set the apc.stat_ctime=true to enable this check.
      */
-    /* key->mtime  = (buf.st_ctime > buf.st_mtime) ? buf.st_ctime : buf.st_mtime; */
-    key->mtime = buf.st_mtime;
+    if(APCG(stat_ctime)) {
+        key->mtime  = (buf.st_ctime > buf.st_mtime) ? buf.st_ctime : buf.st_mtime; 
+    } else {
+        key->mtime = buf.st_mtime;
+    }
     key->type = APC_CACHE_KEY_FILE;
     return 1;
 }

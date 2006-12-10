@@ -76,6 +76,7 @@ static void php_apc_init_globals(zend_apc_globals* apc_globals TSRMLS_DC)
     apc_globals->slam_defense = 0;
     apc_globals->mem_size_ptr = NULL;
     apc_globals->fpstat = 1;
+    apc_globals->stat_ctime = 0;
     apc_globals->write_lock = 1;
     apc_globals->report_autofilter = 0;
 #ifdef MULTIPART_EVENT_FORMDATA
@@ -141,6 +142,7 @@ STD_PHP_INI_ENTRY("apc.file_update_protection", "2", PHP_INI_SYSTEM, OnUpdateInt
 STD_PHP_INI_BOOLEAN("apc.enable_cli", "0",      PHP_INI_SYSTEM, OnUpdateBool,           enable_cli,       zend_apc_globals, apc_globals)
 STD_PHP_INI_ENTRY("apc.max_file_size", "1M",    PHP_INI_SYSTEM, OnUpdateInt,            max_file_size,    zend_apc_globals, apc_globals)
 STD_PHP_INI_BOOLEAN("apc.stat", "1",            PHP_INI_SYSTEM, OnUpdateBool,           fpstat,           zend_apc_globals, apc_globals)
+STD_PHP_INI_BOOLEAN("apc.stat_ctime", "0",      PHP_INI_SYSTEM, OnUpdateBool,           stat_ctime,       zend_apc_globals, apc_globals)
 STD_PHP_INI_BOOLEAN("apc.write_lock", "1",      PHP_INI_SYSTEM, OnUpdateBool,           write_lock,       zend_apc_globals, apc_globals)
 STD_PHP_INI_BOOLEAN("apc.report_autofilter", "0", PHP_INI_SYSTEM, OnUpdateBool,         report_autofilter,zend_apc_globals, apc_globals)
 #ifdef MULTIPART_EVENT_FORMDATA
