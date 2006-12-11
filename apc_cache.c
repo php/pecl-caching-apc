@@ -36,6 +36,7 @@
 #include "apc_globals.h"
 #include "SAPI.h"
 #include "ext/standard/php_var.h"
+#include "ext/standard/php_smart_str.h"
 
 /* TODO: rehash when load factor exceeds threshold */
 
@@ -835,6 +836,7 @@ zval* apc_cache_store_zval(zval* dst, const zval* src, apc_malloc_t allocate, ap
             dst->value.str.len = buf.len;
             CHECK(dst->value.str.val = apc_xmemcpy(buf.c, buf.len+1, allocate));
             dst->type = src->type;
+            smart_str_free(&buf);
         }
         return dst; 
     } else {
