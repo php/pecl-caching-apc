@@ -410,6 +410,7 @@ char* apc_sma_strdup(const char* s)
 void apc_sma_free(void* p)
 {
     int i;
+    size_t d_size;
     TSRMLS_FETCH();
 
     if (p == NULL) {
@@ -420,7 +421,7 @@ void apc_sma_free(void* p)
 
     for (i = 0; i < sma_numseg; i++) {
         LOCK(((header_t*)sma_shmaddrs[i])->sma_lock);
-        size_t d_size = (size_t)((char *)p - (char *)(sma_shmaddrs[i]));
+        d_size = (size_t)((char *)p - (char *)(sma_shmaddrs[i]));
         if (p >= sma_shmaddrs[i] && d_size < sma_segsize) {
             sma_deallocate(sma_shmaddrs[i], d_size);
             if (APCG(mem_size_ptr) != NULL) { *(APCG(mem_size_ptr)) -= d_size; }
@@ -440,7 +441,9 @@ apc_sma_info_t* apc_sma_info()
     apc_sma_info_t* info;
     apc_sma_link_t** link;
     int i;
-
+	char* shmaddr;
+	block_t* prv;
+	
     if (!sma_initialized) {
         return NULL;
     }
@@ -457,8 +460,8 @@ apc_sma_info_t* apc_sma_info()
     /* For each segment */
     for (i = 0; i < sma_numseg; i++) {
         RDLOCK(((header_t*)sma_shmaddrs[i])->sma_lock);
-        char* shmaddr = sma_shmaddrs[i];
-        block_t* prv = BLOCKAT(sizeof(header_t));
+        shmaddr = sma_shmaddrs[i];
+        prv = BLOCKAT(sizeof(header_t));
 
         link = &info->list[i];
 
