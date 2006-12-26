@@ -208,7 +208,7 @@ static int sma_deallocate(void* shmaddr, int offset)
     block_t* cur;       /* the new block to insert */
     block_t* prv;       /* the block before cur */
     block_t* nxt;       /* the block after cur */
-    size_t size;           /* size of deallocated block */
+    size_t size;        /* size of deallocated block */
 
     offset -= alignword(sizeof(struct block_t));
     assert(offset >= 0);
@@ -410,6 +410,7 @@ char* apc_sma_strdup(const char* s)
 void apc_sma_free(void* p)
 {
     int i;
+    size_t offset;
     size_t d_size;
     TSRMLS_FETCH();
 
@@ -421,9 +422,9 @@ void apc_sma_free(void* p)
 
     for (i = 0; i < sma_numseg; i++) {
         LOCK(((header_t*)sma_shmaddrs[i])->sma_lock);
-        d_size = (size_t)((char *)p - (char *)(sma_shmaddrs[i]));
-        if (p >= sma_shmaddrs[i] && d_size < sma_segsize) {
-            sma_deallocate(sma_shmaddrs[i], d_size);
+        offset = (size_t)((char *)p - (char *)(sma_shmaddrs[i]));
+        if (p >= sma_shmaddrs[i] && offset < sma_segsize) {
+            d_size = sma_deallocate(sma_shmaddrs[i], offset);
             if (APCG(mem_size_ptr) != NULL) { *(APCG(mem_size_ptr)) -= d_size; }
             UNLOCK(((header_t*)sma_shmaddrs[i])->sma_lock);
             return;

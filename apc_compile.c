@@ -254,18 +254,13 @@ static zval** my_copy_zval_ptr(zval** dst, const zval** src, apc_malloc_t alloca
         return NULL;
     }
     dst_new = my_copy_zval(*dst, *src, allocate, deallocate);
-    if(!dst) {
-        deallocate(dst);
-        return NULL;
-    }
     if(dst_new != *dst) {
         deallocate(*dst);
         *dst = dst_new;
     }
 
-    /* deep-copying ensures that there is only one reference to this in memory */
-    (*dst)->refcount = 1;
-    (*dst)->is_ref = 0;
+    (*dst)->refcount = (*src)->refcount;
+    (*dst)->is_ref = (*src)->is_ref;
     
     return dst;
 }
@@ -1534,7 +1529,6 @@ static void my_destroy_zval_ptr(zval** src, apc_free_t deallocate)
 {
     assert(src != NULL);
     my_destroy_zval(src[0], deallocate);
-    deallocate(src[0]);
 }
 /* }}} */
 
@@ -1601,6 +1595,8 @@ static void my_destroy_zval(zval* src, apc_free_t deallocate)
         efree(APCG(copied_zvals));
         APCG(copied_zvals) = NULL;
     } 
+
+    deallocate(src);
 }
 /* }}} */
 
@@ -1830,7 +1826,6 @@ static void my_destroy_op_array(zend_op_array* src, apc_free_t deallocate)
 static void my_free_zval_ptr(zval** src, apc_free_t deallocate)
 {
     my_destroy_zval_ptr(src, deallocate);
-    deallocate(src);
 }
 /* }}} */
 
@@ -1924,7 +1919,6 @@ void apc_free_zval(zval* src, apc_free_t deallocate)
 {
     if (src != NULL) {
         my_destroy_zval(src, deallocate);
-        deallocate(src);
     }
 }
 /* }}} */
