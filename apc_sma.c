@@ -56,10 +56,10 @@ static int sma_lastseg = 0;         /* index of MRU segment */
 
 typedef struct header_t header_t;
 struct header_t {
-    int sma_lock;      /* segment lock, MUST BE ALIGNED for futex locks */
-    size_t segsize;    /* size of entire segment */
-    size_t avail;      /* bytes available (not necessarily contiguous) */
-    size_t nfoffset;   /* start next fit search from this offset       */
+    apc_lck_t sma_lock;     /* segment lock, MUST BE ALIGNED for futex locks */
+    size_t segsize;         /* size of entire segment */
+    size_t avail;           /* bytes available (not necessarily contiguous) */
+    size_t nfoffset;        /* start next fit search from this offset       */
 #if ALLOC_DISTRIBUTION
     size_t adist[30];
 #endif
@@ -301,7 +301,7 @@ void apc_sma_init(int numseg, int segsize, char *mmap_file_mask)
         shmaddr = sma_shmaddrs[i];
     
         header = (header_t*) shmaddr;
-        header->sma_lock = apc_lck_create(NULL, 0, 1);
+        apc_lck_create(NULL, 0, 1, header->sma_lock);
         header->segsize = sma_segsize;
         header->avail = sma_segsize - sizeof(header_t) - sizeof(block_t) -
                         alignword(sizeof(int));

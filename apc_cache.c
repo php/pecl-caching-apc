@@ -43,7 +43,7 @@
 #define CHECK(p) { if ((p) == NULL) return NULL; }
 
 /* {{{ locking macros */
-#define CREATE_LOCK     apc_lck_create(NULL, 0, 1)
+#define CREATE_LOCK(lock)     apc_lck_create(NULL, 0, 1, lock)
 #define DESTROY_LOCK(c) apc_lck_destroy(c->header->lock)
 #define LOCK(c)         { HANDLE_BLOCK_INTERRUPTIONS(); apc_lck_lock(c->header->lock); }
 #define RDLOCK(c)       { HANDLE_BLOCK_INTERRUPTIONS(); apc_lck_rdlock(c->header->lock); }
@@ -67,8 +67,8 @@ struct slot_t {
    Any values that must be shared among processes should go in here. */
 typedef struct header_t header_t;
 struct header_t {
-    int lock;                   /* read/write lock (exclusive blocking cache lock) */
-    int wrlock;                 /* write lock (non-blocking used to prevent cache slams) */
+    apc_lck_t lock;              /* read/write lock (exclusive blocking cache lock) */
+    apc_lck_t wrlock;           /* write lock (non-blocking used to prevent cache slams) */
     int num_hits;               /* total successful hits in cache */
     int num_misses;             /* total unsuccessful hits in cache */
     int num_inserts;            /* total successful inserts in cache */
@@ -299,9 +299,9 @@ apc_cache_t* apc_cache_create(int size_hint, int gc_ttl, int ttl)
     cache->num_slots = num_slots;
     cache->gc_ttl = gc_ttl;
     cache->ttl = ttl;
-    cache->header->lock   = CREATE_LOCK;
+    CREATE_LOCK(cache->header->lock);
 #if NONBLOCKING_LOCK_AVAILABLE
-    cache->header->wrlock = CREATE_LOCK;
+    CREATE_LOCK(cache->header->wrlock);
 #endif
     for (i = 0; i < num_slots; i++) {
         cache->slots[i] = NULL;
