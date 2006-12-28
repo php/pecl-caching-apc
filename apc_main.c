@@ -302,7 +302,7 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
 	}
 
     /* check our regular expression filters */
-    if (apc_compiled_filters) {
+    if (APCG(filters) && apc_compiled_filters) {
         int ret = apc_regex_match_array(apc_compiled_filters, h->filename);
         if(ret == APC_NEGATIVE_MATCH || (ret != APC_POSITIVE_MATCH && !APCG(cache_by_default))) {
             return old_compile_file(h, type TSRMLS_CC);

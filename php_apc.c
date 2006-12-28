@@ -55,6 +55,7 @@ PHP_FUNCTION(apc_sma_info);
 PHP_FUNCTION(apc_store);
 PHP_FUNCTION(apc_fetch);
 PHP_FUNCTION(apc_delete);
+PHP_FUNCTION(apc_compile_file);
 PHP_FUNCTION(apc_define_constants);
 PHP_FUNCTION(apc_load_constants);
 /* }}} */
@@ -733,6 +734,100 @@ PHP_FUNCTION(apc_load_constants) {
 }
 /* }}} */
 
+
+/* {{{ proto boolean apc_compile_file(string filename)
+ */
+PHP_FUNCTION(apc_compile_file) {
+    char *filename;
+    int filename_len;
+    zend_file_handle file_handle;
+    zend_op_array *op_array;
+    long slam_defense = 0;
+    char** filters = NULL;
+    zend_bool cache_by_default = 1;
+    HashTable cg_function_table, cg_class_table, eg_function_table, eg_class_table;
+    HashTable *cg_orig_function_table, *cg_orig_class_table, *eg_orig_function_table, *eg_orig_class_table;
+
+    if(!APCG(enabled)) RETURN_FALSE;
+
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &filename, &filename_len) == FAILURE) {
+        return;
+    }
+
+    if(!filename) RETURN_FALSE;
+
+    // If slam defense is active, temporarily disable
+    if(APCG(slam_defense)) {
+        slam_defense = APCG(slam_defense);
+        APCG(slam_defense) = 0;
+    }
+   
+    // If filter is active, temporarily disable
+    if(APCG(filters) != NULL) {
+        filters = APCG(filters);
+        APCG(filters) = NULL;
+    }
+
+    // If cache_by_default is off, temporarily enable
+    if(!APCG(cache_by_default)) {
+        cache_by_default = APCG(cache_by_default);
+        APCG(cache_by_default) = 1;
+    }
+
+    // Replace function/class tables to avoid namespace conflicts
+    zend_hash_init_ex(&cg_function_table, 100, NULL, ZEND_FUNCTION_DTOR, 1, 0);
+    cg_orig_function_table = CG(function_table);
+    CG(function_table) = &cg_function_table;
+    zend_hash_init_ex(&cg_class_table, 10, NULL, ZEND_CLASS_DTOR, 1, 0);
+    cg_orig_class_table = CG(class_table);
+    CG(class_table) = &cg_class_table;
+    zend_hash_init_ex(&eg_function_table, 100, NULL, ZEND_FUNCTION_DTOR, 1, 0);
+    eg_orig_function_table = EG(function_table);
+    EG(function_table) = &eg_function_table;
+    zend_hash_init_ex(&eg_class_table, 10, NULL, ZEND_CLASS_DTOR, 1, 0);
+    eg_orig_class_table = EG(class_table);
+    EG(class_table) = &eg_class_table;
+    
+    // Compile the file, loading it into the cache
+    file_handle.type = ZEND_HANDLE_FILENAME;
+    file_handle.filename = filename;
+    file_handle.free_filename = 0;
+    file_handle.opened_path = NULL;
+    zend_try {
+        op_array = zend_compile_file(&file_handle, ZEND_INCLUDE);
+    } zend_catch {
+        apc_eprint("Error compiling %s in apc_compile_file.", filename);
+        op_array = NULL;
+    } zend_end_try();
+
+    // Return class/function tables to previous states, destroy temp tables 
+    CG(function_table) = cg_orig_function_table;
+    zend_hash_destroy(&cg_function_table);
+    CG(class_table) = cg_orig_class_table;
+    zend_hash_destroy(&cg_class_table);
+    EG(function_table) = eg_orig_function_table;
+    zend_hash_destroy(&eg_function_table);
+    EG(class_table) = eg_orig_class_table;
+    zend_hash_destroy(&eg_class_table);
+    
+    // Restore global settings
+    APCG(slam_defense) = slam_defense;
+    APCG(filters) = filters;
+    APCG(cache_by_default) = cache_by_default;
+
+    if(op_array == NULL) { RETURN_FALSE; }
+
+    // Free up everything
+    zend_destroy_file_handle(&file_handle);
+    destroy_op_array(op_array TSRMLS_CC);
+    efree(op_array);
+
+    RETURN_TRUE;
+}
+/* }}} */
+
+
+
 /* {{{ apc_functions[] */
 function_entry apc_functions[] = {
 	PHP_FE(apc_cache_info,          NULL)
@@ -743,6 +838,7 @@ function_entry apc_functions[] = {
 	PHP_FE(apc_delete,              NULL)
 	PHP_FE(apc_define_constants,    NULL)
 	PHP_FE(apc_load_constants,      NULL)
+	PHP_FE(apc_compile_file,        NULL)
 	{NULL, 		NULL,				NULL}
 };
 /* }}} */
