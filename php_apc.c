@@ -794,7 +794,7 @@ PHP_FUNCTION(apc_compile_file) {
     file_handle.free_filename = 0;
     file_handle.opened_path = NULL;
     zend_try {
-        op_array = zend_compile_file(&file_handle, ZEND_INCLUDE);
+        op_array = zend_compile_file(&file_handle, ZEND_INCLUDE TSRMLS_CC);
     } zend_catch {
         apc_eprint("Error compiling %s in apc_compile_file.", filename);
         op_array = NULL;
@@ -818,7 +818,7 @@ PHP_FUNCTION(apc_compile_file) {
     if(op_array == NULL) { RETURN_FALSE; }
 
     // Free up everything
-    zend_destroy_file_handle(&file_handle);
+    zend_destroy_file_handle(&file_handle TSRMLS_CC);
     destroy_op_array(op_array TSRMLS_CC);
     efree(op_array);
 
