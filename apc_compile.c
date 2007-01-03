@@ -1923,6 +1923,21 @@ void apc_free_zval(zval* src, apc_free_t deallocate)
 }
 /* }}} */
 
+
+/* Used only by my_prepare_op_array_for_execution */
+#define APC_PREPARE_FETCH_GLOBAL_FOR_EXECUTION()                                                \
+                         /* The fetch is only required if auto_globals_jit=1  */                \
+                        if(zo->op2.u.EA.type == ZEND_FETCH_GLOBAL &&                            \
+                            zo->op1.op_type == IS_CONST &&                                      \
+                            zo->op1.u.constant.type == IS_STRING &&                             \
+                            zo->op1.u.constant.value.str.val[0] == '_') {                       \
+                                                                                                \
+                            znode* varname = &zo->op1;                                          \
+                            (void)zend_is_auto_global(varname->u.constant.value.str.val,        \
+                                                          varname->u.constant.value.str.len     \
+                                                          TSRMLS_CC);                           \
+                        }                                                                       \
+
 /* {{{ my_prepare_op_array_for_execution */
 static int my_prepare_op_array_for_execution(zend_op_array* dst, zend_op_array* src TSRMLS_DC) 
 {
@@ -1931,82 +1946,92 @@ static int my_prepare_op_array_for_execution(zend_op_array* dst, zend_op_array* 
      *   - If the opcode stream contain mutable data, ensure a copy.
      *   - Fixup array jumps in the same loop.
      */
-    int i;
-    int needcopy = 0;
+    int i=src->last;
+    zend_op *zo;
+    zend_op *dzo;
 #ifdef ZEND_ENGINE_2
     apc_opflags_t * flags = APCG(reserved_offset) != -1 ? 
                                 (apc_opflags_t*) & (src->reserved[APCG(reserved_offset)]) : NULL;
 #endif
-
 #ifdef ZEND_ENGINE_2
-    needcopy = flags ? flags->deep_copy : 1;
+    int needcopy = flags ? flags->deep_copy : 1;
 #else
-    needcopy = 1;
+    int needcopy = 1;
 #endif
-
+    int do_prepare_fetch_global = PG(auto_globals_jit) && (flags == NULL || flags->use_globals);
+    
     if(needcopy) {
+
         dst->opcodes = (zend_op*) apc_xmemcpy(src->opcodes, 
                                     sizeof(zend_op) * src->last,
                                     apc_php_malloc);
-    }
+        zo = src->opcodes;
+        dzo = dst->opcodes;
+        while(i > 0) {
 
-    for (i = 0; i < src->last; i++) {
-        zend_op *zo = src->opcodes+i;
-        zend_op *dzo = dst->opcodes+i;
+            if( ((zo->op1.op_type == IS_CONST &&
+                  zo->op1.u.constant.type == IS_CONSTANT_ARRAY))) {
 
-        if(needcopy && 
-            ((zo->op1.op_type == IS_CONST &&
-              zo->op1.u.constant.type == IS_CONSTANT_ARRAY) ||
-             (zo->op1.op_type == IS_CONST &&
-              zo->op1.u.constant.type == IS_CONSTANT_ARRAY))) {
-
-            if(!(my_copy_zend_op(dzo, zo, apc_php_malloc, apc_php_free))) {
-                assert(0); /* emalloc failed or a bad constant array */
+                if(!(my_copy_zend_op(dzo, zo, apc_php_malloc, apc_php_free))) {
+                    assert(0); /* emalloc failed or a bad constant array */
+                }
             }
-        }
-        
-        switch(zo->opcode) {
+            
 #ifdef ZEND_ENGINE_2
-            case ZEND_JMP:
-                if(needcopy) {
+            switch(zo->opcode) {
+                case ZEND_JMP:
                     dzo->op1.u.jmp_addr = dst->opcodes + 
                                             (zo->op1.u.jmp_addr - src->opcodes);
-                }
-                break;
-            case ZEND_JMPZ:
-            case ZEND_JMPNZ:
-            case ZEND_JMPZ_EX:
-            case ZEND_JMPNZ_EX:
-                if(needcopy) {
+                    break;
+                case ZEND_JMPZ:
+                case ZEND_JMPNZ:
+                case ZEND_JMPZ_EX:
+                case ZEND_JMPNZ_EX:
                     dzo->op2.u.jmp_addr = dst->opcodes + 
                                             (zo->op2.u.jmp_addr - src->opcodes);
-                }
-                break;
-            /* auto_globals_jit was not in php4 */
-            case ZEND_FETCH_R:
-            case ZEND_FETCH_W:
-            case ZEND_FETCH_IS:
-            case ZEND_FETCH_FUNC_ARG:
-                if(PG(auto_globals_jit) && (flags == NULL || flags->use_globals))
-                {
-                     /* The fetch is only required if auto_globals_jit=1  */
-                    if(zo->op2.u.EA.type == ZEND_FETCH_GLOBAL &&
-                        zo->op1.op_type == IS_CONST && 
-                        zo->op1.u.constant.type == IS_STRING &&
-                        zo->op1.u.constant.value.str.val[0] == '_') {
-
-                        znode* varname = &zo->op1; 
-                        (void)zend_is_auto_global(varname->u.constant.value.str.val, 
-                                                      varname->u.constant.value.str.len 
-                                                      TSRMLS_CC);
+                    break;
+                /* auto_globals_jit was not in php4 */
+                case ZEND_FETCH_R:
+                case ZEND_FETCH_W:
+                case ZEND_FETCH_IS:
+                case ZEND_FETCH_FUNC_ARG:
+                    if(do_prepare_fetch_global)
+                    {
+                        APC_PREPARE_FETCH_GLOBAL_FOR_EXECUTION();
                     }
-                }
-                break;
+                    break;
+                default:
+                    break;
+            }
 #endif
-            default:
-                break;
+            i--;
+            zo++;
+            dzo++;
+        }
+#ifdef ZEND_ENGINE_2
+    } else {  /* !needcopy */
+        /* The fetch is only required if auto_globals_jit=1  */
+        if(do_prepare_fetch_global)
+        {
+            zo = src->opcodes;
+            dzo = dst->opcodes;
+            while(i > 0) {
+
+                if(zo->opcode == ZEND_FETCH_R || 
+                   zo->opcode == ZEND_FETCH_W ||
+                   zo->opcode == ZEND_FETCH_IS ||
+                   zo->opcode == ZEND_FETCH_FUNC_ARG 
+                  ) {
+                    APC_PREPARE_FETCH_GLOBAL_FOR_EXECUTION();
+                  }
+
+                i--;
+                zo++;
+                dzo++;
+            }
         }
     }
+#endif
     return 1;
 }
 /* }}} */
