@@ -33,12 +33,8 @@
 
 #include "apc_sem.h"
 #include "apc_fcntl.h"
-#ifdef APC_PTHREADMUTEX_LOCKS
 #include "apc_pthreadmutex.h"
-#endif
-#ifdef APC_FUTEX_LOCKS
 #include "apc_futex.h"
-#endif
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif

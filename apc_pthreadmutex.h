@@ -22,10 +22,10 @@
 #ifndef APC_PTHREADMUTEX_H
 #define APC_PTHREADMUTEX_H
 
+#ifdef APC_PTHREADMUTEX_LOCKS 
+
 #include "apc.h"
 #include <pthread.h>
-
-#ifdef APC_PTHREADMUTEX_LOCKS 
 
 pthread_mutex_t *apc_pthreadmutex_create();
 void apc_pthreadmutex_destroy(pthread_mutex_t *lock);
