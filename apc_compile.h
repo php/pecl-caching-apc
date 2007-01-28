@@ -107,6 +107,12 @@ extern zend_class_entry* apc_copy_class_entry_for_execution(zend_class_entry* sr
  */
 extern void apc_free_class_entry_after_execution(zend_class_entry* src);
 
+/*
+ * Optimization callback definition and registration function. 
+ */
+typedef zend_op_array* (*apc_optimize_function_t) (zend_op_array* TSRM_DC);
+extern apc_optimize_function_t apc_register_optimizer(apc_optimize_function_t optimizer TSRMLS_DC);
+
 #endif
 
 /*

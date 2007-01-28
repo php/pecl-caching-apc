@@ -71,6 +71,7 @@ ZEND_BEGIN_MODULE_GLOBALS(apc)
     zend_bool write_lock;        /* true for a global write lock */
     zend_bool report_autofilter; /* true for auto-filter warnings */
     zend_bool include_once;	     /* Override the ZEND_INCLUDE_OR_EVAL opcode handler to avoid pointless fopen()s [still experimental] */
+    apc_optimize_function_t apc_optimize_function;   /* optimizer function callback */
 #ifdef MULTIPART_EVENT_FORMDATA
     zend_bool rfc1867;           /* Flag to enable rfc1867 handler */
 #endif

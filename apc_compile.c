@@ -1113,6 +1113,10 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_mal
         local_dst_alloc = 1;
     }
 
+    if(APCG(apc_optimize_function)) {
+        APCG(apc_optimize_function)(src TSRMLS_CC);
+    }
+    
     /* start with a bitwise copy of the array */
     memcpy(dst, src, sizeof(src[0]));
 
@@ -2448,6 +2452,15 @@ static int my_check_copy_static_member(Bucket* p, va_list args)
 }
 /* }}} */
 #endif
+
+/* {{{ apc_register_optimizer(apc_optimize_function_t optimizer)
+ *      register a optimizer callback function, returns the previous callback
+ */
+apc_optimize_function_t apc_register_optimizer(apc_optimize_function_t optimizer TSRMLS_DC) {
+    apc_optimize_function_t old_optimizer = APCG(apc_optimize_function);
+    APCG(apc_optimize_function) = optimizer;
+    return old_optimizer;
+}
 
 /*
  * Local variables:
