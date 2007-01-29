@@ -35,6 +35,7 @@
 #include "apc_fcntl.h"
 #include "apc_pthreadmutex.h"
 #include "apc_futex.h"
+#include "apc_spin.h"
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -76,6 +77,15 @@
 #define apc_lck_nb_lock(a)    apc_futex_nonblocking_lock(&a)
 #define apc_lck_rdlock(a)     apc_futex_lock(&a)
 #define apc_lck_unlock(a)     apc_futex_unlock(&a)
+#elif defined(APC_SPIN_LOCKS)
+#define NONBLOCKING_LOCK_AVAILABLE APC_SLOCK_NONBLOCKING_LOCK_AVAILABLE
+#define apc_lck_t slock_t 
+#define apc_lck_create(a,b,c,d) apc_slock_create((slock_t*)&(d))
+#define apc_lck_destroy(a)    apc_slock_destroy(&a)
+#define apc_lck_lock(a)       apc_slock_lock(&a)
+#define apc_lck_nb_lock(a)    apc_slock_nonblocking_lock(&a)
+#define apc_lck_rdlock(a)     apc_slock_lock(&a)
+#define apc_lck_unlock(a)     apc_slock_unlock(&a)
 #else
 #define RDLOCK_AVAILABLE 1
 #ifdef PHP_WIN32

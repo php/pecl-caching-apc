@@ -142,11 +142,25 @@ if test "$PHP_APC_PTHREADMUTEX" != "no"; then
 	LIBS="$orig_LIBS"
 fi
 
+AC_MSG_CHECKING(Checking whether we should use spin locks)
+AC_ARG_ENABLE(apc-spinlocks,
+[  --enable-apc-spinlocks
+                          Enable spin locks  EXPERIMENTAL ],
+[
+  PHP_APC_SPINLOCKS=$enableval
+  AC_MSG_RESULT($enableval)
+],
+[
+  PHP_APC_SPINLOCKS=no
+  AC_MSG_RESULT(no)
+])
+
 if test "$PHP_APC" != "no"; then
   test "$PHP_APC_MMAP" != "no" && AC_DEFINE(APC_MMAP, 1, [ ])
   test "$PHP_APC_SEM"  != "no" && AC_DEFINE(APC_SEM_LOCKS, 1, [ ])
   test "$PHP_APC_FUTEX" != "no" && AC_DEFINE(APC_FUTEX_LOCKS, 1, [ ])
   test "$PHP_APC_PTHREADMUTEX" != "no" && AC_DEFINE(APC_PTHREADMUTEX_LOCKS, 1, [ ])
+  test "$PHP_APC_SPINLOCKS" != "no" && AC_DEFINE(APC_SPIN_LOCKS, 1, [ ]) 
 
   AC_CACHE_CHECK(for union semun, php_cv_semun,
   [
@@ -177,10 +191,12 @@ if test "$PHP_APC" != "no"; then
                apc_shm.c \
                apc_futex.c \
                apc_pthreadmutex.c \
+							 apc_spin.c \ 
+							 pgsql_s_lock.c \ 
                apc_sma.c \
                apc_stack.c \
                apc_zend.c \
-               apc_rfc1867.c"
+               apc_rfc1867.c "
 
   PHP_CHECK_LIBRARY(rt, shm_open, [PHP_ADD_LIBRARY(rt,,APC_SHARED_LIBADD)])
   PHP_NEW_EXTENSION(apc, $apc_sources, $ext_shared,, \\$(APC_CFLAGS))
