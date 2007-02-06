@@ -840,7 +840,22 @@ zval* apc_cache_store_zval(zval* dst, const zval* src, apc_malloc_t allocate, ap
         }
         return dst; 
     } else {
-        return apc_copy_zval(dst, src, allocate, deallocate);
+        
+        /* Maintain a list of zvals we've copied to properly handle recursive structures */
+        HashTable *old = APCG(copied_zvals);
+        APCG(copied_zvals) = emalloc(sizeof(HashTable));
+        zend_hash_init(APCG(copied_zvals), 0, NULL, NULL, 0);
+        
+        dst = apc_copy_zval(dst, src, allocate, deallocate);
+
+        if(APCG(copied_zvals)) {
+            zend_hash_destroy(APCG(copied_zvals));
+            efree(APCG(copied_zvals));
+        }
+
+        APCG(copied_zvals) = old;
+
+        return dst;
     }
 }
 /* }}} */
@@ -863,7 +878,22 @@ zval* apc_cache_fetch_zval(zval* dst, const zval* src, apc_malloc_t allocate, ap
         PHP_VAR_UNSERIALIZE_DESTROY(var_hash);		
         return dst; 
     } else {
-        return apc_copy_zval(dst, src, allocate, deallocate);
+    
+        /* Maintain a list of zvals we've copied to properly handle recursive structures */
+        HashTable *old = APCG(copied_zvals);
+        APCG(copied_zvals) = emalloc(sizeof(HashTable));
+        zend_hash_init(APCG(copied_zvals), 0, NULL, NULL, 0);
+        
+        dst = apc_copy_zval(dst, src, allocate, deallocate);
+
+        if(APCG(copied_zvals)) {
+            zend_hash_destroy(APCG(copied_zvals));
+            efree(APCG(copied_zvals));
+        }
+
+        APCG(copied_zvals) = old;
+
+        return dst;
     }
 }
 /* }}} */
@@ -877,7 +907,19 @@ void apc_cache_free_zval(zval* src, apc_free_t deallocate)
         }
         deallocate(src);
     } else {
+        /* Maintain a list of zvals we've copied to properly handle recursive structures */
+        HashTable *old = APCG(copied_zvals);
+        APCG(copied_zvals) = emalloc(sizeof(HashTable));
+        zend_hash_init(APCG(copied_zvals), 0, NULL, NULL, 0);
+        
         apc_free_zval(src, deallocate);
+
+        if(APCG(copied_zvals)) {
+            zend_hash_destroy(APCG(copied_zvals));
+            efree(APCG(copied_zvals));
+        }
+
+        APCG(copied_zvals) = old;
     }
 }
 /* }}} */

@@ -568,6 +568,7 @@ int apc_request_init(TSRMLS_D)
 {
     apc_stack_clear(APCG(cache_stack));
     APCG(slam_rand) = -1;
+    APCG(copied_zvals) = NULL;
     return 0;
 }
 

@@ -74,9 +74,12 @@ static zend_arg_info* my_copy_arg_info(zend_arg_info*, zend_arg_info*, apc_mallo
 /*
  * The "destroy" functions free the memory associated with a particular data
  * structure but do not free the pointer to the data structure.
+ *
+ * my_destroy_zval() returns SUCCESS or FAILURE, FAILURE means that
+ * the zval* has other references elsewhere 
  */
+static int  my_destroy_zval(zval*, apc_free_t); 
 static void my_destroy_zval_ptr(zval**, apc_free_t);
-static void my_destroy_zval(zval*, apc_free_t);
 static void my_destroy_zend_op(zend_op*, apc_free_t);
 static void my_destroy_znode(znode*, apc_free_t);
 static void my_destroy_function(zend_function*, apc_free_t);
@@ -270,25 +273,11 @@ static zval** my_copy_zval_ptr(zval** dst, const zval** src, apc_malloc_t alloca
 static zval* my_copy_zval(zval* dst, const zval* src, apc_malloc_t allocate, apc_free_t deallocate)
 {
     zval **tmp;
-    int destroy_zvallist = 0;
     TSRMLS_FETCH();
     
     assert(dst != NULL);
     assert(src != NULL);
 
-    /* Maintain a list of zvals we've copied to properly handle recursive structures */
-    if(!APCG(copied_zvals)) {
-        APCG(copied_zvals) = emalloc(sizeof(HashTable));
-        zend_hash_init(APCG(copied_zvals), 0, NULL, NULL, 0);
-        destroy_zvallist = 1;
-    } else {
-        if(zend_hash_index_find(APCG(copied_zvals), (ulong)src, (void**)&tmp) == SUCCESS) {
-            (*tmp)->refcount++;
-            return *tmp;
-        } 
-    }
-    zend_hash_index_update(APCG(copied_zvals), (ulong)src, (void**)&dst, sizeof(zval*), NULL);
- 
     memcpy(dst, src, sizeof(src[0]));
 
     switch (src->type & ~IS_CONSTANT_INDEX) {
@@ -312,7 +301,19 @@ static zval* my_copy_zval(zval* dst, const zval* src, apc_malloc_t allocate, apc
         break;
     
     case IS_ARRAY:
+
+        if(APCG(copied_zvals)) {
+            if(zend_hash_index_find(APCG(copied_zvals), (ulong)src, (void**)&tmp) == SUCCESS) {
+                (*tmp)->refcount++;
+                return *tmp;
+            }
+        
+            zend_hash_index_update(APCG(copied_zvals), (ulong)src, (void**)&dst, sizeof(zval*), NULL);
+        }
+        /* fall through */
+ 
     case IS_CONSTANT_ARRAY:
+
         CHECK(dst->value.ht =
             my_copy_hashtable(NULL,
                               src->value.ht,
@@ -334,11 +335,6 @@ static zval* my_copy_zval(zval* dst, const zval* src, apc_malloc_t allocate, apc
                               1,
                               allocate, deallocate))) {
             my_destroy_class_entry(dst->value.obj.ce, deallocate);
-            if(destroy_zvallist) {
-                zend_hash_destroy(APCG(copied_zvals));
-                efree(APCG(copied_zvals));
-                APCG(copied_zvals) = NULL;
-            } 
             return NULL;
         }
         break;
@@ -351,12 +347,6 @@ static zval* my_copy_zval(zval* dst, const zval* src, apc_malloc_t allocate, apc
         assert(0);
     }
 
-    if(destroy_zvallist) {
-        zend_hash_destroy(APCG(copied_zvals));
-        efree(APCG(copied_zvals));
-        APCG(copied_zvals) = NULL;
-    } 
-    
     return dst;
 }
 /* }}} */
@@ -1532,30 +1522,17 @@ apc_class_t* apc_copy_new_classes(zend_op_array* op_array, int old_count, apc_ma
 static void my_destroy_zval_ptr(zval** src, apc_free_t deallocate)
 {
     assert(src != NULL);
-    my_destroy_zval(src[0], deallocate);
+    if(my_destroy_zval(src[0], deallocate) == SUCCESS) {
+        deallocate(src[0]);
+    }
 }
 /* }}} */
 
 /* {{{ my_destroy_zval */
-static void my_destroy_zval(zval* src, apc_free_t deallocate)
+static int my_destroy_zval(zval* src, apc_free_t deallocate)
 {
     zval **tmp;
-    int destroy_zvallist=0;
     TSRMLS_FETCH();
-
-    /* Maintain a list of zvals we've copied to properly handle recursive structures */
-    if(!APCG(copied_zvals)) {
-        APCG(copied_zvals) = emalloc(sizeof(HashTable));
-        zend_hash_init(APCG(copied_zvals), 0, NULL, NULL, 0);
-        destroy_zvallist = 1;
-    } else {
-        if(zend_hash_index_find(APCG(copied_zvals), (ulong)src, (void**)&tmp) == SUCCESS) {
-            (*tmp)->refcount--;
-            return;
-        } 
-    }
-    zend_hash_index_update(APCG(copied_zvals), (ulong)src, (void**)&src, sizeof(zval*), NULL);
- 
 
     switch (src->type & ~IS_CONSTANT_INDEX) {
     case IS_RESOURCE:
@@ -1574,6 +1551,17 @@ static void my_destroy_zval(zval* src, apc_free_t deallocate)
         break;
     
     case IS_ARRAY:
+    
+        /* Maintain a list of zvals we've copied to properly handle recursive structures */
+        if(APCG(copied_zvals)) {
+            if(zend_hash_index_find(APCG(copied_zvals), (ulong)src, (void**)&tmp) == SUCCESS) {
+                (*tmp)->refcount--;
+                return FAILURE;
+            } 
+            zend_hash_index_update(APCG(copied_zvals), (ulong)src, (void**)&src, sizeof(zval*), NULL);
+        }
+        /* fall through */
+
     case IS_CONSTANT_ARRAY:
         my_free_hashtable(src->value.ht,
                           (ht_free_fun_t) my_free_zval_ptr,
@@ -1594,13 +1582,7 @@ static void my_destroy_zval(zval* src, apc_free_t deallocate)
         assert(0);
     }
 
-    if(destroy_zvallist) {
-        zend_hash_destroy(APCG(copied_zvals));
-        efree(APCG(copied_zvals));
-        APCG(copied_zvals) = NULL;
-    } 
-
-    deallocate(src);
+    return SUCCESS;
 }
 /* }}} */
 
@@ -1922,7 +1904,9 @@ void apc_free_classes(apc_class_t* src, apc_free_t deallocate)
 void apc_free_zval(zval* src, apc_free_t deallocate)
 {
     if (src != NULL) {
-        my_destroy_zval(src, deallocate);
+        if(my_destroy_zval(src, deallocate) == SUCCESS) {
+            deallocate(src);
+        }
     }
 }
 /* }}} */
@@ -1956,13 +1940,13 @@ static int my_prepare_op_array_for_execution(zend_op_array* dst, zend_op_array* 
 #ifdef ZEND_ENGINE_2
     apc_opflags_t * flags = APCG(reserved_offset) != -1 ? 
                                 (apc_opflags_t*) & (src->reserved[APCG(reserved_offset)]) : NULL;
-#endif
-#ifdef ZEND_ENGINE_2
     int needcopy = flags ? flags->deep_copy : 1;
+    /* auto_globals_jit was not in php4 */
+    int do_prepare_fetch_global = PG(auto_globals_jit) && (flags == NULL || flags->use_globals);
 #else
     int needcopy = 1;
+    int do_prepare_fetch_global = 0;
 #endif
-    int do_prepare_fetch_global = PG(auto_globals_jit) && (flags == NULL || flags->use_globals);
     
     if(needcopy) {
 
@@ -1994,7 +1978,6 @@ static int my_prepare_op_array_for_execution(zend_op_array* dst, zend_op_array* 
                     dzo->op2.u.jmp_addr = dst->opcodes + 
                                             (zo->op2.u.jmp_addr - src->opcodes);
                     break;
-                /* auto_globals_jit was not in php4 */
                 case ZEND_FETCH_R:
                 case ZEND_FETCH_W:
                 case ZEND_FETCH_IS:
@@ -2018,7 +2001,6 @@ static int my_prepare_op_array_for_execution(zend_op_array* dst, zend_op_array* 
         if(do_prepare_fetch_global)
         {
             zo = src->opcodes;
-            dzo = dst->opcodes;
             while(i > 0) {
 
                 if(zo->opcode == ZEND_FETCH_R || 
@@ -2027,15 +2009,14 @@ static int my_prepare_op_array_for_execution(zend_op_array* dst, zend_op_array* 
                    zo->opcode == ZEND_FETCH_FUNC_ARG 
                   ) {
                     APC_PREPARE_FETCH_GLOBAL_FOR_EXECUTION();
-                  }
+                }
 
                 i--;
                 zo++;
-                dzo++;
             }
         }
-    }
 #endif
+    }
     return 1;
 }
 /* }}} */
