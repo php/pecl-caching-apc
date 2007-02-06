@@ -138,8 +138,14 @@ static int sma_allocate(void* shmaddr, size_t size)
     } else {    
         prv = BLOCKAT(sizeof(header_t));
     }
+#ifdef __APC_SMA_DEBUG__
+    assert(prv->canary == 0x42424242);
+#endif
     while (prv->next != header->nfoffset) {
         cur = BLOCKAT(prv->next);
+#ifdef __APC_SMA_DEBUG__
+        assert(cur->canary == 0x42424242);
+#endif
         /* If it fits perfectly or it fits after a split, stop searching */
         if (cur->size == realsize || (cur->size > (sizeof(block_t) + realsize))) {
             prvnextfit = prv;
@@ -152,6 +158,9 @@ static int sma_allocate(void* shmaddr, size_t size)
         /* Check to see if we need to wrap around and search from the top */
         if(header->nfoffset && prv->next == 0) {
             prv = BLOCKAT(sizeof(header_t));
+#ifdef __APC_SMA_DEBUG__
+            assert(prv->canary == 0x42424242);
+#endif
             last_offset = 0;
             wrapped = 1;
         } 
@@ -164,6 +173,11 @@ static int sma_allocate(void* shmaddr, size_t size)
 
     prv = prvnextfit;
     cur = BLOCKAT(prv->next);
+
+#ifdef __APC_SMA_DEBUG__
+    assert(cur->canary == 0x42424242);
+    assert(prv->canary == 0x42424242);
+#endif
 
     /* update the block header */
     header->avail -= realsize;
@@ -188,6 +202,10 @@ static int sma_allocate(void* shmaddr, size_t size)
         nxt = BLOCKAT(prv->next);
         nxt->next = nxtoffset;  /* Re-link the shortened block */
         nxt->size = oldsize - realsize;  /* and fix the size */
+#ifdef __APC_SMA_DEBUG__
+        nxt->canary = 0x42424242;
+        nxt->id = -1;
+#endif
     }
     header->nfoffset = last_offset;
 
@@ -214,19 +232,27 @@ static int sma_deallocate(void* shmaddr, int offset)
     assert(offset >= 0);
 
     /* find position of new block in free list */
+    cur = BLOCKAT(offset);
     prv = BLOCKAT(sizeof(header_t));
+#ifdef __APC_SMA_DEBUG__
+    assert(cur->canary == 0x42424242);
+    assert(prv->canary == 0x42424242);
+    fprintf(stderr, "free(%p, size=%d,id=%d)\n", cur, (int)(cur->size), cur->id);
+#endif
     while (prv->next != 0 && prv->next < offset) {
         prv = BLOCKAT(prv->next);
+#ifdef __APC_SMA_DEBUG__
+        assert(prv->canary == 0x42424242);
+#endif
     }
 
     /* insert new block after prv */
-    cur = BLOCKAT(offset);
     cur->next = prv->next;
     prv->next = offset;
 
 #ifdef __APC_SMA_DEBUG__
-    fprintf(stderr, "free(size=%d,id=%d)\n", (int)(cur->size), cur->id);
     assert(cur->canary == 0x42424242);
+    cur->id = -1;
 #endif
     
     /* update the block header */
@@ -238,14 +264,24 @@ static int sma_deallocate(void* shmaddr, int offset)
         /* cur and prv share an edge, combine them */
         prv->size += cur->size;
         prv->next = cur->next;
+#ifdef __APC_SMA_DEBUG__
+        cur->canary = -42; /* reset canary */
+#endif
         cur = prv;
     }
 
     nxt = BLOCKAT(cur->next);
+#ifdef __APC_SMA_DEBUG__
+    assert(nxt->canary == 0x42424242);
+#endif
     if (((char *)cur) + cur->size == (char *) nxt) {
         /* cur and nxt shared an edge, combine them */
         cur->size += nxt->size;
         cur->next = nxt->next;
+#ifdef __APC_SMA_DEBUG__
+        nxt->canary = -42; /* reset canary */
+        nxt->id = -1; /* assert this or set it ? */
+#endif
     }
     header->nfoffset = 0;  /* Reset the next fit search marker */
 
@@ -315,9 +351,17 @@ void apc_sma_init(int numseg, int segsize, char *mmap_file_mask)
         block = BLOCKAT(sizeof(header_t));
         block->size = 0;
         block->next = sizeof(header_t) + sizeof(block_t);
+#ifdef __APC_SMA_DEBUG__
+        block->canary = 0x42424242;
+        block->id = -1;
+#endif
         block = BLOCKAT(block->next);
         block->size = header->avail;
         block->next = 0;
+#ifdef __APC_SMA_DEBUG__
+        block->canary = 0x42424242;
+        block->id = -1;
+#endif
     }
 }
 /* }}} */
@@ -469,6 +513,9 @@ apc_sma_info_t* apc_sma_info()
         /* For each block in this segment */
         while (prv->next != 0) {
             block_t* cur = BLOCKAT(prv->next);
+#ifdef __APC_SMA_DEBUG__
+            assert(cur->canary == 0x42424242);
+#endif
 
             *link = apc_emalloc(sizeof(apc_sma_link_t));
             (*link)->size = cur->size;
