@@ -81,8 +81,8 @@ typedef struct block_t block_t;
 struct block_t {
     size_t size;       /* size of this block */
     size_t next;       /* offset in segment of next free block */
-#ifdef __APC_SMA_DEBUG__
     size_t canary;     /* canary to check for memory overwrites */
+#ifdef __APC_SMA_DEBUG__
     size_t id;         /* identifier for the memory block */ 
 #endif
 };
@@ -93,6 +93,11 @@ struct block_t {
 
 #define BLOCKAT(offset) ((block_t*)((char *)shmaddr + offset))
 #define OFFSET(block) ((size_t)(((char*)block) - (char*)shmaddr))
+
+/* Canary macros for setting, checking and resetting memory canaries */
+#define SET_CANARY(v) (v)->canary = 0x42424242
+#define CHECK_CANARY(v) assert((v)->canary == 0x42424242)
+#define RESET_CANARY(v) (v)->canary = -42
 
 #ifdef max
 #undef max
@@ -138,13 +143,13 @@ static int sma_allocate(void* shmaddr, size_t size)
     } else {    
         prv = BLOCKAT(sizeof(header_t));
     }
-#ifdef __APC_SMA_DEBUG__
-    assert(prv->canary == 0x42424242);
-#endif
+   
+    CHECK_CANARY(prv);
+
     while (prv->next != header->nfoffset) {
         cur = BLOCKAT(prv->next);
 #ifdef __APC_SMA_DEBUG__
-        assert(cur->canary == 0x42424242);
+        CHECK_CANARY(cur);
 #endif
         /* If it fits perfectly or it fits after a split, stop searching */
         if (cur->size == realsize || (cur->size > (sizeof(block_t) + realsize))) {
@@ -159,7 +164,7 @@ static int sma_allocate(void* shmaddr, size_t size)
         if(header->nfoffset && prv->next == 0) {
             prv = BLOCKAT(sizeof(header_t));
 #ifdef __APC_SMA_DEBUG__
-            assert(prv->canary == 0x42424242);
+            CHECK_CANARY(prv);
 #endif
             last_offset = 0;
             wrapped = 1;
@@ -174,10 +179,8 @@ static int sma_allocate(void* shmaddr, size_t size)
     prv = prvnextfit;
     cur = BLOCKAT(prv->next);
 
-#ifdef __APC_SMA_DEBUG__
-    assert(cur->canary == 0x42424242);
-    assert(prv->canary == 0x42424242);
-#endif
+    CHECK_CANARY(prv);
+    CHECK_CANARY(cur);
 
     /* update the block header */
     header->avail -= realsize;
@@ -202,16 +205,16 @@ static int sma_allocate(void* shmaddr, size_t size)
         nxt = BLOCKAT(prv->next);
         nxt->next = nxtoffset;  /* Re-link the shortened block */
         nxt->size = oldsize - realsize;  /* and fix the size */
+        SET_CANARY(nxt);
 #ifdef __APC_SMA_DEBUG__
-        nxt->canary = 0x42424242;
         nxt->id = -1;
 #endif
     }
     header->nfoffset = last_offset;
 
+    SET_CANARY(cur);
 #ifdef __APC_SMA_DEBUG__
     cur->id = ++block_id;
-    cur->canary = 0x42424242;
     fprintf(stderr, "allocate(realsize=%d,size=%d,id=%d)\n", (int)(size), (int)(cur->size), cur->id);
 #endif
 
@@ -234,24 +237,28 @@ static int sma_deallocate(void* shmaddr, int offset)
     /* find position of new block in free list */
     cur = BLOCKAT(offset);
     prv = BLOCKAT(sizeof(header_t));
+   
+    CHECK_CANARY(cur);
+
 #ifdef __APC_SMA_DEBUG__
-    assert(cur->canary == 0x42424242);
-    assert(prv->canary == 0x42424242);
+    CHECK_CANARY(prv);
     fprintf(stderr, "free(%p, size=%d,id=%d)\n", cur, (int)(cur->size), cur->id);
 #endif
     while (prv->next != 0 && prv->next < offset) {
         prv = BLOCKAT(prv->next);
 #ifdef __APC_SMA_DEBUG__
-        assert(prv->canary == 0x42424242);
+        CHECK_CANARY(prv);
 #endif
     }
+    
+    CHECK_CANARY(prv);
 
     /* insert new block after prv */
     cur->next = prv->next;
     prv->next = offset;
 
 #ifdef __APC_SMA_DEBUG__
-    assert(cur->canary == 0x42424242);
+    CHECK_CANARY(cur);
     cur->id = -1;
 #endif
     
@@ -264,24 +271,21 @@ static int sma_deallocate(void* shmaddr, int offset)
         /* cur and prv share an edge, combine them */
         prv->size += cur->size;
         prv->next = cur->next;
-#ifdef __APC_SMA_DEBUG__
-        cur->canary = -42; /* reset canary */
-#endif
+        RESET_CANARY(cur);
         cur = prv;
     }
 
     nxt = BLOCKAT(cur->next);
-#ifdef __APC_SMA_DEBUG__
-    assert(nxt->canary == 0x42424242);
-#endif
+
     if (((char *)cur) + cur->size == (char *) nxt) {
         /* cur and nxt shared an edge, combine them */
         cur->size += nxt->size;
         cur->next = nxt->next;
 #ifdef __APC_SMA_DEBUG__
-        nxt->canary = -42; /* reset canary */
+        CHECK_CANARY(nxt);
         nxt->id = -1; /* assert this or set it ? */
 #endif
+        RESET_CANARY(nxt);
     }
     header->nfoffset = 0;  /* Reset the next fit search marker */
 
@@ -351,15 +355,15 @@ void apc_sma_init(int numseg, int segsize, char *mmap_file_mask)
         block = BLOCKAT(sizeof(header_t));
         block->size = 0;
         block->next = sizeof(header_t) + sizeof(block_t);
+        SET_CANARY(block);
 #ifdef __APC_SMA_DEBUG__
-        block->canary = 0x42424242;
         block->id = -1;
 #endif
         block = BLOCKAT(block->next);
         block->size = header->avail;
         block->next = 0;
+        SET_CANARY(block);
 #ifdef __APC_SMA_DEBUG__
-        block->canary = 0x42424242;
         block->id = -1;
 #endif
     }
@@ -514,7 +518,7 @@ apc_sma_info_t* apc_sma_info()
         while (prv->next != 0) {
             block_t* cur = BLOCKAT(prv->next);
 #ifdef __APC_SMA_DEBUG__
-            assert(cur->canary == 0x42424242);
+            CHECK_CANARY(cur);
 #endif
 
             *link = apc_emalloc(sizeof(apc_sma_link_t));
