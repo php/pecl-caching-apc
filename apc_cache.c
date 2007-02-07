@@ -818,10 +818,9 @@ zval* apc_cache_store_zval(zval* dst, const zval* src, apc_malloc_t allocate, ap
 {
     smart_str buf = {0};
     php_serialize_data_t var_hash;
+    TSRMLS_FETCH();
 
     if((src->type & ~IS_CONSTANT_INDEX) == IS_OBJECT) {
-        TSRMLS_FETCH();
-
         if(!dst) {
             CHECK(dst = (zval*) allocate(sizeof(zval)));
         }
@@ -863,10 +862,10 @@ zval* apc_cache_store_zval(zval* dst, const zval* src, apc_malloc_t allocate, ap
 /* {{{ apc_cache_fetch_zval */
 zval* apc_cache_fetch_zval(zval* dst, const zval* src, apc_malloc_t allocate, apc_free_t deallocate)
 {
+    TSRMLS_FETCH();
     if((src->type & ~IS_CONSTANT_INDEX) == IS_OBJECT) {
         php_unserialize_data_t var_hash;
         const unsigned char *p = (unsigned char*)Z_STRVAL_P(src);
-        TSRMLS_FETCH();
 
         PHP_VAR_UNSERIALIZE_INIT(var_hash);
         if(!php_var_unserialize(&dst, &p, p + Z_STRLEN_P(src), &var_hash TSRMLS_CC)) {
@@ -901,6 +900,7 @@ zval* apc_cache_fetch_zval(zval* dst, const zval* src, apc_malloc_t allocate, ap
 /* {{{ apc_cache_free_zval */
 void apc_cache_free_zval(zval* src, apc_free_t deallocate)
 {
+    TSRMLS_FETCH();
     if ((src->type & ~IS_CONSTANT_INDEX) == IS_OBJECT) {
         if (src->value.str.val) {
         	deallocate(src->value.str.val);
