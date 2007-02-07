@@ -140,7 +140,6 @@ hp.net/dtd/package-2.0 http://pear.php.net/dtd/package-2.0.xsd">
  <providesextension>apc</providesextension>
 
  <extsrcrelease>
-   <configureoption name="enable-apc-mmap" default="yes" prompt="Use mmap instead of shmget (usually a good idea)"/>
    <configureoption name="with-apxs" default="yes" prompt="Use apxs to set compile flags (if using APC with Apache)?"/>
  </extsrcrelease>
 
