@@ -1,3 +1,20 @@
+3.0.12p2: 2006-09-05
+- Package version up
+
+3.0,12p1: 2006-09-05
+- PHP4 build fixes
+
+3.0.12: 2006-09-05
+- PHP 5.2 compatibility (Gopal)
+- TSRM fixes (Gopal)
+- Add extra flags to op_array->reserved to improve op array 
+  processing code (Gopal)
+- Fix crashes in optimizer and cli mode (Ilia)
+- Optimizer fixes for PHP5 (Ilia, Gopal)
+- Allow multiple inclusions of a file with a dynamic class (Gopal)
+- Php 4 function table and properties fixes (Gopal)
+- Fix memory leaks in apc_cache_info (Gopal)
+
 3.0.11: 2006-08-16
 - Made --enable-apc-mmap the default compile option (for real this time)
 - Add an optional flag to apc_cache_info() and some apc.php tweaks to make it
