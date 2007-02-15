@@ -125,9 +125,9 @@
 		"	instruction	\n"
 		"	instruction	\n"
 		"	instruction	\n"
-:		"=r"(_res), "+m"(*lock)		// return register, in/out lock value
-:		"r"(lock)					// lock pointer, in input register
-:		"memory", "cc");			// show clobbered registers here
+:		"=r"(_res), "+m"(*lock)		/* return register, in/out lock value */
+:		"r"(lock)					/* lock pointer, in input register */
+:		"memory", "cc");			/* show clobbered registers here */
 
  * The output-operands list (after first colon) should always include
  * "+m"(*lock), whether or not the asm code actually refers to this

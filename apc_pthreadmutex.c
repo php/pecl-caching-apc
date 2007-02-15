@@ -38,8 +38,7 @@ pthread_mutex_t *apc_pthreadmutex_create(pthread_mutex_t *lock)
         apc_eprint("pthread mutex error: attr is an invalid pointer.");
     } 
 
-    //pthread_mutexattr_settype(attr, PTHREAD_MUTEX_ERRORCHECK);
-    //result = pthread_mutexattr_setpshared(attr, PTHREAD_PROCESS_PRIVATE);
+    /* pthread_mutexattr_settype(attr, PTHREAD_MUTEX_ERRORCHECK); */
     result = pthread_mutexattr_setpshared(attr, PTHREAD_PROCESS_SHARED);
     if(result == EINVAL) {
         apc_eprint("pthread mutex error: attr is not an initialized mutex attribute object, or pshared is not a valid process-shared state setting.");
