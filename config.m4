@@ -12,6 +12,10 @@ AC_ARG_WITH(apxs,
       $APXS -q CFLAGS >/dev/null 2>&1
       if test "$?" != "0" && test -x /usr/sbin/apxs; then #SUSE 6.x
         APXS=/usr/sbin/apxs
+      elif test -x /usr/bin/apxs2;  then
+        APXS=/usr/bin/apxs2
+      elif test -x /usr/sbin/apxs2; then
+        APXS=/usr/sbin/apxs2
       fi
     else
       PHP_EXPAND_PATH($withval, APXS)
