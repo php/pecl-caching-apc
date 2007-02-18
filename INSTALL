@@ -385,4 +385,8 @@ users should consider tuning the following parameters:
                             will cause APC to automatically create an upload_<key>
                             user cache entry where <key> is the value of the 
                             APC_UPLOAD_PROGRESS form entry.
+
+                            Note that the file upload tracking is not threadsafe at this
+                            point, so new uploads that happen while a previous one is 
+                            still going will disable the tracking for the previous.
                             (Default: 0)
