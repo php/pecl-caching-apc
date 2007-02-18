@@ -230,7 +230,9 @@ users should consider tuning the following parameters:
                             for the compiler cache. If APC is running out of
                             shared memory but you have already set
                             apc.shm_size as high as your system allows, you
-                            can try raising this value.
+                            can try raising this value.  Setting this to a
+                            value other than 1 has no effect in mmap mode
+                            since mmap'ed shm segments don't have size limits.
                             (Default: 1)
                             
     apc.shm_size            The size of each shared memory segment in MB.
