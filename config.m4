@@ -195,8 +195,8 @@ if test "$PHP_APC" != "no"; then
                apc_shm.c \
                apc_futex.c \
                apc_pthreadmutex.c \
-							 apc_spin.c \ 
-							 pgsql_s_lock.c \ 
+			   apc_spin.c \
+			   pgsql_s_lock.c \
                apc_sma.c \
                apc_stack.c \
                apc_zend.c \
