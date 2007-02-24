@@ -104,10 +104,10 @@ if test "$PHP_APC_PTHREADMUTEX" != "no"; then
 	orig_LIBS="$LIBS"
 	LIBS="$LIBS -lpthread"
 	AC_TRY_RUN(
-			[ #include <sys/types.h>
-				#include <pthread.h>
-			],
 			[
+				#include <sys/types.h>
+				#include <pthread.h>
+                                main() {
 				pthread_mutex_t mutex;
 				pthread_mutexattr_t attr;	
 
@@ -134,6 +134,7 @@ if test "$PHP_APC_PTHREADMUTEX" != "no"; then
 
 				puts("pthread mutex's are supported!");
 				return 0;
+                                }
 			],
 			[ dnl -Success-
 				PHP_ADD_LIBRARY(pthread)
@@ -141,6 +142,9 @@ if test "$PHP_APC_PTHREADMUTEX" != "no"; then
 			[ dnl -Failure-
 				AC_MSG_ERROR([It doesn't appear that pthread mutex's are supported on your system, please try a different configuration])
 			],
+			[
+				PHP_ADD_LIBRARY(pthread)
+			]
 	)
 	LIBS="$orig_LIBS"
 fi
