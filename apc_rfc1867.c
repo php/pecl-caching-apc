@@ -31,7 +31,7 @@
 #include "rfc1867.h"
 
 #ifdef MULTIPART_EVENT_FORMDATA
-extern int _apc_store(char *strkey, int strkey_len, const zval *val, const unsigned int ttl TSRMLS_DC);
+extern int _apc_store(char *strkey, int strkey_len, const zval *val, const unsigned int ttl, const int exclusive TSRMLS_DC);
 
 static double my_time() {
     struct timeval a;
@@ -99,7 +99,7 @@ void apc_rfc1867_progress(unsigned int event, void *event_data, void **extra TSR
                 add_assoc_string(track, "filename", filename, 1);
                 add_assoc_string(track, "name", name, 1);
                 add_assoc_long(track, "done", 0);
-                _apc_store(tracking_key, key_length, track, 3600 TSRMLS_CC);
+                _apc_store(tracking_key, key_length, track, 3600, 0 TSRMLS_CC);
                 zval_ptr_dtor(&track);
             }
             break;
@@ -115,7 +115,7 @@ void apc_rfc1867_progress(unsigned int event, void *event_data, void **extra TSR
                 add_assoc_string(track, "filename", filename, 1);
                 add_assoc_string(track, "name", name, 1);
                 add_assoc_long(track, "done", 0);
-                _apc_store(tracking_key, key_length, track, 3600 TSRMLS_CC);
+                _apc_store(tracking_key, key_length, track, 3600, 0 TSRMLS_CC);
                 zval_ptr_dtor(&track);
 			}
 			break;
@@ -135,7 +135,7 @@ void apc_rfc1867_progress(unsigned int event, void *event_data, void **extra TSR
                 add_assoc_string(track, "temp_filename", temp_filename, 1);
                 add_assoc_long(track, "cancel_upload", cancel_upload);
                 add_assoc_long(track, "done", 0);
-                _apc_store(tracking_key, key_length, track, 3600 TSRMLS_CC);
+                _apc_store(tracking_key, key_length, track, 3600, 0 TSRMLS_CC);
                 zval_ptr_dtor(&track);
 			}
 			break;
@@ -157,7 +157,7 @@ void apc_rfc1867_progress(unsigned int event, void *event_data, void **extra TSR
                 add_assoc_string(track, "temp_filename", temp_filename, 1);
                 add_assoc_long(track, "cancel_upload", cancel_upload);
                 add_assoc_long(track, "done", 1);
-                _apc_store(tracking_key, key_length, track, 3600 TSRMLS_CC);
+                _apc_store(tracking_key, key_length, track, 3600, 0 TSRMLS_CC);
                 zval_ptr_dtor(&track);
 			}
 			break;

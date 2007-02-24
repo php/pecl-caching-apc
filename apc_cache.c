@@ -483,7 +483,7 @@ int apc_cache_insert(apc_cache_t* cache,
 /* }}} */
 
 /* {{{ apc_cache_user_insert */
-int apc_cache_user_insert(apc_cache_t* cache, apc_cache_key_t key, apc_cache_entry_t* value, time_t t TSRMLS_DC)
+int apc_cache_user_insert(apc_cache_t* cache, apc_cache_key_t key, apc_cache_entry_t* value, time_t t, int exclusive TSRMLS_DC)
 {
     slot_t** slot;
     size_t* mem_size_ptr = NULL;
@@ -504,8 +504,13 @@ int apc_cache_user_insert(apc_cache_t* cache, apc_cache_key_t key, apc_cache_ent
 
     while (*slot) {
         if (!memcmp((*slot)->key.data.user.identifier, key.data.user.identifier, key.data.user.identifier_len)) {
-            /* If a slot with the same identifier already exists, remove it */
-            remove_slot(cache, slot);
+            /* If a slot with the same identifier already exists, remove it unless we are doing an exclusive insert */
+            if(!exclusive) {
+                remove_slot(cache, slot);
+            } else {
+                UNLOCK(cache);
+                return 0;
+            }
             break;
         } else 
         /* 

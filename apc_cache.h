@@ -148,7 +148,7 @@ extern int apc_cache_insert(T cache, apc_cache_key_t key,
                             apc_cache_entry_t* value, time_t t);
 
 extern int apc_cache_user_insert(T cache, apc_cache_key_t key,
-                            apc_cache_entry_t* value, time_t t TSRMLS_DC);
+                            apc_cache_entry_t* value, time_t t, int exclusive TSRMLS_DC);
 
 /*
  * apc_cache_find searches for a cache entry by filename, and returns a

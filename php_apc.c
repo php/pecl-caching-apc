@@ -58,6 +58,7 @@ PHP_FUNCTION(apc_delete);
 PHP_FUNCTION(apc_compile_file);
 PHP_FUNCTION(apc_define_constants);
 PHP_FUNCTION(apc_load_constants);
+PHP_FUNCTION(apc_add);
 /* }}} */
 
 /* {{{ ZEND_DECLARE_MODULE_GLOBALS(apc) */
@@ -479,7 +480,7 @@ PHP_FUNCTION(apc_sma_info)
 /* }}} */
 
 /* {{{ _apc_store */
-int _apc_store(char *strkey, int strkey_len, const zval *val, const unsigned int ttl TSRMLS_DC) {
+int _apc_store(char *strkey, int strkey_len, const zval *val, const unsigned int ttl, const int exclusive TSRMLS_DC) {
     apc_cache_entry_t *entry;
     apc_cache_key_t key;
     time_t t;
@@ -517,7 +518,7 @@ int _apc_store(char *strkey, int strkey_len, const zval *val, const unsigned int
         return 0;
     }
 
-    if (!apc_cache_user_insert(apc_user_cache, key, entry, t TSRMLS_CC)) {
+    if (!apc_cache_user_insert(apc_user_cache, key, entry, t, exclusive TSRMLS_CC)) {
         APCG(mem_size_ptr) = NULL;
         apc_cache_free_entry(entry);
         apc_cache_expunge(apc_cache,t);
@@ -548,7 +549,26 @@ PHP_FUNCTION(apc_store) {
 
     if(!strkey_len) RETURN_FALSE;
 
-    if(_apc_store(strkey, strkey_len, val, (unsigned int)ttl TSRMLS_CC)) RETURN_TRUE;
+    if(_apc_store(strkey, strkey_len, val, (unsigned int)ttl, 0 TSRMLS_CC)) RETURN_TRUE;
+    RETURN_FALSE;
+}
+/* }}} */
+
+/* {{{ proto int apc_add(string key, zval var [, ttl ])
+ */
+PHP_FUNCTION(apc_add) {
+    zval *val;
+    char *strkey;
+    int strkey_len;
+    long ttl = 0L;
+
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sz|l", &strkey, &strkey_len, &val, &ttl) == FAILURE) {
+        return;
+    }
+
+    if(!strkey_len) RETURN_FALSE;
+
+    if(_apc_store(strkey, strkey_len, val, (unsigned int)ttl, 1 TSRMLS_CC)) RETURN_TRUE;
     RETURN_FALSE;
 }
 /* }}} */
@@ -714,7 +734,7 @@ PHP_FUNCTION(apc_define_constants) {
     if(!strkey_len) RETURN_FALSE;
 
     _apc_define_constants(constants, case_sensitive TSRMLS_CC);
-    if(_apc_store(strkey, strkey_len, constants, 0 TSRMLS_CC)) RETURN_TRUE;
+    if(_apc_store(strkey, strkey_len, constants, 0, 0 TSRMLS_CC)) RETURN_TRUE;
     RETURN_FALSE;
 } /* }}} */
 
@@ -755,7 +775,6 @@ PHP_FUNCTION(apc_load_constants) {
     }
 }
 /* }}} */
-
 
 /* {{{ proto boolean apc_compile_file(string filename)
  */
@@ -847,8 +866,6 @@ PHP_FUNCTION(apc_compile_file) {
     RETURN_TRUE;
 }
 /* }}} */
-
-
 
 /* {{{ apc_functions[] */
 function_entry apc_functions[] = {

@@ -16,6 +16,7 @@
 - Memory cleanup code for destructor order (Gopal)
 - Win32 build fixes (Ilia, Wez)
 - ZTS and Php 4 build fixes (Bjori)
+- Add apc_add() function (Rasmus)
 
 3.0.12p2: 2006-09-05
 - Package version up
