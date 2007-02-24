@@ -103,8 +103,7 @@ AC_ARG_ENABLE(apc-pthreadmutex,
 if test "$PHP_APC_PTHREADMUTEX" != "no"; then
 	orig_LIBS="$LIBS"
 	LIBS="$LIBS -lpthread"
-	AC_RUN_IFELSE(
-		AC_LANG_PROGRAM(
+	AC_TRY_RUN(
 			[ #include <sys/types.h>
 				#include <pthread.h>
 			],
@@ -135,7 +134,7 @@ if test "$PHP_APC_PTHREADMUTEX" != "no"; then
 
 				puts("pthread mutex's are supported!");
 				return 0;
-			]),
+			],
 			[ dnl -Success-
 				PHP_ADD_LIBRARY(pthread)
 			],
