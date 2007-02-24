@@ -64,7 +64,7 @@ struct apc_sma_info_t {
 };
 /* }}} */
 
-extern apc_sma_info_t* apc_sma_info();
+extern apc_sma_info_t* apc_sma_info(zend_bool limited);
 extern void apc_sma_free_info(apc_sma_info_t* info);
 
 extern int apc_sma_get_avail_mem();

@@ -485,7 +485,7 @@ void apc_sma_free(void* p)
 /* }}} */
 
 /* {{{ apc_sma_info */
-apc_sma_info_t* apc_sma_info()
+apc_sma_info_t* apc_sma_info(zend_bool limited)
 {
     apc_sma_info_t* info;
     apc_sma_link_t** link;
@@ -505,6 +505,8 @@ apc_sma_info_t* apc_sma_info()
     for (i = 0; i < sma_numseg; i++) {
         info->list[i] = NULL;
     }
+
+    if(limited) return info;
 
     /* For each segment */
     for (i = 0; i < sma_numseg; i++) {

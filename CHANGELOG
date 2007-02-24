@@ -17,6 +17,7 @@
 - Win32 build fixes (Ilia, Wez)
 - ZTS and Php 4 build fixes (Bjori)
 - Add apc_add() function (Rasmus)
+- Add optional limited flag to apc_sma_info() (Rasmus)
 
 3.0.12p2: 2006-09-05
 - Package version up

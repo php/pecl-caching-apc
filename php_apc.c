@@ -418,18 +418,19 @@ PHP_FUNCTION(apc_clear_cache)
 }
 /* }}} */
 
-/* {{{ proto array apc_sma_info() */
+/* {{{ proto array apc_sma_info([bool limited]) */
 PHP_FUNCTION(apc_sma_info)
 {
     apc_sma_info_t* info;
     zval* block_lists;
     int i;
+    zend_bool limited = 0;
 
-    if (ZEND_NUM_ARGS() != 0) {
-        WRONG_PARAM_COUNT;
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|b", &limited) == FAILURE) {
+        return;
     }
 
-    info = apc_sma_info();
+    info = apc_sma_info(limited);
 
     if(!info) {
         php_error_docref(NULL TSRMLS_CC, E_WARNING, "No APC SMA info available.  Perhaps APC is disabled via apc.enabled?");
@@ -440,6 +441,12 @@ PHP_FUNCTION(apc_sma_info)
     add_assoc_long(return_value, "num_seg", info->num_seg);
     add_assoc_long(return_value, "seg_size", info->seg_size);
     add_assoc_long(return_value, "avail_mem", apc_sma_get_avail_mem());
+
+    if(limited) {
+        apc_sma_free_info(info);
+        return;
+    }
+
 #if ALLOC_DISTRIBUTION
     {
         size_t *adist = apc_sma_get_alloc_distribution();
