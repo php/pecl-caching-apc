@@ -59,30 +59,12 @@
   <active>yes</active>
  </developer>
  
- <date>2007-02-24</date>
- <version><release>3.0.13</release><api>3.0.0</api></version>
+ <date>2007-??-??</date>
+ <version><release>3.0.14</release><api>3.0.0</api></version>
  <stability><release>stable</release><api>stable</api></stability>
  <license uri="http://www.php.net/license">PHP License</license>
  <notes>
-* PHP 5.2 file upload progress tracking support (Rasmus)
-* Pthread mutex and spin locks (Shire)
-* Recursive zval support for apc_fetch/_store (Shire, Gopal)
-* apc.stat_ctime flag for ctime checks (Rasmus)
-* Multiple key fetches with apc_fetch (Shire)
-* Canary checks for shm memory deallocation (Gopal)
-* Add hooks for external optimizer (Shire)
-* Obsolete and remove apc optimizer (Gopal)
-* APC info changes - cache insert rate, hit and miss rates (Shire)
-* Fix apc_load_constants (Gopal)
-* Rewrite dump opcode code to use vld (Gopal)
-* Use apc_[ewn]print functions for error reporting (Shire) 
-* Auto global fixes and refactoring (Gopal, Shire)
-* Fix memory leaks in object serialization (Ilia)
-* Memory cleanup code for destructor order (Gopal)
-* Win32 build fixes (Ilia, Wez)
-* ZTS and Php 4 build fixes (Bjori)
-* Add apc_add() function (Rasmus)
-* Add optional limited flag to apc_sma_info() (Rasmus)
+
  </notes>
 
  <contents>
@@ -404,6 +386,33 @@ Allow keys used in apc_store/apc_fetch/apc_delete to be binary safe and prevent 
      <notes>
 * Let's get the version number right.  3.0.12p2 now.
      </notes>
+    </release>
+
+    <release>
+     <stability><release>stable</release><api>stable</api></stability>
+     <version><release>3.0.13</release><api>3.0.0</api></version>
+     <date>2007-02-24</date>
+      <notes>
+* PHP 5.2 file upload progress tracking support (Rasmus)
+* Pthread mutex and spin locks (Shire)
+* Recursive zval support for apc_fetch/_store (Shire, Gopal)
+* apc.stat_ctime flag for ctime checks (Rasmus)
+* Multiple key fetches with apc_fetch (Shire)
+* Canary checks for shm memory deallocation (Gopal)
+* Add hooks for external optimizer (Shire)
+* Obsolete and remove apc optimizer (Gopal)
+* APC info changes - cache insert rate, hit and miss rates (Shire)
+* Fix apc_load_constants (Gopal)
+* Rewrite dump opcode code to use vld (Gopal)
+* Use apc_[ewn]print functions for error reporting (Shire) 
+* Auto global fixes and refactoring (Gopal, Shire)
+* Fix memory leaks in object serialization (Ilia)
+* Memory cleanup code for destructor order (Gopal)
+* Win32 build fixes (Ilia, Wez)
+* ZTS and Php 4 build fixes (Bjori)
+* Add apc_add() function (Rasmus)
+* Add optional limited flag to apc_sma_info() (Rasmus)
+      </notes>
     </release>
  </changelog>
 </package>
