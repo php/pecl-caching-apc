@@ -39,6 +39,9 @@
 /* #include "postgres.h"  -- Removed for APC */
 
 /* -- Added for APC -- */
+#include "apc.h"
+#ifdef APC_SPIN_LOCKS
+
 #ifdef S_LOCK_TEST
 #include <stdio.h>
 #endif
@@ -474,3 +477,5 @@ main()
 }
 
 #endif   /* S_LOCK_TEST */
+
+#endif /* APC_SPIN_LOCKS */
