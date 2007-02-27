@@ -214,20 +214,19 @@ static PHP_MINIT_FUNCTION(apc)
 
     /* Disable APC in cli mode unless overridden by apc.enable_cli */
     if(!APCG(enable_cli) && !strcmp(sapi_module.name, "cli")) {
-	APCG(enabled) = 0;
+        APCG(enabled) = 0;
     }
 
-    if (APCG(enabled)) {
+    if (APCG(enabled) && !APCG(initialized)) {
         apc_module_init(module_number TSRMLS_CC);
         apc_zend_init(TSRMLS_C);
-    }
-
 #ifdef MULTIPART_EVENT_FORMDATA
-    /* File upload progress tracking */
-    if(APCG(rfc1867)) {
-        php_rfc1867_callback = apc_rfc1867_progress;
-    }
+        /* File upload progress tracking */
+        if(APCG(rfc1867)) {
+            php_rfc1867_callback = apc_rfc1867_progress;
+        }
 #endif
+    }
 
     return SUCCESS;
 }
