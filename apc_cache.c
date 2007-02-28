@@ -92,6 +92,25 @@ struct apc_cache_t {
 };
 /* }}} */
 
+/* {{{ struct definition local_slot_t */
+typedef struct local_slot_t local_slot_t;
+struct local_slot_t {
+    slot_t *original;           /* the original slot in shm */
+    int num_hits;               /* number of hits */
+    apc_cache_entry_t *value;   /* shallow copy of slot->value */
+};
+/* }}} */
+/* {{{ struct definition apc_local_cache_t */
+struct apc_local_cache_t {
+    apc_cache_t* shmcache;      /* the real cache in shm */
+    local_slot_t* slots;        /* process (local) cache of objects */
+    int num_slots;              /* number of slots in cache */
+    int ttl;                    /* time to live */
+    int num_hits;               /* number of hits */
+    int generation;             /* every generation lives between expunges */
+};
+/* }}} */
+
 /* {{{ key_equals */
 #define key_equals(a, b) (a.inode==b.inode && a.device==b.device)
 /* }}} */
@@ -548,11 +567,11 @@ int apc_cache_user_insert(apc_cache_t* cache, apc_cache_key_t key, apc_cache_ent
 }
 /* }}} */
 
-/* {{{ apc_cache_find */
-apc_cache_entry_t* apc_cache_find(apc_cache_t* cache, apc_cache_key_t key, time_t t)
+/* {{{ apc_cache_find_slot */
+slot_t* apc_cache_find_slot(apc_cache_t* cache, apc_cache_key_t key, time_t t)
 {
     slot_t** slot;
-    volatile apc_cache_entry_t* value = NULL;
+    volatile slot_t* retval = NULL;
 
     LOCK(cache);
     if(key.type == APC_CACHE_KEY_FILE) slot = &cache->slots[hash(key) % cache->num_slots];
@@ -573,9 +592,9 @@ apc_cache_entry_t* apc_cache_find(apc_cache_t* cache, apc_cache_key_t key, time_
                 (*slot)->access_time = t;
                 prevent_garbage_collection((*slot)->value);
                 cache->header->num_hits++;
-                value = (*slot)->value;
+                retval = *slot;
                 UNLOCK(cache);
-                return (apc_cache_entry_t*)value;
+                return (slot_t*)retval;
             }
         } else {  /* APC_CACHE_KEY_FPFILE */
             if(!memcmp((*slot)->key.data.fpfile.fullpath, key.data.fpfile.fullpath, key.data.fpfile.fullpath_len+1)) {
@@ -585,9 +604,9 @@ apc_cache_entry_t* apc_cache_find(apc_cache_t* cache, apc_cache_key_t key, time_
                 (*slot)->access_time = t;
                 prevent_garbage_collection((*slot)->value);
                 cache->header->num_hits++;
-                value = (*slot)->value;
+                retval = *slot;
                 UNLOCK(cache);
-                return (apc_cache_entry_t*)value;
+                return (slot_t*)retval;
             }
         }
       }
@@ -596,6 +615,14 @@ apc_cache_entry_t* apc_cache_find(apc_cache_t* cache, apc_cache_key_t key, time_
     cache->header->num_misses++;
     UNLOCK(cache);
     return NULL;
+}
+/* }}} */
+
+/* {{{ apc_cache_find */
+apc_cache_entry_t* apc_cache_find(apc_cache_t* cache, apc_cache_key_t key, time_t t)
+{
+    slot_t * slot = apc_cache_find_slot(cache, key, t);
+    return (slot) ? slot->value : NULL;
 }
 /* }}} */
 
@@ -661,6 +688,8 @@ int apc_cache_user_delete(apc_cache_t* cache, char *strkey, int keylen)
 /* {{{ apc_cache_release */
 void apc_cache_release(apc_cache_t* cache, apc_cache_entry_t* entry)
 {
+    if(entry->local) return;
+
     LOCK(cache);
     entry->ref_count--;
     UNLOCK(cache);
@@ -814,6 +843,8 @@ apc_cache_entry_t* apc_cache_make_file_entry(const char* filename,
     entry->type = APC_CACHE_ENTRY_FILE;
     entry->ref_count = 0;
     entry->mem_size = 0;
+    entry->autofiltered = 0;
+    entry->local = 0;
     return entry;
 }
 /* }}} */
@@ -954,6 +985,8 @@ apc_cache_entry_t* apc_cache_make_user_entry(const char* info, int info_len, con
     entry->type = APC_CACHE_ENTRY_USER;
     entry->ref_count = 0;
     entry->mem_size = 0;
+    entry->autofiltered = 0;
+    entry->local = 0;
     return entry;
 }
 /* }}} */
@@ -1126,6 +1159,135 @@ void apc_cache_write_unlock(apc_cache_t* cache)
 }
 /* }}} */
 #endif
+
+/* {{{ make_local_slot */
+static local_slot_t* make_local_slot(apc_local_cache_t* cache, slot_t* slot, local_slot_t* lslot) 
+{
+    apc_cache_entry_t* value;
+
+    value = apc_emalloc(sizeof(apc_cache_entry_t));
+    memcpy(value, slot->value, sizeof(apc_cache_entry_t)); /* bitwise copy */
+    value->local = 1;
+
+    lslot->original = slot;
+    lslot->value = value;
+    lslot->num_hits++;
+
+    return lslot; /* for what joy ? ... consistency */
+}
+/* }}} */
+
+/* {{{ free_local_slot */
+static void free_local_slot(apc_local_cache_t* cache, local_slot_t* lslot) 
+{
+    if(!lslot->original) return;
+
+    LOCK(cache->shmcache);
+    lslot->original->num_hits += lslot->num_hits;
+    UNLOCK(cache->shmcache);
+
+    apc_cache_release(cache->shmcache, lslot->original->value);
+    apc_efree(lslot->value);
+
+    lslot->original = NULL;
+    lslot->value = NULL;
+}
+/* }}} */
+
+/* {{{ apc_local_cache_create */
+apc_local_cache_t* apc_local_cache_create(apc_cache_t *shmcache, int num_slots, int ttl)
+{
+    apc_local_cache_t* cache = NULL;
+
+    cache = (apc_local_cache_t*) apc_emalloc(sizeof(apc_local_cache_t));
+
+    cache->slots = (local_slot_t*) (apc_emalloc(sizeof(local_slot_t) * num_slots));
+    memset(cache->slots, 0, sizeof(local_slot_t) * num_slots);
+
+    cache->shmcache = shmcache;
+    cache->num_slots = num_slots;
+    cache->ttl = ttl;
+    cache->num_hits = 0;
+    cache->generation = shmcache->header->expunges;
+
+    return cache;
+}
+/* }}} */
+
+/* {{{ apc_local_cache_destroy */
+void apc_local_cache_destroy(apc_local_cache_t* cache)
+{
+    int i;
+    for(i = 0; i < cache->num_slots; i++) {
+        /* too many lock/unlock calls in there ? */
+        free_local_slot(cache, &cache->slots[i]);
+    }
+
+    LOCK(cache->shmcache);
+    cache->shmcache->header->num_hits += cache->num_hits;
+    UNLOCK(cache->shmcache);
+
+    apc_efree(cache->slots);
+    apc_efree(cache);
+}
+/* }}} */
+
+/* {{{ local_cache_cleanup */
+static void local_cache_cleanup(apc_local_cache_t* cache, time_t t) {
+    int i;
+    for(i = 0; i < cache->num_slots; i++) {
+        slot_t * slot = cache->slots[i].original;
+        if((slot && slot->access_time < (t - cache->ttl)) ||
+                cache->generation != cache->shmcache->header->expunges) {
+            free_local_slot(cache, &cache->slots[i]);
+        }
+    }
+}
+/* }}} */
+
+/* {{{ apc_local_cache_find */
+apc_cache_entry_t* apc_local_cache_find(apc_local_cache_t* cache, apc_cache_key_t key, time_t t)
+{
+    slot_t* slot;
+    local_slot_t* lslot; 
+    apc_cache_entry_t* entry;
+
+    local_cache_cleanup(cache, t);
+
+    if(key.type == APC_CACHE_KEY_FILE) lslot = &cache->slots[hash(key) % cache->num_slots];
+    else lslot = &cache->slots[string_nhash_8(key.data.fpfile.fullpath, key.data.fpfile.fullpath_len) % cache->num_slots];
+
+    slot = lslot->original;
+
+    if(slot && key.type == slot->key.type) {
+        if(key.type == APC_CACHE_KEY_FILE && 
+           key_equals(slot->key.data.file, key.data.file)) {
+            if(slot->key.mtime != key.mtime) {
+                free_local_slot(cache, lslot);
+                goto not_found;
+            }
+            return lslot->value;
+        } else if(key.type == APC_CACHE_KEY_FPFILE) {
+            if(!memcmp(slot->key.data.fpfile.fullpath, key.data.fpfile.fullpath, key.data.fpfile.fullpath_len+1)) {
+                return lslot->value;
+            }
+        }
+    }
+not_found:
+
+    slot = apc_cache_find_slot(cache->shmcache, key, t);
+
+    if(!slot) return NULL;
+   
+    /* i.e maintain a sort of top list */
+    if(lslot->original == NULL || (lslot->original->num_hits + lslot->num_hits)  < slot->num_hits) {
+        free_local_slot(cache, lslot);
+        make_local_slot(cache, slot, lslot); 
+        return lslot->value;
+    }
+    return slot->value;
+}
+/* }}} */
 
 /*
  * Local variables:

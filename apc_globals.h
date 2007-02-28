@@ -79,6 +79,9 @@ ZEND_BEGIN_MODULE_GLOBALS(apc)
 #ifdef ZEND_ENGINE_2
     int reserved_offset;         /* offset for apc info in op_array->reserved[] */
 #endif
+    zend_bool localcache;        /* enable local cache */
+    long localcache_size;        /* size of fast cache */
+    apc_local_cache_t* lcache;   /* unlocked local cache */
 ZEND_END_MODULE_GLOBALS(apc)
 
 /* (the following declaration is defined in php_apc.c) */

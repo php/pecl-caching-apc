@@ -89,6 +89,9 @@ static void php_apc_init_globals(zend_apc_globals* apc_globals TSRMLS_DC)
 #ifdef ZEND_ENGINE_2
     apc_globals->reserved_offset = -1;
 #endif
+    apc_globals->localcache = 0;
+    apc_globals->localcache_size = 0;
+    apc_globals->lcache = NULL;
 }
 
 static void php_apc_shutdown_globals(zend_apc_globals* apc_globals TSRMLS_DC)
@@ -167,6 +170,8 @@ STD_PHP_INI_BOOLEAN("apc.report_autofilter", "0", PHP_INI_SYSTEM, OnUpdateBool, 
 #ifdef MULTIPART_EVENT_FORMDATA
 STD_PHP_INI_BOOLEAN("apc.rfc1867", "0", PHP_INI_SYSTEM, OnUpdateBool, rfc1867, zend_apc_globals, apc_globals)
 #endif
+STD_PHP_INI_BOOLEAN("apc.localcache", "0", PHP_INI_SYSTEM, OnUpdateBool, localcache, zend_apc_globals, apc_globals)
+STD_PHP_INI_ENTRY("apc.localcache.size", "100", PHP_INI_SYSTEM, OnUpdateInt, localcache_size,  zend_apc_globals, apc_globals)
 PHP_INI_END()
 
 /* }}} */
@@ -217,15 +222,20 @@ static PHP_MINIT_FUNCTION(apc)
         APCG(enabled) = 0;
     }
 
-    if (APCG(enabled) && !APCG(initialized)) {
-        apc_module_init(module_number TSRMLS_CC);
-        apc_zend_init(TSRMLS_C);
+    if (APCG(enabled)) {
+        if(APCG(initialized)) {
+            apc_process_init(module_number TSRMLS_CC);
+        } else {
+            apc_module_init(module_number TSRMLS_CC);
+            apc_zend_init(TSRMLS_C);
+            apc_process_init(module_number TSRMLS_CC);
 #ifdef MULTIPART_EVENT_FORMDATA
-        /* File upload progress tracking */
-        if(APCG(rfc1867)) {
-            php_rfc1867_callback = apc_rfc1867_progress;
-        }
+            /* File upload progress tracking */
+            if(APCG(rfc1867)) {
+                php_rfc1867_callback = apc_rfc1867_progress;
+            }
 #endif
+        }
     }
 
     return SUCCESS;
@@ -236,6 +246,7 @@ static PHP_MINIT_FUNCTION(apc)
 static PHP_MSHUTDOWN_FUNCTION(apc)
 {
     if(APCG(enabled)) {
+        apc_process_shutdown(TSRMLS_C);
         apc_zend_shutdown(TSRMLS_C);
         apc_module_shutdown(TSRMLS_C);
 #ifndef ZTS

@@ -329,9 +329,15 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
     if (!apc_cache_make_file_key(&key, h->filename, PG(include_path), t TSRMLS_CC)) {
         return old_compile_file(h, type TSRMLS_CC);
     }
-    
-    /* search for the file in the cache */
-    cache_entry = apc_cache_find(apc_cache, key, t);
+
+    if(APCG(localcache)) {
+        /* search for the file in the local cache */
+        cache_entry = apc_local_cache_find(APCG(lcache), key, t);
+    } else {
+        /* search for the file in the cache */
+        cache_entry = apc_cache_find(apc_cache, key, t);
+    }
+
     if (cache_entry != NULL && !cache_entry->autofiltered) {
         int dummy = 1;
         if (h->opened_path == NULL) {
@@ -470,7 +476,6 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
     }
     APCG(mem_size_ptr) = NULL;
     cache_entry->mem_size = mem_size;
-    cache_entry->autofiltered = 0;
 
     if ((ret = apc_cache_insert(apc_cache, key, cache_entry, t)) != 1) {
         apc_cache_free_entry(cache_entry);
@@ -503,6 +508,7 @@ int apc_module_init(int module_number TSRMLS_DC)
 #endif
     apc_cache = apc_cache_create(APCG(num_files_hint), APCG(gc_ttl), APCG(ttl));
     apc_user_cache = apc_cache_create(APCG(user_entries_hint), APCG(gc_ttl), APCG(user_ttl));
+
     apc_compiled_filters = apc_regex_compile_array(APCG(filters));
 
     /* override compilation */
@@ -560,6 +566,27 @@ int apc_module_shutdown(TSRMLS_D)
     return 0;
 }
 
+/* }}} */
+
+/* {{{ process init and shutdown */
+int apc_process_init(int module_number TSRMLS_DC)
+{
+    int minttl = (APCG(gc_ttl) >  APCG(ttl) ? APCG(ttl) : APCG(gc_ttl))/2;
+    int size = APCG(localcache_size);
+    if(APCG(initialized) && APCG(localcache)) {
+        APCG(lcache) = apc_local_cache_create(apc_cache, size, minttl);
+    }
+    return 0;
+}
+
+int apc_process_shutdown(TSRMLS_D)
+{
+    if(APCG(initialized) && APCG(localcache) && APCG(lcache)) {
+        apc_local_cache_destroy(APCG(lcache));
+        APCG(lcache) = NULL;
+    }
+	return 0;
+}
 /* }}} */
 
 /* {{{ request init and shutdown */
