@@ -1094,6 +1094,7 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_mal
     int local_dst_alloc = 0;
 #ifdef ZEND_ENGINE_2
     apc_opflags_t * flags = NULL;
+    TSRMLS_FETCH();
 #endif
 
     assert(src != NULL);
@@ -1208,7 +1209,23 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_mal
                             zo->op1.u.constant.type == IS_STRING) {
                         znode * varname = &zo->op1;
                         if (varname->u.constant.value.str.val[0] == '_') {
-                            flags->use_globals = 1;
+#define SET_IF_AUTOGLOBAL(member) \
+    if(!strcmp(varname->u.constant.value.str.val, #member)) \
+        flags->autoglobals.bits.member = 1 /* no ';' here */
+                            SET_IF_AUTOGLOBAL(_GET);
+                            else SET_IF_AUTOGLOBAL(_POST);
+                            else SET_IF_AUTOGLOBAL(_COOKIE);
+                            else SET_IF_AUTOGLOBAL(_SERVER);
+                            else SET_IF_AUTOGLOBAL(_ENV);
+                            else SET_IF_AUTOGLOBAL(_FILES);
+                            else SET_IF_AUTOGLOBAL(_REQUEST);
+                            else if(zend_is_auto_global(
+                                            varname->u.constant.value.str.val,
+                                            varname->u.constant.value.str.len
+                                            TSRMLS_CC))
+                            {
+                                flags->autoglobals.bits.unknown = 1;
+                            }
                         }
                     }
                 }
@@ -1942,7 +1959,24 @@ static int my_prepare_op_array_for_execution(zend_op_array* dst, zend_op_array* 
                                 (apc_opflags_t*) & (src->reserved[APCG(reserved_offset)]) : NULL;
     int needcopy = flags ? flags->deep_copy : 1;
     /* auto_globals_jit was not in php4 */
-    int do_prepare_fetch_global = PG(auto_globals_jit) && (flags == NULL || flags->use_globals);
+    int do_prepare_fetch_global = PG(auto_globals_jit) && (flags == NULL || flags->autoglobals.bits.unknown);
+
+#define FETCH_AUTOGLOBAL(member) do { \
+    if(flags && flags->autoglobals.bits.member == 1) { \
+        zend_is_auto_global(#member,\
+                            (sizeof(#member) - 1)\
+                            TSRMLS_CC);\
+    } \
+}while(0); 
+            
+    FETCH_AUTOGLOBAL(_GET);
+    FETCH_AUTOGLOBAL(_POST);
+    FETCH_AUTOGLOBAL(_COOKIE);
+    FETCH_AUTOGLOBAL(_SERVER);
+    FETCH_AUTOGLOBAL(_ENV);
+    FETCH_AUTOGLOBAL(_FILES);
+    FETCH_AUTOGLOBAL(_REQUEST);
+
 #else
     int needcopy = 1;
     int do_prepare_fetch_global = 0;
