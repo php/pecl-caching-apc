@@ -523,13 +523,19 @@ int apc_cache_user_insert(apc_cache_t* cache, apc_cache_key_t key, apc_cache_ent
 
     while (*slot) {
         if (!memcmp((*slot)->key.data.user.identifier, key.data.user.identifier, key.data.user.identifier_len)) {
-            /* If a slot with the same identifier already exists, remove it unless we are doing an exclusive insert */
-            if(!exclusive) {
-                remove_slot(cache, slot);
-            } else {
+            /* 
+             * At this point we have found the user cache entry.  If we are doing 
+             * an exclusive insert (apc_add) we are going to bail right away if
+             * the user entry already exists and it has no ttl, or
+             * there is a ttl and the entry has not timed out yet.
+             */
+            if(exclusive && (  !(*slot)->value->data.user.ttl ||
+                              ( (*slot)->value->data.user.ttl && ((*slot)->creation_time + (*slot)->value->data.user.ttl) >= t ) 
+                            ) ) {
                 UNLOCK(cache);
                 return 0;
             }
+            remove_slot(cache, slot);
             break;
         } else 
         /* 
