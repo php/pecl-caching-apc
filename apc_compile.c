@@ -1094,7 +1094,6 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_mal
     int local_dst_alloc = 0;
 #ifdef ZEND_ENGINE_2
     apc_opflags_t * flags = NULL;
-    TSRMLS_FETCH();
 #endif
 
     assert(src != NULL);
@@ -2314,9 +2313,9 @@ static void my_fixup_hashtable(HashTable *ht, ht_fixup_fun_t fixup, zend_class_e
 static int my_check_copy_function(Bucket* p, va_list args)
 {
     zend_class_entry* src = va_arg(args, zend_class_entry*);
-    zend_class_entry* parent = src->parent;
     zend_function* zf = (zend_function*)p->pData;
 #ifndef ZEND_ENGINE_2
+    zend_class_entry* parent = src->parent;
     zend_function* parent_fn = NULL;
 #endif
 
