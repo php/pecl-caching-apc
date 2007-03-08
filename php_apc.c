@@ -877,7 +877,11 @@ PHP_FUNCTION(apc_compile_file) {
 
     /* Free up everything */
     zend_destroy_file_handle(&file_handle TSRMLS_CC);
+#ifdef ZEND_ENGINE_2
     destroy_op_array(op_array TSRMLS_CC);
+#else
+    destroy_op_array(op_array);
+#endif
     efree(op_array);
 
     RETURN_TRUE;
