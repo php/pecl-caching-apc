@@ -66,19 +66,16 @@ typedef struct apc_opflags_t apc_opflags_t;
 struct apc_opflags_t {
     unsigned int has_jumps      : 1; /* has jump offsets */
     unsigned int deep_copy      : 1; /* needs deep copy */
-    union {
-        unsigned char value;
-        struct {
-            unsigned int _POST      : 1;
-            unsigned int _GET       : 1;
-            unsigned int _COOKIE    : 1;
-            unsigned int _SERVER    : 1;
-            unsigned int _ENV       : 1;
-            unsigned int _FILES     : 1;
-            unsigned int _REQUEST   : 1;
-            unsigned int unknown    : 1;
-        } bits;
-    } autoglobals;
+
+    /* autoglobal bits */
+    unsigned int _POST          : 1;
+    unsigned int _GET           : 1;
+    unsigned int _COOKIE        : 1;
+    unsigned int _SERVER        : 1;
+    unsigned int _ENV           : 1;
+    unsigned int _FILES         : 1;
+    unsigned int _REQUEST       : 1;
+    unsigned int unknown_global : 1;
 };
 /* }}} */
 

@@ -1210,7 +1210,7 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_mal
                         if (varname->u.constant.value.str.val[0] == '_') {
 #define SET_IF_AUTOGLOBAL(member) \
     if(!strcmp(varname->u.constant.value.str.val, #member)) \
-        flags->autoglobals.bits.member = 1 /* no ';' here */
+        flags->member = 1 /* no ';' here */
                             SET_IF_AUTOGLOBAL(_GET);
                             else SET_IF_AUTOGLOBAL(_POST);
                             else SET_IF_AUTOGLOBAL(_COOKIE);
@@ -1223,7 +1223,7 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_mal
                                             varname->u.constant.value.str.len
                                             TSRMLS_CC))
                             {
-                                flags->autoglobals.bits.unknown = 1;
+                                flags->unknown_global = 1;
                             }
                         }
                     }
@@ -1958,10 +1958,10 @@ static int my_prepare_op_array_for_execution(zend_op_array* dst, zend_op_array* 
                                 (apc_opflags_t*) & (src->reserved[APCG(reserved_offset)]) : NULL;
     int needcopy = flags ? flags->deep_copy : 1;
     /* auto_globals_jit was not in php4 */
-    int do_prepare_fetch_global = PG(auto_globals_jit) && (flags == NULL || flags->autoglobals.bits.unknown);
+    int do_prepare_fetch_global = PG(auto_globals_jit) && (flags == NULL || flags->unknown_global);
 
 #define FETCH_AUTOGLOBAL(member) do { \
-    if(flags && flags->autoglobals.bits.member == 1) { \
+    if(flags && flags->member == 1) { \
         zend_is_auto_global(#member,\
                             (sizeof(#member) - 1)\
                             TSRMLS_CC);\
