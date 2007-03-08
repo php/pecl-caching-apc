@@ -1167,7 +1167,7 @@ void apc_cache_write_unlock(apc_cache_t* cache)
 #endif
 
 /* {{{ make_local_slot */
-static local_slot_t* make_local_slot(apc_local_cache_t* cache, slot_t* slot, local_slot_t* lslot) 
+static local_slot_t* make_local_slot(apc_local_cache_t* cache, local_slot_t* lslot, slot_t* slot) 
 {
     apc_cache_entry_t* value;
 
@@ -1280,6 +1280,9 @@ apc_cache_entry_t* apc_local_cache_find(apc_local_cache_t* cache, apc_cache_key_
         }
     }
 not_found:
+    if(apc_cache_busy(cache->shmcache)) {
+        return NULL;
+    }
 
     slot = apc_cache_find_slot(cache->shmcache, key, t);
 
@@ -1288,7 +1291,7 @@ not_found:
     /* i.e maintain a sort of top list */
     if(lslot->original == NULL || (lslot->original->num_hits + lslot->num_hits)  < slot->num_hits) {
         free_local_slot(cache, lslot);
-        make_local_slot(cache, slot, lslot); 
+        make_local_slot(cache, lslot, slot); 
         return lslot->value;
     }
     return slot->value;
