@@ -1991,7 +1991,9 @@ static int my_prepare_op_array_for_execution(zend_op_array* dst, zend_op_array* 
         while(i > 0) {
 
             if( ((zo->op1.op_type == IS_CONST &&
-                  zo->op1.u.constant.type == IS_CONSTANT_ARRAY))) {
+                  zo->op1.u.constant.type == IS_CONSTANT_ARRAY)) ||  
+                ((zo->op2.op_type == IS_CONST &&
+                  zo->op2.u.constant.type == IS_CONSTANT_ARRAY))) {
 
                 if(!(my_copy_zend_op(dzo, zo, apc_php_malloc, apc_php_free))) {
                     assert(0); /* emalloc failed or a bad constant array */
