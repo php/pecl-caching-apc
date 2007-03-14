@@ -1828,6 +1828,7 @@ static void my_destroy_op_array(zend_op_array* src, apc_free_t deallocate)
 static void my_free_zval_ptr(zval** src, apc_free_t deallocate)
 {
     my_destroy_zval_ptr(src, deallocate);
+    deallocate(src);
 }
 /* }}} */
 
