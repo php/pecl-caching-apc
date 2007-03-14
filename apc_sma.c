@@ -122,8 +122,9 @@ static int sma_allocate(void* shmaddr, size_t size)
     size_t realsize;        /* actual size of block needed, including header */
     size_t last_offset;     /* save the last search offset */
     int wrapped=0;
+    size_t block_size = alignword(sizeof(struct block_t));
 
-    realsize = alignword(size + alignword(sizeof(struct block_t)));
+    realsize = alignword(size + block_size);
 
     /*
      * First, insure that the segment contains at least realsize free bytes,
@@ -152,7 +153,7 @@ static int sma_allocate(void* shmaddr, size_t size)
         CHECK_CANARY(cur);
 #endif
         /* If it fits perfectly or it fits after a split, stop searching */
-        if (cur->size == realsize || (cur->size > (sizeof(block_t) + realsize))) {
+        if (cur->size == realsize || (cur->size > (block_size + realsize))) {
             prvnextfit = prv;
             break;
         }
@@ -218,7 +219,7 @@ static int sma_allocate(void* shmaddr, size_t size)
     fprintf(stderr, "allocate(realsize=%d,size=%d,id=%d)\n", (int)(size), (int)(cur->size), cur->id);
 #endif
 
-    return OFFSET(cur) + alignword(sizeof(struct block_t));
+    return OFFSET(cur) + block_size;
 }
 /* }}} */
 
