@@ -616,6 +616,7 @@ void apc_deactivate(TSRMLS_D)
     while (apc_stack_size(APCG(cache_stack)) > 0) {
         int i;
         zend_class_entry* zce = NULL;
+        void ** centry = (void*)(&zce);
 #ifdef ZEND_ENGINE_2
         zend_class_entry** pzce = NULL;
 #endif
@@ -634,16 +635,21 @@ void apc_deactivate(TSRMLS_D)
         if (cache_entry->data.file.classes) {
             for (i = 0; cache_entry->data.file.classes[i].class_entry != NULL; i++) {
 #ifdef ZEND_ENGINE_2
-                zend_hash_find(EG(class_table), 
+                centry = (void**)&pzce; /* a triple indirection to get zend_class_entry*** */
+#endif
+                if(zend_hash_find(EG(class_table), 
                     cache_entry->data.file.classes[i].name,
                     cache_entry->data.file.classes[i].name_len+1,
-                    (void**)&pzce);
+                    (void**)centry) == FAILURE)
+                {
+                    /* double inclusion of conditional classes ends up failing 
+                     * this lookup the second time around.
+                     */
+                    continue;
+                }
+
+#ifdef ZEND_ENGINE_2
                 zce = *pzce;
-#else
-                zend_hash_find(EG(class_table), 
-                    cache_entry->data.file.classes[i].name,
-                    cache_entry->data.file.classes[i].name_len+1,
-                    (void**)&zce);
 #endif
                 zend_hash_del(EG(class_table),
                     cache_entry->data.file.classes[i].name,

@@ -2209,14 +2209,19 @@ void apc_free_class_entry_after_execution(zend_class_entry* src)
     }
     /* my_destroy_hashtable() does not play nice with refcounts */
 
-    zend_hash_destroy(&src->default_static_members);
+    zend_hash_clean(&src->default_static_members);
     if(src->static_members != &(src->default_static_members))
     {
         zend_hash_destroy(src->static_members);
         apc_php_free(src->static_members);
+        src->static_members = NULL;
     }
-    zend_hash_destroy(&src->default_properties);
-    zend_hash_destroy(&src->constants_table);
+    else
+    {
+        src->static_members = NULL;
+    }
+    zend_hash_clean(&src->default_properties);
+    zend_hash_clean(&src->constants_table);
 #endif
 
     /* TODO: more cleanup */
