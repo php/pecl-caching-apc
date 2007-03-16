@@ -80,6 +80,7 @@ extern void apc_log(int level, const char* fmt, ...);
 extern void apc_eprint(const char* fmt, ...);
 extern void apc_wprint(const char* fmt, ...);
 extern void apc_dprint(const char* fmt, ...);
+extern void apc_nprint(const char* fmt, ...);
 
 /* string and text manipulation */
 extern char* apc_append(const char* s, const char* t);
