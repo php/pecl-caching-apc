@@ -1256,7 +1256,6 @@ apc_cache_entry_t* apc_local_cache_find(apc_local_cache_t* cache, apc_cache_key_
 {
     slot_t* slot;
     local_slot_t* lslot; 
-    apc_cache_entry_t* entry;
 
     local_cache_cleanup(cache, t);
 
