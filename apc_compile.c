@@ -1092,6 +1092,9 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_mal
 {
     int i;
     int local_dst_alloc = 0;
+#ifdef APC_EXPERIMENTAL_OPTIMISATIONS
+    apc_fileinfo_t fileinfo;
+#endif
 #ifdef ZEND_ENGINE_2
     apc_opflags_t * flags = NULL;
 #endif
@@ -1257,6 +1260,26 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_mal
             }
             goto  cleanup;
         }
+#if APC_EXPERIMENTAL_OPTIMISATIONS
+/* This code breaks apc's rule#1 - cache what you compile */
+#ifdef ZEND_ENGINE_2
+        if(APCG(fpstat)==0) {
+            if((zo->opcode == ZEND_INCLUDE_OR_EVAL) && 
+                (zo->op1.op_type == IS_CONST && zo->op1.u.constant.type == IS_STRING)) {
+                /* constant includes */
+                if(!IS_ABSOLUTE_PATH(Z_STRVAL_P(&zo->op1.u.constant),len)) { 
+                    if (apc_search_paths(Z_STRVAL_P(&zo->op1.u.constant), PG(include_path), &fileinfo) == 0) {
+                        zend_op *dzo = &(dst->opcodes[i]);
+                        deallocate(dzo->op1.u.constant.value.str.val);
+                        dzo->op1.u.constant.value.str.len = strlen(fileinfo.fullpath);
+                        dzo->op1.u.constant.value.str.val = apc_xstrdup(fileinfo.fullpath,
+                                                                allocate);
+                    }
+                }
+            }
+        }
+#endif
+#endif 
     }
 
 #ifdef ZEND_ENGINE_2
