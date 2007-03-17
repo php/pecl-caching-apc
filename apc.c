@@ -292,9 +292,8 @@ int apc_win32_stat(const char *path, struct stat *buf TSRMLS_DC)
 }
 #endif
 
-int apc_stat_paths(const char* filename, const char* path, struct stat* buf)
+int apc_search_paths(const char* filename, const char* path, apc_fileinfo_t* fileinfo)
 {
-    char filepath[MAXPATHLEN];
     char** paths;
     char *exec_fname;
     int exec_fname_length;
@@ -302,9 +301,10 @@ int apc_stat_paths(const char* filename, const char* path, struct stat* buf)
     int i;
     TSRMLS_FETCH();
 
-    assert(filename && buf);
+    assert(filename && fileinfo);
 
-    if (IS_ABSOLUTE_PATH(filename, strlen(filename)) && apc_stat(filename, buf) == 0) {
+    if (IS_ABSOLUTE_PATH(filename, strlen(filename)) && apc_stat(filename, &fileinfo->st_buf) == 0) {
+        strncpy(fileinfo->fullpath, filename, MAXPATHLEN);
         return 0;
     }
 
@@ -314,8 +314,8 @@ int apc_stat_paths(const char* filename, const char* path, struct stat* buf)
 
     /* for each directory in paths, look for filename inside */
     for (i = 0; paths[i]; i++) {
-        snprintf(filepath, sizeof(filepath), "%s%c%s", paths[i], DEFAULT_SLASH, filename);
-        if (apc_stat(filepath, buf) == 0) {
+        snprintf(fileinfo->fullpath, sizeof(fileinfo->fullpath), "%s%c%s", paths[i], DEFAULT_SLASH, filename);
+        if (apc_stat(fileinfo->fullpath, &fileinfo->st_buf) == 0) {
             found = 1;
             break;
         }
@@ -329,11 +329,11 @@ int apc_stat_paths(const char* filename, const char* path, struct stat* buf)
         while((--exec_fname_length >= 0) && !IS_SLASH(exec_fname[exec_fname_length]));
         if((exec_fname && exec_fname[0] != '[') && exec_fname_length > 0) {
             /* not: [no active file] or no path */
-            memcpy(filepath, exec_fname, exec_fname_length);
-            filepath[exec_fname_length] = DEFAULT_SLASH;
-            strcpy(filepath +exec_fname_length +1, filename);
-            /* apc_wprint("filename: %s, exec_fname: %s, filepath: %s", filename, exec_fname, filepath); */
-            if (apc_stat(filepath, buf) == 0) {
+            memcpy(fileinfo->fullpath, exec_fname, exec_fname_length);
+            fileinfo->fullpath[exec_fname_length] = DEFAULT_SLASH;
+            strcpy(fileinfo->fullpath +exec_fname_length +1, filename);
+            /* apc_wprint("filename: %s, exec_fname: %s, fileinfo->fullpath: %s", filename, exec_fname, fileinfo->fullpath); */
+            if (apc_stat(fileinfo->fullpath, &fileinfo->st_buf) == 0) {
                 found = 1;
             }
         }

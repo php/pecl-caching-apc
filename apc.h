@@ -88,13 +88,20 @@ extern char* apc_substr(const char* s, int start, int length);
 extern char** apc_tokenize(const char* s, char delim);
 
 /* filesystem functions */
+
+typedef struct apc_fileinfo_t 
+{
+    char fullpath[MAXPATHLEN+1];
+    struct stat st_buf;
+} apc_fileinfo_t;
+
 #ifndef PHP_WIN32
 #define apc_stat(f, b) stat(f, b)
 #else
 #define apc_stat(f, b) apc_win32_stat(f, b TSRMLS_CC)
 extern int apc_win32_stat(const char *path, struct stat *buf TSRMLS_DC);
 #endif
-extern int apc_stat_paths(const char* filename, const char* path, struct stat*);
+extern int apc_search_paths(const char* filename, const char* path, apc_fileinfo_t* fileinfo);
 
 /* regular expression wrapper functions */
 extern void* apc_regex_compile_array(char* patterns[]);
