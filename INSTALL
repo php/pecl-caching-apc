@@ -313,7 +313,7 @@ users should consider tuning the following parameters:
                             kernel's /dev/zero interface to anonymous mmap'ed 
                             memory.  Leaving it undefined will force an 
                             anonymous mmap.
-							              (Default: "")
+                            (Default: "")
 
     apc.slam_defense        ** DEPRECATED - Use apc.write_lock instead **
                             On very busy servers whenever you start the server or
@@ -389,4 +389,17 @@ users should consider tuning the following parameters:
                             Note that the file upload tracking is not threadsafe at this
                             point, so new uploads that happen while a previous one is 
                             still going will disable the tracking for the previous.
+                            (Default: 0)
+
+    apc.localcache          This enables a lock-free local process shadow-cache which 
+                            reduces lock contention when the cache is being written to.
+                            (Default: 0)
+                            
+    apc.localcache.size     The size of the local process shadow-cache, should be set to 
+                            a sufficently large value, approximately half of num_files_hint.
+                            (Default: 100)
+    
+    apc.include_once_override 
+                            Optimize include_once and require_once calls and avoid the 
+                            expensive system calls used.
                             (Default: 0)
