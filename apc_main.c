@@ -97,7 +97,6 @@ static int install_class(apc_class_t cl TSRMLS_DC)
     zend_class_entry** allocated_ce = NULL;
 #endif
 
-#ifdef ZEND_ENGINE_2    
 
     /* Special case for mangled names. Mangled names are unique to a file.
      * There is no way two classes with the same mangled name will occur,
@@ -113,6 +112,7 @@ static int install_class(apc_class_t cl TSRMLS_DC)
         }
     }
     
+#ifdef ZEND_ENGINE_2    
     /*
      * XXX: We need to free this somewhere...
      */
