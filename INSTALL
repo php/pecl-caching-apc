@@ -254,7 +254,7 @@ users should consider tuning the following parameters:
     apc.user_entries_hint   Just like num_files_hint, a "hint" about the number
                             of distinct user cache variables to store. 
                             Set to zero or omit if you're not sure;
-                            (Default: 100)
+                            (Default: 4096)
 
     apc.ttl                 The number of seconds a cache entry is allowed to
                             idle in a slot in case this cache entry slot is 
@@ -397,7 +397,7 @@ users should consider tuning the following parameters:
                             
     apc.localcache.size     The size of the local process shadow-cache, should be set to 
                             a sufficently large value, approximately half of num_files_hint.
-                            (Default: 100)
+                            (Default: 512)
     
     apc.include_once_override 
                             Optimize include_once and require_once calls and avoid the 
