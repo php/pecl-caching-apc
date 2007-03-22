@@ -150,7 +150,7 @@ STD_PHP_INI_ENTRY("apc.shm_segments",   "1",    PHP_INI_SYSTEM, OnUpdateShmSegme
 STD_PHP_INI_ENTRY("apc.shm_size",       "30",   PHP_INI_SYSTEM, OnUpdateInt,            shm_size,        zend_apc_globals, apc_globals)
 STD_PHP_INI_BOOLEAN("apc.include_once_override", "0", PHP_INI_SYSTEM, OnUpdateBool,     include_once,    zend_apc_globals, apc_globals)
 STD_PHP_INI_ENTRY("apc.num_files_hint", "1000", PHP_INI_SYSTEM, OnUpdateInt,            num_files_hint,  zend_apc_globals, apc_globals)
-STD_PHP_INI_ENTRY("apc.user_entries_hint", "100", PHP_INI_SYSTEM, OnUpdateInt,          user_entries_hint, zend_apc_globals, apc_globals)
+STD_PHP_INI_ENTRY("apc.user_entries_hint", "4096", PHP_INI_SYSTEM, OnUpdateInt,          user_entries_hint, zend_apc_globals, apc_globals)
 STD_PHP_INI_ENTRY("apc.gc_ttl",         "3600", PHP_INI_SYSTEM, OnUpdateInt,            gc_ttl,           zend_apc_globals, apc_globals)
 STD_PHP_INI_ENTRY("apc.ttl",            "0",    PHP_INI_SYSTEM, OnUpdateInt,            ttl,              zend_apc_globals, apc_globals)
 STD_PHP_INI_ENTRY("apc.user_ttl",       "0",    PHP_INI_SYSTEM, OnUpdateInt,            user_ttl,         zend_apc_globals, apc_globals)
@@ -171,7 +171,7 @@ STD_PHP_INI_BOOLEAN("apc.report_autofilter", "0", PHP_INI_SYSTEM, OnUpdateBool, 
 STD_PHP_INI_BOOLEAN("apc.rfc1867", "0", PHP_INI_SYSTEM, OnUpdateBool, rfc1867, zend_apc_globals, apc_globals)
 #endif
 STD_PHP_INI_BOOLEAN("apc.localcache", "0", PHP_INI_SYSTEM, OnUpdateBool, localcache, zend_apc_globals, apc_globals)
-STD_PHP_INI_ENTRY("apc.localcache.size", "100", PHP_INI_SYSTEM, OnUpdateInt, localcache_size,  zend_apc_globals, apc_globals)
+STD_PHP_INI_ENTRY("apc.localcache.size", "512", PHP_INI_SYSTEM, OnUpdateInt, localcache_size,  zend_apc_globals, apc_globals)
 PHP_INI_END()
 
 /* }}} */
