@@ -298,6 +298,7 @@ typedef struct apc_local_cache_t apc_local_cache_t; /* process-local cache */
 extern apc_local_cache_t* apc_local_cache_create(apc_cache_t *shmcache, int num_slots, int ttl);
 extern apc_cache_entry_t* apc_local_cache_find(apc_local_cache_t* cache, apc_cache_key_t key, time_t t);
 extern void apc_local_cache_destroy(apc_local_cache_t* cache);
+extern void apc_local_cache_cleanup(apc_local_cache_t* cache);
 
 #undef T
 #endif

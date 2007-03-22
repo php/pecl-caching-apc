@@ -369,6 +369,10 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
         return old_compile_file(h, type TSRMLS_CC);
     }
     
+    if(apc_cache_busy(apc_cache) && APCG(localcache)) {
+        /* possibly local cache returned NULL because cache is busy */
+		return old_compile_file(h, type TSRMLS_CC);
+	}
 
     /* remember how many functions and classes existed before compilation */
     num_functions = zend_hash_num_elements(CG(function_table));
@@ -574,7 +578,8 @@ int apc_process_init(int module_number TSRMLS_DC)
     int minttl = (APCG(gc_ttl) >  APCG(ttl) ? APCG(ttl) : APCG(gc_ttl))/2;
     int size = APCG(localcache_size);
     if(APCG(initialized) && APCG(localcache)) {
-        APCG(lcache) = apc_local_cache_create(apc_cache, size, minttl);
+        /* TTL is 2 mins by default */
+        APCG(lcache) = apc_local_cache_create(apc_cache, size, minttl ? minttl : 120); 
     }
     return 0;
 }
@@ -659,6 +664,9 @@ void apc_deactivate(TSRMLS_D)
             }
         }
         apc_cache_release(apc_cache, cache_entry);
+    }
+    if(APCG(localcache)) {
+        apc_local_cache_cleanup(APCG(lcache)); 
     }
 }
 /* }}} */
