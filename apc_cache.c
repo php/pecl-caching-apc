@@ -696,6 +696,7 @@ int apc_cache_user_delete(apc_cache_t* cache, char *strkey, int keylen)
 /* {{{ apc_cache_release */
 void apc_cache_release(apc_cache_t* cache, apc_cache_entry_t* entry)
 {
+    /* local cache refcount-- is done in apc_local_cache_cleanup */
     if(entry->local) return;
 
     LOCK(cache);
@@ -1239,14 +1240,13 @@ void apc_local_cache_cleanup(apc_local_cache_t* cache) {
         }
     }
 
+    LOCK(cache->shmcache);
     for(lslot = cache->dead_list; lslot != NULL; lslot = lslot->next) {
-        LOCK(cache->shmcache);
         lslot->original->num_hits += lslot->num_hits;
-        UNLOCK(cache->shmcache);
-
-        apc_cache_release(cache->shmcache, lslot->original->value);
+        lslot->original->value->ref_count--; /* apc_cache_release(cache->shmcache, lslot->original->value); */
         apc_efree(lslot->value);
     }
+    UNLOCK(cache->shmcache);
 
     cache->dead_list = NULL;
 }
@@ -1257,7 +1257,6 @@ void apc_local_cache_destroy(apc_local_cache_t* cache)
 {
     int i;
     for(i = 0; i < cache->num_slots; i++) {
-        /* too many lock/unlock calls in there ? */
         free_local_slot(cache, &cache->slots[i]);
     }
 
