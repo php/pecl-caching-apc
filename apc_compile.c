@@ -2002,8 +2002,20 @@ static int my_prepare_op_array_for_execution(zend_op_array* dst, zend_op_array* 
     FETCH_AUTOGLOBAL(_REQUEST);
 
 #else
-    int needcopy = 1;
+    int needcopy = 0;
     int do_prepare_fetch_global = 0;
+    int j = 0;
+
+    for(j = 0; j < src->last; j++) {
+        zo = &src->opcodes[j];
+        
+        if( ((zo->op1.op_type == IS_CONST &&
+              zo->op1.u.constant.type == IS_CONSTANT_ARRAY)) ||  
+            ((zo->op2.op_type == IS_CONST &&
+              zo->op2.u.constant.type == IS_CONSTANT_ARRAY))) {
+            needcopy = 1;
+        }
+    }
 #endif
     
     if(needcopy) {
