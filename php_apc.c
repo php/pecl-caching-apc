@@ -594,6 +594,30 @@ void *apc_erealloc_wrapper(void *ptr, size_t size) {
     return _erealloc(ptr, size, 0 ZEND_FILE_LINE_CC ZEND_FILE_LINE_EMPTY_CC);
 }
 
+/* {{{ RETURN_ZVAL for php4 */
+#if !defined(ZEND_ENGINE_2) && !defined(RETURN_ZVAL)
+#define RETURN_ZVAL(zv, copy, dtor) { RETVAL_ZVAL(zv, copy, dtor); return; } 
+#define RETVAL_ZVAL(zv, copy, dtor)     ZVAL_ZVAL(return_value, zv, copy, dtor)
+#define ZVAL_ZVAL(z, zv, copy, dtor) {  \
+        int is_ref, refcount;           \
+        is_ref = (z)->is_ref;           \
+        refcount = (z)->refcount;       \
+        *(z) = *(zv);                   \
+        if (copy) {                     \
+            zval_copy_ctor(z);          \
+        }                               \
+        if (dtor) {                     \
+            if (!copy) {                \
+                ZVAL_NULL(zv);          \
+            }                           \
+            zval_ptr_dtor(&zv);         \
+        }                               \
+        (z)->is_ref = is_ref;           \
+        (z)->refcount = refcount;       \
+    }
+#endif
+/* }}} */
+
 /* {{{ proto mixed apc_fetch(mixed key)
  */
 PHP_FUNCTION(apc_fetch) {
