@@ -150,7 +150,6 @@ static int apc_op_ZEND_INCLUDE_OR_EVAL(ZEND_OPCODE_HANDLER_ARGS)
 	int ret = 0;
 	#ifdef ZEND_ENGINE_2
 	apc_opflags_t* flags = NULL;
-	int is_copy = 0;
 	#endif
 
 	if (Z_LVAL(opline->op2.u.constant) != ZEND_INCLUDE_ONCE &&

@@ -714,7 +714,7 @@ int apc_cache_make_file_key(apc_cache_key_t* key,
 {
     static char canon_path[MAXPATHLEN];
     struct stat *tmp_buf=NULL;
-    struct apc_fileinfo_t fileinfo = {0,};
+    struct apc_fileinfo_t fileinfo = { {0}, };
     int len;
 	
     assert(key != NULL);

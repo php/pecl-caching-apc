@@ -59,12 +59,18 @@
   <active>yes</active>
  </developer>
  
- <date>2007-??-??</date>
+ <date>2007-04-02</date>
  <version><release>3.0.14</release><api>3.0.0</api></version>
  <stability><release>stable</release><api>stable</api></stability>
  <license uri="http://www.php.net/license">PHP License</license>
  <notes>
-
+* Build fix (Shire)
+* Don't hook the upload hook if APC is disabled (Rasmus)
+* Local shadow cache support (Gopal)
+* Avoid uneccessary loops over op_arrays for "known" auto-globals (Gopal)
+* Fix apc_add() to overwrite timed out user entries (Rasmus)
+* Fix double inclusion of files with conditional classes in php4 (Gopal)
+* Allocator fixes to reduce fragmentation (Gopal)
  </notes>
 
  <contents>

@@ -5,7 +5,7 @@
 - Avoid uneccessary loops over op_arrays for "known" auto-globals (Gopal)
 - Fix apc_add() to overwrite timed out user entries (Rasmus)
 - Fix double inclusion of files with conditional classes in php4 (Gopal)
-- Fix for excessive 16 byte fragments (Gopal)
+- Allocator fixes to reduce fragmentation (Gopal)
 
 3.0.13: 2007-02-24
 - File upload progress (Rasmus)
