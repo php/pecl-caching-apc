@@ -34,7 +34,7 @@
 #ifndef APC_GLOBALS_H
 #define APC_GLOBALS_H
 
-#define APC_VERSION "3.0.14"
+#define APC_VERSION "3.0.15-dev"
 
 #include "apc_cache.h"
 #include "apc_stack.h"
