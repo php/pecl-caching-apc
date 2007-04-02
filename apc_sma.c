@@ -77,11 +77,15 @@ struct header_t {
 static volatile size_t block_id = 0;
 #endif
 
+#define APC_SMA_CANARIES 1   
+
 typedef struct block_t block_t;
 struct block_t {
     size_t size;       /* size of this block */
     size_t next;       /* offset in segment of next free block */
+#ifdef APC_SMA_CANARIES
     size_t canary;     /* canary to check for memory overwrites */
+#endif
 #ifdef __APC_SMA_DEBUG__
     size_t id;         /* identifier for the memory block */ 
 #endif
@@ -95,21 +99,26 @@ struct block_t {
 #define OFFSET(block) ((size_t)(((char*)block) - (char*)shmaddr))
 
 /* Canary macros for setting, checking and resetting memory canaries */
-#define SET_CANARY(v) (v)->canary = 0x42424242
-#define CHECK_CANARY(v) assert((v)->canary == 0x42424242)
-#define RESET_CANARY(v) (v)->canary = -42
+#ifdef APC_SMA_CANARIES
+    #define SET_CANARY(v) (v)->canary = 0x42424242
+    #define CHECK_CANARY(v) assert((v)->canary == 0x42424242)
+    #define RESET_CANARY(v) (v)->canary = -42
+#else
+    #define SET_CANARY(v) 
+    #define CHECK_CANARY(v)
+    #define RESET_CANARY(v)
+#endif
+
 
 #ifdef max
 #undef max
 #endif
 #define max(a, b) ((a) > (b) ? (a) : (b))
 
-/* {{{ alignword: returns x, aligned to the system's word boundary */
-static int alignword(int x)
-{
-    typedef union { void* p; int i; long l; double d; void (*f)(); } word_t;
-    return sizeof(word_t) * (1 + ((x-1)/sizeof(word_t)));
-}
+/* {{{ ALIGNWORD: pad up x, aligned to the system's word boundary */
+typedef union { void* p; int i; long l; double d; void (*f)(); } apc_word_t;
+#define ALIGNWORD(x) (sizeof(apc_word_t) * (1 + (((x)-1)/sizeof(apc_word_t))))
+#define MINBLOCKSIZE (ALIGNWORD(1) + ALIGNWORD(sizeof(block_t)))
 /* }}} */
 
 /* {{{ sma_allocate: tries to allocate size bytes in a segment */
@@ -122,9 +131,9 @@ static int sma_allocate(void* shmaddr, size_t size)
     size_t realsize;        /* actual size of block needed, including header */
     size_t last_offset;     /* save the last search offset */
     int wrapped=0;
-    size_t block_size = alignword(sizeof(struct block_t));
+    const size_t block_size = ALIGNWORD(sizeof(struct block_t));
 
-    realsize = alignword(size + block_size);
+    realsize = ALIGNWORD(size + block_size);
 
     /*
      * First, insure that the segment contains at least realsize free bytes,
@@ -152,8 +161,8 @@ static int sma_allocate(void* shmaddr, size_t size)
 #ifdef __APC_SMA_DEBUG__
         CHECK_CANARY(cur);
 #endif
-        /* If it fits perfectly or it fits after a split, stop searching */
-        if (cur->size == realsize || (cur->size > (block_size + realsize))) {
+        /* If it can fit realiszie bytes in cur block, stop searching */
+        if (cur->size >= realsize) {
             prvnextfit = prv;
             break;
         }
@@ -183,14 +192,8 @@ static int sma_allocate(void* shmaddr, size_t size)
     CHECK_CANARY(prv);
     CHECK_CANARY(cur);
 
-    /* update the block header */
-    header->avail -= realsize;
-#if ALLOC_DISTRIBUTION
-    header->adist[(int)(log(size)/log(2))]++;
-#endif
-
-    if (cur->size == realsize) {
-        /* cur is a perfect fit for realsize; just unlink it */
+    if (cur->size == realsize || (cur->size > realsize && cur->size < (realsize + (MINBLOCKSIZE * 2)))) {
+        /* cur is big enough for realsize, but too small to split - unlink it */
         prv->next = cur->next;
     }
     else {
@@ -211,6 +214,13 @@ static int sma_allocate(void* shmaddr, size_t size)
         nxt->id = -1;
 #endif
     }
+
+    /* update the block header */
+    header->avail -= cur->size;
+#if ALLOC_DISTRIBUTION
+    header->adist[(int)(log(size)/log(2))]++;
+#endif
+
     header->nfoffset = last_offset;
 
     SET_CANARY(cur);
@@ -232,7 +242,7 @@ static int sma_deallocate(void* shmaddr, int offset)
     block_t* nxt;       /* the block after cur */
     size_t size;        /* size of deallocated block */
 
-    offset -= alignword(sizeof(struct block_t));
+    offset -= ALIGNWORD(sizeof(struct block_t));
     assert(offset >= 0);
 
     /* find position of new block in free list */
@@ -345,7 +355,7 @@ void apc_sma_init(int numseg, int segsize, char *mmap_file_mask)
         apc_lck_create(NULL, 0, 1, header->sma_lock);
         header->segsize = sma_segsize;
         header->avail = sma_segsize - sizeof(header_t) - sizeof(block_t) -
-                        alignword(sizeof(int));
+                        ALIGNWORD(sizeof(int));
         header->nfoffset = 0;
 #if ALLOC_DISTRIBUTION
        	{
@@ -500,7 +510,7 @@ apc_sma_info_t* apc_sma_info(zend_bool limited)
 
     info = (apc_sma_info_t*) apc_emalloc(sizeof(apc_sma_info_t));
     info->num_seg = sma_numseg;
-    info->seg_size = sma_segsize - sizeof(header_t) - sizeof(block_t) - alignword(sizeof(int));
+    info->seg_size = sma_segsize - sizeof(header_t) - sizeof(block_t) - ALIGNWORD(sizeof(int));
 
     info->list = apc_emalloc(info->num_seg * sizeof(apc_sma_link_t*));
     for (i = 0; i < sma_numseg; i++) {
