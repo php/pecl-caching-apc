@@ -59,7 +59,7 @@ function defaults($d,$v) {
 
 // rewrite $PHP_SELF to block XSS attacks
 //
-$PHP_SELF= isset($_SERVER['PHP_SELF']) ? htmlentities(strip_tags($_SERVER['PHP_SELF'],'')) : '';
+$PHP_SELF= isset($_SERVER['PHP_SELF']) ? htmlentities(strip_tags($_SERVER['PHP_SELF'],''), ENT_QUOTES) : '';
 $time = time();
 $host = getenv('HOSTNAME');
 if($host) { $host = '('.$host.')'; }
@@ -85,7 +85,7 @@ $vardom=array(
 	'SORT1'	=> '/^[AHSMCDTZ]$/',	// first sort key
 	'SORT2'	=> '/^[DA]$/',			// second sort key
 	'AGGR'	=> '/^\d+$/',			// aggregation by dir level
-	'SEARCH'	=> '/^.*$/'			// aggregation by dir level
+	'SEARCH'	=> '~^[a-zA-Z0-1/_.-]*$~'			// aggregation by dir level
 );
 
 // default cache mode
@@ -114,7 +114,7 @@ if (empty($_REQUEST)) {
 foreach($vardom as $var => $dom) {
 	if (!isset($_REQUEST[$var])) {
 		$MYREQUEST[$var]=NULL;
-	} else if (!is_array($_REQUEST[$var]) && preg_match($dom,$_REQUEST[$var])) {
+	} else if (!is_array($_REQUEST[$var]) && preg_match($dom.'D',$_REQUEST[$var])) {
 		$MYREQUEST[$var]=$_REQUEST[$var];
 	} else {
 		$MYREQUEST[$var]=$_REQUEST[$var]=NULL;
