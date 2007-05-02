@@ -154,7 +154,9 @@ void apc_rfc1867_progress(unsigned int event, void *event_data, void **extra TSR
                 add_assoc_double(track, "rate", rate);
                 add_assoc_string(track, "filename", filename, 1);
                 add_assoc_string(track, "name", name, 1);
-                add_assoc_string(track, "temp_filename", temp_filename, 1);
+                if(temp_filename) {
+                    add_assoc_string(track, "temp_filename", temp_filename, 1);
+                }
                 add_assoc_long(track, "cancel_upload", cancel_upload);
                 add_assoc_long(track, "done", 1);
                 _apc_store(tracking_key, key_length, track, 3600, 0 TSRMLS_CC);
