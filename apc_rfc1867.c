@@ -37,7 +37,7 @@ static double my_time() {
     struct timeval a;
     double t;
     gettimeofday(&a, NULL);
-    t = a.tv_sec + (a.tv_usec/1000000);
+    t = a.tv_sec + (a.tv_usec/1000000.00);
     return t;
 }
 
@@ -99,6 +99,7 @@ void apc_rfc1867_progress(unsigned int event, void *event_data, void **extra TSR
                 add_assoc_string(track, "filename", filename, 1);
                 add_assoc_string(track, "name", name, 1);
                 add_assoc_long(track, "done", 0);
+                add_assoc_double(track, "start_time", start_time);
                 _apc_store(tracking_key, key_length, track, 3600, 0 TSRMLS_CC);
                 zval_ptr_dtor(&track);
             }
@@ -115,6 +116,7 @@ void apc_rfc1867_progress(unsigned int event, void *event_data, void **extra TSR
                 add_assoc_string(track, "filename", filename, 1);
                 add_assoc_string(track, "name", name, 1);
                 add_assoc_long(track, "done", 0);
+                add_assoc_double(track, "start_time", start_time);
                 _apc_store(tracking_key, key_length, track, 3600, 0 TSRMLS_CC);
                 zval_ptr_dtor(&track);
 			}
@@ -135,6 +137,7 @@ void apc_rfc1867_progress(unsigned int event, void *event_data, void **extra TSR
                 add_assoc_string(track, "temp_filename", temp_filename, 1);
                 add_assoc_long(track, "cancel_upload", cancel_upload);
                 add_assoc_long(track, "done", 0);
+                add_assoc_double(track, "start_time", start_time);
                 _apc_store(tracking_key, key_length, track, 3600, 0 TSRMLS_CC);
                 zval_ptr_dtor(&track);
 			}
@@ -159,6 +162,7 @@ void apc_rfc1867_progress(unsigned int event, void *event_data, void **extra TSR
                 }
                 add_assoc_long(track, "cancel_upload", cancel_upload);
                 add_assoc_long(track, "done", 1);
+                add_assoc_double(track, "start_time", start_time);
                 _apc_store(tracking_key, key_length, track, 3600, 0 TSRMLS_CC);
                 zval_ptr_dtor(&track);
 			}
