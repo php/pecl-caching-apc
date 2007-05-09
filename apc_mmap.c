@@ -46,7 +46,7 @@
 #define MAP_NOSYNC 0
 #endif
 
-void *apc_mmap(char *file_mask, int size)
+void *apc_mmap(char *file_mask, size_t size)
 {
     void* shmaddr;  /* the shared memory address */
 
@@ -120,7 +120,7 @@ void *apc_mmap(char *file_mask, int size)
     return shmaddr;
 }
 
-void apc_unmap(void* shmaddr, int size)
+void apc_unmap(void* shmaddr, size_t size)
 {
     munmap(shmaddr, size);
 }

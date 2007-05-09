@@ -35,8 +35,8 @@
 #include "apc_shm.h"
 #include <limits.h>
 #if APC_MMAP
-void *apc_mmap(char *file_mask, int size);
-void apc_unmap(void* shmaddr, int size);
+void *apc_mmap(char *file_mask, size_t size);
+void apc_unmap(void* shmaddr, size_t size);
 #endif
 
 /* {{{ locking macros */
@@ -306,7 +306,7 @@ static int sma_deallocate(void* shmaddr, int offset)
 
 /* {{{ apc_sma_init */
 
-void apc_sma_init(int numseg, int segsize, char *mmap_file_mask)
+void apc_sma_init(int numseg, size_t segsize, char *mmap_file_mask)
 {
     int i;
 

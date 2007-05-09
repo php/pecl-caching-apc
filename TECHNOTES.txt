@@ -83,8 +83,12 @@ form of a quick-start guide to start hacking on APC.
 
      typedef struct block_t block_t;
      struct block_t {
-         int size;       /* size of this block */
-         int next;       /* offset in segment of next free block */
+         size_t size;       /* size of this block */
+         size_t next;       /* offset in segment of next free block */
+         size_t canary;     /* canary to check for memory overwrites */
+#ifdef __APC_SMA_DEBUG__
+         int id;         /* identifier for the memory block */
+#endif
      };
 
    The BLOCKAT macro turns an offset into an actual address for you:

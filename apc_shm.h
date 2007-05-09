@@ -30,9 +30,11 @@
 #ifndef APC_SHM_H
 #define APC_SHM_H
 
+#include <sys/types.h>
+
 /* Wrapper functions for unix shared memory */
 
-extern int apc_shm_create(const char* name, int proj, int size);
+extern int apc_shm_create(const char* name, int proj, size_t size);
 extern void apc_shm_destroy(int shmid);
 extern void* apc_shm_attach(int shmid);
 extern void apc_shm_detach(void* shmaddr);

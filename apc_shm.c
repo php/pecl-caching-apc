@@ -30,7 +30,6 @@
 
 #include "apc_shm.h"
 #include "apc.h"
-#include <sys/types.h>
 #ifdef PHP_WIN32
 /* shm functions are available in TSRM */
 #include <tsrm/tsrm_win32.h>
@@ -48,7 +47,7 @@
 # define SHM_A 0222 /* write permission */
 #endif
 
-int apc_shm_create(const char* pathname, int proj, int size)
+int apc_shm_create(const char* pathname, int proj, size_t size)
 {
     int shmid;  /* shared memory id */
     int oflag;  /* permissions on shm */

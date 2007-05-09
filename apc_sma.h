@@ -36,7 +36,7 @@
 
 /* Simple shared memory allocator */
 
-extern void apc_sma_init(int numseg, int segsize, char *mmap_file_mask);
+extern void apc_sma_init(int numseg, size_t segsize, char *mmap_file_mask);
 extern void apc_sma_cleanup();
 extern void* apc_sma_malloc(size_t size);
 extern void* apc_sma_realloc(void* p, size_t size);
@@ -49,8 +49,8 @@ extern size_t *apc_sma_get_alloc_distribution();
 /* {{{ struct definition: apc_sma_link_t */
 typedef struct apc_sma_link_t apc_sma_link_t;
 struct apc_sma_link_t {
-    int size;               /* size of this free block */
-    int offset;             /* offset in segment of this block */
+    long size;               /* size of this free block */
+    long offset;             /* offset in segment of this block */
     apc_sma_link_t* next;   /* link to next free block */
 };
 /* }}} */
@@ -59,7 +59,7 @@ struct apc_sma_link_t {
 typedef struct apc_sma_info_t apc_sma_info_t;
 struct apc_sma_info_t {
     int num_seg;            /* number of shared memory segments */
-    int seg_size;           /* size of each shared memory segment */
+    long seg_size;           /* size of each shared memory segment */
     apc_sma_link_t** list;  /* there is one list per segment */
 };
 /* }}} */
