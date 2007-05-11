@@ -306,6 +306,9 @@ apc_cache_t* apc_cache_create(int size_hint, int gc_ttl, int ttl)
     cache_size = sizeof(header_t) + num_slots*sizeof(slot_t*);
 
     cache->shmaddr = apc_sma_malloc(cache_size);
+    if(!cache->shmaddr) {
+        apc_eprint("Unable to allocate shared memory for cache structures.  (Perhaps your shared memory size isn't large enough?). ");
+    }
     memset(cache->shmaddr, 0, cache_size);
 
     cache->header = (header_t*) cache->shmaddr;
