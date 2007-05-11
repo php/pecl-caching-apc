@@ -122,6 +122,15 @@
      <file role="test" name="apc_003.phpt" />
      <file role="test" name="skipif.inc" />
     </dir>
+    <dir name="arch">
+     <file role="src" name="atomic.h" />
+     <dir name="i386">
+      <file role="src" name="atomic.h" />
+     </dir>
+     <dir name="x86_64">
+      <file role="src" name="atomic.h" />
+     </dir>
+    </dir>
    </dir>
  </contents>
 
