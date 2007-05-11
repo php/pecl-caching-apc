@@ -568,9 +568,9 @@ void apc_sma_free_info(apc_sma_info_t* info)
 /* }}} */
 
 /* {{{ apc_sma_get_avail_mem */
-int apc_sma_get_avail_mem()
+size_t apc_sma_get_avail_mem()
 {
-    int avail_mem = 0;
+    size_t avail_mem = 0;
     int i;
     
     for (i = 0; i < sma_numseg; i++) {
