@@ -28,6 +28,7 @@
 /* $Id$*/
 
 #include "apc.h"
+#include "apc_globals.h"
 #include "rfc1867.h"
 
 #ifdef MULTIPART_EVENT_FORMDATA
@@ -73,12 +74,12 @@ void apc_rfc1867_progress(unsigned int event, void *event_data, void **extra TSR
 
 		case MULTIPART_EVENT_FORMDATA:
 			{
+                int prefix_len = strlen(APCG(rfc1867_prefix));
                 multipart_event_formdata *data = (multipart_event_formdata *) event_data;
-
-				if(data->name && !strncasecmp(data->name,"apc_upload_progress",19) && data->value && data->length && data->length < 58) {
-                    strlcat(tracking_key, "upload_", 63);
+				if(data->name && !strncasecmp(data->name,"apc_upload_progress",19) && data->value && data->length && data->length < sizeof(tracking_key) - prefix_len) {
+                    strlcat(tracking_key, APCG(rfc1867_prefix), 63);
                     strlcat(tracking_key, *data->value, 63);
-                    key_length = data->length+7;
+                    key_length = data->length + prefix_len;
                     bytes_processed = data->post_bytes_processed;
 				}
 			}

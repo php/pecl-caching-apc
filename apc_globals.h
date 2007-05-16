@@ -74,6 +74,7 @@ ZEND_BEGIN_MODULE_GLOBALS(apc)
     apc_optimize_function_t apc_optimize_function;   /* optimizer function callback */
 #ifdef MULTIPART_EVENT_FORMDATA
     zend_bool rfc1867;           /* Flag to enable rfc1867 handler */
+    char* rfc1867_prefix;        /* Key prefix */
 #endif
     HashTable *copied_zvals;     /* my_copy recursion detection list */
 #ifdef ZEND_ENGINE_2
