@@ -395,6 +395,10 @@ users should consider tuning the following parameters:
                             rfc1867 upload progress functionality.  
                             (Default: "upload_")
 
+    apc.rfc1867_name        Specify the hidden form entry name that activates APC upload
+                            progress and specifies the user cache key suffix.
+                            (Default: "APC_UPLOAD_PROGRESS")
+
     apc.localcache          This enables a lock-free local process shadow-cache which 
                             reduces lock contention when the cache is being written to.
                             (Default: 0)

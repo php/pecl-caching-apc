@@ -170,6 +170,7 @@ STD_PHP_INI_BOOLEAN("apc.report_autofilter", "0", PHP_INI_SYSTEM, OnUpdateBool, 
 #ifdef MULTIPART_EVENT_FORMDATA
 STD_PHP_INI_BOOLEAN("apc.rfc1867", "0", PHP_INI_SYSTEM, OnUpdateBool, rfc1867, zend_apc_globals, apc_globals)
 STD_PHP_INI_ENTRY("apc.rfc1867_prefix", "upload_", PHP_INI_SYSTEM, OnUpdateStringUnempty, rfc1867_prefix, zend_apc_globals, apc_globals)
+STD_PHP_INI_ENTRY("apc.rfc1867_name", "APC_UPLOAD_PROGRESS", PHP_INI_SYSTEM, OnUpdateStringUnempty, rfc1867_name, zend_apc_globals, apc_globals)
 #endif
 STD_PHP_INI_BOOLEAN("apc.localcache", "0", PHP_INI_SYSTEM, OnUpdateBool, localcache, zend_apc_globals, apc_globals)
 STD_PHP_INI_ENTRY("apc.localcache.size", "512", PHP_INI_SYSTEM, OnUpdateInt, localcache_size,  zend_apc_globals, apc_globals)

@@ -76,7 +76,7 @@ void apc_rfc1867_progress(unsigned int event, void *event_data, void **extra TSR
 			{
                 int prefix_len = strlen(APCG(rfc1867_prefix));
                 multipart_event_formdata *data = (multipart_event_formdata *) event_data;
-				if(data->name && !strncasecmp(data->name,"apc_upload_progress",19) && data->value && data->length && data->length < sizeof(tracking_key) - prefix_len) {
+ 				if(data->name && !strncasecmp(data->name, APCG(rfc1867_name), strlen(APCG(rfc1867_name))) && data->value && data->length && sizeof(tracking_key) - prefix_len) {
                     strlcat(tracking_key, APCG(rfc1867_prefix), 63);
                     strlcat(tracking_key, *data->value, 63);
                     key_length = data->length + prefix_len;
