@@ -52,6 +52,8 @@ void apc_rfc1867_progress(unsigned int event, void *event_data, void **extra TSR
     static int cancel_upload = 0;
     static double start_time;
     static size_t bytes_processed = 0;
+    static size_t prev_bytes_processed = 0;
+    static update_freq = 0;
     static double rate;
     zval *track = NULL;
 
@@ -69,6 +71,10 @@ void apc_rfc1867_progress(unsigned int event, void *event_data, void **extra TSR
                 start_time = my_time();
                 bytes_processed = 0;
                 rate = 0;
+                update_freq = APCG(rfc1867_freq);
+                if(update_freq < 0) {  // frequency is a percentage, not bytes
+                    update_freq = content_length * APCG(rfc1867_freq) / 100; 
+                }
 			}
 			break;
 
@@ -118,7 +124,10 @@ void apc_rfc1867_progress(unsigned int event, void *event_data, void **extra TSR
                 add_assoc_string(track, "name", name, 1);
                 add_assoc_long(track, "done", 0);
                 add_assoc_double(track, "start_time", start_time);
-                _apc_store(tracking_key, key_length, track, 3600, 0 TSRMLS_CC);
+                if(bytes_processed - prev_bytes_processed > update_freq) {
+                    _apc_store(tracking_key, key_length, track, 3600, 0 TSRMLS_CC);
+                    prev_bytes_processed = bytes_processed;
+                }
                 zval_ptr_dtor(&track);
 			}
 			break;

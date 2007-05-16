@@ -76,6 +76,7 @@ ZEND_BEGIN_MODULE_GLOBALS(apc)
     zend_bool rfc1867;           /* Flag to enable rfc1867 handler */
     char* rfc1867_prefix;        /* Key prefix */
     char* rfc1867_name;          /* Name of hidden field to activate upload progress/key suffix */
+    double rfc1867_freq;         /* Update frequency as percentage or bytes */
 #endif
     HashTable *copied_zvals;     /* my_copy recursion detection list */
 #ifdef ZEND_ENGINE_2

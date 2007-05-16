@@ -139,6 +139,27 @@ static PHP_INI_MH(OnUpdateShmSegments) /* {{{ */
 }
 /* }}} */
 
+static PHP_INI_MH(OnUpdateRfc1867Freq) /* {{{ */
+{
+    int tmp;
+    tmp = zend_atoi(new_value, NULL);
+    if(tmp < 0) {
+        apc_eprint("rfc1867_freq must be greater than or equal to zero.");
+        return FAILURE;
+    }
+    if(new_value[new_value_length-1] == '%') {
+        if(tmp > 100) {
+            apc_eprint("rfc1867_freq cannot be over 100%%");
+            return FAILURE;
+        }
+        APCG(rfc1867_freq) = tmp / 100.0;
+    } else {
+        APCG(rfc1867_freq) = tmp;
+    }
+    return SUCCESS;
+}
+/* }}} */
+
 
 #ifdef ZEND_ENGINE_2
 #define OnUpdateInt OnUpdateLong
@@ -171,6 +192,7 @@ STD_PHP_INI_BOOLEAN("apc.report_autofilter", "0", PHP_INI_SYSTEM, OnUpdateBool, 
 STD_PHP_INI_BOOLEAN("apc.rfc1867", "0", PHP_INI_SYSTEM, OnUpdateBool, rfc1867, zend_apc_globals, apc_globals)
 STD_PHP_INI_ENTRY("apc.rfc1867_prefix", "upload_", PHP_INI_SYSTEM, OnUpdateStringUnempty, rfc1867_prefix, zend_apc_globals, apc_globals)
 STD_PHP_INI_ENTRY("apc.rfc1867_name", "APC_UPLOAD_PROGRESS", PHP_INI_SYSTEM, OnUpdateStringUnempty, rfc1867_name, zend_apc_globals, apc_globals)
+STD_PHP_INI_ENTRY("apc.rfc1867_freq", "0", PHP_INI_SYSTEM, OnUpdateRfc1867Freq, rfc1867_freq, zend_apc_globals, apc_globals)
 #endif
 STD_PHP_INI_BOOLEAN("apc.localcache", "0", PHP_INI_SYSTEM, OnUpdateBool, localcache, zend_apc_globals, apc_globals)
 STD_PHP_INI_ENTRY("apc.localcache.size", "512", PHP_INI_SYSTEM, OnUpdateInt, localcache_size,  zend_apc_globals, apc_globals)
