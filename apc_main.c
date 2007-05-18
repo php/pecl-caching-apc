@@ -311,7 +311,7 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
         return old_compile_file(h, type TSRMLS_CC);
     }
 
-#if PHP_API_VERSION <= 20041225
+#if PHP_API_VERSION < 20041225
 #if HAVE_APACHE && defined(APC_PHP4_STAT)
     t = ((request_rec *)SG(server_context))->request_time;
 #else 

@@ -527,7 +527,7 @@ int _apc_store(char *strkey, int strkey_len, const zval *val, const unsigned int
     time_t t;
     size_t mem_size = 0;
 
-#if PHP_API_VERSION <= 20041225
+#if PHP_API_VERSION < 20041225
 #if HAVE_APACHE && defined(APC_PHP4_STAT)
     t = ((request_rec *)SG(server_context))->request_time;
 #else
@@ -662,7 +662,7 @@ PHP_FUNCTION(apc_fetch) {
         return;
     }
 
-#if PHP_API_VERSION <= 20041225
+#if PHP_API_VERSION < 20041225
 #if HAVE_APACHE && defined(APC_PHP4_STAT)
     t = ((request_rec *)SG(server_context))->request_time;
 #else 
@@ -819,7 +819,7 @@ PHP_FUNCTION(apc_load_constants) {
 
     if(!strkey_len) RETURN_FALSE;
 
-#if PHP_API_VERSION <= 20041225
+#if PHP_API_VERSION < 20041225
 #if HAVE_APACHE && defined(APC_PHP4_STAT)
     t = ((request_rec *)SG(server_context))->request_time;
 #else 
