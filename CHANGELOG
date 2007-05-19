@@ -1,6 +1,7 @@
 3.0.15: 2007-??-??
 - Eliminate a per-request time() syscall (Rasmus)
-
+- Added rfc1867 prefix, name, and freq ini options (Shire)
+  
 3.0.14: 2007-03-21
 - Build fix (Shire)
 - Don't hook the upload hook if APC is disabled (Rasmus)

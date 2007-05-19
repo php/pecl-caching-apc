@@ -402,7 +402,7 @@ users should consider tuning the following parameters:
     apc.rfc1867_freq        The frequency that updates should be made to the user cache
                             entry for upload progress.  This can take the form of a 
                             percentage of the total file size or a size in bytes 
-                            optionally prefixed with 'k', 'm', or 'g' for kilobytes, 
+                            optionally suffixed with 'k', 'm', or 'g' for kilobytes, 
                             megabytes, or gigabytes respectively (case insensitive).  
                             A setting of 0 updates as often as possible, which may cause 
                             slower uploads.
