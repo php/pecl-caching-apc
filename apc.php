@@ -75,6 +75,7 @@ define('OB_VERSION_CHECK',9);
 $vardom=array(
 	'OB'	=> '/^\d+$/',			// operational mode switch
 	'CC'	=> '/^[01]$/',			// clear cache requested
+	'DU'	=> '/^.*$/',			// Delete User Key
 	'SH'	=> '/^[a-z0-9]+$/',		// shared object description
 
 	'IMG'	=> '/^[123]$/',			// image to generate
@@ -177,6 +178,10 @@ if ($AUTHENTICATED && $MYREQUEST['OB'] == OB_USER_CACHE) {
 // clear cache
 if ($AUTHENTICATED && isset($MYREQUEST['CC']) && $MYREQUEST['CC']) {
 	apc_clear_cache($cache_mode);
+}
+
+if ($AUTHENTICATED && !empty($MYREQUEST['DU'])) {
+	apc_delete($MYREQUEST['DU']);
 }
 
 if(!function_exists('apc_cache_info') || !($cache=@apc_cache_info($cache_mode))) {
@@ -929,7 +934,6 @@ case OB_USER_CACHE:
 	$fieldheading='User Entry Label';
 	$fieldkey='info';
 
-
 // -----------------------------------------------
 // System Cache Entries		
 // -----------------------------------------------
@@ -1093,9 +1097,16 @@ EOB;
           else
             echo '<td class="td-n center">None</td>';
         }
-        echo
-          '<td class="td-last center">',$entry['deletion_time'] ? date(DATE_FORMAT,$entry['deletion_time']) : '-','</td>',
-          '</tr>';
+        if ($entry['deletion_time']) {
+
+          echo '<td class="td-last center">', date(DATE_FORMAT,$entry['deletion_time']), '</td>';
+        } else {
+
+          echo '<td class="td-last center">';
+          echo '[<a href="', $MY_SELF, '&OB=', $MYREQUEST['OB'], '&DU=', urlencode($entry[$fieldkey]), '">Delete Now</a>]';
+          echo '</td>';
+        }
+        echo '</tr>';
         $i++;
         if ($i == $MYREQUEST['COUNT'])
           break;
