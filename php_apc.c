@@ -139,6 +139,7 @@ static PHP_INI_MH(OnUpdateShmSegments) /* {{{ */
 }
 /* }}} */
 
+#ifdef MULTIPART_EVENT_FORMDATA
 static PHP_INI_MH(OnUpdateRfc1867Freq) /* {{{ */
 {
     int tmp;
@@ -159,7 +160,7 @@ static PHP_INI_MH(OnUpdateRfc1867Freq) /* {{{ */
     return SUCCESS;
 }
 /* }}} */
-
+#endif
 
 #ifdef ZEND_ENGINE_2
 #define OnUpdateInt OnUpdateLong
