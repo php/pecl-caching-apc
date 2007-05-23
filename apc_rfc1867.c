@@ -31,6 +31,10 @@
 #include "apc_globals.h"
 #include "rfc1867.h"
 
+#ifdef PHP_WIN32
+#include "win32/time.h"
+#endif
+
 #ifdef MULTIPART_EVENT_FORMDATA
 extern int _apc_store(char *strkey, int strkey_len, const zval *val, const unsigned int ttl, const int exclusive TSRMLS_DC);
 

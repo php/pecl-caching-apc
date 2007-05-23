@@ -31,6 +31,9 @@
 #define APC_SHM_H
 
 #include <sys/types.h>
+#ifdef PHP_WIN32
+#include <time.h>
+#endif
 
 /* Wrapper functions for unix shared memory */
 
