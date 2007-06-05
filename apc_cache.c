@@ -97,6 +97,7 @@ typedef struct local_slot_t local_slot_t;
 struct local_slot_t {
     slot_t *original;           /* the original slot in shm */
     int num_hits;               /* number of hits */
+    time_t creation_time;       /* creation time */
     apc_cache_entry_t *value;   /* shallow copy of slot->value */
     local_slot_t *next;         /* only for dead list */
 };
@@ -1174,7 +1175,7 @@ void apc_cache_write_unlock(apc_cache_t* cache)
 #endif
 
 /* {{{ make_local_slot */
-static local_slot_t* make_local_slot(apc_local_cache_t* cache, local_slot_t* lslot, slot_t* slot) 
+static local_slot_t* make_local_slot(apc_local_cache_t* cache, local_slot_t* lslot, slot_t* slot, time_t t) 
 {
     apc_cache_entry_t* value;
 
@@ -1184,7 +1185,8 @@ static local_slot_t* make_local_slot(apc_local_cache_t* cache, local_slot_t* lsl
 
     lslot->original = slot;
     lslot->value = value;
-    lslot->num_hits++;
+    lslot->num_hits = 0;
+    lslot->creation_time = t;
 
     return lslot; /* for what joy ? ... consistency */
 }
@@ -1236,10 +1238,11 @@ void apc_local_cache_cleanup(apc_local_cache_t* cache) {
     
     int i;
     for(i = 0; i < cache->num_slots; i++) {
-        slot_t * slot = cache->slots[i].original;
-        if((slot && slot->access_time < (t - cache->ttl)) ||
+        lslot = &cache->slots[i];
+        /* every slot lives for exactly TTL seconds */
+        if((lslot->original && lslot->creation_time < (t - cache->ttl)) ||
                 cache->generation != cache->shmcache->header->expunges) {
-            free_local_slot(cache, &cache->slots[i]);
+            free_local_slot(cache, lslot);
         }
     }
 
@@ -1295,9 +1298,15 @@ apc_cache_entry_t* apc_local_cache_find(apc_local_cache_t* cache, apc_cache_key_
                 free_local_slot(cache, lslot);
                 goto not_found;
             }
+            cache->num_hits++;
+            lslot->num_hits++;
+            lslot->original->access_time = t; /* unlocked write, but last write wins */
             return lslot->value;
         } else if(key.type == APC_CACHE_KEY_FPFILE) {
             if(!memcmp(slot->key.data.fpfile.fullpath, key.data.fpfile.fullpath, key.data.fpfile.fullpath_len+1)) {
+                cache->num_hits++;
+                lslot->num_hits++;
+                lslot->original->access_time = t; /* unlocked write, but last write wins */
                 return lslot->value;
             }
         }
@@ -1314,7 +1323,7 @@ not_found:
     /* i.e maintain a sort of top list */
     if(lslot->original == NULL || (lslot->original->num_hits + lslot->num_hits)  < slot->num_hits) {
         free_local_slot(cache, lslot);
-        make_local_slot(cache, lslot, slot); 
+        make_local_slot(cache, lslot, slot, t); 
         return lslot->value;
     }
     return slot->value;
