@@ -948,6 +948,7 @@ function_entry apc_functions[] = {
 	PHP_FE(apc_define_constants,    NULL)
 	PHP_FE(apc_load_constants,      NULL)
 	PHP_FE(apc_compile_file,        NULL)
+	PHP_FE(apc_add,                 NULL)
 	{NULL, 		NULL,				NULL}
 };
 /* }}} */
