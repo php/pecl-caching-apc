@@ -143,7 +143,7 @@ static PHP_INI_MH(OnUpdateShmSegments) /* {{{ */
 static PHP_INI_MH(OnUpdateRfc1867Freq) /* {{{ */
 {
     int tmp;
-    tmp = zend_atoi(new_value, NULL);
+    tmp = zend_atoi(new_value, new_value_length);
     if(tmp < 0) {
         apc_eprint("rfc1867_freq must be greater than or equal to zero.");
         return FAILURE;
