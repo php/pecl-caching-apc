@@ -1100,11 +1100,13 @@ EOB;
         if ($entry['deletion_time']) {
 
           echo '<td class="td-last center">', date(DATE_FORMAT,$entry['deletion_time']), '</td>';
-        } else {
+        } else if ($MYREQUEST['OB'] == OB_USER_CACHE) {
 
           echo '<td class="td-last center">';
           echo '[<a href="', $MY_SELF, '&OB=', $MYREQUEST['OB'], '&DU=', urlencode($entry[$fieldkey]), '">Delete Now</a>]';
           echo '</td>';
+        } else {
+          echo '<td class="td-last center"> &nbsp; </td>';
         }
         echo '</tr>';
         $i++;
