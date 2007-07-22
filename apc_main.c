@@ -629,14 +629,6 @@ void apc_deactivate(TSRMLS_D)
         apc_cache_entry_t* cache_entry =
             (apc_cache_entry_t*) apc_stack_pop(APCG(cache_stack));
 
-        if (cache_entry->data.file.functions) {
-            for (i = 0; cache_entry->data.file.functions[i].function != NULL; i++) {
-                zend_hash_del(EG(function_table),
-                    cache_entry->data.file.functions[i].name,
-                    cache_entry->data.file.functions[i].name_len+1);
-            }
-        }
-
         if (cache_entry->data.file.classes) {
             for (i = 0; cache_entry->data.file.classes[i].class_entry != NULL; i++) {
 #ifdef ZEND_ENGINE_2
