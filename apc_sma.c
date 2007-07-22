@@ -151,7 +151,7 @@ static int sma_allocate(void* shmaddr, size_t size)
     if(header->nfoffset) {
         prv = BLOCKAT(header->nfoffset);
     } else {    
-        prv = BLOCKAT(sizeof(header_t));
+        prv = BLOCKAT(ALIGNWORD(sizeof(header_t)));
     }
    
     CHECK_CANARY(prv);
@@ -172,7 +172,7 @@ static int sma_allocate(void* shmaddr, size_t size)
 
         /* Check to see if we need to wrap around and search from the top */
         if(header->nfoffset && prv->next == 0) {
-            prv = BLOCKAT(sizeof(header_t));
+            prv = BLOCKAT(ALIGNWORD(sizeof(header_t)));
 #ifdef __APC_SMA_DEBUG__
             CHECK_CANARY(prv);
 #endif
@@ -247,7 +247,7 @@ static int sma_deallocate(void* shmaddr, int offset)
 
     /* find position of new block in free list */
     cur = BLOCKAT(offset);
-    prv = BLOCKAT(sizeof(header_t));
+    prv = BLOCKAT(ALIGNWORD(sizeof(header_t)));
    
     CHECK_CANARY(cur);
 
@@ -354,8 +354,7 @@ void apc_sma_init(int numseg, size_t segsize, char *mmap_file_mask)
         header = (header_t*) shmaddr;
         apc_lck_create(NULL, 0, 1, header->sma_lock);
         header->segsize = sma_segsize;
-        header->avail = sma_segsize - sizeof(header_t) - sizeof(block_t) -
-                        ALIGNWORD(sizeof(int));
+        header->avail = sma_segsize - ALIGNWORD(sizeof(header_t)) - ALIGNWORD(sizeof(block_t));
         header->nfoffset = 0;
 #if ALLOC_DISTRIBUTION
        	{
@@ -363,9 +362,9 @@ void apc_sma_init(int numseg, size_t segsize, char *mmap_file_mask)
            for(j=0; j<30; j++) header->adist[j] = 0; 
         }
 #endif 
-        block = BLOCKAT(sizeof(header_t));
+        block = BLOCKAT(ALIGNWORD(sizeof(header_t)));
         block->size = 0;
-        block->next = sizeof(header_t) + sizeof(block_t);
+        block->next = ALIGNWORD(sizeof(header_t)) + ALIGNWORD(sizeof(block_t));
         SET_CANARY(block);
 #ifdef __APC_SMA_DEBUG__
         block->id = -1;
@@ -510,7 +509,7 @@ apc_sma_info_t* apc_sma_info(zend_bool limited)
 
     info = (apc_sma_info_t*) apc_emalloc(sizeof(apc_sma_info_t));
     info->num_seg = sma_numseg;
-    info->seg_size = sma_segsize - sizeof(header_t) - sizeof(block_t) - ALIGNWORD(sizeof(int));
+    info->seg_size = sma_segsize - ALIGNWORD(sizeof(header_t)) - ALIGNWORD(sizeof(block_t));
 
     info->list = apc_emalloc(info->num_seg * sizeof(apc_sma_link_t*));
     for (i = 0; i < sma_numseg; i++) {
@@ -523,7 +522,7 @@ apc_sma_info_t* apc_sma_info(zend_bool limited)
     for (i = 0; i < sma_numseg; i++) {
         RDLOCK(((header_t*)sma_shmaddrs[i])->sma_lock);
         shmaddr = sma_shmaddrs[i];
-        prv = BLOCKAT(sizeof(header_t));
+        prv = BLOCKAT(ALIGNWORD(sizeof(header_t)));
 
         link = &info->list[i];
 
@@ -598,7 +597,7 @@ void apc_sma_check_integrity()
     for (i = 0; i < sma_numseg; i++) {
         char* shmaddr = sma_shmaddrs[i];
         header_t* header = (header_t*) shmaddr;
-        block_t* prv = BLOCKAT(sizeof(header_t));
+        block_t* prv = BLOCKAT(ALIGNWORD(sizeof(header_t)));
         int avail = 0;
 
         /* For each block in this segment */
