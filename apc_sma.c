@@ -421,10 +421,10 @@ void* apc_sma_malloc(size_t n)
     UNLOCK(((header_t*)sma_shmaddrs[sma_lastseg])->sma_lock);
 
     for (i = 0; i < sma_numseg; i++) {
-        LOCK(((header_t*)sma_shmaddrs[i])->sma_lock);
         if (i == sma_lastseg) {
             continue;
         }
+        LOCK(((header_t*)sma_shmaddrs[i])->sma_lock);
         off = sma_allocate(sma_shmaddrs[i], n);
         if (off != -1) {
             void* p = (void *)(((char *)(sma_shmaddrs[i])) + off);
