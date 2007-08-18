@@ -330,12 +330,17 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
         return old_compile_file(h, type TSRMLS_CC);
     }
 
-    if(APCG(localcache)) {
-        /* search for the file in the local cache */
-        cache_entry = apc_local_cache_find(APCG(lcache), key, t);
+
+    if(!APCG(force_file_update)) {
+        if(APCG(localcache)) {
+            /* search for the file in the local cache */
+            cache_entry = apc_local_cache_find(APCG(lcache), key, t);
+        } else {
+            /* search for the file in the cache */
+            cache_entry = apc_cache_find(apc_cache, key, t);
+        }
     } else {
-        /* search for the file in the cache */
-        cache_entry = apc_cache_find(apc_cache, key, t);
+        cache_entry = NULL;
     }
 
     if (cache_entry != NULL && !cache_entry->autofiltered) {

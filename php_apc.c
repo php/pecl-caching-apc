@@ -894,6 +894,7 @@ PHP_FUNCTION(apc_compile_file) {
     zend_hash_init_ex(&eg_class_table, 10, NULL, ZEND_CLASS_DTOR, 1, 0);
     eg_orig_class_table = EG(class_table);
     EG(class_table) = &eg_class_table;
+    APCG(force_file_update) = 1;
     
     /* Compile the file, loading it into the cache */
     file_handle.type = ZEND_HANDLE_FILENAME;
@@ -908,6 +909,7 @@ PHP_FUNCTION(apc_compile_file) {
     } zend_end_try();
 
     /* Return class/function tables to previous states, destroy temp tables */
+    APCG(force_file_update) = 0;
     CG(function_table) = cg_orig_function_table;
     zend_hash_destroy(&cg_function_table);
     CG(class_table) = cg_orig_class_table;
