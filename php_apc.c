@@ -888,12 +888,10 @@ PHP_FUNCTION(apc_compile_file) {
     zend_hash_init_ex(&cg_class_table, 10, NULL, ZEND_CLASS_DTOR, 1, 0);
     cg_orig_class_table = CG(class_table);
     CG(class_table) = &cg_class_table;
-    zend_hash_init_ex(&eg_function_table, 100, NULL, ZEND_FUNCTION_DTOR, 1, 0);
     eg_orig_function_table = EG(function_table);
-    EG(function_table) = &eg_function_table;
-    zend_hash_init_ex(&eg_class_table, 10, NULL, ZEND_CLASS_DTOR, 1, 0);
+    EG(function_table) = CG(function_table);
     eg_orig_class_table = EG(class_table);
-    EG(class_table) = &eg_class_table;
+    EG(class_table) = CG(class_table);
     APCG(force_file_update) = 1;
     
     /* Compile the file, loading it into the cache */
@@ -915,9 +913,7 @@ PHP_FUNCTION(apc_compile_file) {
     CG(class_table) = cg_orig_class_table;
     zend_hash_destroy(&cg_class_table);
     EG(function_table) = eg_orig_function_table;
-    zend_hash_destroy(&eg_function_table);
     EG(class_table) = eg_orig_class_table;
-    zend_hash_destroy(&eg_class_table);
     
     /* Restore global settings */
     APCG(slam_defense) = slam_defense;
