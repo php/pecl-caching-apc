@@ -92,6 +92,7 @@ static void php_apc_init_globals(zend_apc_globals* apc_globals TSRMLS_DC)
     apc_globals->localcache = 0;
     apc_globals->localcache_size = 0;
     apc_globals->lcache = NULL;
+    apc_globals->force_file_update = 0;
 }
 
 static void php_apc_shutdown_globals(zend_apc_globals* apc_globals TSRMLS_DC)
