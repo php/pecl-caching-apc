@@ -716,11 +716,11 @@ int apc_cache_make_file_key(apc_cache_key_t* key,
                        time_t t
 					   TSRMLS_DC)
 {
-    static char canon_path[MAXPATHLEN];
+    static char canon_path[MAXPATHLEN]; /* TODO: TSRM */
     struct stat *tmp_buf=NULL;
     struct apc_fileinfo_t fileinfo = { {0}, };
     int len;
-	
+
     assert(key != NULL);
 
     if (!filename || !SG(request_info).path_translated) {
@@ -738,10 +738,16 @@ int apc_cache_make_file_key(apc_cache_key_t* key,
             key->mtime = t;
             key->type = APC_CACHE_KEY_FPFILE;
         } else {
-            if(!realpath(filename, canon_path)) {
-                fprintf(stderr, "realpath failed to canonicalize %s - bailing\n", filename);
+            if (apc_search_paths(filename, include_path, &fileinfo) != 0) {
+                apc_wprint("apc failed to locate %s - bailing", filename);
                 return 0;
             }
+
+            if(!realpath(fileinfo.fullpath, canon_path)) {
+                apc_wprint("realpath failed to canonicalize %s - bailing", filename);
+                return 0;
+            }
+
             key->data.fpfile.fullpath = canon_path;
             key->data.fpfile.fullpath_len = strlen(canon_path);
             key->mtime = t;

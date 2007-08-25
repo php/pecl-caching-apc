@@ -1268,9 +1268,8 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_mal
                 /* constant includes */
                 if(!IS_ABSOLUTE_PATH(Z_STRVAL_P(&zo->op1.u.constant),Z_STRLEN_P(&zo->op1.u.constant))) { 
                     if (apc_search_paths(Z_STRVAL_P(&zo->op1.u.constant), PG(include_path), &fileinfo) == 0) {
-                        if((IS_ABSOLUTE_PATH(fileinfo.fullpath, strlen(fileinfo.fullpath)) && (fullpath = fileinfo.fullpath))
-                                || (fullpath = realpath(fileinfo.fullpath, canon_path))) {
-                            /* is either an absolute path or it goes through a realpath() */
+                        if((fullpath = realpath(fileinfo.fullpath, canon_path))) {
+                            /* everything has to go through a realpath() */
                             zend_op *dzo = &(dst->opcodes[i]);
                             deallocate(dzo->op1.u.constant.value.str.val);
                             dzo->op1.u.constant.value.str.len = strlen(fullpath);
