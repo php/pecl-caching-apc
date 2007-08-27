@@ -86,6 +86,7 @@ ZEND_BEGIN_MODULE_GLOBALS(apc)
     long localcache_size;        /* size of fast cache */
     apc_local_cache_t* lcache;   /* unlocked local cache */
     zend_bool force_file_update; /* force files to be updated during apc_compile_file */
+    char canon_path[MAXPATHLEN]; /* canonical path for key data */
 ZEND_END_MODULE_GLOBALS(apc)
 
 /* (the following declaration is defined in php_apc.c) */
