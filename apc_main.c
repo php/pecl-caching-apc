@@ -407,6 +407,26 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
         }
     }
 
+    /* Make sure the mtime reflects the files last known mtime in the case of fpstat==0 */
+    if(key.type == APC_CACHE_KEY_FPFILE) {
+        apc_fileinfo_t fileinfo;
+        struct stat *tmp_buf = NULL;
+        if(!strcmp(SG(request_info).path_translated, h->filename)) {
+            tmp_buf = sapi_get_stat(TSRMLS_C);  /* Apache has already done this stat() for us */
+        }
+        if(tmp_buf) { 
+            fileinfo.st_buf = *tmp_buf;
+        } else {
+            if (apc_search_paths(h->filename, PG(include_path), &fileinfo) != 0) {
+#ifdef __DEBUG_APC__
+                fprintf(stderr,"Stat failed %s - bailing (%s) (%d)\n",filename,SG(request_info).path_translated);
+#endif
+                return op_array;
+            }
+        }
+        key.mtime = fileinfo.st_buf.st_mtime;
+    }
+
     HANDLE_BLOCK_INTERRUPTIONS();
 
 #if NONBLOCKING_LOCK_AVAILABLE
