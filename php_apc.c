@@ -903,7 +903,7 @@ PHP_FUNCTION(apc_compile_file) {
     zend_try {
         op_array = zend_compile_file(&file_handle, ZEND_INCLUDE TSRMLS_CC);
     } zend_catch {
-        apc_eprint("Error compiling %s in apc_compile_file.", filename);
+        apc_wprint("Error compiling %s in apc_compile_file.", filename);
         op_array = NULL;
     } zend_end_try();
 
