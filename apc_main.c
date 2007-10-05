@@ -258,7 +258,6 @@ static zend_op_array* cached_compile(zend_file_handle* h,
 
 default_compile:
 
-    cache_entry->autofiltered = 1;
     if(APCG(report_autofilter)) {
         apc_wprint("Autofiltering %s", h->opened_path);
     }
@@ -270,14 +269,16 @@ default_compile:
     }
     
     apc_stack_pop(APCG(cache_stack)); /* pop out cache_entry */
+    
+    apc_cache_release(apc_cache, cache_entry);
 
     /* cannot free up cache data yet, it maybe in use */
     
     zend_llist_del_element(&CG(open_files), h, compare_file_handles); /* XXX: kludge */
     
     h->type = ZEND_HANDLE_FILENAME;
-    
-    return old_compile_file(h, type TSRMLS_CC);
+
+    return NULL;
 }
 /* }}} */
 
@@ -343,7 +344,7 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
         cache_entry = NULL;
     }
 
-    if (cache_entry != NULL && !cache_entry->autofiltered) {
+    if (cache_entry != NULL) {
         int dummy = 1;
         if (h->opened_path == NULL) {
             h->opened_path = estrdup(cache_entry->data.file.filename);
@@ -351,27 +352,14 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
         zend_hash_add(&EG(included_files), h->opened_path, strlen(h->opened_path)+1, (void *)&dummy, sizeof(int), NULL);
         zend_llist_add_element(&CG(open_files), h); /* XXX kludge */
         apc_stack_push(APCG(cache_stack), cache_entry);
-        return cached_compile(h, type TSRMLS_CC);
-    }
-    else if(cache_entry != NULL && cache_entry->autofiltered) {
-        /* nobody else is using this cache_entry */ 
-        if(cache_entry->ref_count == 1) {
-            if(cache_entry->data.file.op_array) {
-                apc_free_op_array(cache_entry->data.file.op_array, apc_sma_free);
-                cache_entry->data.file.op_array = NULL;
-            }
-            if(cache_entry->data.file.functions) {
-                apc_free_functions(cache_entry->data.file.functions, apc_sma_free);
-                cache_entry->data.file.functions = NULL;
-            }
-            if(cache_entry->data.file.classes) {
-                apc_free_classes(cache_entry->data.file.classes, apc_sma_free);
-                cache_entry->data.file.classes = NULL;        
-            }
+        op_array = cached_compile(h, type TSRMLS_CC);
+        if(op_array) {
+            return op_array;
         }
-        /* We never push this into the cache_stack, so we have to do a release */
-        apc_cache_release(apc_cache, cache_entry);
-        return old_compile_file(h, type TSRMLS_CC);
+        if(APCG(report_autofilter)) {
+            apc_wprint("Recompiling %s", h->opened_path);
+        }
+        /* TODO: check what happens with EG(included_files) */
     }
     
     if(apc_cache_busy(apc_cache) && APCG(localcache)) {

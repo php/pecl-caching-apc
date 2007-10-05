@@ -93,7 +93,6 @@ typedef struct apc_cache_entry_t apc_cache_entry_t;
 struct apc_cache_entry_t {
     apc_cache_entry_value_t data;
     unsigned char type;
-    unsigned char autofiltered;
     unsigned char local;
     int ref_count;
     size_t mem_size;
