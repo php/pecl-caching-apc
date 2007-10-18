@@ -59,12 +59,20 @@
   <active>yes</active>
  </developer>
  
- <date>2007-??-??</date>
+ <date>2007-10-18</date>
  <version><release>3.0.15</release><api>3.0.0</api></version>
  <stability><release>stable</release><api>stable</api></stability>
  <license uri="http://www.php.net/license">PHP License</license>
  <notes>
-* 
+* Eliminate a per-request time() syscall (Rasmus)
+* Added rfc1867 prefix, name, and freq ini options (Shire)
+* Allow deletion of individual user cache entries via apc.php (Sara)
+* Fix overzealous cleanup during RSHUTDOWN (Gopal)
+* Fix memory alignment and locking issues (Gopal)
+* Make apc_compile insert/replace entries (Shire)
+* Make mixed inheritance recompile &amp; cache afresh  (Gopal)
+* Make nostat mode search include_path for canonicalization (Gopal)
+* ZTS &amp; other compile fixes (Gopal, Edin, Shire)
  </notes>
 
  <contents>

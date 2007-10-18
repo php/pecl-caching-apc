@@ -1,4 +1,4 @@
-3.0.15: 2007-??-??
+3.0.15: 2007-10-18
 - Eliminate a per-request time() syscall (Rasmus)
 - Added rfc1867 prefix, name, and freq ini options (Shire)
 - Allow deletion of individual user cache entries via apc.php (Sara)
