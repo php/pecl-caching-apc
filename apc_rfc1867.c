@@ -57,7 +57,7 @@ void apc_rfc1867_progress(unsigned int event, void *event_data, void **extra TSR
     static double start_time;
     static size_t bytes_processed = 0;
     static size_t prev_bytes_processed = 0;
-    static update_freq = 0;
+    static int update_freq = 0;
     static double rate;
     zval *track = NULL;
 
