@@ -1,6 +1,13 @@
 3.0.15: 2007-??-??
 - Eliminate a per-request time() syscall (Rasmus)
 - Added rfc1867 prefix, name, and freq ini options (Shire)
+- Allow deletion of individual user cache entries via apc.php (Sara)
+- Fix overzealous cleanup during RSHUTDOWN (Gopal)
+- Fix memory alignment and locking issues (Gopal) 
+- Make apc_compile insert/replace entries (Shire)
+- Make mixed inheritance recompile & cache afresh  (Gopal)
+- Make nostat mode search include_path for canonicalization (Gopal)
+- ZTS & other compile fixes (Gopal, Edin, Shire)
   
 3.0.14: 2007-03-21
 - Build fix (Shire)
