@@ -864,23 +864,15 @@ PHP_FUNCTION(apc_compile_file) {
 
     if(!filename) RETURN_FALSE;
 
-    /* If slam defense is active, temporarily disable */
-    if(APCG(slam_defense)) {
-        slam_defense = APCG(slam_defense);
-        APCG(slam_defense) = 0;
-    }
+    /* reset slam defense, filters, and cache_by_default */
+    slam_defense = APCG(slam_defense);
+    APCG(slam_defense) = 0;
    
-    /* If filter is active, temporarily disable */
-    if(APCG(filters) != NULL) {
-        filters = APCG(filters);
-        APCG(filters) = NULL;
-    }
+    filters = APCG(filters);
+    APCG(filters) = NULL;
 
-    /* If cache_by_default is off, temporarily enable */
-    if(!APCG(cache_by_default)) {
-        cache_by_default = APCG(cache_by_default);
-        APCG(cache_by_default) = 1;
-    }
+    cache_by_default = APCG(cache_by_default);
+    APCG(cache_by_default) = 1;
 
     /* Replace function/class tables to avoid namespace conflicts */
     zend_hash_init_ex(&cg_function_table, 100, NULL, ZEND_FUNCTION_DTOR, 1, 0);
