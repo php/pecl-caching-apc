@@ -90,15 +90,15 @@ fi
 
 AC_MSG_CHECKING(Checking whether we should use pthread mutex locking)
 AC_ARG_ENABLE(apc-pthreadmutex,
-[  --enable-apc-pthreadmutex
-                          Enable pthread mutex locking  EXPERIMENTAL ],
-[
-  PHP_APC_PTHREADMUTEX=$enableval
-  AC_MSG_RESULT($enableval)
-],
+[  --disable-apc-pthreadmutex
+                          Disable pthread mutex locking ],
 [
   PHP_APC_PTHREADMUTEX=no
   AC_MSG_RESULT(no)
+],
+[
+  PHP_APC_PTHREADMUTEX=yes
+  AC_MSG_RESULT(yes)
 ])
 if test "$PHP_APC_PTHREADMUTEX" != "no"; then
 	orig_LIBS="$LIBS"
@@ -116,7 +116,7 @@ if test "$PHP_APC_PTHREADMUTEX" != "no"; then
 					return -1; 
 				}
 				if(pthread_mutexattr_setpshared(&attr, PTHREAD_PROCESS_SHARED)) { 
-					puts("Unable to set PTHREAD_PROCESS_SHARED (pthread_mutexattr_setpshared), your system may not support shared mutex's which are required. (if you're using threads you should just use the built-in php thread locking).");
+					puts("Unable to set PTHREAD_PROCESS_SHARED (pthread_mutexattr_setpshared), your system may not support shared mutex's.");
 					return -1; 
 				}	
 				if(pthread_mutex_init(&mutex, &attr)) { 
@@ -140,7 +140,8 @@ if test "$PHP_APC_PTHREADMUTEX" != "no"; then
 				PHP_ADD_LIBRARY(pthread)
 			],
 			[ dnl -Failure-
-				AC_MSG_ERROR([It doesn't appear that pthread mutex's are supported on your system, please try a different configuration])
+				AC_MSG_WARN([It doesn't appear that pthread mutex's are supported on your system])
+  			PHP_APC_PTHREADMUTEX=no
 			],
 			[
 				PHP_ADD_LIBRARY(pthread)
@@ -164,10 +165,16 @@ AC_ARG_ENABLE(apc-spinlocks,
 
 if test "$PHP_APC" != "no"; then
   test "$PHP_APC_MMAP" != "no" && AC_DEFINE(APC_MMAP, 1, [ ])
-  test "$PHP_APC_SEM"  != "no" && AC_DEFINE(APC_SEM_LOCKS, 1, [ ])
-  test "$PHP_APC_FUTEX" != "no" && AC_DEFINE(APC_FUTEX_LOCKS, 1, [ ])
-  test "$PHP_APC_PTHREADMUTEX" != "no" && AC_DEFINE(APC_PTHREADMUTEX_LOCKS, 1, [ ])
-  test "$PHP_APC_SPINLOCKS" != "no" && AC_DEFINE(APC_SPIN_LOCKS, 1, [ ]) 
+
+	if test "$PHP_APC_SEM" != "no"; then
+		AC_DEFINE(APC_SEM_LOCKS, 1, [ ])
+	elif test"$PHP_APC_FUTEX" != "no"; then
+		AC_DEFINE(APC_FUTEX_LOCKS, 1, [ ])
+	elif test "$PHP_APC_SPINLOCKS" != "no"; then
+		AC_DEFINE(APC_SPIN_LOCKS, 1, [ ]) 
+	elif test "$PHP_APC_PTHREADMUTEX" != "no"; then 
+		AC_DEFINE(APC_PTHREADMUTEX_LOCKS, 1, [ ])
+	fi
 
   AC_CACHE_CHECK(for union semun, php_cv_semun,
   [
@@ -198,8 +205,8 @@ if test "$PHP_APC" != "no"; then
                apc_shm.c \
                apc_futex.c \
                apc_pthreadmutex.c \
-			   apc_spin.c \
-			   pgsql_s_lock.c \
+               apc_spin.c \
+               pgsql_s_lock.c \
                apc_sma.c \
                apc_stack.c \
                apc_zend.c \
