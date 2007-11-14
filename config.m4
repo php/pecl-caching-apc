@@ -47,6 +47,20 @@ AC_ARG_WITH(apxs,
 PHP_ARG_ENABLE(apc, whether to enable APC support,
 [  --enable-apc           Enable APC support])
 
+AC_MSG_CHECKING(Checking wheather we should enable cache request file info)
+AC_ARG_ENABLE(apc-filehits,
+[  --enable-apc-filehits   Enable per request file info about files used from the APC cache (ie: apc_cache_info('filehits')) ],
+[
+  PHP_APC_FILEHITS=$enableval
+	AC_MSG_RESULT($enableval)
+], 
+[
+  PHP_APC_FILEHITS=no
+	AC_MSG_RESULT(no)
+])
+
+
+
 AC_MSG_CHECKING(Checking whether we should use mmap)
 AC_ARG_ENABLE(apc-mmap,
 [  --disable-apc-mmap
@@ -165,6 +179,7 @@ AC_ARG_ENABLE(apc-spinlocks,
 
 if test "$PHP_APC" != "no"; then
   test "$PHP_APC_MMAP" != "no" && AC_DEFINE(APC_MMAP, 1, [ ])
+  test "$PHP_APC_FILEHITS" != "no" && AC_DEFINE(APC_FILEHITS, 1, [ ])
 
 	if test "$PHP_APC_SEM" != "no"; then
 		AC_DEFINE(APC_SEM_LOCKS, 1, [ ])

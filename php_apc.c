@@ -324,6 +324,13 @@ PHP_FUNCTION(apc_cache_info)
     if(ZEND_NUM_ARGS()) {
         if(!strcasecmp(cache_type,"user")) {
             info = apc_cache_info(apc_user_cache, limited);
+        } else if(!strcasecmp(cache_type,"filehits")) {
+#ifdef APC_FILEHITS
+            RETVAL_ZVAL(APCG(filehits), 1, 0);
+            return;
+#else
+            RETURN_FALSE;
+#endif
         } else {
             info = apc_cache_info(apc_cache, limited);
         }

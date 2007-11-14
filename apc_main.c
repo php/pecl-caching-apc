@@ -354,6 +354,10 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
         apc_stack_push(APCG(cache_stack), cache_entry);
         op_array = cached_compile(h, type TSRMLS_CC);
         if(op_array) {
+#ifdef APC_FILEHITS
+            /* If the file comes from the cache, add it to the global request file list */
+            add_next_index_string(APCG(filehits), h->filename, 1);
+#endif
             return op_array;
         }
         if(APCG(report_autofilter)) {
@@ -614,12 +618,23 @@ int apc_request_init(TSRMLS_D)
     apc_stack_clear(APCG(cache_stack));
     APCG(slam_rand) = -1;
     APCG(copied_zvals) = NULL;
+
+#ifdef APC_FILEHITS
+    ALLOC_INIT_ZVAL(APCG(filehits));
+    array_init(APCG(filehits));
+#endif
+
     return 0;
 }
 
 int apc_request_shutdown(TSRMLS_D)
 {
     apc_deactivate(TSRMLS_C);
+
+#ifdef APC_FILEHITS
+    zval_ptr_dtor(&APCG(filehits));
+#endif
+
     return 0;
 }
 
