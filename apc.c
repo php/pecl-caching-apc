@@ -174,7 +174,7 @@ void apc_nprint(const char* fmt, ...)
 
 void apc_dprint(const char* fmt, ...)
 {
-#ifdef APC_DBG
+#ifdef APC_DEBUG
     va_list args;
     va_start(args, fmt);
     my_log(APC_DBG, fmt, args);
