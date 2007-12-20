@@ -183,7 +183,7 @@ if test "$PHP_APC" != "no"; then
 
 	if test "$PHP_APC_SEM" != "no"; then
 		AC_DEFINE(APC_SEM_LOCKS, 1, [ ])
-	elif test"$PHP_APC_FUTEX" != "no"; then
+	elif test "$PHP_APC_FUTEX" != "no"; then
 		AC_DEFINE(APC_FUTEX_LOCKS, 1, [ ])
 	elif test "$PHP_APC_SPINLOCKS" != "no"; then
 		AC_DEFINE(APC_SPIN_LOCKS, 1, [ ]) 
