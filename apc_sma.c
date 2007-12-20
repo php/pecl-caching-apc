@@ -50,7 +50,7 @@ enum { DEFAULT_NUMSEG=1, DEFAULT_SEGSIZE=30*1024*1024 };
 static int sma_initialized = 0;     /* true if the sma has been initialized */
 static unsigned int sma_numseg;     /* number of shm segments to allow */
 static size_t sma_segsize;          /* size of each shm segment */
-static int* sma_segments;           /* array of shm segment ids */
+static size_t* sma_segments;        /* array of shm segment ids */
 static void** sma_shmaddrs;         /* array of shm segment addresses */
 static int sma_lastseg = 0;         /* index of MRU segment */
 
@@ -333,7 +333,7 @@ void apc_sma_init(int numseg, size_t segsize, char *mmap_file_mask)
 
     sma_segsize = segsize > 0 ? segsize : DEFAULT_SEGSIZE;
 
-    sma_segments = (int*) apc_emalloc(sma_numseg*sizeof(int));
+    sma_segments = (size_t*) apc_emalloc(sma_numseg*sizeof(size_t));
     sma_shmaddrs = (void**) apc_emalloc(sma_numseg*sizeof(void*));
     
     for (i = 0; i < sma_numseg; i++) {

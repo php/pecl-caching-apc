@@ -122,7 +122,9 @@ void *apc_mmap(char *file_mask, size_t size)
 
 void apc_unmap(void* shmaddr, size_t size)
 {
-    munmap(shmaddr, size);
+    if (munmap(shmaddr, size) < 0) {
+        apc_wprint("apc_unmap: munmap failed:");
+    }
 }
 
 #endif
