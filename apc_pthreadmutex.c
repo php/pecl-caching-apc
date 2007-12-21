@@ -38,6 +38,13 @@ pthread_mutex_t *apc_pthreadmutex_create(pthread_mutex_t *lock)
         apc_eprint("pthread mutex error: attr is an invalid pointer.");
     } 
 
+#ifdef PTHREAD_ADAPTIVE_MUTEX_INITIALIZER_NP
+       result = pthread_mutexattr_settype(attr, PTHREAD_MUTEX_ADAPTIVE_NP);
+       if (result == EINVAL) {
+               apc_eprint("pthread_mutexattr_settype: unable to set adaptive mutexes");
+       }
+#endif
+
     /* pthread_mutexattr_settype(attr, PTHREAD_MUTEX_ERRORCHECK); */
     result = pthread_mutexattr_setpshared(attr, PTHREAD_PROCESS_SHARED);
     if(result == EINVAL) {
