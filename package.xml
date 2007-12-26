@@ -59,20 +59,17 @@
   <active>yes</active>
  </developer>
  
- <date>2007-10-18</date>
- <version><release>3.0.15</release><api>3.0.0</api></version>
+ <date>2007-12-26</date>
+ <version><release>3.0.16</release><api>3.0.0</api></version>
  <stability><release>stable</release><api>stable</api></stability>
  <license uri="http://www.php.net/license">PHP License</license>
  <notes>
-* Eliminate a per-request time() syscall (Rasmus)
-* Added rfc1867 prefix, name, and freq ini options (Shire)
-* Allow deletion of individual user cache entries via apc.php (Sara)
-* Fix overzealous cleanup during RSHUTDOWN (Gopal)
-* Fix memory alignment and locking issues (Gopal)
-* Make apc_compile insert/replace entries (Shire)
-* Make mixed inheritance recompile &amp; cache afresh  (Gopal)
-* Make nostat mode search include_path for canonicalization (Gopal)
-* ZTS &amp; other compile fixes (Gopal, Edin, Shire)
+* Fix for longstanding cache-full crash (Christian Seiler)
+  http://news.php.net/php.pecl.dev/4951 for the details
+* Added optional shm unmap on a fatal signal feature (Lucas Nealan)
+* Added PTHREAD_MUTEX_ADAPTIVE_NP option pthread locks (Paul Saab)
+* Minor cleanups (Lucas Nealan)
+* Added configure option to enable apc_cache_info('filehits') (Shire)
  </notes>
 
  <contents>
@@ -447,6 +444,23 @@ Allow keys used in apc_store/apc_fetch/apc_delete to be binary safe and prevent 
 * Fix double inclusion of files with conditional classes in php4 (Gopal)
 * Allocator fixes to reduce fragmentation (Gopal)
        </notes>
+    </release>
+
+    <release>
+     <stability><release>stable</release><api>stable</api></stability>
+     <version><release>3.0.15</release><api>3.0.0</api></version>
+     <date>2007-10-18</date>
+     <notes>
+* Eliminate a per-request time() syscall (Rasmus)
+* Added rfc1867 prefix, name, and freq ini options (Shire)
+* Allow deletion of individual user cache entries via apc.php (Sara)
+* Fix overzealous cleanup during RSHUTDOWN (Gopal)
+* Fix memory alignment and locking issues (Gopal)
+* Make apc_compile insert/replace entries (Shire)
+* Make mixed inheritance recompile &amp; cache afresh  (Gopal)
+* Make nostat mode search include_path for canonicalization (Gopal)
+* ZTS &amp; other compile fixes (Gopal, Edin, Shire)
+     </notes>
     </release>
 
  </changelog>
