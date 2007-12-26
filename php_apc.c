@@ -303,7 +303,7 @@ static PHP_RINIT_FUNCTION(apc)
         apc_request_init(TSRMLS_C);
 
 #if HAVE_SIGACTION
-        apc_set_signals();
+        apc_set_signals(TSRMLS_C);
 #endif
     }
     return SUCCESS;
