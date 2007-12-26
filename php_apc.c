@@ -48,6 +48,10 @@
 #endif
 #endif
 
+#if HAVE_SIGACTION
+#include "apc_signal.h"
+#endif
+
 /* {{{ PHP_FUNCTION declarations */
 PHP_FUNCTION(apc_cache_info);
 PHP_FUNCTION(apc_clear_cache);
@@ -93,6 +97,7 @@ static void php_apc_init_globals(zend_apc_globals* apc_globals TSRMLS_DC)
     apc_globals->localcache_size = 0;
     apc_globals->lcache = NULL;
     apc_globals->force_file_update = 0;
+    apc_globals->coredump_unmap = 0;
 }
 
 static void php_apc_shutdown_globals(zend_apc_globals* apc_globals TSRMLS_DC)
@@ -198,6 +203,7 @@ STD_PHP_INI_ENTRY("apc.rfc1867_freq", "0", PHP_INI_SYSTEM, OnUpdateRfc1867Freq, 
 #endif
 STD_PHP_INI_BOOLEAN("apc.localcache", "0", PHP_INI_SYSTEM, OnUpdateBool, localcache, zend_apc_globals, apc_globals)
 STD_PHP_INI_ENTRY("apc.localcache.size", "512", PHP_INI_SYSTEM, OnUpdateInt, localcache_size,  zend_apc_globals, apc_globals)
+STD_PHP_INI_BOOLEAN("apc.coredump_unmap", "0", PHP_INI_SYSTEM, OnUpdateBool, coredump_unmap, zend_apc_globals, apc_globals)
 PHP_INI_END()
 
 /* }}} */
@@ -292,6 +298,10 @@ static PHP_RINIT_FUNCTION(apc)
 {
     if(APCG(enabled)) {
         apc_request_init(TSRMLS_C);
+
+#if HAVE_SIGACTION
+        apc_set_signals();
+#endif
     }
     return SUCCESS;
 }

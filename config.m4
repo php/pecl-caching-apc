@@ -191,6 +191,7 @@ if test "$PHP_APC" != "no"; then
 		AC_DEFINE(APC_PTHREADMUTEX_LOCKS, 1, [ ])
 	fi
 
+  AC_CHECK_FUNCS(sigaction)
   AC_CACHE_CHECK(for union semun, php_cv_semun,
   [
     AC_TRY_COMPILE([
@@ -225,7 +226,8 @@ if test "$PHP_APC" != "no"; then
                apc_sma.c \
                apc_stack.c \
                apc_zend.c \
-               apc_rfc1867.c "
+               apc_rfc1867.c \
+               apc_signal.c "
 
   PHP_CHECK_LIBRARY(rt, shm_open, [PHP_ADD_LIBRARY(rt,,APC_SHARED_LIBADD)])
   PHP_NEW_EXTENSION(apc, $apc_sources, $ext_shared,, \\$(APC_CFLAGS))

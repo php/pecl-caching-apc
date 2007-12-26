@@ -1,3 +1,10 @@
+3.0.16: 2007-12-26
+- Fix for longstanding cache-full crash (Christian Seiler)
+  http://news.php.net/php.pecl.dev/4951 for the details
+- Added PTHREAD_MUTEX_ADAPTIVE_NP option pthread locks (Paul Saab)
+- Minor cleanups (Lucas Nealan)
+- Added configure option to enable apc_cache_info('filehits') (Shire)
+
 3.0.15: 2007-10-18
 - Eliminate a per-request time() syscall (Rasmus)
 - Added rfc1867 prefix, name, and freq ini options (Shire)
