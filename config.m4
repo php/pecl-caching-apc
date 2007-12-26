@@ -47,7 +47,7 @@ AC_ARG_WITH(apxs,
 PHP_ARG_ENABLE(apc, whether to enable APC support,
 [  --enable-apc           Enable APC support])
 
-AC_MSG_CHECKING(Checking wheather we should enable cache request file info)
+AC_MSG_CHECKING(Checking whether we should enable cache request file info)
 AC_ARG_ENABLE(apc-filehits,
 [  --enable-apc-filehits   Enable per request file info about files used from the APC cache (ie: apc_cache_info('filehits')) ],
 [
