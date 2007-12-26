@@ -93,7 +93,7 @@ static int apc_register_signal(int signo, void (*handler)(int, siginfo_t*, void*
 
     if (sigaction(signo, NULL, &sa) == 0) {
         if ((void*)sa.sa_handler == (void*)handler) {
-            return;
+            return SUCCESS;
         }
 
         if (sa.sa_handler != SIG_ERR && sa.sa_handler != SIG_DFL && sa.sa_handler != SIG_IGN) {
