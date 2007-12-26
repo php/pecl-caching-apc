@@ -150,6 +150,11 @@ static int sma_allocate(void* shmaddr, size_t size)
     /* If we have a next fit offset, start searching from there */
     if(header->nfoffset) {
         prv = BLOCKAT(header->nfoffset);
+        /* if prv is the last block, jump to the beginning */
+        if(prv->next == 0) {
+            prv = BLOCKAT(ALIGNWORD(sizeof(header_t)));
+            wrapped = 1;
+        }
     } else {    
         prv = BLOCKAT(ALIGNWORD(sizeof(header_t)));
     }
