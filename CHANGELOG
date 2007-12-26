@@ -1,6 +1,7 @@
 3.0.16: 2007-12-26
 - Fix for longstanding cache-full crash (Christian Seiler)
   http://news.php.net/php.pecl.dev/4951 for the details
+- Added optional shm unmap on a fatal signal feature (Lucas Nealan)
 - Added PTHREAD_MUTEX_ADAPTIVE_NP option pthread locks (Paul Saab)
 - Minor cleanups (Lucas Nealan)
 - Added configure option to enable apc_cache_info('filehits') (Shire)
