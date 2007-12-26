@@ -168,6 +168,20 @@ void apc_set_signals(TSRMLS_D)
     }
 } /* }}} */
 
+/* {{{ apc_set_signals
+ *  cleanup signals for shutdown */
+void apc_shutdown_signals() 
+{
+    int i=0;
+    if (apc_signal_info.installed > 0) {
+        for (i=0;  (i < apc_signal_info.installed);  i++) {
+            apc_efree(apc_signal_info.prev[i]);
+        }
+        apc_efree(apc_signal_info.prev);
+        apc_signal_info.installed = 0; /* just in case */
+    }
+}
+
 /*
  * Local variables:
  * tab-width: 4

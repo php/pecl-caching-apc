@@ -284,6 +284,9 @@ static PHP_MSHUTDOWN_FUNCTION(apc)
 #ifndef ZTS
         php_apc_shutdown_globals(&apc_globals);
 #endif
+#if HAVE_SIGACTION
+        apc_shutdown_signals();
+#endif
     }
 #ifdef ZTS
     ts_free_id(apc_globals_id);
