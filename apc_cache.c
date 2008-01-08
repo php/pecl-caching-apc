@@ -272,22 +272,14 @@ static void prevent_garbage_collection(apc_cache_entry_t* entry)
         int i;
         apc_function_t* fns = entry->data.file.functions;
         for (i=0; fns[i].function != NULL; i++) {
-#ifdef ZEND_ENGINE_2            
             *(fns[i].function->op_array.refcount) = BIG_VALUE;
-#else            
-            fns[i].function->op_array.refcount[0] = BIG_VALUE;
-#endif            
         }
     }
     if (entry->data.file.classes) {
         int i;
         apc_class_t* classes = entry->data.file.classes;
         for (i=0; classes[i].class_entry != NULL; i++) {
-#ifdef ZEND_ENGINE_2            
             classes[i].class_entry->refcount = BIG_VALUE;
-#else            
-            classes[i].class_entry->refcount[0] = BIG_VALUE;
-#endif
         }
     }
 }

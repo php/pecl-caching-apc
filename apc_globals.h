@@ -79,9 +79,7 @@ ZEND_BEGIN_MODULE_GLOBALS(apc)
     double rfc1867_freq;         /* Update frequency as percentage or bytes */
 #endif
     HashTable *copied_zvals;     /* my_copy recursion detection list */
-#ifdef ZEND_ENGINE_2
     int reserved_offset;         /* offset for apc info in op_array->reserved[] */
-#endif
     zend_bool localcache;        /* enable local cache */
     long localcache_size;        /* size of fast cache */
     apc_local_cache_t* lcache;   /* unlocked local cache */

@@ -90,9 +90,7 @@ static void php_apc_init_globals(zend_apc_globals* apc_globals TSRMLS_DC)
     apc_globals->rfc1867 = 0;
 #endif
     apc_globals->copied_zvals = NULL;
-#ifdef ZEND_ENGINE_2
     apc_globals->reserved_offset = -1;
-#endif
     apc_globals->localcache = 0;
     apc_globals->localcache_size = 0;
     apc_globals->lcache = NULL;
@@ -168,9 +166,7 @@ static PHP_INI_MH(OnUpdateRfc1867Freq) /* {{{ */
 /* }}} */
 #endif
 
-#ifdef ZEND_ENGINE_2
 #define OnUpdateInt OnUpdateLong
-#endif
 
 PHP_INI_BEGIN()
 STD_PHP_INI_BOOLEAN("apc.enabled",      "1",    PHP_INI_SYSTEM, OnUpdateBool,              enabled,         zend_apc_globals, apc_globals)
@@ -640,30 +636,6 @@ void *apc_erealloc_wrapper(void *ptr, size_t size) {
     return _erealloc(ptr, size, 0 ZEND_FILE_LINE_CC ZEND_FILE_LINE_EMPTY_CC);
 }
 
-/* {{{ RETURN_ZVAL for php4 */
-#if !defined(ZEND_ENGINE_2) && !defined(RETURN_ZVAL)
-#define RETURN_ZVAL(zv, copy, dtor) { RETVAL_ZVAL(zv, copy, dtor); return; } 
-#define RETVAL_ZVAL(zv, copy, dtor)     ZVAL_ZVAL(return_value, zv, copy, dtor)
-#define ZVAL_ZVAL(z, zv, copy, dtor) {  \
-        int is_ref, refcount;           \
-        is_ref = (z)->is_ref;           \
-        refcount = (z)->refcount;       \
-        *(z) = *(zv);                   \
-        if (copy) {                     \
-            zval_copy_ctor(z);          \
-        }                               \
-        if (dtor) {                     \
-            if (!copy) {                \
-                ZVAL_NULL(zv);          \
-            }                           \
-            zval_ptr_dtor(&zv);         \
-        }                               \
-        (z)->is_ref = is_ref;           \
-        (z)->refcount = refcount;       \
-    }
-#endif
-/* }}} */
-
 /* {{{ proto mixed apc_fetch(mixed key)
  */
 PHP_FUNCTION(apc_fetch) {
@@ -796,9 +768,7 @@ static void _apc_define_constants(zval *constants, zend_bool case_sensitive TSRM
         c.flags = case_sensitive;
         c.name = zend_strndup(const_key, const_key_len);
         c.name_len = const_key_len;
-#ifdef ZEND_ENGINE_2
         c.module_number = PHP_USER_CONSTANT;
-#endif
         zend_register_constant(&c TSRMLS_CC);
 
         zend_hash_move_forward_ex(Z_ARRVAL_P(constants), &pos);
@@ -937,11 +907,7 @@ PHP_FUNCTION(apc_compile_file) {
 
     /* Free up everything */
     zend_destroy_file_handle(&file_handle TSRMLS_CC);
-#ifdef ZEND_ENGINE_2
     destroy_op_array(op_array TSRMLS_CC);
-#else
-    destroy_op_array(op_array);
-#endif
     efree(op_array);
 
     RETURN_TRUE;

@@ -93,9 +93,7 @@ static int install_class(apc_class_t cl TSRMLS_DC)
     zend_class_entry* class_entry = cl.class_entry;
     zend_class_entry* parent = NULL;
     int status;
-#ifdef ZEND_ENGINE_2
     zend_class_entry** allocated_ce = NULL;
-#endif
 
 
     /* Special case for mangled names. Mangled names are unique to a file.
@@ -112,7 +110,6 @@ static int install_class(apc_class_t cl TSRMLS_DC)
         }
     }
     
-#ifdef ZEND_ENGINE_2    
     /*
      * XXX: We need to free this somewhere...
      */
@@ -123,7 +120,6 @@ static int install_class(apc_class_t cl TSRMLS_DC)
     }
 
     *allocated_ce = 
-#endif        
     class_entry =
         apc_copy_class_entry_for_execution(cl.class_entry,
                                            cl.is_derived);
@@ -131,7 +127,6 @@ static int install_class(apc_class_t cl TSRMLS_DC)
 
     /* restore parent class pointer for compile-time inheritance */
     if (cl.parent_name != NULL) {
-#ifdef ZEND_ENGINE_2    
         zend_class_entry** parent_ptr = NULL;
         /*
          * zend_lookup_class has to be due to presence of __autoload, 
@@ -146,12 +141,6 @@ static int install_class(apc_class_t cl TSRMLS_DC)
         status = zend_lookup_class(cl.parent_name,
                                     strlen(cl.parent_name),
                                     &parent_ptr TSRMLS_CC);
-#else
-        status = zend_hash_find(EG(class_table),
-                                cl.parent_name,
-                                strlen(cl.parent_name)+1,
-                                (void**) &parent);
-#endif
         if (status == FAILURE) {
             if(APCG(report_autofilter)) {
                 apc_wprint("Dynamic inheritance detected for class %s", cl.name);
@@ -160,35 +149,20 @@ static int install_class(apc_class_t cl TSRMLS_DC)
             return status;
         }
         else {
-#ifdef ZEND_ENGINE_2            
             parent = *parent_ptr;
-#endif 
             class_entry->parent = parent;
-#ifdef ZEND_ENGINE_2
             zend_do_inheritance(class_entry, parent TSRMLS_CC);
-#else
-            zend_do_inheritance(class_entry, parent);
-#endif
         }
 
 
     }
 
-#ifdef ZEND_ENGINE_2                           
     status = zend_hash_add(EG(class_table),
                            cl.name,
                            cl.name_len+1,
                            allocated_ce,
                            sizeof(zend_class_entry*),
                            NULL);
-#else                           
-    status = zend_hash_add(EG(class_table),
-                           cl.name,
-                           cl.name_len+1,
-                           class_entry,
-                           sizeof(zend_class_entry),
-                           NULL);
-#endif                           
 
     if (status == FAILURE) {
         apc_eprint("Cannot redeclare class %s", cl.name);
@@ -202,15 +176,9 @@ static int uninstall_class(apc_class_t cl TSRMLS_DC)
 {
     int status;
 
-#ifdef ZEND_ENGINE_2                           
     status = zend_hash_del(EG(class_table),
                            cl.name,
                            cl.name_len+1);
-#else                           
-    status = zend_hash_del(EG(class_table),
-                           cl.name,
-                           cl.name_len+1);
-#endif                           
     if (status == FAILURE) {
         apc_eprint("Cannot delete class %s", cl.name);
     } 
@@ -650,18 +618,14 @@ void apc_deactivate(TSRMLS_D)
         int i;
         zend_class_entry* zce = NULL;
         void ** centry = (void*)(&zce);
-#ifdef ZEND_ENGINE_2
         zend_class_entry** pzce = NULL;
-#endif
         
         apc_cache_entry_t* cache_entry =
             (apc_cache_entry_t*) apc_stack_pop(APCG(cache_stack));
 
         if (cache_entry->data.file.classes) {
             for (i = 0; cache_entry->data.file.classes[i].class_entry != NULL; i++) {
-#ifdef ZEND_ENGINE_2
                 centry = (void**)&pzce; /* a triple indirection to get zend_class_entry*** */
-#endif
                 if(zend_hash_find(EG(class_table), 
                     cache_entry->data.file.classes[i].name,
                     cache_entry->data.file.classes[i].name_len+1,
@@ -673,9 +637,7 @@ void apc_deactivate(TSRMLS_D)
                     continue;
                 }
 
-#ifdef ZEND_ENGINE_2
                 zce = *pzce;
-#endif
                 zend_hash_del(EG(class_table),
                     cache_entry->data.file.classes[i].name,
                     cache_entry->data.file.classes[i].name_len+1);

@@ -148,9 +148,7 @@ static int apc_op_ZEND_INCLUDE_OR_EVAL(ZEND_OPCODE_HANDLER_ARGS)
 	php_stream_wrapper *wrapper;
 	char *path_for_open;
 	int ret = 0;
-	#ifdef ZEND_ENGINE_2
 	apc_opflags_t* flags = NULL;
-	#endif
 
 	if (Z_LVAL(opline->op2.u.constant) != ZEND_INCLUDE_ONCE &&
 		Z_LVAL(opline->op2.u.constant) != ZEND_REQUIRE_ONCE) {
@@ -200,7 +198,6 @@ static int apc_op_ZEND_INCLUDE_OR_EVAL(ZEND_OPCODE_HANDLER_ARGS)
 		flags = (apc_opflags_t*) & (execute_data->op_array->reserved[APCG(reserved_offset)]);
 	}
 
-#ifdef ZEND_ENGINE_2
 	if(flags && flags->deep_copy == 1) {
 		/* Since the op array is a local copy, we can cheat our way through the file inclusion by temporarily 
 		 * changing the op to a plain require/include, calling its handler and finally restoring the opcode.
@@ -208,10 +205,6 @@ static int apc_op_ZEND_INCLUDE_OR_EVAL(ZEND_OPCODE_HANDLER_ARGS)
 		Z_LVAL(opline->op2.u.constant) = (Z_LVAL(opline->op2.u.constant) == ZEND_INCLUDE_ONCE) ? ZEND_INCLUDE : ZEND_REQUIRE;
 		ret = apc_original_opcode_handlers[APC_OPCODE_HANDLER_DECODE(opline)](ZEND_OPCODE_HANDLER_ARGS_PASSTHRU);
 		Z_LVAL(opline->op2.u.constant) = (Z_LVAL(opline->op2.u.constant) == ZEND_INCLUDE) ? ZEND_INCLUDE_ONCE : ZEND_REQUIRE_ONCE;
-#else 
-	if(0) {
-		/* do nothing, have nothing, be nothing */
-#endif
 	} else {
 		ret = apc_original_opcode_handlers[APC_OPCODE_HANDLER_DECODE(opline)](ZEND_OPCODE_HANDLER_ARGS_PASSTHRU);
 	}
@@ -222,12 +215,10 @@ static int apc_op_ZEND_INCLUDE_OR_EVAL(ZEND_OPCODE_HANDLER_ARGS)
 void apc_zend_init(TSRMLS_D)
 {
     zend_extension dummy_ext;
-#ifdef ZEND_ENGINE_2
     APCG(reserved_offset) = zend_get_resource_handle(&dummy_ext); 
     assert(APCG(reserved_offset) == dummy_ext.resource_number);
     assert(APCG(reserved_offset) != -1);
     assert(sizeof(apc_opflags_t) <= sizeof(void*));
-#endif
 	if (!APCG(include_once)) {
 		/* If we're not overriding the INCLUDE_OR_EVAL handler, then just skip this malarkey */
 		return;
