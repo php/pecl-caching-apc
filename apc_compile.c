@@ -38,9 +38,7 @@ typedef void* (*ht_copy_fun_t)(void*, void*, apc_malloc_t, apc_free_t);
 typedef void  (*ht_free_fun_t)(void*, apc_free_t);
 typedef int (*ht_check_copy_fun_t)(Bucket*, va_list);
 
-#ifdef ZEND_ENGINE_2
 typedef void (*ht_fixup_fun_t)(Bucket*, zend_class_entry*, zend_class_entry*);
-#endif
 
 #define CHECK(p) { if ((p) == NULL) return NULL; }
 
@@ -66,11 +64,9 @@ static HashTable* my_copy_hashtable_ex(HashTable*, HashTable*, ht_copy_fun_t, ht
 #define my_copy_hashtable( dst, src, copy_fn, free_fn, holds_ptr, allocate, deallocate) \
     my_copy_hashtable_ex(dst, src, copy_fn, free_fn, holds_ptr, allocate, deallocate, NULL)
 static HashTable* my_copy_static_variables(zend_op_array* src, apc_malloc_t allocate, apc_free_t deallocate);
-#ifdef ZEND_ENGINE_2
 static zend_property_info* my_copy_property_info(zend_property_info* dst, zend_property_info* src, apc_malloc_t allocate, apc_free_t deallocate);
 static zend_arg_info* my_copy_arg_info_array(zend_arg_info*, zend_arg_info*, uint, apc_malloc_t, apc_free_t);
 static zend_arg_info* my_copy_arg_info(zend_arg_info*, zend_arg_info*, apc_malloc_t, apc_free_t);
-#endif
 /*
  * The "destroy" functions free the memory associated with a particular data
  * structure but do not free the pointer to the data structure.
@@ -87,11 +83,9 @@ static void my_destroy_function_entry(zend_function_entry*, apc_free_t);
 static void my_destroy_class_entry(zend_class_entry*, apc_free_t);
 static void my_destroy_hashtable(HashTable*, ht_free_fun_t, apc_free_t);
 static void my_destroy_op_array(zend_op_array*, apc_free_t);
-#ifdef ZEND_ENGINE_2
 static void my_destroy_property_info(zend_property_info*, apc_free_t);
 static void my_destroy_arg_info_array(zend_arg_info* src, uint, apc_free_t);
 static void my_destroy_arg_info(zend_arg_info*, apc_free_t);
-#endif
 
 /*
  * The "free" functions work exactly like their "destroy" counterparts (see
@@ -100,16 +94,13 @@ static void my_destroy_arg_info(zend_arg_info*, apc_free_t);
 static void my_free_zval_ptr(zval**, apc_free_t);
 static void my_free_function(zend_function*, apc_free_t);
 static void my_free_hashtable(HashTable*, ht_free_fun_t, apc_free_t);
-#ifdef ZEND_ENGINE_2
 static void my_free_property_info(zend_property_info* src, apc_free_t);
 static void my_free_arg_info_array(zend_arg_info*, uint, apc_free_t);
 static void my_free_arg_info(zend_arg_info*, apc_free_t);
-#endif
 
 /*
  * The "fixup" functions need for ZEND_ENGINE_2
  */
-#ifdef ZEND_ENGINE_2
 static void my_fixup_function( Bucket *p, zend_class_entry *src, zend_class_entry *dst );
 static void my_fixup_hashtable( HashTable *ht, ht_fixup_fun_t fixup, zend_class_entry *src, zend_class_entry *dst );
 /* my_fixup_function_for_execution is the same as my_fixup_function
@@ -122,18 +113,14 @@ static void my_fixup_property_info( Bucket *p, zend_class_entry *src, zend_class
 #define my_fixup_property_info_for_execution my_fixup_property_info
 #endif
 
-#endif
-
 /*
  * These functions return "1" if the member/function is
  * defined/overridden in the 'current' class and not inherited.
  */
 static int my_check_copy_function(Bucket* src, va_list args);
 static int my_check_copy_default_property(Bucket* p, va_list args);
-#ifdef ZEND_ENGINE_2
 static int my_check_copy_property_info(Bucket* src, va_list args);
 static int my_check_copy_static_member(Bucket* src, va_list args);
-#endif
 
 /* }}} */
 
@@ -203,13 +190,8 @@ static int is_derived_class(zend_op_array* op_array, const char* key, int key_si
     for (i = 0; i < op_array->last; i++) {
         zend_op* op = &op_array->opcodes[i];
 
-#ifdef ZEND_ENGINE_2        
         if (op->opcode == ZEND_DECLARE_CLASS &&
             op->extended_value == ZEND_DECLARE_INHERITED_CLASS)
-#else            
-        if (op->opcode == ZEND_DECLARE_FUNCTION_OR_CLASS &&
-            op->extended_value == ZEND_DECLARE_INHERITED_CLASS)
-#endif            
         {
             if (op->op1.u.constant.value.str.len == key_size &&
                 !memcmp(op->op1.u.constant.value.str.val, key, key_size))
@@ -290,9 +272,6 @@ static zval* my_copy_zval(zval* dst, const zval* src, apc_malloc_t allocate, apc
 
     case IS_CONSTANT:
     case IS_STRING:
-#ifndef ZEND_ENGINE_2        
-    case FLAG_IS_BC:
-#endif        
         if (src->value.str.val) {
             CHECK(dst->value.str.val = apc_xmemcpy(src->value.str.val,
                                                    src->value.str.len+1,
@@ -324,23 +303,7 @@ static zval* my_copy_zval(zval* dst, const zval* src, apc_malloc_t allocate, apc
         break;
 
     case IS_OBJECT:
-#ifndef ZEND_ENGINE_2        
-        CHECK(dst->value.obj.ce =
-            my_copy_class_entry(NULL, src->value.obj.ce, allocate, deallocate));
-
-        if(!(dst->value.obj.properties = my_copy_hashtable(NULL,
-                              src->value.obj.properties,
-                              (ht_copy_fun_t) my_copy_zval_ptr,
-                              (ht_free_fun_t) my_free_zval_ptr,
-                              1,
-                              allocate, deallocate))) {
-            my_destroy_class_entry(dst->value.obj.ce, deallocate);
-            return NULL;
-        }
-        break;
-#else
-	dst->type = IS_NULL;
-#endif        
+    	dst->type = IS_NULL;
         break;
 
     default:
@@ -432,7 +395,6 @@ static zend_function* my_copy_function(zend_function* dst, zend_function* src, a
     default:
         assert(0);
     }
-#ifdef ZEND_ENGINE_2
     /* 
      * op_array bitwise copying overwrites what ever you modified
      * before apc_copy_op_array - which is why this code is outside 
@@ -450,7 +412,6 @@ static zend_function* my_copy_function(zend_function* dst, zend_function* src, a
      * sets this properly as well
      */
     dst->common.fn_flags = src->common.fn_flags & (~ZEND_ACC_IMPLEMENTED_ABSTRACT);
-#endif
 
 
     return dst;
@@ -472,11 +433,7 @@ static zend_function_entry* my_copy_function_entry(zend_function_entry* dst, zen
     memcpy(dst, src, sizeof(src[0]));
 
     dst->fname = NULL;
-#ifdef ZEND_ENGINE_2
     dst->arg_info = NULL;
-#else
-    dst->func_arg_types = NULL;
-#endif
 
     if (src->fname) {
         if(!(dst->fname = apc_xstrdup(src->fname, allocate))) {
@@ -484,7 +441,6 @@ static zend_function_entry* my_copy_function_entry(zend_function_entry* dst, zen
         }
     }
 
-#ifdef ZEND_ENGINE_2    
     if (src->arg_info) {
         if(!(dst->arg_info = my_copy_arg_info_array(NULL,
                                                 src->arg_info,
@@ -494,15 +450,6 @@ static zend_function_entry* my_copy_function_entry(zend_function_entry* dst, zen
             goto cleanup;
         }
     }
-#else    
-    if (src->func_arg_types) {
-        if(!(dst->func_arg_types = apc_xmemcpy(src->func_arg_types,
-                                                src->func_arg_types[0]+1,
-                                                allocate))) {
-            goto cleanup;
-        }
-    }
-#endif
 
     return dst;
 
@@ -513,7 +460,6 @@ cleanup:
 }
 /* }}} */
 
-#ifdef ZEND_ENGINE_2
 /* {{{ my_copy_property_info */
 static zend_property_info* my_copy_property_info(zend_property_info* dst, zend_property_info* src, apc_malloc_t allocate, apc_free_t deallocate)
 {
@@ -653,7 +599,6 @@ cleanup:
     return NULL;
 }
 /* }}} */
-#endif
 
 /* {{{ my_copy_class_entry */
 static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_entry* src, apc_malloc_t allocate, apc_free_t deallocate)
@@ -675,30 +620,18 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
     dst->builtin_functions = NULL;
     memset(&dst->function_table, 0, sizeof(dst->function_table));
     memset(&dst->default_properties, 0, sizeof(dst->default_properties));
-#ifndef ZEND_ENGINE_2
-    dst->refcount = NULL;
-#else
     dst->static_members = NULL;
     dst->doc_comment = NULL;
     dst->filename = NULL;
     memset(&dst->properties_info, 0, sizeof(dst->properties_info));
     memset(&dst->constants_table, 0, sizeof(dst->constants_table));
     memset(&dst->default_static_members, 0, sizeof(dst->default_static_members));
-#endif
 
     if (src->name) {
         if(!(dst->name = apc_xstrdup(src->name, allocate))) {
             goto cleanup;
         }
     }
-
-#ifndef ZEND_ENGINE_2    
-    if(!(dst->refcount = apc_xmemcpy(src->refcount,
-                                      sizeof(src->refcount[0]),
-                                      allocate))) {
-        goto cleanup;
-    }
-#endif        
 
     if(!(my_copy_hashtable_ex(&dst->function_table,
                             &src->function_table,
@@ -710,8 +643,6 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
                             src))) {
         goto cleanup;
     }
-
-#ifdef ZEND_ENGINE_2
 
     /* the interfaces are populated at runtime using ADD_INTERFACE */
     dst->interfaces = NULL; 
@@ -747,7 +678,6 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
     dst->unserialize_func = NULL;
     
     my_fixup_hashtable(&dst->function_table, (ht_fixup_fun_t)my_fixup_function, src, dst);
-#endif
 
     if(!(my_copy_hashtable_ex(&dst->default_properties,
                             &src->default_properties,
@@ -760,8 +690,6 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
         goto cleanup;
     }
 
-#ifdef ZEND_ENGINE_2
-    
     if(!(my_copy_hashtable_ex(&dst->properties_info,
                             &src->properties_info,
                             (ht_copy_fun_t) my_copy_property_info,
@@ -823,7 +751,6 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
             goto cleanup;
         }
     }
-#endif
     
     if (src->builtin_functions) {
         int i, n;
@@ -850,31 +777,24 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
         dst->builtin_functions[n].fname = NULL;
     }
 
-#ifdef ZEND_ENGINE_2
     if (src->filename) {
         if(!(dst->filename = apc_xstrdup(src->filename, allocate))) {
             goto cleanup;
         }
     }
-#endif
    
     return dst;
 
 
 cleanup:
     if(dst->name) deallocate(dst->name);
-#ifdef ZEND_ENGINE_2
     if(dst->doc_comment) deallocate(dst->doc_comment);
     if(dst->filename) deallocate(dst->filename);
-#else
-    if(dst->refcount) deallocate(dst->refcount);
-#endif
     
     if(dst->builtin_functions) deallocate(dst->builtin_functions);
     if(dst->function_table.arBuckets) my_destroy_hashtable(&dst->function_table, (ht_free_fun_t) my_free_function, deallocate);
     if(dst->default_properties.arBuckets) my_destroy_hashtable(&dst->default_properties, (ht_free_fun_t) my_free_zval_ptr, deallocate);
 
-#ifdef ZEND_ENGINE_2
     if(dst->properties_info.arBuckets) my_destroy_hashtable(&dst->properties_info, (ht_free_fun_t) my_free_property_info, deallocate);
     if(dst->default_static_members.arBuckets)
     {
@@ -886,7 +806,6 @@ cleanup:
         deallocate(dst->static_members);
     }
     if(dst->constants_table.arBuckets) my_destroy_hashtable(&dst->constants_table, (ht_free_fun_t) my_free_zval_ptr, deallocate);
-#endif
     if(local_dst_alloc) deallocate(dst);
 
     return NULL;
@@ -1059,7 +978,6 @@ zval* apc_copy_zval(zval* dst, const zval* src, apc_malloc_t allocate, apc_free_
 }
 /* }}} */
 
-#ifdef ZEND_ENGINE_2
 /* {{{ apc_fixup_op_array_jumps */
 static void apc_fixup_op_array_jumps(zend_op_array *dst, zend_op_array *src )
 {
@@ -1085,7 +1003,6 @@ static void apc_fixup_op_array_jumps(zend_op_array *dst, zend_op_array *src )
     }
 }
 /* }}} */
-#endif
 
 /* {{{ apc_copy_op_array */
 zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_malloc_t allocate, apc_free_t deallocate TSRMLS_DC)
@@ -1095,9 +1012,7 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_mal
     apc_fileinfo_t fileinfo;
     char canon_path[MAXPATHLEN];
     char *fullpath = NULL;
-#ifdef ZEND_ENGINE_2
     apc_opflags_t * flags = NULL;
-#endif
 
     assert(src != NULL);
 
@@ -1119,19 +1034,14 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_mal
     dst->opcodes = NULL;
     dst->brk_cont_array = NULL;
     dst->static_variables = NULL;
-#ifdef ZEND_ENGINE_2
     dst->try_catch_array = NULL;
     dst->arg_info = NULL;
     dst->doc_comment = NULL;
-#else
-    dst->arg_types = NULL;
-#endif
 #ifdef ZEND_ENGINE_2_1
     dst->vars = NULL;
 #endif
 
     /* copy the arg types array (if set) */
-#ifdef ZEND_ENGINE_2
     if (src->arg_info) {
         if(!(dst->arg_info = my_copy_arg_info_array(NULL,
                                                 src->arg_info,
@@ -1141,15 +1051,6 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_mal
             goto cleanup;
         }
     }
-#else    
-    if (src->arg_types) {
-        if(!(dst->arg_types = apc_xmemcpy(src->arg_types,
-                        sizeof(src->arg_types[0]) * (src->arg_types[0]+1),
-                        allocate))) {
-            goto cleanup;
-        }
-    }
-#endif
 
     if (src->function_name) {
         if(!(dst->function_name = apc_xstrdup(src->function_name, allocate))) {
@@ -1173,7 +1074,6 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_mal
         goto cleanup;
     }
 
-#ifdef ZEND_ENGINE_2
     if(APCG(reserved_offset) != -1) {
         /* Insanity alert: the void* pointer is cast into an apc_opflags_t 
          * struct. apc_zend_init() checks to ensure that it fits in a void* */
@@ -1181,10 +1081,8 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_mal
         memset(flags, 0, sizeof(apc_opflags_t));
         /* assert(sizeof(apc_opflags_t) < sizeof(dst->reserved)); */
     }
-#endif
     
     for (i = 0; i < src->last; i++) {
-#ifdef ZEND_ENGINE_2
         zend_op *zo = &(src->opcodes[i]);
         /* a lot of files are merely constant arrays with no jumps */
         switch (zo->opcode) {
@@ -1197,7 +1095,6 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_mal
                     flags->has_jumps = 1;
                 }
                 break;
-#ifdef ZEND_ENGINE_2
             /* auto_globals_jit was not in php-4.3.* */
             case ZEND_FETCH_R:
             case ZEND_FETCH_W:
@@ -1232,7 +1129,6 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_mal
                     }
                 }
                 break;
-#endif
             case ZEND_RECV_INIT:
                 if(zo->op2.op_type == IS_CONST &&
                     zo->op2.u.constant.type == IS_CONSTANT_ARRAY) {
@@ -1252,7 +1148,7 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_mal
                 }
                 break;
         }
-#endif
+
         if(!(my_copy_zend_op(dst->opcodes+i, src->opcodes+i, allocate, deallocate))) {
             int ii;
             for(ii = i-1; ii>=0; ii--) {
@@ -1260,7 +1156,7 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_mal
             }
             goto  cleanup;
         }
-#ifdef ZEND_ENGINE_2
+
 /* This code breaks apc's rule#1 - cache what you compile */
         if(APCG(fpstat)==0) {
             if((zo->opcode == ZEND_INCLUDE_OR_EVAL) && 
@@ -1279,14 +1175,11 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_mal
                 }
             }
         }
-#endif 
     }
 
-#ifdef ZEND_ENGINE_2
     if(flags == NULL || flags->has_jumps) {
         apc_fixup_op_array_jumps(dst,src);
     }
-#endif
 
     /* copy the break-continue array */
     if (src->brk_cont_array) {
@@ -1305,7 +1198,6 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_mal
         }
     }
     
-#ifdef ZEND_ENGINE_2
     if (src->try_catch_array) {
         if(!(dst->try_catch_array = 
                 apc_xmemcpy(src->try_catch_array,
@@ -1314,7 +1206,6 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_mal
             goto cleanup_opcodes;
         }
     }
-#endif
 
 #ifdef ZEND_ENGINE_2_1 /* PHP 5.1 */
     if (src->vars) {
@@ -1337,14 +1228,12 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_mal
     }
 #endif
 
-#ifdef ZEND_ENGINE_2
     if (src->doc_comment) {
         if (!(dst->doc_comment 
                 = apc_xmemcpy(src->doc_comment, src->doc_comment_len+1, allocate))) {
             goto cleanup_opcodes;
         }
     }
-#endif
 
     return dst;
 
@@ -1356,13 +1245,9 @@ cleanup:
     if(dst->function_name) deallocate(dst->function_name);
     if(dst->refcount) deallocate(dst->refcount);
     if(dst->filename) deallocate(dst->filename);
-#ifdef ZEND_ENGINE_2
     if(dst->arg_info) my_free_arg_info_array(dst->arg_info, dst->num_args, deallocate);
     if(dst->try_catch_array) deallocate(dst->try_catch_array);
     if(dst->doc_comment) deallocate(dst->doc_comment);
-#else
-    if(dst->arg_types) deallocate(dst->arg_types);
-#endif
     if(dst->opcodes) deallocate(dst->opcodes);
     if(dst->brk_cont_array) deallocate(dst->brk_cont_array);
     if(dst->static_variables) my_free_hashtable(dst->static_variables, (ht_free_fun_t)my_free_zval_ptr, (apc_free_t)deallocate);
@@ -1490,9 +1375,7 @@ apc_class_t* apc_copy_new_classes(zend_op_array* op_array, int old_count, apc_ma
        zend_hash_get_current_data(CG(class_table), (void**) &elem);
   
         
-#ifdef ZEND_ENGINE_2
 		elem = *((zend_class_entry**)elem);
-#endif
         
         if(!(array[i].name = apc_xmemcpy(key, (int) key_size, allocate))) {
             int ii;
@@ -1583,9 +1466,6 @@ static int my_destroy_zval(zval* src, apc_free_t deallocate)
 
     case IS_CONSTANT:
     case IS_STRING:
-#ifndef ZEND_ENGINE_2        
-    case FLAG_IS_BC:
-#endif        
         deallocate(src->value.str.val);
         break;
     
@@ -1608,13 +1488,6 @@ static int my_destroy_zval(zval* src, apc_free_t deallocate)
         break;
 
     case IS_OBJECT:
-#ifndef ZEND_ENGINE_2        
-        my_destroy_class_entry(src->value.obj.ce, deallocate);
-        deallocate(src->value.obj.ce);
-        my_free_hashtable(src->value.obj.properties,
-                          (ht_free_fun_t) my_free_zval_ptr,
-                          deallocate);
-#endif        
         break;
 
     default:
@@ -1670,19 +1543,12 @@ static void my_destroy_function_entry(zend_function_entry* src, apc_free_t deall
     assert(src != NULL);
 
     deallocate(src->fname);
-#ifdef ZEND_ENGINE_2    
     if (src->arg_info) {
             my_free_arg_info_array(src->arg_info, src->num_args, deallocate);
     }
-#else
-    if (src->func_arg_types) {
-        deallocate(src->func_arg_types);
-    }
-#endif    
 }
 /* }}} */
 
-#ifdef ZEND_ENGINE_2    
 /* {{{ my_destroy_property_info*/
 static void my_destroy_property_info(zend_property_info* src, apc_free_t deallocate)
 {
@@ -1717,7 +1583,6 @@ static void my_destroy_arg_info(zend_arg_info* src, apc_free_t deallocate)
     deallocate(src->class_name);
 }
 /* }}} */
-#endif    
 
 /* {{{ my_destroy_class_entry */
 static void my_destroy_class_entry(zend_class_entry* src, apc_free_t deallocate)
@@ -1727,12 +1592,8 @@ static void my_destroy_class_entry(zend_class_entry* src, apc_free_t deallocate)
     assert(src != NULL);
 
     deallocate(src->name);
-#ifndef ZEND_ENGINE_2    
-    deallocate(src->refcount);
-#else
     if(src->doc_comment) deallocate(src->doc_comment);
     if(src->filename) deallocate(src->filename);
-#endif
 
     my_destroy_hashtable(&src->function_table,
                          (ht_free_fun_t) my_free_function,
@@ -1742,7 +1603,6 @@ static void my_destroy_class_entry(zend_class_entry* src, apc_free_t deallocate)
                          (ht_free_fun_t) my_free_zval_ptr,
                          deallocate);
 
-#ifdef ZEND_ENGINE_2
     my_destroy_hashtable(&src->properties_info, 
                             (ht_free_fun_t) my_free_property_info,
                             deallocate);
@@ -1760,7 +1620,6 @@ static void my_destroy_class_entry(zend_class_entry* src, apc_free_t deallocate)
     my_destroy_hashtable(&src->constants_table, 
                             (ht_free_fun_t) my_free_zval_ptr,
                             deallocate);
-#endif
 
     if (src->builtin_functions) {
         for (i = 0; src->builtin_functions[i].fname != NULL; i++) {
@@ -1799,15 +1658,9 @@ static void my_destroy_op_array(zend_op_array* src, apc_free_t deallocate)
 
     assert(src != NULL);
 
-#ifdef ZEND_ENGINE_2
     if (src->arg_info) {
         my_free_arg_info_array(src->arg_info, src->num_args, deallocate);
     }
-#else    
-    if (src->arg_types) {
-        deallocate(src->arg_types);
-    }
-#endif
 
     deallocate(src->function_name);
     deallocate(src->filename);
@@ -1836,14 +1689,12 @@ static void my_destroy_op_array(zend_op_array* src, apc_free_t deallocate)
         deallocate(src->vars);
     }
 #endif
-#ifdef ZEND_ENGINE_2
     if(src->try_catch_array) {
         deallocate(src->try_catch_array);
     }
     if (src->doc_comment) {
         deallocate(src->doc_comment);
     }
-#endif
 }
 /* }}} */
 
@@ -1855,7 +1706,6 @@ static void my_free_zval_ptr(zval** src, apc_free_t deallocate)
 }
 /* }}} */
 
-#ifdef ZEND_ENGINE_2
 /* {{{ my_free_property_info */
 static void my_free_property_info(zend_property_info* src, apc_free_t deallocate)
 {
@@ -1879,7 +1729,6 @@ static void my_free_arg_info(zend_arg_info* src, apc_free_t deallocate)
     deallocate(src);
 }
 /* }}} */
-#endif
 
 /* {{{ my_free_function */
 static void my_free_function(zend_function* src, apc_free_t deallocate)
@@ -1977,7 +1826,6 @@ static int my_prepare_op_array_for_execution(zend_op_array* dst, zend_op_array* 
     int i=src->last;
     zend_op *zo;
     zend_op *dzo;
-#ifdef ZEND_ENGINE_2
     apc_opflags_t * flags = APCG(reserved_offset) != -1 ? 
                                 (apc_opflags_t*) & (src->reserved[APCG(reserved_offset)]) : NULL;
     int needcopy = flags ? flags->deep_copy : 1;
@@ -2000,23 +1848,6 @@ static int my_prepare_op_array_for_execution(zend_op_array* dst, zend_op_array* 
     FETCH_AUTOGLOBAL(_FILES);
     FETCH_AUTOGLOBAL(_REQUEST);
 
-#else
-    int needcopy = 0;
-    int do_prepare_fetch_global = 0;
-    int j = 0;
-
-    for(j = 0; j < src->last; j++) {
-        zo = &src->opcodes[j];
-        
-        if( ((zo->op1.op_type == IS_CONST &&
-              zo->op1.u.constant.type == IS_CONSTANT_ARRAY)) ||  
-            ((zo->op2.op_type == IS_CONST &&
-              zo->op2.u.constant.type == IS_CONSTANT_ARRAY))) {
-            needcopy = 1;
-        }
-    }
-#endif
-    
     if(needcopy) {
 
         dst->opcodes = (zend_op*) apc_xmemcpy(src->opcodes, 
@@ -2036,7 +1867,6 @@ static int my_prepare_op_array_for_execution(zend_op_array* dst, zend_op_array* 
                 }
             }
             
-#ifdef ZEND_ENGINE_2
             switch(zo->opcode) {
                 case ZEND_JMP:
                     dzo->op1.u.jmp_addr = dst->opcodes + 
@@ -2061,12 +1891,10 @@ static int my_prepare_op_array_for_execution(zend_op_array* dst, zend_op_array* 
                 default:
                     break;
             }
-#endif
             i--;
             zo++;
             dzo++;
         }
-#ifdef ZEND_ENGINE_2
     } else {  /* !needcopy */
         /* The fetch is only required if auto_globals_jit=1  */
         if(do_prepare_fetch_global)
@@ -2086,7 +1914,6 @@ static int my_prepare_op_array_for_execution(zend_op_array* dst, zend_op_array* 
                 zo++;
             }
         }
-#endif
     }
     return 1;
 }
@@ -2138,7 +1965,6 @@ zend_class_entry* apc_copy_class_entry_for_execution(zend_class_entry* src, int 
     zend_class_entry* dst = (zend_class_entry*) emalloc(sizeof(src[0]));
     memcpy(dst, src, sizeof(src[0]));
 
-#ifdef ZEND_ENGINE_2
     if(src->num_interfaces)
     {
         /* These are slots to be populated later by ADD_INTERFACE insns */
@@ -2151,13 +1977,6 @@ zend_class_entry* apc_copy_class_entry_for_execution(zend_class_entry* src, int 
     {
         /* assert(dst->interfaces == NULL); */
     }
-#endif
-
-#ifndef ZEND_ENGINE_2    
-    dst->refcount = apc_xmemcpy(src->refcount,
-                                      sizeof(src->refcount[0]),
-                                      apc_php_malloc);
-#endif        
 
     /* Deep-copy the class properties, because they will be modified */
 
@@ -2177,7 +1996,7 @@ zend_class_entry* apc_copy_class_entry_for_execution(zend_class_entry* src, int 
                       NULL,
                       0,
                       apc_php_malloc, apc_php_free);
-#ifdef ZEND_ENGINE_2
+
     my_fixup_hashtable(&dst->function_table, (ht_fixup_fun_t)my_fixup_function_for_execution, src, dst);
 
     /* zend_do_inheritance merges properties_info.
@@ -2227,7 +2046,6 @@ zend_class_entry* apc_copy_class_entry_for_execution(zend_class_entry* src, int 
         dst->static_members = &(dst->default_static_members);
     }
 
-#endif
 
     return dst;
 }
@@ -2236,7 +2054,6 @@ zend_class_entry* apc_copy_class_entry_for_execution(zend_class_entry* src, int 
 /* {{{ apc_free_class_entry_after_execution */
 void apc_free_class_entry_after_execution(zend_class_entry* src)
 {
-#ifdef ZEND_ENGINE_2
     if(src->num_interfaces > 0 && src->interfaces) {
         apc_php_free(src->interfaces);
         src->interfaces = NULL;
@@ -2257,13 +2074,11 @@ void apc_free_class_entry_after_execution(zend_class_entry* src)
     }
     zend_hash_clean(&src->default_properties);
     zend_hash_clean(&src->constants_table);
-#endif
 
     /* TODO: more cleanup */
 }
 /* }}} */
 
-#ifdef ZEND_ENGINE_2
 
 /* {{{ my_fixup_function */
 static void my_fixup_function(Bucket *p, zend_class_entry *src, zend_class_entry *dst)
@@ -2350,33 +2165,14 @@ static void my_fixup_hashtable(HashTable *ht, ht_fixup_fun_t fixup, zend_class_e
 }
 /* }}} */
 
-#endif
 
 /* {{{ my_check_copy_function */
 static int my_check_copy_function(Bucket* p, va_list args)
 {
     zend_class_entry* src = va_arg(args, zend_class_entry*);
     zend_function* zf = (zend_function*)p->pData;
-#ifndef ZEND_ENGINE_2
-    zend_class_entry* parent = src->parent;
-    zend_function* parent_fn = NULL;
-#endif
 
-#ifdef ZEND_ENGINE_2
     return (zf->common.scope == src);
-#else
-	if (parent &&
-        zend_hash_quick_find(&parent->function_table, p->arKey, 
-            p->nKeyLength, p->h, (void **) &parent_fn)==SUCCESS) {
-        
-        if((parent_fn && zf) && 
-                (parent_fn->op_array.refcount == zf->op_array.refcount))
-        {
-            return 0;
-        }
-    }
-    return 1;
-#endif 
 }
 /* }}} */
 
@@ -2403,7 +2199,6 @@ static int my_check_copy_default_property(Bucket* p, va_list args)
 }
 /* }}} */
 
-#ifdef ZEND_ENGINE_2
 
 /* {{{ my_check_copy_property_info */
 static int my_check_copy_property_info(Bucket* p, va_list args)
@@ -2508,7 +2303,6 @@ static int my_check_copy_static_member(Bucket* p, va_list args)
     return 1;
 }
 /* }}} */
-#endif
 
 /* {{{ apc_register_optimizer(apc_optimize_function_t optimizer)
  *      register a optimizer callback function, returns the previous callback
