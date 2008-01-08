@@ -210,6 +210,21 @@ if test "$PHP_APC" != "no"; then
     AC_DEFINE(HAVE_SEMUN, 0, [ ])
   fi
 
+  AC_MSG_CHECKING(whether we should enable valgrind support)
+  AC_ARG_ENABLE(valgrind-checks,
+  [   --disable-valgrind-checks
+                          Enable valgrind based memory checks],
+  [
+    PHP_APC_VALGRIND=$enableval
+    AC_MSG_RESULT($enableval)
+  ], [
+    PHP_APC_VALGRIND=yes
+    AC_MSG_RESULT(yes)
+    AC_CHECK_HEADER(valgrind/memcheck.h, 
+  		[AC_DEFINE([HAVE_VALGRIND_MEMCHECK_H],1, [enable valgrind memchecks])])
+  ])
+
+
   apc_sources="apc.c php_apc.c \
                apc_cache.c \
                apc_compile.c \
@@ -227,7 +242,8 @@ if test "$PHP_APC" != "no"; then
                apc_stack.c \
                apc_zend.c \
                apc_rfc1867.c \
-               apc_signal.c "
+               apc_signal.c \
+               apc_pool.c "
 
   PHP_CHECK_LIBRARY(rt, shm_open, [PHP_ADD_LIBRARY(rt,,APC_SHARED_LIBADD)])
   PHP_NEW_EXTENSION(apc, $apc_sources, $ext_shared,, \\$(APC_CFLAGS))

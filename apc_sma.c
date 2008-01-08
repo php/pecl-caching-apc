@@ -115,9 +115,7 @@ struct block_t {
 #endif
 #define max(a, b) ((a) > (b) ? (a) : (b))
 
-/* {{{ ALIGNWORD: pad up x, aligned to the system's word boundary */
-typedef union { void* p; int i; long l; double d; void (*f)(); } apc_word_t;
-#define ALIGNWORD(x) (sizeof(apc_word_t) * (1 + (((x)-1)/sizeof(apc_word_t))))
+/* {{{ MINBLOCKSIZE */
 #define MINBLOCKSIZE (ALIGNWORD(1) + ALIGNWORD(sizeof(block_t)))
 /* }}} */
 
