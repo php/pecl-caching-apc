@@ -93,7 +93,6 @@ typedef struct apc_cache_entry_t apc_cache_entry_t;
 struct apc_cache_entry_t {
     apc_cache_entry_value_t data;
     unsigned char type;
-    unsigned char local;
     int ref_count;
     size_t mem_size;
 };
@@ -285,19 +284,6 @@ extern void apc_cache_unlock(apc_cache_t* cache);
 extern zend_bool apc_cache_busy(apc_cache_t* cache);
 extern zend_bool apc_cache_write_lock(apc_cache_t* cache);
 extern void apc_cache_write_unlock(apc_cache_t* cache);
-
-/* 
- * Process local cache, which keeps a refcount hungry version of the slots
- * for quick access without a lock - as long as the entry exists in local
- * cache, the refcount of the shm version will be +1 more than required.
- * It holds no data, only a shallow copy of apc_cache_entry.
- */
-typedef struct apc_local_cache_t apc_local_cache_t; /* process-local cache */ 
-
-extern apc_local_cache_t* apc_local_cache_create(apc_cache_t *shmcache, int num_slots, int ttl);
-extern apc_cache_entry_t* apc_local_cache_find(apc_local_cache_t* cache, apc_cache_key_t key, time_t t);
-extern void apc_local_cache_destroy(apc_local_cache_t* cache);
-extern void apc_local_cache_cleanup(apc_local_cache_t* cache);
 
 #undef T
 #endif

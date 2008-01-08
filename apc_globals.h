@@ -80,9 +80,6 @@ ZEND_BEGIN_MODULE_GLOBALS(apc)
 #endif
     HashTable *copied_zvals;     /* my_copy recursion detection list */
     int reserved_offset;         /* offset for apc info in op_array->reserved[] */
-    zend_bool localcache;        /* enable local cache */
-    long localcache_size;        /* size of fast cache */
-    apc_local_cache_t* lcache;   /* unlocked local cache */
     zend_bool force_file_update; /* force files to be updated during apc_compile_file */
     char canon_path[MAXPATHLEN]; /* canonical path for key data */
 #if APC_FILEHITS

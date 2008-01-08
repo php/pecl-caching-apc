@@ -266,9 +266,9 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
     char *path;
     size_t mem_size;
 
-    if (!APCG(enabled) || (apc_cache_busy(apc_cache) && !APCG(localcache))) {
-		return old_compile_file(h, type TSRMLS_CC);
-	}
+    if (!APCG(enabled) || apc_cache_busy(apc_cache)) { 
+        return old_compile_file(h, type TSRMLS_CC);
+    }
 
     /* check our regular expression filters */
     if (APCG(filters) && apc_compiled_filters) {
@@ -301,13 +301,8 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
 
 
     if(!APCG(force_file_update)) {
-        if(APCG(localcache)) {
-            /* search for the file in the local cache */
-            cache_entry = apc_local_cache_find(APCG(lcache), key, t);
-        } else {
-            /* search for the file in the cache */
-            cache_entry = apc_cache_find(apc_cache, key, t);
-        }
+        /* search for the file in the cache */
+        cache_entry = apc_cache_find(apc_cache, key, t);
     } else {
         cache_entry = NULL;
     }
@@ -334,11 +329,6 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
         /* TODO: check what happens with EG(included_files) */
     }
     
-    if(apc_cache_busy(apc_cache) && APCG(localcache)) {
-        /* possibly local cache returned NULL because cache is busy */
-		return old_compile_file(h, type TSRMLS_CC);
-	}
-
     /* remember how many functions and classes existed before compilation */
     num_functions = zend_hash_num_elements(CG(function_table));
     num_classes   = zend_hash_num_elements(CG(class_table));
@@ -560,22 +550,12 @@ int apc_module_shutdown(TSRMLS_D)
 /* {{{ process init and shutdown */
 int apc_process_init(int module_number TSRMLS_DC)
 {
-    int minttl = (APCG(gc_ttl) >  APCG(ttl) ? APCG(ttl) : APCG(gc_ttl))/2;
-    int size = APCG(localcache_size);
-    if(APCG(initialized) && APCG(localcache)) {
-        /* TTL is 2 mins by default */
-        APCG(lcache) = apc_local_cache_create(apc_cache, size, minttl ? minttl : 120); 
-    }
     return 0;
 }
 
 int apc_process_shutdown(TSRMLS_D)
 {
-    if(APCG(initialized) && APCG(localcache) && APCG(lcache)) {
-        apc_local_cache_destroy(APCG(lcache));
-        APCG(lcache) = NULL;
-    }
-	return 0;
+    return 0;
 }
 /* }}} */
 
@@ -646,9 +626,6 @@ void apc_deactivate(TSRMLS_D)
             }
         }
         apc_cache_release(apc_cache, cache_entry);
-    }
-    if(APCG(localcache)) {
-        apc_local_cache_cleanup(APCG(lcache)); 
     }
 }
 /* }}} */
