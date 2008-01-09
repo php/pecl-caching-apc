@@ -18,7 +18,7 @@
    This software was contributed to PHP by Yahoo! Inc. in 2008.
    
    Future revisions and derivatives of this source code must acknowledge
-   Community Connect Inc. as the original contributor of this module by
+   Yahoo! Inc. as the original contributor of this module by
    leaving this note intact in the source code.
 
    All other licensing and usage conditions are those of the PHP Group.
@@ -34,9 +34,13 @@
 #include "apc_sma.h"
 
 typedef enum {
-    APC_SMALL_POOL  = 1,
-    APC_MEDIUM_POOL = 2,
-    APC_LARGE_POOL  = 3
+    APC_SMALL_POOL     = 0x1,
+    APC_MEDIUM_POOL    = 0x2,
+    APC_LARGE_POOL     = 0x3,
+    APC_POOL_SIZE_MASK = 0x7,   /* waste a bit */
+    APC_POOL_REDZONES  = 0x08,
+    APC_POOL_SIZEINFO  = 0x10,
+    APC_POOL_OPT_MASK  = 0x18
 } apc_pool_type;
 
 typedef struct _apc_pool apc_pool;

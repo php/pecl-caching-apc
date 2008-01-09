@@ -18,7 +18,7 @@
    This software was contributed to PHP by Yahoo! Inc. in 2008.
    
    Future revisions and derivatives of this source code must acknowledge
-   Community Connect Inc. as the original contributor of this module by
+   Yahoo! Inc. as the original contributor of this module by
    leaving this note intact in the source code.
 
    All other licensing and usage conditions are those of the PHP Group.
@@ -132,7 +132,9 @@ apc_pool* apc_pool_create(apc_pool_type pool_type,
     assert(sizeof(decaff) > REDZONE_SIZE(ALIGNWORD(sizeof(char))));
     assert(sizeof(pool_block) == ALIGNWORD(sizeof(pool_block)));
 
-    switch(pool_type) {
+    assert(APC_POOL_SIZE_MASK & (APC_POOL_SIZEINFO | APC_POOL_REDZONES) == 0);
+
+    switch(pool_type & APC_POOL_SIZE_MASK) {
         case APC_SMALL_POOL:
             dsize = 512;
             break;
@@ -160,8 +162,8 @@ apc_pool* apc_pool_create(apc_pool_type pool_type,
     pool->dsize = dsize;
     pool->head = NULL;
 
-    APC_POOL_OPTION(pool, redzones) = 1;
-    APC_POOL_OPTION(pool, sizeinfo) = 1;
+    APC_POOL_OPTION(pool, redzones) = (pool_type & APC_POOL_REDZONES) != 0;
+    APC_POOL_OPTION(pool, sizeinfo) = (pool_type & APC_POOL_SIZEINFO) != 0;
 
     if(!create_pool_block(pool, dsize)) {
         deallocate(pool);
