@@ -39,6 +39,10 @@ void *apc_mmap(char *file_mask, size_t size);
 void apc_unmap(void* shmaddr, size_t size);
 #endif
 
+#ifdef HAVE_VALGRIND_MEMCHECK_H
+#include <valgrind/memcheck.h>
+#endif
+
 /* {{{ locking macros */
 #define LOCK(c)         { HANDLE_BLOCK_INTERRUPTIONS(); apc_lck_lock(c); }
 #define RDLOCK(c)       { HANDLE_BLOCK_INTERRUPTIONS(); apc_lck_rdlock(c); }
@@ -419,6 +423,9 @@ void* apc_sma_malloc(size_t n)
         void* p = (void *)(((char *)(sma_shmaddrs[sma_lastseg])) + off);
         if (APCG(mem_size_ptr) != NULL) { *(APCG(mem_size_ptr)) += n; }
         UNLOCK(((header_t*)sma_shmaddrs[sma_lastseg])->sma_lock);
+#ifdef VALGRIND_MALLOCLIKE_BLOCK
+        VALGRIND_MALLOCLIKE_BLOCK(p, n, 0, 0);
+#endif
         return p;
     }
     UNLOCK(((header_t*)sma_shmaddrs[sma_lastseg])->sma_lock);
@@ -434,6 +441,9 @@ void* apc_sma_malloc(size_t n)
             if (APCG(mem_size_ptr) != NULL) { *(APCG(mem_size_ptr)) += n; }
             UNLOCK(((header_t*)sma_shmaddrs[i])->sma_lock);
             sma_lastseg = i;
+#ifdef VALGRIND_MALLOCLIKE_BLOCK
+            VALGRIND_MALLOCLIKE_BLOCK(p, n, 0, 0);
+#endif
             return p;
         }
         UNLOCK(((header_t*)sma_shmaddrs[i])->sma_lock);
@@ -488,6 +498,9 @@ void apc_sma_free(void* p)
             d_size = sma_deallocate(sma_shmaddrs[i], offset);
             if (APCG(mem_size_ptr) != NULL) { *(APCG(mem_size_ptr)) -= d_size; }
             UNLOCK(((header_t*)sma_shmaddrs[i])->sma_lock);
+#ifdef VALGRIND_FREELIKE_BLOCK
+            VALGRIND_FREELIKE_BLOCK(p, 0);
+#endif
             return;
         }
         UNLOCK(((header_t*)sma_shmaddrs[i])->sma_lock);
