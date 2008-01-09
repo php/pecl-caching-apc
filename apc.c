@@ -299,6 +299,7 @@ int apc_search_paths(const char* filename, const char* path, apc_fileinfo_t* fil
             strncpy(fileinfo->fullpath, path_for_open, MAXPATHLEN);
             return 0;
         }
+		return -1; /* cannot stat */
     }
 
     if (IS_ABSOLUTE_PATH(path_for_open, strlen(path_for_open)) && 
