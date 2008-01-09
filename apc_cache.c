@@ -726,7 +726,7 @@ int apc_cache_make_file_key(apc_cache_key_t* key,
         tmp_buf = sapi_get_stat(TSRMLS_C);  /* Apache has already done this stat() for us */
     }
     if(tmp_buf) { 
-		fileinfo.st_buf = *tmp_buf;
+		fileinfo.st_buf.sb = *tmp_buf;
     } else {
         if (apc_search_paths(filename, include_path, &fileinfo) != 0) {
 #ifdef __DEBUG_APC__
@@ -736,9 +736,9 @@ int apc_cache_make_file_key(apc_cache_key_t* key,
         }
     }
 
-    if(APCG(max_file_size) < fileinfo.st_buf.st_size) {
+    if(APCG(max_file_size) < fileinfo.st_buf.sb.st_size) {
 #ifdef __DEBUG_APC__
-        fprintf(stderr,"File is too big %s (%d - %ld) - bailing\n",filename,t,fileinfo.st_buf.st_size);
+        fprintf(stderr,"File is too big %s (%d - %ld) - bailing\n",filename,t,fileinfo.st_buf.sb.st_size);
 #endif
         return 0;
     }
@@ -755,15 +755,15 @@ int apc_cache_make_file_key(apc_cache_key_t* key,
      * tiny safety is easier than educating the world.  This is now
      * configurable, but the default is still 2 seconds.
      */
-    if(APCG(file_update_protection) && (t - fileinfo.st_buf.st_mtime < APCG(file_update_protection))) { 
+    if(APCG(file_update_protection) && (t - fileinfo.st_buf.sb.st_mtime < APCG(file_update_protection))) { 
 #ifdef __DEBUG_APC__
-        fprintf(stderr,"File is too new %s (%d - %d) - bailing\n",filename,t,fileinfo.st_buf.st_mtime);
+        fprintf(stderr,"File is too new %s (%d - %d) - bailing\n",filename,t,fileinfo.st_buf.sb.st_mtime);
 #endif
         return 0;
     }
 
-    key->data.file.device = fileinfo.st_buf.st_dev;
-    key->data.file.inode  = fileinfo.st_buf.st_ino;
+    key->data.file.device = fileinfo.st_buf.sb.st_dev;
+    key->data.file.inode  = fileinfo.st_buf.sb.st_ino;
     /* 
      * If working with content management systems that like to munge the mtime, 
      * it might be appropriate to key off of the ctime to be immune to systems
@@ -776,9 +776,9 @@ int apc_cache_make_file_key(apc_cache_key_t* key,
      * set the apc.stat_ctime=true to enable this check.
      */
     if(APCG(stat_ctime)) {
-        key->mtime  = (fileinfo.st_buf.st_ctime > fileinfo.st_buf.st_mtime) ? fileinfo.st_buf.st_ctime : fileinfo.st_buf.st_mtime; 
+        key->mtime  = (fileinfo.st_buf.sb.st_ctime > fileinfo.st_buf.sb.st_mtime) ? fileinfo.st_buf.sb.st_ctime : fileinfo.st_buf.sb.st_mtime; 
     } else {
-        key->mtime = fileinfo.st_buf.st_mtime;
+        key->mtime = fileinfo.st_buf.sb.st_mtime;
     }
     key->type = APC_CACHE_KEY_FILE;
     return 1;

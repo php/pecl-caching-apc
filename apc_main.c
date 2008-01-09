@@ -365,7 +365,7 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
             tmp_buf = sapi_get_stat(TSRMLS_C);  /* Apache has already done this stat() for us */
         }
         if(tmp_buf) { 
-            fileinfo.st_buf = *tmp_buf;
+            fileinfo.st_buf.sb = *tmp_buf;
         } else {
             if (apc_search_paths(h->filename, PG(include_path), &fileinfo) != 0) {
 #ifdef __DEBUG_APC__
@@ -374,7 +374,7 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
                 return op_array;
             }
         }
-        key.mtime = fileinfo.st_buf.st_mtime;
+        key.mtime = fileinfo.st_buf.sb.st_mtime;
     }
 
     HANDLE_BLOCK_INTERRUPTIONS();
