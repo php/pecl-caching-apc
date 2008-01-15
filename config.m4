@@ -107,8 +107,8 @@ AC_ARG_ENABLE(apc-pthreadmutex,
 [  --disable-apc-pthreadmutex
                           Disable pthread mutex locking ],
 [
-  PHP_APC_PTHREADMUTEX=no
-  AC_MSG_RESULT(no)
+  PHP_APC_PTHREADMUTEX=$enableval
+  AC_MSG_RESULT($enableval)
 ],
 [
   PHP_APC_PTHREADMUTEX=yes
