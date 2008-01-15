@@ -124,7 +124,7 @@ struct block_t {
 /* }}} */
 
 /* {{{ sma_allocate: tries to allocate size bytes in a segment */
-static int sma_allocate(void* shmaddr, size_t size)
+static size_t sma_allocate(void* shmaddr, size_t size)
 {
     header_t* header;       /* header of shared memory segment */
     block_t* prv;           /* block prior to working block */
@@ -241,7 +241,7 @@ static int sma_allocate(void* shmaddr, size_t size)
 /* }}} */
 
 /* {{{ sma_deallocate: deallocates the block at the given offset */
-static int sma_deallocate(void* shmaddr, int offset)
+static size_t sma_deallocate(void* shmaddr, size_t offset)
 {
     header_t* header;   /* header of shared memory segment */
     block_t* cur;       /* the new block to insert */
@@ -411,7 +411,7 @@ void apc_sma_cleanup()
 /* {{{ apc_sma_malloc */
 void* apc_sma_malloc(size_t n)
 {
-    int off;
+    size_t off;
     int i;
 
     TSRMLS_FETCH();
