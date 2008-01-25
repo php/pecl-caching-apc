@@ -1,3 +1,5 @@
+- Fix apc_add() cache expunge bug (Rasmus)
+
 3.0.16: 2007-12-26
 - Fix for longstanding cache-full crash (Christian Seiler)
   http://news.php.net/php.pecl.dev/4951 for the details

@@ -539,6 +539,7 @@ int _apc_store(char *strkey, int strkey_len, const zval *val, const unsigned int
     apc_cache_key_t key;
     time_t t;
     size_t mem_size = 0;
+    int ret;
 
 #if PHP_API_VERSION < 20041225
 #if HAVE_APACHE && defined(APC_PHP4_STAT)
@@ -572,20 +573,22 @@ int _apc_store(char *strkey, int strkey_len, const zval *val, const unsigned int
         return 0;
     }
 
-    if (!apc_cache_user_insert(apc_user_cache, key, entry, t, exclusive TSRMLS_CC)) {
-        APCG(mem_size_ptr) = NULL;
+    if (ret = apc_cache_user_insert(apc_user_cache, key, entry, t, exclusive TSRMLS_CC)!=1) {
         apc_cache_free_entry(entry);
-        apc_cache_expunge(apc_cache,t);
-        apc_cache_expunge(apc_user_cache,t);
-        HANDLE_UNBLOCK_INTERRUPTIONS();
-        return 0;
+        if(ret==-1) {
+            APCG(mem_size_ptr) = NULL;
+            apc_cache_expunge(apc_cache,t);
+            apc_cache_expunge(apc_user_cache,t);
+            HANDLE_UNBLOCK_INTERRUPTIONS();
+            return 0;
+        }
     }
 
     APCG(mem_size_ptr) = NULL;
 
     HANDLE_UNBLOCK_INTERRUPTIONS();
 
-    return 1;
+    return ret;
 }
 /* }}} */
 
