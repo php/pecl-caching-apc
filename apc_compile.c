@@ -34,6 +34,46 @@
 #include "apc_globals.h"
 #include "apc_zend.h"
 
+#ifndef Z_REFCOUNT_P
+#define Z_REFCOUNT_PP(ppz)            (pz)->refcount
+#define Z_REFCOUNT_PP(ppz)            Z_REFCOUNT_P(*(ppz))
+#endif
+ 
+#ifndef Z_SET_REFCOUNT_P
+#define Z_SET_REFCOUNT_P(pz, rc)      (pz)->refcount = rc
+#define Z_SET_REFCOUNT_PP(ppz, rc)    Z_SET_REFCOUNT_P(*(ppz), rc)
+#endif
+
+#ifndef Z_ADDREF_P
+#define Z_ADDREF_P(pz)                (pz)->refcount++
+#define Z_ADDREF_PP(ppz)              Z_ADDREF_P(*(ppz))
+#endif
+ 
+#ifndef Z_DELREF_P
+#define Z_DELREF_P(pz)                (pz)->refcount--
+#define Z_DELREF_PP(ppz)              Z_DELREF_P(*(ppz))
+#endif
+ 
+#ifndef Z_ISREF_P
+#define Z_ISREF_P(pz)                 (pz)->is_ref
+#define Z_ISREF_PP(ppz)               Z_ISREF_P(*(ppz))
+#endif
+ 
+#ifndef Z_SET_ISREF_P
+#define Z_SET_ISREF_P(pz)             (pz)->is_ref = 1
+#define Z_SET_ISREF_PP(ppz)           Z_SET_ISREF_P(*(ppz))
+#endif
+ 
+#ifndef Z_UNSET_ISREF_P
+#define Z_UNSET_ISREF_P(pz)           (pz)->is_ref = 0
+#define Z_UNSET_ISREF_PP(ppz)         Z_UNSET_ISREF_P(*(ppz))
+#endif
+ 
+#ifndef Z_SET_ISREF_TO_P
+#define Z_SET_ISREF_TO_P(pz, isref)   (pz)->is_ref = isref
+#define Z_SET_ISREF_TO_PP(ppz, isref) Z_SET_ISREF_TO_P(*(ppz), isref)
+#endif
+ 
 typedef void* (*ht_copy_fun_t)(void*, void*, apc_malloc_t, apc_free_t);
 typedef void  (*ht_free_fun_t)(void*, apc_free_t);
 typedef int (*ht_check_copy_fun_t)(Bucket*, va_list);
@@ -244,8 +284,8 @@ static zval** my_copy_zval_ptr(zval** dst, const zval** src, apc_malloc_t alloca
         *dst = dst_new;
     }
 
-    (*dst)->refcount = (*src)->refcount;
-    (*dst)->is_ref = (*src)->is_ref;
+    Z_SET_REFCOUNT_PP(dst, Z_REFCOUNT_PP(src));
+    Z_SET_ISREF_TO_PP(dst, Z_ISREF_PP(src));
     
     return dst;
 }
@@ -283,7 +323,7 @@ static zval* my_copy_zval(zval* dst, const zval* src, apc_malloc_t allocate, apc
 
         if(APCG(copied_zvals)) {
             if(zend_hash_index_find(APCG(copied_zvals), (ulong)src, (void**)&tmp) == SUCCESS) {
-                (*tmp)->refcount++;
+                Z_ADDREF_PP(tmp);
                 return *tmp;
             }
         
@@ -774,7 +814,7 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
                 goto cleanup;
             }
         }
-        dst->builtin_functions[n].fname = NULL;
+        *(char**)&(dst->builtin_functions[n].fname) = NULL;
     }
 
     if (src->filename) {
@@ -1474,7 +1514,7 @@ static int my_destroy_zval(zval* src, apc_free_t deallocate)
         /* Maintain a list of zvals we've copied to properly handle recursive structures */
         if(APCG(copied_zvals)) {
             if(zend_hash_index_find(APCG(copied_zvals), (ulong)src, (void**)&tmp) == SUCCESS) {
-                (*tmp)->refcount--;
+                Z_DELREF_PP(tmp);
                 return FAILURE;
             } 
             zend_hash_index_update(APCG(copied_zvals), (ulong)src, (void**)&src, sizeof(zval*), NULL);
