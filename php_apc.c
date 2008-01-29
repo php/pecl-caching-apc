@@ -556,19 +556,18 @@ int _apc_store(char *strkey, int strkey_len, const zval *val, const unsigned int
     HANDLE_BLOCK_INTERRUPTIONS();
 
     APCG(mem_size_ptr) = &mem_size;
+    APCG(current_cache) = apc_user_cache;
     if (!(entry = apc_cache_make_user_entry(strkey, strkey_len + 1, val, ttl))) {
         APCG(mem_size_ptr) = NULL;
-        apc_cache_expunge(apc_cache,t);
-        apc_cache_expunge(apc_user_cache,t);
+        APCG(current_cache) = NULL;
         HANDLE_UNBLOCK_INTERRUPTIONS();
         return 0;
     }
 
     if (!apc_cache_make_user_key(&key, strkey, strkey_len + 1, t)) {
         APCG(mem_size_ptr) = NULL;
+        APCG(current_cache) = NULL;
         apc_cache_free_entry(entry);
-        apc_cache_expunge(apc_cache,t);
-        apc_cache_expunge(apc_user_cache,t);
         HANDLE_UNBLOCK_INTERRUPTIONS();
         return 0;
     }
@@ -577,14 +576,14 @@ int _apc_store(char *strkey, int strkey_len, const zval *val, const unsigned int
         apc_cache_free_entry(entry);
         if(ret==-1) {
             APCG(mem_size_ptr) = NULL;
-            apc_cache_expunge(apc_cache,t);
-            apc_cache_expunge(apc_user_cache,t);
+            APCG(current_cache) = NULL;
             HANDLE_UNBLOCK_INTERRUPTIONS();
             return 0;
         }
     }
 
     APCG(mem_size_ptr) = NULL;
+    APCG(current_cache) = NULL;
 
     HANDLE_UNBLOCK_INTERRUPTIONS();
 

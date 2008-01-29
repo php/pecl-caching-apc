@@ -86,6 +86,7 @@ ZEND_BEGIN_MODULE_GLOBALS(apc)
     zval *filehits;             /* Files that came from the cache for this request */
 #endif
     zend_bool coredump_unmap;    /* Trap signals that coredump and unmap shared memory */
+    apc_cache_t *current_cache;  /* current cache being modified/read */
 ZEND_END_MODULE_GLOBALS(apc)
 
 /* (the following declaration is defined in php_apc.c) */

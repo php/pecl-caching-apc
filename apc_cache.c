@@ -50,51 +50,11 @@
 #define UNLOCK(c)       { apc_lck_unlock(c->header->lock); HANDLE_UNBLOCK_INTERRUPTIONS(); }
 /* }}} */
 
-/* {{{ struct definition: slot_t */
-typedef struct slot_t slot_t;
-struct slot_t {
-    apc_cache_key_t key;        /* slot key */
-    apc_cache_entry_t* value;   /* slot value */
-    slot_t* next;               /* next slot in linked list */
-    int num_hits;               /* number of hits to this bucket */
-    time_t creation_time;       /* time slot was initialized */
-    time_t deletion_time;       /* time slot was removed from cache */
-    time_t access_time;         /* time slot was last accessed */
-};
-/* }}} */
-
-/* {{{ struct definition: header_t
-   Any values that must be shared among processes should go in here. */
-typedef struct header_t header_t;
-struct header_t {
-    apc_lck_t lock;              /* read/write lock (exclusive blocking cache lock) */
-    apc_lck_t wrlock;           /* write lock (non-blocking used to prevent cache slams) */
-    int num_hits;               /* total successful hits in cache */
-    int num_misses;             /* total unsuccessful hits in cache */
-    int num_inserts;            /* total successful inserts in cache */
-    slot_t* deleted_list;       /* linked list of to-be-deleted slots */
-    time_t start_time;          /* time the above counters were reset */
-    int expunges;               /* total number of expunges */
-    zend_bool busy;             /* Flag to tell clients when we are busy cleaning the cache */
-    int num_entries;            /* Statistic on the number of entries */
-    size_t mem_size;            /* Statistic on the memory size used by this cache */
-};
-/* }}} */
-
-/* {{{ struct definition: apc_cache_t */
-struct apc_cache_t {
-    void* shmaddr;              /* process (local) address of shared cache */
-    header_t* header;           /* cache header (stored in SHM) */
-    slot_t** slots;             /* array of cache slots (stored in SHM) */
-    int num_slots;              /* number of slots in cache */
-    int gc_ttl;                 /* maximum time on GC list for a slot */
-    int ttl;                    /* if slot is needed and entry's access time is older than this ttl, remove it */
-};
-/* }}} */
-
 /* {{{ key_equals */
 #define key_equals(a, b) (a.inode==b.inode && a.device==b.device)
 /* }}} */
+
+static size_t apc_cache_expunge(apc_cache_t* cache, size_t size);
 
 /* {{{ hash */
 static unsigned int hash(apc_cache_key_t key)
@@ -274,7 +234,7 @@ apc_cache_t* apc_cache_create(int size_hint, int gc_ttl, int ttl)
     num_slots = size_hint > 0 ? size_hint*2 : 2000;
 
     cache = (apc_cache_t*) apc_emalloc(sizeof(apc_cache_t));
-    cache_size = sizeof(header_t) + num_slots*sizeof(slot_t*);
+    cache_size = sizeof(cache_header_t) + num_slots*sizeof(slot_t*);
 
     cache->shmaddr = apc_sma_malloc(cache_size);
     if(!cache->shmaddr) {
@@ -282,7 +242,7 @@ apc_cache_t* apc_cache_create(int size_hint, int gc_ttl, int ttl)
     }
     memset(cache->shmaddr, 0, cache_size);
 
-    cache->header = (header_t*) cache->shmaddr;
+    cache->header = (cache_header_t*) cache->shmaddr;
     cache->header->num_hits = 0;
     cache->header->num_misses = 0;
     cache->header->deleted_list = NULL;
@@ -290,7 +250,7 @@ apc_cache_t* apc_cache_create(int size_hint, int gc_ttl, int ttl)
     cache->header->expunges = 0;
     cache->header->busy = 0;
 
-    cache->slots = (slot_t**) (((char*) cache->shmaddr) + sizeof(header_t));
+    cache->slots = (slot_t**) (((char*) cache->shmaddr) + sizeof(cache_header_t));
     cache->num_slots = num_slots;
     cache->gc_ttl = gc_ttl;
     cache->ttl = ttl;
@@ -301,6 +261,7 @@ apc_cache_t* apc_cache_create(int size_hint, int gc_ttl, int ttl)
     for (i = 0; i < num_slots; i++) {
         cache->slots[i] = NULL;
     }
+    cache->expunge_cb = apc_cache_expunge;
 
     return cache;
 }
@@ -342,9 +303,21 @@ void apc_cache_clear(apc_cache_t* cache)
 /* }}} */
 
 /* {{{ apc_cache_expunge */
-void apc_cache_expunge(apc_cache_t* cache, time_t t)
+static size_t apc_cache_expunge(apc_cache_t* cache, size_t size)
 {
     int i;
+    time_t t;
+    TSRMLS_FETCH();
+
+#if PHP_API_VERSION < 20041225
+#if HAVE_APACHE && defined(APC_PHP4_STAT)
+    t = ((request_rec *)SG(server_context))->request_time;
+#else
+    t = time(0);
+#endif
+#else
+    t = sapi_get_request_time(TSRMLS_C);
+#endif
 
     if(!cache) return;
 
