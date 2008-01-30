@@ -242,8 +242,6 @@ default_compile:
 
     /* cannot free up cache data yet, it maybe in use */
     
-    zend_llist_del_element(&CG(open_files), h, compare_file_handles); /* XXX: kludge */
-    
     h->type = ZEND_HANDLE_FILENAME;
 
     return NULL;
@@ -313,7 +311,6 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
             h->opened_path = estrdup(cache_entry->data.file.filename);
         }
         zend_hash_add(&EG(included_files), h->opened_path, strlen(h->opened_path)+1, (void *)&dummy, sizeof(int), NULL);
-        zend_llist_add_element(&CG(open_files), h); /* XXX kludge */
         apc_stack_push(APCG(cache_stack), cache_entry);
         op_array = cached_compile(h, type TSRMLS_CC);
         if(op_array) {
