@@ -35,7 +35,7 @@
 #include "apc_zend.h"
 
 #ifndef Z_REFCOUNT_P
-#define Z_REFCOUNT_PP(ppz)            (pz)->refcount
+#define Z_REFCOUNT_P(pz)              (pz)->refcount
 #define Z_REFCOUNT_PP(ppz)            Z_REFCOUNT_P(*(ppz))
 #endif
  
