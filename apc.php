@@ -344,17 +344,21 @@ if (isset($MYREQUEST['IMG']))
 				if($block['offset']!=$ptr) {       // Used block
 					$angle_to = $angle_from+($block['offset']-$ptr)/$s;
 					if(($angle_to+$fuzz)>1) $angle_to = 1;
-					fill_arc($image,$x,$y,$size,$angle_from*360,$angle_to*360,$col_black,$col_red);
-					if (($angle_to-$angle_from)>0.05) {
-						array_push($string_placement, array($angle_from,$angle_to));
+					if( ($angle_to*360) - ($angle_from*360) >= 1) {
+						fill_arc($image,$x,$y,$size,$angle_from*360,$angle_to*360,$col_black,$col_red);
+						if (($angle_to-$angle_from)>0.05) {
+							array_push($string_placement, array($angle_from,$angle_to));
+						}
 					}
 					$angle_from = $angle_to;
 				}
 				$angle_to = $angle_from+($block['size'])/$s;
 				if(($angle_to+$fuzz)>1) $angle_to = 1;
-				fill_arc($image,$x,$y,$size,$angle_from*360,$angle_to*360,$col_black,$col_green);
-				if (($angle_to-$angle_from)>0.05) {
-					array_push($string_placement, array($angle_from,$angle_to));
+				if( ($angle_to*360) - ($angle_from*360) >= 1) {
+					fill_arc($image,$x,$y,$size,$angle_from*360,$angle_to*360,$col_black,$col_green);
+					if (($angle_to-$angle_from)>0.05) {
+						array_push($string_placement, array($angle_from,$angle_to));
+					}
 				}
 				$angle_from = $angle_to;
 				$ptr = $block['offset']+$block['size'];
