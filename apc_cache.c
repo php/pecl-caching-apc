@@ -457,7 +457,7 @@ int apc_cache_user_insert(apc_cache_t* cache, apc_cache_key_t key, apc_cache_ent
     size_t* mem_size_ptr = NULL;
 
     if (!value) {
-        return -1;
+        return 0;
     }
 
     LOCK(cache);
@@ -508,7 +508,7 @@ int apc_cache_user_insert(apc_cache_t* cache, apc_cache_key_t key, apc_cache_ent
 
     if ((*slot = make_slot(key, value, *slot, t)) == NULL) {
         UNLOCK(cache);
-        return -1;
+        return 0;
     }
     if (APCG(mem_size_ptr) != NULL) {
         value->mem_size = *APCG(mem_size_ptr);

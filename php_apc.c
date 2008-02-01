@@ -572,14 +572,12 @@ int _apc_store(char *strkey, int strkey_len, const zval *val, const unsigned int
         return 0;
     }
 
-    if (ret = apc_cache_user_insert(apc_user_cache, key, entry, t, exclusive TSRMLS_CC)!=1) {
+    if (!apc_cache_user_insert(apc_user_cache, key, entry, t, exclusive TSRMLS_CC)) {
         apc_cache_free_entry(entry);
-        if(ret==-1) {
-            APCG(mem_size_ptr) = NULL;
-            APCG(current_cache) = NULL;
-            HANDLE_UNBLOCK_INTERRUPTIONS();
-            return 0;
-        }
+        APCG(mem_size_ptr) = NULL;
+        APCG(current_cache) = NULL;
+        HANDLE_UNBLOCK_INTERRUPTIONS();
+        return 0;
     }
 
     APCG(mem_size_ptr) = NULL;
