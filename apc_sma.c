@@ -115,11 +115,6 @@ struct block_t {
 #endif
 
 
-#ifdef max
-#undef max
-#endif
-#define max(a, b) ((a) > (b) ? (a) : (b))
-
 /* {{{ MINBLOCKSIZE */
 #define MINBLOCKSIZE (ALIGNWORD(1) + ALIGNWORD(sizeof(block_t)))
 /* }}} */
