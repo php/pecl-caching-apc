@@ -445,7 +445,7 @@ PHP_FUNCTION(apc_cache_info)
 }
 /* }}} */
 
-/* {{{ proto void apc_clear_cache() */
+/* {{{ proto void apc_clear_cache([string cache]) */
 PHP_FUNCTION(apc_clear_cache)
 {
     char *cache_type;
@@ -589,7 +589,7 @@ int _apc_store(char *strkey, int strkey_len, const zval *val, const unsigned int
 }
 /* }}} */
 
-/* {{{ proto int apc_store(string key, zval var [, ttl ])
+/* {{{ proto int apc_store(string key, mixed var [, long ttl ])
  */
 PHP_FUNCTION(apc_store) {
     zval *val;
@@ -608,7 +608,7 @@ PHP_FUNCTION(apc_store) {
 }
 /* }}} */
 
-/* {{{ proto int apc_add(string key, zval var [, ttl ])
+/* {{{ proto int apc_add(string key, mixed var [, long ttl ])
  */
 PHP_FUNCTION(apc_add) {
     zval *val;
@@ -631,7 +631,7 @@ void *apc_erealloc_wrapper(void *ptr, size_t size) {
     return _erealloc(ptr, size, 0 ZEND_FILE_LINE_CC ZEND_FILE_LINE_EMPTY_CC);
 }
 
-/* {{{ proto mixed apc_fetch(mixed key, [bool success])
+/* {{{ proto mixed apc_fetch(mixed key[, bool &success])
  */
 PHP_FUNCTION(apc_fetch) {
     zval *key;
