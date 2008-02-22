@@ -631,10 +631,11 @@ void *apc_erealloc_wrapper(void *ptr, size_t size) {
     return _erealloc(ptr, size, 0 ZEND_FILE_LINE_CC ZEND_FILE_LINE_EMPTY_CC);
 }
 
-/* {{{ proto mixed apc_fetch(mixed key)
+/* {{{ proto mixed apc_fetch(mixed key, [bool success])
  */
 PHP_FUNCTION(apc_fetch) {
     zval *key;
+    zval *success = NULL;
     HashTable *hash;
     HashPosition hpos;
     zval **hentry;
@@ -647,7 +648,7 @@ PHP_FUNCTION(apc_fetch) {
 
     if(!APCG(enabled)) RETURN_FALSE;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &key) == FAILURE) {
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z|z", &key, &success) == FAILURE) {
         return;
     }
 
@@ -660,6 +661,10 @@ PHP_FUNCTION(apc_fetch) {
 #else
     t = sapi_get_request_time(TSRMLS_C);
 #endif
+
+    if (success) {
+        ZVAL_BOOL(success, 0);
+    }
 
     if(Z_TYPE_P(key) != IS_STRING && Z_TYPE_P(key) != IS_ARRAY) {
         convert_to_string(key);
@@ -697,10 +702,14 @@ PHP_FUNCTION(apc_fetch) {
             } /* don't set values we didn't find */
             zend_hash_move_forward_ex(hash, &hpos);
         }
-        RETURN_ZVAL(result, 0, 1);
+        RETVAL_ZVAL(result, 0, 1);
     } else {
         apc_wprint("apc_fetch() expects a string or array of strings.");
         RETURN_FALSE;
+    }
+
+    if (success) {
+        ZVAL_BOOL(success, 1);
     }
 
     return;
@@ -909,13 +918,21 @@ PHP_FUNCTION(apc_compile_file) {
 }
 /* }}} */
 
+/* {{{ arginfo */
+static
+ZEND_BEGIN_ARG_INFO(php_apc_fetch_arginfo, 0)
+    ZEND_ARG_INFO(0, "key")
+    ZEND_ARG_INFO(1, "success")
+ZEND_END_ARG_INFO()
+/* }}} */
+
 /* {{{ apc_functions[] */
 function_entry apc_functions[] = {
 	PHP_FE(apc_cache_info,          NULL)
 	PHP_FE(apc_clear_cache,         NULL)
 	PHP_FE(apc_sma_info,            NULL)
 	PHP_FE(apc_store,               NULL)
-	PHP_FE(apc_fetch,               NULL)
+	PHP_FE(apc_fetch,               php_apc_fetch_arginfo)
 	PHP_FE(apc_delete,              NULL)
 	PHP_FE(apc_define_constants,    NULL)
 	PHP_FE(apc_load_constants,      NULL)
