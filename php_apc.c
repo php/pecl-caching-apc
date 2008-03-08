@@ -539,7 +539,6 @@ int _apc_store(char *strkey, int strkey_len, const zval *val, const unsigned int
     apc_cache_key_t key;
     time_t t;
     size_t mem_size = 0;
-    int ret;
 
 #if PHP_API_VERSION < 20041225
 #if HAVE_APACHE && defined(APC_PHP4_STAT)
@@ -585,7 +584,7 @@ int _apc_store(char *strkey, int strkey_len, const zval *val, const unsigned int
 
     HANDLE_UNBLOCK_INTERRUPTIONS();
 
-    return ret;
+    return 1;
 }
 /* }}} */
 
