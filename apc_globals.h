@@ -58,6 +58,7 @@ ZEND_BEGIN_MODULE_GLOBALS(apc)
     /* module variables */
     zend_bool initialized;       /* true if module was initialized */
     apc_stack_t* cache_stack;    /* the stack of cached executable code */
+    apc_stack_t* refcount_stack; /* the stack of refcounts to be free'd in request shutdown */
     zend_bool cache_by_default;  /* true if files should be cached unless filtered out */
                                  /* false if files should only be cached if filtered in */
     long slam_defense;           /* Probability of a process not caching an uncached file */

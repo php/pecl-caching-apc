@@ -78,6 +78,7 @@ static void php_apc_init_globals(zend_apc_globals* apc_globals TSRMLS_DC)
     apc_globals->filters = NULL;
     apc_globals->initialized = 0;
     apc_globals->cache_stack = apc_stack_create(0);
+    apc_globals->refcount_stack = apc_stack_create(0);
     apc_globals->cache_by_default = 1;
     apc_globals->slam_defense = 0;
     apc_globals->mem_size_ptr = NULL;

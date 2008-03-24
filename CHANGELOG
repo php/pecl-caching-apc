@@ -1,5 +1,6 @@
 - Fix apc_add() cache expunge bug (Rasmus)
 - Added parameter to apc_fetch to determine success/failure when fetching booleans (shire)
+- Fix misc. memleaks (shire)
   
 3.0.16: 2007-12-26
 - Fix for longstanding cache-full crash (Christian Seiler)
