@@ -562,37 +562,8 @@ int apc_process_shutdown(TSRMLS_D)
 }
 /* }}} */
 
-/* {{{ request init and shutdown */
-
-int apc_request_init(TSRMLS_D)
-{
-    apc_stack_clear(APCG(cache_stack));
-    APCG(slam_rand) = -1;
-    APCG(copied_zvals) = NULL;
-
-#ifdef APC_FILEHITS
-    ALLOC_INIT_ZVAL(APCG(filehits));
-    array_init(APCG(filehits));
-#endif
-
-    return 0;
-}
-
-int apc_request_shutdown(TSRMLS_D)
-{
-    apc_deactivate(TSRMLS_C);
-
-#ifdef APC_FILEHITS
-    zval_ptr_dtor(&APCG(filehits));
-#endif
-
-    return 0;
-}
-
-/* }}} */
-
 /* {{{ apc_deactivate */
-void apc_deactivate(TSRMLS_D)
+static void apc_deactivate(TSRMLS_D)
 {
     zend_uint *refcount_p;
     /* The execution stack was unwound, which prevented us from decrementing
@@ -645,6 +616,36 @@ void apc_deactivate(TSRMLS_D)
 
 }
 /* }}} */
+
+/* {{{ request init and shutdown */
+
+int apc_request_init(TSRMLS_D)
+{
+    apc_stack_clear(APCG(cache_stack));
+    APCG(slam_rand) = -1;
+    APCG(copied_zvals) = NULL;
+
+#ifdef APC_FILEHITS
+    ALLOC_INIT_ZVAL(APCG(filehits));
+    array_init(APCG(filehits));
+#endif
+
+    return 0;
+}
+
+int apc_request_shutdown(TSRMLS_D)
+{
+    apc_deactivate(TSRMLS_C);
+
+#ifdef APC_FILEHITS
+    zval_ptr_dtor(&APCG(filehits));
+#endif
+
+    return 0;
+}
+
+/* }}} */
+
 
 /*
  * Local variables:
