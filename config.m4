@@ -212,16 +212,16 @@ if test "$PHP_APC" != "no"; then
 
   AC_MSG_CHECKING(whether we should enable valgrind support)
   AC_ARG_ENABLE(valgrind-checks,
-  [  --disable-valgrind-checks
-                          Disable valgrind based memory checks],
+  [  --enable-valgrind-checks
+                          Enable valgrind based memory checks],
   [
     PHP_APC_VALGRIND=$enableval
     AC_MSG_RESULT($enableval)
-  ], [
-    PHP_APC_VALGRIND=yes
-    AC_MSG_RESULT(yes)
     AC_CHECK_HEADER(valgrind/memcheck.h, 
   		[AC_DEFINE([HAVE_VALGRIND_MEMCHECK_H],1, [enable valgrind memchecks])])
+  ], [
+    PHP_APC_VALGRIND=no
+    AC_MSG_RESULT(no)
   ])
 
 

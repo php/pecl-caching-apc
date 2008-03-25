@@ -81,7 +81,7 @@ void* apc_shm_attach(int shmid)
 {
     void* shmaddr;  /* the shared memory address */
 
-    if ((int)(shmaddr = shmat(shmid, 0, 0)) == -1) {
+    if ((long)(shmaddr = shmat(shmid, 0, 0)) == -1) {
         apc_eprint("apc_shm_attach: shmat failed:");
     }
 
