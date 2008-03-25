@@ -71,13 +71,19 @@ static zend_compile_t* set_compile_hook(zend_compile_t *ptr)
 /* {{{ install_function */
 static int install_function(apc_function_t fn TSRMLS_DC)
 {
-    int status =
-        zend_hash_add(EG(function_table),
+    zend_function *func;
+    int status;
+    
+    func = apc_copy_function_for_execution(fn.function);
+    
+    status =  zend_hash_add(EG(function_table),
                       fn.name,
                       fn.name_len+1,
-                      apc_copy_function_for_execution(fn.function),
+                      func, 
                       sizeof(fn.function[0]),
                       NULL);
+
+    efree(func);
 
     if (status == FAILURE) {
         /* apc_eprint("Cannot redeclare %s()", fn.name); */
@@ -274,8 +280,6 @@ default_compile:
 
     /* cannot free up cache data yet, it maybe in use */
     
-    zend_llist_del_element(&CG(open_files), h, compare_file_handles); /* XXX: kludge */
-    
     h->type = ZEND_HANDLE_FILENAME;
 
     return NULL;
@@ -298,9 +302,9 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
     char *path;
     size_t mem_size;
 
-    if (!APCG(enabled) || (apc_cache_busy(apc_cache) && !APCG(localcache))) {
-		return old_compile_file(h, type TSRMLS_CC);
-	}
+    if (!APCG(enabled) || apc_cache_busy(apc_cache)) { 
+        return old_compile_file(h, type TSRMLS_CC);
+    }
 
     /* check our regular expression filters */
     if (APCG(filters) && apc_compiled_filters) {
@@ -333,24 +337,20 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
 
 
     if(!APCG(force_file_update)) {
-        if(APCG(localcache)) {
-            /* search for the file in the local cache */
-            cache_entry = apc_local_cache_find(APCG(lcache), key, t);
-        } else {
-            /* search for the file in the cache */
-            cache_entry = apc_cache_find(apc_cache, key, t);
-        }
+        /* search for the file in the cache */
+        cache_entry = apc_cache_find(apc_cache, key, t);
     } else {
         cache_entry = NULL;
     }
 
     if (cache_entry != NULL) {
         int dummy = 1;
+        int reset_opened_path = 0; 
         if (h->opened_path == NULL) {
-            h->opened_path = estrdup(cache_entry->data.file.filename);
+            h->opened_path = cache_entry->data.file.filename;
+            reset_opened_path = 1;
         }
         zend_hash_add(&EG(included_files), h->opened_path, strlen(h->opened_path)+1, (void *)&dummy, sizeof(int), NULL);
-        zend_llist_add_element(&CG(open_files), h); /* XXX kludge */
         apc_stack_push(APCG(cache_stack), cache_entry);
         op_array = cached_compile(h, type TSRMLS_CC);
         if(op_array) {
@@ -363,14 +363,12 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
         if(APCG(report_autofilter)) {
             apc_wprint("Recompiling %s", h->opened_path);
         }
+        if (reset_opened_path == 1) {
+            h->opened_path = NULL;
+        }
         /* TODO: check what happens with EG(included_files) */
     }
     
-    if(apc_cache_busy(apc_cache) && APCG(localcache)) {
-        /* possibly local cache returned NULL because cache is busy */
-		return old_compile_file(h, type TSRMLS_CC);
-	}
-
     /* remember how many functions and classes existed before compilation */
     num_functions = zend_hash_num_elements(CG(function_table));
     num_classes   = zend_hash_num_elements(CG(class_table));
@@ -407,7 +405,7 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
             tmp_buf = sapi_get_stat(TSRMLS_C);  /* Apache has already done this stat() for us */
         }
         if(tmp_buf) { 
-            fileinfo.st_buf = *tmp_buf;
+            fileinfo.st_buf.sb = *tmp_buf;
         } else {
             if (apc_search_paths(h->filename, PG(include_path), &fileinfo) != 0) {
 #ifdef __DEBUG_APC__
@@ -416,7 +414,7 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
                 return op_array;
             }
         }
-        key.mtime = fileinfo.st_buf.st_mtime;
+        key.mtime = fileinfo.st_buf.sb.st_mtime;
     }
 
     HANDLE_BLOCK_INTERRUPTIONS();
@@ -432,10 +430,10 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
 
     mem_size = 0;
     APCG(mem_size_ptr) = &mem_size;
+    APCG(current_cache) = apc_cache;
     if(!(alloc_op_array = apc_copy_op_array(NULL, op_array, apc_sma_malloc, apc_sma_free TSRMLS_CC))) {
-        apc_cache_expunge(apc_cache,t);
-        apc_cache_expunge(apc_user_cache,t);
         APCG(mem_size_ptr) = NULL;
+        APCG(current_cache) = NULL;
 #if NONBLOCKING_LOCK_AVAILABLE
         if(APCG(write_lock)) {
             apc_cache_write_unlock(apc_cache);
@@ -447,9 +445,8 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
     
     if(!(alloc_functions = apc_copy_new_functions(num_functions, apc_sma_malloc, apc_sma_free TSRMLS_CC))) {
         apc_free_op_array(alloc_op_array, apc_sma_free);
-        apc_cache_expunge(apc_cache,t);
-        apc_cache_expunge(apc_user_cache,t);
         APCG(mem_size_ptr) = NULL;
+        APCG(current_cache) = NULL;
 #if NONBLOCKING_LOCK_AVAILABLE
         if(APCG(write_lock)) {
             apc_cache_write_unlock(apc_cache);
@@ -461,9 +458,8 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
     if(!(alloc_classes = apc_copy_new_classes(op_array, num_classes, apc_sma_malloc, apc_sma_free TSRMLS_CC))) {
         apc_free_op_array(alloc_op_array, apc_sma_free);
         apc_free_functions(alloc_functions, apc_sma_free);
-        apc_cache_expunge(apc_cache,t);
-        apc_cache_expunge(apc_user_cache,t);
         APCG(mem_size_ptr) = NULL;
+        APCG(current_cache) = NULL;
 #if NONBLOCKING_LOCK_AVAILABLE
         if(APCG(write_lock)) {
             apc_cache_write_unlock(apc_cache);
@@ -484,9 +480,8 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
         apc_free_op_array(alloc_op_array, apc_sma_free);
         apc_free_functions(alloc_functions, apc_sma_free);
         apc_free_classes(alloc_classes, apc_sma_free);
-        apc_cache_expunge(apc_cache,t);
-        apc_cache_expunge(apc_user_cache,t);
         APCG(mem_size_ptr) = NULL;
+        APCG(current_cache) = NULL;
 #if NONBLOCKING_LOCK_AVAILABLE
         if(APCG(write_lock)) {
             apc_cache_write_unlock(apc_cache);
@@ -500,11 +495,9 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
 
     if ((ret = apc_cache_insert(apc_cache, key, cache_entry, t)) != 1) {
         apc_cache_free_entry(cache_entry);
-        if(ret==-1) {
-            apc_cache_expunge(apc_cache,t);
-            apc_cache_expunge(apc_user_cache,t);
-        }
     }
+
+    APCG(current_cache) = NULL;
 
 #if NONBLOCKING_LOCK_AVAILABLE
     if(APCG(write_lock)) {
@@ -592,22 +585,72 @@ int apc_module_shutdown(TSRMLS_D)
 /* {{{ process init and shutdown */
 int apc_process_init(int module_number TSRMLS_DC)
 {
-    int minttl = (APCG(gc_ttl) >  APCG(ttl) ? APCG(ttl) : APCG(gc_ttl))/2;
-    int size = APCG(localcache_size);
-    if(APCG(initialized) && APCG(localcache)) {
-        /* TTL is 2 mins by default */
-        APCG(lcache) = apc_local_cache_create(apc_cache, size, minttl ? minttl : 120); 
-    }
     return 0;
 }
 
 int apc_process_shutdown(TSRMLS_D)
 {
-    if(APCG(initialized) && APCG(localcache) && APCG(lcache)) {
-        apc_local_cache_destroy(APCG(lcache));
-        APCG(lcache) = NULL;
+    return 0;
+}
+/* }}} */
+
+/* {{{ apc_deactivate */
+static void apc_deactivate(TSRMLS_D)
+{
+    zend_uint *refcount_p;
+    /* The execution stack was unwound, which prevented us from decrementing
+     * the reference counts on active cache entries in `my_execute`.
+     */
+    while (apc_stack_size(APCG(cache_stack)) > 0) {
+        int i;
+        zend_class_entry* zce = NULL;
+        void ** centry = (void*)(&zce);
+#ifdef ZEND_ENGINE_2
+        zend_class_entry** pzce = NULL;
+#endif
+        
+        apc_cache_entry_t* cache_entry =
+            (apc_cache_entry_t*) apc_stack_pop(APCG(cache_stack));
+
+        if (cache_entry->data.file.classes) {
+            for (i = 0; cache_entry->data.file.functions[i].function != NULL; i++) {
+                zend_hash_del(EG(function_table),
+                    cache_entry->data.file.functions[i].name,
+                    cache_entry->data.file.functions[i].name_len+1);
+            }
+            for (i = 0; cache_entry->data.file.classes[i].class_entry != NULL; i++) {
+#ifdef ZEND_ENGINE_2
+                centry = (void**)&pzce; /* a triple indirection to get zend_class_entry*** */
+#endif
+                if(zend_hash_find(EG(class_table), 
+                    cache_entry->data.file.classes[i].name,
+                    cache_entry->data.file.classes[i].name_len+1,
+                    (void**)centry) == FAILURE)
+                {
+                    /* double inclusion of conditional classes ends up failing 
+                     * this lookup the second time around.
+                     */
+                    continue;
+                }
+
+#ifdef ZEND_ENGINE_2
+                zce = *pzce;
+#endif
+                zend_hash_del(EG(class_table),
+                    cache_entry->data.file.classes[i].name,
+                    cache_entry->data.file.classes[i].name_len+1);
+                
+                apc_free_class_entry_after_execution(zce);
+            }
+        }
+        apc_cache_release(apc_cache, cache_entry);
     }
-	return 0;
+
+    /* prevent memleak warnings on refcounts that have been alloc'd */
+    while (apc_stack_size(APCG(refcount_stack)) > 0) {
+        refcount_p = (zend_uint*)apc_stack_pop(APCG(refcount_stack)); 
+        efree(refcount_p);
+    }
 }
 /* }}} */
 
@@ -640,56 +683,6 @@ int apc_request_shutdown(TSRMLS_D)
 
 /* }}} */
 
-/* {{{ apc_deactivate */
-void apc_deactivate(TSRMLS_D)
-{
-    /* The execution stack was unwound, which prevented us from decrementing
-     * the reference counts on active cache entries in `my_execute`.
-     */
-    while (apc_stack_size(APCG(cache_stack)) > 0) {
-        int i;
-        zend_class_entry* zce = NULL;
-        void ** centry = (void*)(&zce);
-#ifdef ZEND_ENGINE_2
-        zend_class_entry** pzce = NULL;
-#endif
-        
-        apc_cache_entry_t* cache_entry =
-            (apc_cache_entry_t*) apc_stack_pop(APCG(cache_stack));
-
-        if (cache_entry->data.file.classes) {
-            for (i = 0; cache_entry->data.file.classes[i].class_entry != NULL; i++) {
-#ifdef ZEND_ENGINE_2
-                centry = (void**)&pzce; /* a triple indirection to get zend_class_entry*** */
-#endif
-                if(zend_hash_find(EG(class_table), 
-                    cache_entry->data.file.classes[i].name,
-                    cache_entry->data.file.classes[i].name_len+1,
-                    (void**)centry) == FAILURE)
-                {
-                    /* double inclusion of conditional classes ends up failing 
-                     * this lookup the second time around.
-                     */
-                    continue;
-                }
-
-#ifdef ZEND_ENGINE_2
-                zce = *pzce;
-#endif
-                zend_hash_del(EG(class_table),
-                    cache_entry->data.file.classes[i].name,
-                    cache_entry->data.file.classes[i].name_len+1);
-                
-                apc_free_class_entry_after_execution(zce);
-            }
-        }
-        apc_cache_release(apc_cache, cache_entry);
-    }
-    if(APCG(localcache)) {
-        apc_local_cache_cleanup(APCG(lcache)); 
-    }
-}
-/* }}} */
 
 /*
  * Local variables:

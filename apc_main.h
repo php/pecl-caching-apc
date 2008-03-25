@@ -45,16 +45,6 @@ extern int apc_process_shutdown(TSRMLS_D);
 extern int apc_request_init(TSRMLS_D);
 extern int apc_request_shutdown(TSRMLS_D);
 
-/*
- * apc_deactivate is called by the PHP interpreter when an "exception" is
- * raised (e.g., a call to the exit function) that unwinds the execution
- * stack.
- */
-extern void apc_deactivate();
-
-
-extern const char* apc_version();
-
 #endif
 
 /*

@@ -408,13 +408,8 @@ users should consider tuning the following parameters:
                             slower uploads.
                             (Default: 0)
 
-    apc.localcache          This enables a lock-free local process shadow-cache which 
-                            reduces lock contention when the cache is being written to.
-                            (Default: 0)
-                            
-    apc.localcache.size     The size of the local process shadow-cache, should be set to 
-                            a sufficently large value, approximately half of num_files_hint.
-                            (Default: 512)
+    apc.localcache         ** REMOVED 
+    apc.localcache.size    ** REMOVED
     
     apc.include_once_override 
                             Optimize include_once and require_once calls and avoid the 

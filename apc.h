@@ -59,6 +59,7 @@
 #endif
 
 #include "php.h"
+#include "main/php_streams.h"
 
 /* log levels constants (see apc_log) */
 enum { APC_DBG, APC_NOTICE, APC_WARNING, APC_ERROR };
@@ -92,15 +93,9 @@ extern char** apc_tokenize(const char* s, char delim);
 typedef struct apc_fileinfo_t 
 {
     char fullpath[MAXPATHLEN+1];
-    struct stat st_buf;
+    php_stream_statbuf st_buf;
 } apc_fileinfo_t;
 
-#ifndef PHP_WIN32
-#define apc_stat(f, b) stat(f, b)
-#else
-#define apc_stat(f, b) apc_win32_stat(f, b TSRMLS_CC)
-extern int apc_win32_stat(const char *path, struct stat *buf TSRMLS_DC);
-#endif
 extern int apc_search_paths(const char* filename, const char* path, apc_fileinfo_t* fileinfo);
 
 /* regular expression wrapper functions */

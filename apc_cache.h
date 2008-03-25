@@ -38,6 +38,7 @@
 
 #include "apc.h"
 #include "apc_compile.h"
+#include "apc_lock.h"
 
 #define APC_CACHE_ENTRY_FILE   1
 #define APC_CACHE_ENTRY_USER   2
@@ -93,7 +94,6 @@ typedef struct apc_cache_entry_t apc_cache_entry_t;
 struct apc_cache_entry_t {
     apc_cache_entry_value_t data;
     unsigned char type;
-    unsigned char local;
     int ref_count;
     size_t mem_size;
 };
@@ -278,26 +278,57 @@ struct apc_cache_info_t {
 };
 /* }}} */
 
+/* {{{ struct definition: slot_t */
+typedef struct slot_t slot_t;
+struct slot_t {
+    apc_cache_key_t key;        /* slot key */
+    apc_cache_entry_t* value;   /* slot value */
+    slot_t* next;               /* next slot in linked list */
+    int num_hits;               /* number of hits to this bucket */
+    time_t creation_time;       /* time slot was initialized */
+    time_t deletion_time;       /* time slot was removed from cache */
+    time_t access_time;         /* time slot was last accessed */
+};
+/* }}} */
+
+/* {{{ struct definition: cache_header_t
+   Any values that must be shared among processes should go in here. */
+typedef struct cache_header_t cache_header_t;
+struct cache_header_t {
+    apc_lck_t lock;              /* read/write lock (exclusive blocking cache lock) */
+    apc_lck_t wrlock;           /* write lock (non-blocking used to prevent cache slams) */
+    int num_hits;               /* total successful hits in cache */
+    int num_misses;             /* total unsuccessful hits in cache */
+    int num_inserts;            /* total successful inserts in cache */
+    slot_t* deleted_list;       /* linked list of to-be-deleted slots */
+    time_t start_time;          /* time the above counters were reset */
+    int expunges;               /* total number of expunges */
+    zend_bool busy;             /* Flag to tell clients when we are busy cleaning the cache */
+    int num_entries;            /* Statistic on the number of entries */
+    size_t mem_size;            /* Statistic on the memory size used by this cache */
+};
+/* }}} */
+
+typedef size_t (*apc_expunge_cb_t)(T cache, size_t n); 
+
+/* {{{ struct definition: apc_cache_t */
+struct apc_cache_t {
+    void* shmaddr;              /* process (local) address of shared cache */
+    cache_header_t* header;           /* cache header (stored in SHM) */
+    slot_t** slots;             /* array of cache slots (stored in SHM) */
+    int num_slots;              /* number of slots in cache */
+    int gc_ttl;                 /* maximum time on GC list for a slot */
+    int ttl;                    /* if slot is needed and entry's access time is older than this ttl, remove it */
+    apc_expunge_cb_t expunge_cb;  /* cache specific expunge callback to free up sma memory */
+};
+/* }}} */
+
 extern apc_cache_info_t* apc_cache_info(T cache, zend_bool limited);
 extern void apc_cache_free_info(apc_cache_info_t* info);
-extern void apc_cache_expunge(apc_cache_t* cache, time_t t);
 extern void apc_cache_unlock(apc_cache_t* cache);
 extern zend_bool apc_cache_busy(apc_cache_t* cache);
 extern zend_bool apc_cache_write_lock(apc_cache_t* cache);
 extern void apc_cache_write_unlock(apc_cache_t* cache);
-
-/* 
- * Process local cache, which keeps a refcount hungry version of the slots
- * for quick access without a lock - as long as the entry exists in local
- * cache, the refcount of the shm version will be +1 more than required.
- * It holds no data, only a shallow copy of apc_cache_entry.
- */
-typedef struct apc_local_cache_t apc_local_cache_t; /* process-local cache */ 
-
-extern apc_local_cache_t* apc_local_cache_create(apc_cache_t *shmcache, int num_slots, int ttl);
-extern apc_cache_entry_t* apc_local_cache_find(apc_local_cache_t* cache, apc_cache_key_t key, time_t t);
-extern void apc_local_cache_destroy(apc_local_cache_t* cache);
-extern void apc_local_cache_cleanup(apc_local_cache_t* cache);
 
 #undef T
 #endif

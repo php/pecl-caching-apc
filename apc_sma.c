@@ -33,10 +33,15 @@
 #include "apc_globals.h"
 #include "apc_lock.h"
 #include "apc_shm.h"
+#include "apc_cache.h"
 #include <limits.h>
 #if APC_MMAP
 void *apc_mmap(char *file_mask, size_t size);
 void apc_unmap(void* shmaddr, size_t size);
+#endif
+
+#ifdef HAVE_VALGRIND_MEMCHECK_H
+#include <valgrind/memcheck.h>
 #endif
 
 /* {{{ locking macros */
@@ -110,19 +115,12 @@ struct block_t {
 #endif
 
 
-#ifdef max
-#undef max
-#endif
-#define max(a, b) ((a) > (b) ? (a) : (b))
-
-/* {{{ ALIGNWORD: pad up x, aligned to the system's word boundary */
-typedef union { void* p; int i; long l; double d; void (*f)(); } apc_word_t;
-#define ALIGNWORD(x) (sizeof(apc_word_t) * (1 + (((x)-1)/sizeof(apc_word_t))))
+/* {{{ MINBLOCKSIZE */
 #define MINBLOCKSIZE (ALIGNWORD(1) + ALIGNWORD(sizeof(block_t)))
 /* }}} */
 
 /* {{{ sma_allocate: tries to allocate size bytes in a segment */
-static int sma_allocate(void* shmaddr, size_t size)
+static size_t sma_allocate(void* shmaddr, size_t size)
 {
     header_t* header;       /* header of shared memory segment */
     block_t* prv;           /* block prior to working block */
@@ -239,7 +237,7 @@ static int sma_allocate(void* shmaddr, size_t size)
 /* }}} */
 
 /* {{{ sma_deallocate: deallocates the block at the given offset */
-static int sma_deallocate(void* shmaddr, int offset)
+static size_t sma_deallocate(void* shmaddr, size_t offset)
 {
     header_t* header;   /* header of shared memory segment */
     block_t* cur;       /* the new block to insert */
@@ -409,18 +407,32 @@ void apc_sma_cleanup()
 /* {{{ apc_sma_malloc */
 void* apc_sma_malloc(size_t n)
 {
-    int off;
+    size_t off;
     int i;
+    size_t *orig_mem_size_ptr;
 
     TSRMLS_FETCH();
     assert(sma_initialized);
     LOCK(((header_t*)sma_shmaddrs[sma_lastseg])->sma_lock);
 
     off = sma_allocate(sma_shmaddrs[sma_lastseg], n);
+    if(off == -1) { 
+        /* retry failed allocation after we expunge */
+        UNLOCK(((header_t*)sma_shmaddrs[sma_lastseg])->sma_lock);
+        orig_mem_size_ptr = APCG(mem_size_ptr);
+        APCG(mem_size_ptr) = NULL;
+        APCG(current_cache)->expunge_cb(APCG(current_cache), n);
+        APCG(mem_size_ptr) = orig_mem_size_ptr;
+        LOCK(((header_t*)sma_shmaddrs[sma_lastseg])->sma_lock);
+        off = sma_allocate(sma_shmaddrs[sma_lastseg], n);
+    }
     if (off != -1) {
         void* p = (void *)(((char *)(sma_shmaddrs[sma_lastseg])) + off);
         if (APCG(mem_size_ptr) != NULL) { *(APCG(mem_size_ptr)) += n; }
         UNLOCK(((header_t*)sma_shmaddrs[sma_lastseg])->sma_lock);
+#ifdef VALGRIND_MALLOCLIKE_BLOCK
+        VALGRIND_MALLOCLIKE_BLOCK(p, n, 0, 0);
+#endif
         return p;
     }
     UNLOCK(((header_t*)sma_shmaddrs[sma_lastseg])->sma_lock);
@@ -431,11 +443,24 @@ void* apc_sma_malloc(size_t n)
         }
         LOCK(((header_t*)sma_shmaddrs[i])->sma_lock);
         off = sma_allocate(sma_shmaddrs[i], n);
+        if(off == -1) { 
+            /* retry failed allocation after we expunge */
+            UNLOCK(((header_t*)sma_shmaddrs[i])->sma_lock);
+            orig_mem_size_ptr = APCG(mem_size_ptr);
+            APCG(mem_size_ptr) = NULL;
+            APCG(current_cache)->expunge_cb(APCG(current_cache), n);
+            APCG(mem_size_ptr) = orig_mem_size_ptr;
+            LOCK(((header_t*)sma_shmaddrs[i])->sma_lock);
+            off = sma_allocate(sma_shmaddrs[sma_lastseg], n);
+        }
         if (off != -1) {
             void* p = (void *)(((char *)(sma_shmaddrs[i])) + off);
             if (APCG(mem_size_ptr) != NULL) { *(APCG(mem_size_ptr)) += n; }
             UNLOCK(((header_t*)sma_shmaddrs[i])->sma_lock);
             sma_lastseg = i;
+#ifdef VALGRIND_MALLOCLIKE_BLOCK
+            VALGRIND_MALLOCLIKE_BLOCK(p, n, 0, 0);
+#endif
             return p;
         }
         UNLOCK(((header_t*)sma_shmaddrs[i])->sma_lock);
@@ -490,6 +515,9 @@ void apc_sma_free(void* p)
             d_size = sma_deallocate(sma_shmaddrs[i], offset);
             if (APCG(mem_size_ptr) != NULL) { *(APCG(mem_size_ptr)) -= d_size; }
             UNLOCK(((header_t*)sma_shmaddrs[i])->sma_lock);
+#ifdef VALGRIND_FREELIKE_BLOCK
+            VALGRIND_FREELIKE_BLOCK(p, 0);
+#endif
             return;
         }
         UNLOCK(((header_t*)sma_shmaddrs[i])->sma_lock);

@@ -34,7 +34,7 @@
 #ifndef APC_GLOBALS_H
 #define APC_GLOBALS_H
 
-#define APC_VERSION "3.0.16"
+#define APC_VERSION "3.0.17-dev"
 
 #include "apc_cache.h"
 #include "apc_stack.h"
@@ -58,6 +58,7 @@ ZEND_BEGIN_MODULE_GLOBALS(apc)
     /* module variables */
     zend_bool initialized;       /* true if module was initialized */
     apc_stack_t* cache_stack;    /* the stack of cached executable code */
+    apc_stack_t* refcount_stack; /* the stack of refcounts to be free'd in request shutdown */
     zend_bool cache_by_default;  /* true if files should be cached unless filtered out */
                                  /* false if files should only be cached if filtered in */
     long slam_defense;           /* Probability of a process not caching an uncached file */
@@ -82,15 +83,13 @@ ZEND_BEGIN_MODULE_GLOBALS(apc)
 #ifdef ZEND_ENGINE_2
     int reserved_offset;         /* offset for apc info in op_array->reserved[] */
 #endif
-    zend_bool localcache;        /* enable local cache */
-    long localcache_size;        /* size of fast cache */
-    apc_local_cache_t* lcache;   /* unlocked local cache */
     zend_bool force_file_update; /* force files to be updated during apc_compile_file */
     char canon_path[MAXPATHLEN]; /* canonical path for key data */
 #if APC_FILEHITS
     zval *filehits;             /* Files that came from the cache for this request */
 #endif
     zend_bool coredump_unmap;    /* Trap signals that coredump and unmap shared memory */
+    apc_cache_t *current_cache;  /* current cache being modified/read */
 ZEND_END_MODULE_GLOBALS(apc)
 
 /* (the following declaration is defined in php_apc.c) */

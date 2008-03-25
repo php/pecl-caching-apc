@@ -78,6 +78,7 @@ static void php_apc_init_globals(zend_apc_globals* apc_globals TSRMLS_DC)
     apc_globals->filters = NULL;
     apc_globals->initialized = 0;
     apc_globals->cache_stack = apc_stack_create(0);
+    apc_globals->refcount_stack = apc_stack_create(0);
     apc_globals->cache_by_default = 1;
     apc_globals->slam_defense = 0;
     apc_globals->mem_size_ptr = NULL;
@@ -93,9 +94,6 @@ static void php_apc_init_globals(zend_apc_globals* apc_globals TSRMLS_DC)
 #ifdef ZEND_ENGINE_2
     apc_globals->reserved_offset = -1;
 #endif
-    apc_globals->localcache = 0;
-    apc_globals->localcache_size = 0;
-    apc_globals->lcache = NULL;
     apc_globals->force_file_update = 0;
     apc_globals->coredump_unmap = 0;
 }
@@ -201,8 +199,6 @@ STD_PHP_INI_ENTRY("apc.rfc1867_prefix", "upload_", PHP_INI_SYSTEM, OnUpdateStrin
 STD_PHP_INI_ENTRY("apc.rfc1867_name", "APC_UPLOAD_PROGRESS", PHP_INI_SYSTEM, OnUpdateStringUnempty, rfc1867_name, zend_apc_globals, apc_globals)
 STD_PHP_INI_ENTRY("apc.rfc1867_freq", "0", PHP_INI_SYSTEM, OnUpdateRfc1867Freq, rfc1867_freq, zend_apc_globals, apc_globals)
 #endif
-STD_PHP_INI_BOOLEAN("apc.localcache", "0", PHP_INI_SYSTEM, OnUpdateBool, localcache, zend_apc_globals, apc_globals)
-STD_PHP_INI_ENTRY("apc.localcache.size", "512", PHP_INI_SYSTEM, OnUpdateInt, localcache_size,  zend_apc_globals, apc_globals)
 STD_PHP_INI_BOOLEAN("apc.coredump_unmap", "0", PHP_INI_SYSTEM, OnUpdateBool, coredump_unmap, zend_apc_globals, apc_globals)
 PHP_INI_END()
 
@@ -284,6 +280,9 @@ static PHP_MSHUTDOWN_FUNCTION(apc)
 #ifndef ZTS
         php_apc_shutdown_globals(&apc_globals);
 #endif
+#if HAVE_SIGACTION
+        apc_shutdown_signals();
+#endif
     }
 #ifdef ZTS
     ts_free_id(apc_globals_id);
@@ -300,7 +299,7 @@ static PHP_RINIT_FUNCTION(apc)
         apc_request_init(TSRMLS_C);
 
 #if HAVE_SIGACTION
-        apc_set_signals();
+        apc_set_signals(TSRMLS_C);
 #endif
     }
     return SUCCESS;
@@ -451,7 +450,7 @@ PHP_FUNCTION(apc_cache_info)
 }
 /* }}} */
 
-/* {{{ proto void apc_clear_cache() */
+/* {{{ proto void apc_clear_cache([string cache]) */
 PHP_FUNCTION(apc_clear_cache)
 {
     char *cache_type;
@@ -561,33 +560,32 @@ int _apc_store(char *strkey, int strkey_len, const zval *val, const unsigned int
     HANDLE_BLOCK_INTERRUPTIONS();
 
     APCG(mem_size_ptr) = &mem_size;
+    APCG(current_cache) = apc_user_cache;
     if (!(entry = apc_cache_make_user_entry(strkey, strkey_len + 1, val, ttl))) {
         APCG(mem_size_ptr) = NULL;
-        apc_cache_expunge(apc_cache,t);
-        apc_cache_expunge(apc_user_cache,t);
+        APCG(current_cache) = NULL;
         HANDLE_UNBLOCK_INTERRUPTIONS();
         return 0;
     }
 
     if (!apc_cache_make_user_key(&key, strkey, strkey_len + 1, t)) {
         APCG(mem_size_ptr) = NULL;
+        APCG(current_cache) = NULL;
         apc_cache_free_entry(entry);
-        apc_cache_expunge(apc_cache,t);
-        apc_cache_expunge(apc_user_cache,t);
         HANDLE_UNBLOCK_INTERRUPTIONS();
         return 0;
     }
 
     if (!apc_cache_user_insert(apc_user_cache, key, entry, t, exclusive TSRMLS_CC)) {
-        APCG(mem_size_ptr) = NULL;
         apc_cache_free_entry(entry);
-        apc_cache_expunge(apc_cache,t);
-        apc_cache_expunge(apc_user_cache,t);
+        APCG(mem_size_ptr) = NULL;
+        APCG(current_cache) = NULL;
         HANDLE_UNBLOCK_INTERRUPTIONS();
         return 0;
     }
 
     APCG(mem_size_ptr) = NULL;
+    APCG(current_cache) = NULL;
 
     HANDLE_UNBLOCK_INTERRUPTIONS();
 
@@ -595,7 +593,7 @@ int _apc_store(char *strkey, int strkey_len, const zval *val, const unsigned int
 }
 /* }}} */
 
-/* {{{ proto int apc_store(string key, zval var [, ttl ])
+/* {{{ proto int apc_store(string key, mixed var [, long ttl ])
  */
 PHP_FUNCTION(apc_store) {
     zval *val;
@@ -614,7 +612,7 @@ PHP_FUNCTION(apc_store) {
 }
 /* }}} */
 
-/* {{{ proto int apc_add(string key, zval var [, ttl ])
+/* {{{ proto int apc_add(string key, mixed var [, long ttl ])
  */
 PHP_FUNCTION(apc_add) {
     zval *val;
@@ -636,7 +634,6 @@ PHP_FUNCTION(apc_add) {
 void *apc_erealloc_wrapper(void *ptr, size_t size) {
     return _erealloc(ptr, size, 0 ZEND_FILE_LINE_CC ZEND_FILE_LINE_EMPTY_CC);
 }
-
 /* {{{ RETURN_ZVAL for php4 */
 #if !defined(ZEND_ENGINE_2) && !defined(RETURN_ZVAL)
 #define RETURN_ZVAL(zv, copy, dtor) { RETVAL_ZVAL(zv, copy, dtor); return; } 
@@ -661,10 +658,11 @@ void *apc_erealloc_wrapper(void *ptr, size_t size) {
 #endif
 /* }}} */
 
-/* {{{ proto mixed apc_fetch(mixed key)
+/* {{{ proto mixed apc_fetch(mixed key[, bool &success])
  */
 PHP_FUNCTION(apc_fetch) {
     zval *key;
+    zval *success = NULL;
     HashTable *hash;
     HashPosition hpos;
     zval **hentry;
@@ -677,7 +675,7 @@ PHP_FUNCTION(apc_fetch) {
 
     if(!APCG(enabled)) RETURN_FALSE;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &key) == FAILURE) {
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z|z", &key, &success) == FAILURE) {
         return;
     }
 
@@ -690,6 +688,10 @@ PHP_FUNCTION(apc_fetch) {
 #else
     t = sapi_get_request_time(TSRMLS_C);
 #endif
+
+    if (success) {
+        ZVAL_BOOL(success, 0);
+    }
 
     if(Z_TYPE_P(key) != IS_STRING && Z_TYPE_P(key) != IS_ARRAY) {
         convert_to_string(key);
@@ -727,10 +729,14 @@ PHP_FUNCTION(apc_fetch) {
             } /* don't set values we didn't find */
             zend_hash_move_forward_ex(hash, &hpos);
         }
-        RETURN_ZVAL(result, 0, 1);
+        RETVAL_ZVAL(result, 0, 1);
     } else {
         apc_wprint("apc_fetch() expects a string or array of strings.");
         RETURN_FALSE;
+    }
+
+    if (success) {
+        ZVAL_BOOL(success, 1);
     }
 
     return;
@@ -945,13 +951,26 @@ PHP_FUNCTION(apc_compile_file) {
 }
 /* }}} */
 
+#ifdef ZEND_ENGINE_2
+/* {{{ arginfo */
+static
+ZEND_BEGIN_ARG_INFO(php_apc_fetch_arginfo, 0)
+    ZEND_ARG_INFO(0, "key")
+    ZEND_ARG_INFO(1, "success")
+ZEND_END_ARG_INFO()
+/* }}} */
+#else
+#define php_apc_fetch_arginfo NULL
+#endif
+
+
 /* {{{ apc_functions[] */
 function_entry apc_functions[] = {
 	PHP_FE(apc_cache_info,          NULL)
 	PHP_FE(apc_clear_cache,         NULL)
 	PHP_FE(apc_sma_info,            NULL)
 	PHP_FE(apc_store,               NULL)
-	PHP_FE(apc_fetch,               NULL)
+	PHP_FE(apc_fetch,               php_apc_fetch_arginfo)
 	PHP_FE(apc_delete,              NULL)
 	PHP_FE(apc_define_constants,    NULL)
 	PHP_FE(apc_load_constants,      NULL)

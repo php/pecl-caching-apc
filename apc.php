@@ -344,17 +344,21 @@ if (isset($MYREQUEST['IMG']))
 				if($block['offset']!=$ptr) {       // Used block
 					$angle_to = $angle_from+($block['offset']-$ptr)/$s;
 					if(($angle_to+$fuzz)>1) $angle_to = 1;
-					fill_arc($image,$x,$y,$size,$angle_from*360,$angle_to*360,$col_black,$col_red);
-					if (($angle_to-$angle_from)>0.05) {
-						array_push($string_placement, array($angle_from,$angle_to));
+					if( ($angle_to*360) - ($angle_from*360) >= 1) {
+						fill_arc($image,$x,$y,$size,$angle_from*360,$angle_to*360,$col_black,$col_red);
+						if (($angle_to-$angle_from)>0.05) {
+							array_push($string_placement, array($angle_from,$angle_to));
+						}
 					}
 					$angle_from = $angle_to;
 				}
 				$angle_to = $angle_from+($block['size'])/$s;
 				if(($angle_to+$fuzz)>1) $angle_to = 1;
-				fill_arc($image,$x,$y,$size,$angle_from*360,$angle_to*360,$col_black,$col_green);
-				if (($angle_to-$angle_from)>0.05) {
-					array_push($string_placement, array($angle_from,$angle_to));
+				if( ($angle_to*360) - ($angle_from*360) >= 1) {
+					fill_arc($image,$x,$y,$size,$angle_from*360,$angle_to*360,$col_black,$col_green);
+					if (($angle_to-$angle_from)>0.05) {
+						array_push($string_placement, array($angle_from,$angle_to));
+					}
 				}
 				$angle_from = $angle_to;
 				$ptr = $block['offset']+$block['size'];
@@ -925,7 +929,7 @@ EOB;
 // -----------------------------------------------
 case OB_USER_CACHE:
 	if (!$AUTHENTICATED) {
-		echo '<div class="authneeded">You need to login to see the user values here!<br/>&nbsp;<br/>';
+    echo '<div class="error">You need to login to see the user values here!<br/>&nbsp;<br/>';
 		put_login_link("Login now!");
 		echo '</div>';
 		break;
@@ -1030,8 +1034,19 @@ EOB;
 		'</select>',
     '&nbsp; Search: <input name=SEARCH value="',$MYREQUEST['SEARCH'],'" type=text size=25/>',
 		'&nbsp;<input type=submit value="GO!">',
-		'</form></div>',
+		'</form></div>';
 
+  if (isset($MYREQUEST['SEARCH'])) {
+   // Don't use preg_quote because we want the user to be able to specify a
+   // regular expression subpattern.
+   $MYREQUEST['SEARCH'] = '/'.str_replace('/', '\\/', $MYREQUEST['SEARCH']).'/i';
+   if (preg_match($MYREQUEST['SEARCH'], 'test') === false) {
+     echo '<div class="error">Error: enter a valid regular expression as a search query.</div>';
+     break;
+   }
+  }
+
+  echo
 		'<div class="info"><table cellspacing=0><tbody>',
 		'<tr>',
 		'<th>',sortheader('S',$fieldheading,  "&OB=".$MYREQUEST['OB']),'</th>',
@@ -1081,7 +1096,7 @@ EOB;
 		// output list
 		$i=0;
 		foreach($list as $k => $entry) {
-      if(!$MYREQUEST['SEARCH'] || preg_match('/'.$MYREQUEST['SEARCH'].'/i', $entry[$fieldname]) != 0) {  
+      if(!$MYREQUEST['SEARCH'] || preg_match($MYREQUEST['SEARCH'], $entry[$fieldname]) != 0) {  
         echo
           '<tr class=tr-',$i%2,'>',
           "<td class=td-0><a href=\"$MY_SELF&OB=",$MYREQUEST['OB'],"&SH=",md5($entry[$fieldkey]),"\">",$entry[$fieldname],'</a></td>',

@@ -50,73 +50,11 @@
 #define UNLOCK(c)       { apc_lck_unlock(c->header->lock); HANDLE_UNBLOCK_INTERRUPTIONS(); }
 /* }}} */
 
-/* {{{ struct definition: slot_t */
-typedef struct slot_t slot_t;
-struct slot_t {
-    apc_cache_key_t key;        /* slot key */
-    apc_cache_entry_t* value;   /* slot value */
-    slot_t* next;               /* next slot in linked list */
-    int num_hits;               /* number of hits to this bucket */
-    time_t creation_time;       /* time slot was initialized */
-    time_t deletion_time;       /* time slot was removed from cache */
-    time_t access_time;         /* time slot was last accessed */
-};
-/* }}} */
-
-/* {{{ struct definition: header_t
-   Any values that must be shared among processes should go in here. */
-typedef struct header_t header_t;
-struct header_t {
-    apc_lck_t lock;              /* read/write lock (exclusive blocking cache lock) */
-    apc_lck_t wrlock;           /* write lock (non-blocking used to prevent cache slams) */
-    int num_hits;               /* total successful hits in cache */
-    int num_misses;             /* total unsuccessful hits in cache */
-    int num_inserts;            /* total successful inserts in cache */
-    slot_t* deleted_list;       /* linked list of to-be-deleted slots */
-    time_t start_time;          /* time the above counters were reset */
-    int expunges;               /* total number of expunges */
-    zend_bool busy;             /* Flag to tell clients when we are busy cleaning the cache */
-    int num_entries;            /* Statistic on the number of entries */
-    size_t mem_size;            /* Statistic on the memory size used by this cache */
-};
-/* }}} */
-
-/* {{{ struct definition: apc_cache_t */
-struct apc_cache_t {
-    void* shmaddr;              /* process (local) address of shared cache */
-    header_t* header;           /* cache header (stored in SHM) */
-    slot_t** slots;             /* array of cache slots (stored in SHM) */
-    int num_slots;              /* number of slots in cache */
-    int gc_ttl;                 /* maximum time on GC list for a slot */
-    int ttl;                    /* if slot is needed and entry's access time is older than this ttl, remove it */
-};
-/* }}} */
-
-/* {{{ struct definition local_slot_t */
-typedef struct local_slot_t local_slot_t;
-struct local_slot_t {
-    slot_t *original;           /* the original slot in shm */
-    int num_hits;               /* number of hits */
-    time_t creation_time;       /* creation time */
-    apc_cache_entry_t *value;   /* shallow copy of slot->value */
-    local_slot_t *next;         /* only for dead list */
-};
-/* }}} */
-/* {{{ struct definition apc_local_cache_t */
-struct apc_local_cache_t {
-    apc_cache_t* shmcache;      /* the real cache in shm */
-    local_slot_t* slots;        /* process (local) cache of objects */
-    local_slot_t* dead_list;    /* list of objects pending removal */
-    int num_slots;              /* number of slots in cache */
-    int ttl;                    /* time to live */
-    int num_hits;               /* number of hits */
-    int generation;             /* every generation lives between expunges */
-};
-/* }}} */
-
 /* {{{ key_equals */
 #define key_equals(a, b) (a.inode==b.inode && a.device==b.device)
 /* }}} */
+
+static size_t apc_cache_expunge(apc_cache_t* cache, size_t size);
 
 /* {{{ hash */
 static unsigned int hash(apc_cache_key_t key)
@@ -272,11 +210,7 @@ static void prevent_garbage_collection(apc_cache_entry_t* entry)
         int i;
         apc_function_t* fns = entry->data.file.functions;
         for (i=0; fns[i].function != NULL; i++) {
-#ifdef ZEND_ENGINE_2            
             *(fns[i].function->op_array.refcount) = BIG_VALUE;
-#else            
-            fns[i].function->op_array.refcount[0] = BIG_VALUE;
-#endif            
         }
     }
     if (entry->data.file.classes) {
@@ -304,7 +238,7 @@ apc_cache_t* apc_cache_create(int size_hint, int gc_ttl, int ttl)
     num_slots = size_hint > 0 ? size_hint*2 : 2000;
 
     cache = (apc_cache_t*) apc_emalloc(sizeof(apc_cache_t));
-    cache_size = sizeof(header_t) + num_slots*sizeof(slot_t*);
+    cache_size = sizeof(cache_header_t) + num_slots*sizeof(slot_t*);
 
     cache->shmaddr = apc_sma_malloc(cache_size);
     if(!cache->shmaddr) {
@@ -312,7 +246,7 @@ apc_cache_t* apc_cache_create(int size_hint, int gc_ttl, int ttl)
     }
     memset(cache->shmaddr, 0, cache_size);
 
-    cache->header = (header_t*) cache->shmaddr;
+    cache->header = (cache_header_t*) cache->shmaddr;
     cache->header->num_hits = 0;
     cache->header->num_misses = 0;
     cache->header->deleted_list = NULL;
@@ -320,7 +254,7 @@ apc_cache_t* apc_cache_create(int size_hint, int gc_ttl, int ttl)
     cache->header->expunges = 0;
     cache->header->busy = 0;
 
-    cache->slots = (slot_t**) (((char*) cache->shmaddr) + sizeof(header_t));
+    cache->slots = (slot_t**) (((char*) cache->shmaddr) + sizeof(cache_header_t));
     cache->num_slots = num_slots;
     cache->gc_ttl = gc_ttl;
     cache->ttl = ttl;
@@ -331,6 +265,7 @@ apc_cache_t* apc_cache_create(int size_hint, int gc_ttl, int ttl)
     for (i = 0; i < num_slots; i++) {
         cache->slots[i] = NULL;
     }
+    cache->expunge_cb = apc_cache_expunge;
 
     return cache;
 }
@@ -372,9 +307,21 @@ void apc_cache_clear(apc_cache_t* cache)
 /* }}} */
 
 /* {{{ apc_cache_expunge */
-void apc_cache_expunge(apc_cache_t* cache, time_t t)
+static size_t apc_cache_expunge(apc_cache_t* cache, size_t size)
 {
     int i;
+    time_t t;
+    TSRMLS_FETCH();
+
+#if PHP_API_VERSION < 20041225
+#if HAVE_APACHE && defined(APC_PHP4_STAT)
+    t = ((request_rec *)SG(server_context))->request_time;
+#else
+    t = time(0);
+#endif
+#else
+    t = sapi_get_request_time(TSRMLS_C);
+#endif
 
     if(!cache) return;
 
@@ -700,9 +647,6 @@ int apc_cache_user_delete(apc_cache_t* cache, char *strkey, int keylen)
 /* {{{ apc_cache_release */
 void apc_cache_release(apc_cache_t* cache, apc_cache_entry_t* entry)
 {
-    /* local cache refcount-- is done in apc_local_cache_cleanup */
-    if(entry->local) return;
-
     LOCK(cache);
     entry->ref_count--;
     UNLOCK(cache);
@@ -759,7 +703,7 @@ int apc_cache_make_file_key(apc_cache_key_t* key,
         tmp_buf = sapi_get_stat(TSRMLS_C);  /* Apache has already done this stat() for us */
     }
     if(tmp_buf) { 
-		fileinfo.st_buf = *tmp_buf;
+		fileinfo.st_buf.sb = *tmp_buf;
     } else {
         if (apc_search_paths(filename, include_path, &fileinfo) != 0) {
 #ifdef __DEBUG_APC__
@@ -769,9 +713,9 @@ int apc_cache_make_file_key(apc_cache_key_t* key,
         }
     }
 
-    if(APCG(max_file_size) < fileinfo.st_buf.st_size) {
+    if(APCG(max_file_size) < fileinfo.st_buf.sb.st_size) {
 #ifdef __DEBUG_APC__
-        fprintf(stderr,"File is too big %s (%d - %ld) - bailing\n",filename,t,fileinfo.st_buf.st_size);
+        fprintf(stderr,"File is too big %s (%d - %ld) - bailing\n",filename,t,fileinfo.st_buf.sb.st_size);
 #endif
         return 0;
     }
@@ -788,15 +732,15 @@ int apc_cache_make_file_key(apc_cache_key_t* key,
      * tiny safety is easier than educating the world.  This is now
      * configurable, but the default is still 2 seconds.
      */
-    if(APCG(file_update_protection) && (t - fileinfo.st_buf.st_mtime < APCG(file_update_protection))) { 
+    if(APCG(file_update_protection) && (t - fileinfo.st_buf.sb.st_mtime < APCG(file_update_protection))) { 
 #ifdef __DEBUG_APC__
-        fprintf(stderr,"File is too new %s (%d - %d) - bailing\n",filename,t,fileinfo.st_buf.st_mtime);
+        fprintf(stderr,"File is too new %s (%d - %d) - bailing\n",filename,t,fileinfo.st_buf.sb.st_mtime);
 #endif
         return 0;
     }
 
-    key->data.file.device = fileinfo.st_buf.st_dev;
-    key->data.file.inode  = fileinfo.st_buf.st_ino;
+    key->data.file.device = fileinfo.st_buf.sb.st_dev;
+    key->data.file.inode  = fileinfo.st_buf.sb.st_ino;
     /* 
      * If working with content management systems that like to munge the mtime, 
      * it might be appropriate to key off of the ctime to be immune to systems
@@ -809,9 +753,9 @@ int apc_cache_make_file_key(apc_cache_key_t* key,
      * set the apc.stat_ctime=true to enable this check.
      */
     if(APCG(stat_ctime)) {
-        key->mtime  = (fileinfo.st_buf.st_ctime > fileinfo.st_buf.st_mtime) ? fileinfo.st_buf.st_ctime : fileinfo.st_buf.st_mtime; 
+        key->mtime  = (fileinfo.st_buf.sb.st_ctime > fileinfo.st_buf.sb.st_mtime) ? fileinfo.st_buf.sb.st_ctime : fileinfo.st_buf.sb.st_mtime; 
     } else {
-        key->mtime = fileinfo.st_buf.st_mtime;
+        key->mtime = fileinfo.st_buf.sb.st_mtime;
     }
     key->type = APC_CACHE_KEY_FILE;
     return 1;
@@ -862,7 +806,6 @@ apc_cache_entry_t* apc_cache_make_file_entry(const char* filename,
     entry->type = APC_CACHE_ENTRY_FILE;
     entry->ref_count = 0;
     entry->mem_size = 0;
-    entry->local = 0;
     return entry;
 }
 /* }}} */
@@ -1003,7 +946,6 @@ apc_cache_entry_t* apc_cache_make_user_entry(const char* info, int info_len, con
     entry->type = APC_CACHE_ENTRY_USER;
     entry->ref_count = 0;
     entry->mem_size = 0;
-    entry->local = 0;
     return entry;
 }
 /* }}} */
@@ -1176,162 +1118,6 @@ void apc_cache_write_unlock(apc_cache_t* cache)
 }
 /* }}} */
 #endif
-
-/* {{{ make_local_slot */
-static local_slot_t* make_local_slot(apc_local_cache_t* cache, local_slot_t* lslot, slot_t* slot, time_t t) 
-{
-    apc_cache_entry_t* value;
-
-    value = apc_emalloc(sizeof(apc_cache_entry_t));
-    memcpy(value, slot->value, sizeof(apc_cache_entry_t)); /* bitwise copy */
-    value->local = 1;
-
-    lslot->original = slot;
-    lslot->value = value;
-    lslot->num_hits = 0;
-    lslot->creation_time = t;
-
-    return lslot; /* for what joy ? ... consistency */
-}
-/* }}} */
-
-/* {{{ free_local_slot */
-static void free_local_slot(apc_local_cache_t* cache, local_slot_t* lslot) 
-{
-    local_slot_t * dead = NULL;
-    if(!lslot->original) return;
-
-    /* TODO: Bad design to allocate memory in a free_* - fix when bored (hehe) */
-    dead = apc_emalloc(sizeof(local_slot_t));
-    memcpy(dead, lslot, sizeof(local_slot_t)); /* bitwise copy */
-
-    lslot->original = NULL;
-    lslot->value = NULL;
-
-    dead->next = cache->dead_list;
-    cache->dead_list = dead;
-}
-/* }}} */
-
-/* {{{ apc_local_cache_create */
-apc_local_cache_t* apc_local_cache_create(apc_cache_t *shmcache, int num_slots, int ttl)
-{
-    apc_local_cache_t* cache = NULL;
-
-    cache = (apc_local_cache_t*) apc_emalloc(sizeof(apc_local_cache_t));
-
-    cache->slots = (local_slot_t*) (apc_emalloc(sizeof(local_slot_t) * num_slots));
-    memset(cache->slots, 0, sizeof(local_slot_t) * num_slots);
-
-    cache->shmcache = shmcache;
-    cache->num_slots = num_slots;
-    cache->ttl = ttl;
-    cache->num_hits = 0;
-    cache->generation = shmcache->header->expunges;
-    cache->dead_list = NULL;
-
-    return cache;
-}
-/* }}} */
-
-/* {{{ apc_local_cache_cleanup */
-void apc_local_cache_cleanup(apc_local_cache_t* cache) {
-    local_slot_t * lslot;
-    time_t t = time(0);
-    
-    int i;
-    for(i = 0; i < cache->num_slots; i++) {
-        lslot = &cache->slots[i];
-        /* every slot lives for exactly TTL seconds */
-        if((lslot->original && lslot->creation_time < (t - cache->ttl)) ||
-                cache->generation != cache->shmcache->header->expunges) {
-            free_local_slot(cache, lslot);
-        }
-    }
-
-    LOCK(cache->shmcache);
-    for(lslot = cache->dead_list; lslot != NULL; lslot = lslot->next) {
-        lslot->original->num_hits += lslot->num_hits;
-        lslot->original->value->ref_count--; /* apc_cache_release(cache->shmcache, lslot->original->value); */
-        apc_efree(lslot->value);
-    }
-    UNLOCK(cache->shmcache);
-
-    cache->dead_list = NULL;
-}
-/* }}} */
-
-/* {{{ apc_local_cache_destroy */
-void apc_local_cache_destroy(apc_local_cache_t* cache)
-{
-    int i;
-    for(i = 0; i < cache->num_slots; i++) {
-        free_local_slot(cache, &cache->slots[i]);
-    }
-
-    apc_local_cache_cleanup(cache);
-
-    LOCK(cache->shmcache);
-    cache->shmcache->header->num_hits += cache->num_hits;
-    UNLOCK(cache->shmcache);
-
-    apc_efree(cache->slots);
-    apc_efree(cache);
-}
-/* }}} */
-
-/* {{{ apc_local_cache_find */
-apc_cache_entry_t* apc_local_cache_find(apc_local_cache_t* cache, apc_cache_key_t key, time_t t)
-{
-    slot_t* slot;
-    local_slot_t* lslot; 
-
-    if(key.type == APC_CACHE_KEY_FILE) lslot = &cache->slots[hash(key) % cache->num_slots];
-    else lslot = &cache->slots[string_nhash_8(key.data.fpfile.fullpath, key.data.fpfile.fullpath_len) % cache->num_slots];
-
-    slot = lslot->original;
-
-    if(slot && key.type == slot->key.type) {
-        if(slot->access_time < (t - cache->ttl)) {
-            goto not_found;
-        }
-        if(key.type == APC_CACHE_KEY_FILE && 
-           key_equals(slot->key.data.file, key.data.file)) {
-            if(slot->key.mtime != key.mtime) {
-                free_local_slot(cache, lslot);
-                goto not_found;
-            }
-            cache->num_hits++;
-            lslot->num_hits++;
-            lslot->original->access_time = t; /* unlocked write, but last write wins */
-            return lslot->value;
-        } else if(key.type == APC_CACHE_KEY_FPFILE) {
-            if(!memcmp(slot->key.data.fpfile.fullpath, key.data.fpfile.fullpath, key.data.fpfile.fullpath_len+1)) {
-                cache->num_hits++;
-                lslot->num_hits++;
-                lslot->original->access_time = t; /* unlocked write, but last write wins */
-                return lslot->value;
-            }
-        }
-    }
-not_found:
-    if(apc_cache_busy(cache->shmcache)) {
-        return NULL;
-    }
-
-    slot = apc_cache_find_slot(cache->shmcache, key, t);
-
-    if(!slot) return NULL;
-   
-    /* i.e maintain a sort of top list */
-    if(lslot->original == NULL || (lslot->original->num_hits + lslot->num_hits)  < slot->num_hits) {
-        free_local_slot(cache, lslot);
-        make_local_slot(cache, lslot, slot, t); 
-        return lslot->value;
-    }
-    return slot->value;
-}
-/* }}} */
 
 /*
  * Local variables:
