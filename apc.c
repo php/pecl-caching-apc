@@ -331,7 +331,7 @@ int apc_search_paths(const char* filename, const char* path, apc_fileinfo_t* fil
             /* not: [no active file] or no path */
             memcpy(fileinfo->fullpath, exec_fname, exec_fname_length);
             fileinfo->fullpath[exec_fname_length] = DEFAULT_SLASH;
-            strcpy(fileinfo->fullpath +exec_fname_length +1, path_for_open);
+            strlcpy(fileinfo->fullpath +exec_fname_length +1, path_for_open,sizeof(fileinfo->fullpath)-exec_fname_length-1);
             /* apc_wprint("filename: %s, exec_fname: %s, fileinfo->fullpath: %s", path_for_open, exec_fname, fileinfo->fullpath); */
             if (APC_URL_STAT(wrapper, fileinfo->fullpath, &fileinfo->st_buf) == 0) {
                 found = 1;
