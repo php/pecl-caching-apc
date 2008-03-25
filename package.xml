@@ -105,6 +105,8 @@
     <file role="src" name="apc_shm.h" />
     <file role="src" name="apc_sma.c" />
     <file role="src" name="apc_sma.h" />
+    <file role="src" name="apc_pool.c" />
+    <file role="src" name="apc_pool.h" />
     <file role="src" name="apc_spin.c" />
     <file role="src" name="apc_spin.h" />
     <file role="src" name="apc_stack.c" />
