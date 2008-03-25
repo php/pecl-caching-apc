@@ -114,7 +114,7 @@ void *apc_mmap(char *file_mask, size_t size)
             unlink(file_mask);
         }
     }
-    if((int)shmaddr == -1) {
+    if((long)shmaddr == -1) {
         apc_eprint("apc_mmap: mmap failed:");
     }
     return shmaddr;
