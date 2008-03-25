@@ -54,7 +54,7 @@
 #define key_equals(a, b) (a.inode==b.inode && a.device==b.device)
 /* }}} */
 
-static size_t apc_cache_expunge(apc_cache_t* cache, size_t size);
+static void apc_cache_expunge(apc_cache_t* cache, size_t size);
 
 /* {{{ hash */
 static unsigned int hash(apc_cache_key_t key)
@@ -303,7 +303,7 @@ void apc_cache_clear(apc_cache_t* cache)
 /* }}} */
 
 /* {{{ apc_cache_expunge */
-static size_t apc_cache_expunge(apc_cache_t* cache, size_t size)
+static void apc_cache_expunge(apc_cache_t* cache, size_t size)
 {
     int i;
     time_t t;

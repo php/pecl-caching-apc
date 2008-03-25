@@ -309,7 +309,7 @@ struct cache_header_t {
 };
 /* }}} */
 
-typedef size_t (*apc_expunge_cb_t)(T cache, size_t n); 
+typedef void (*apc_expunge_cb_t)(T cache, size_t n); 
 
 /* {{{ struct definition: apc_cache_t */
 struct apc_cache_t {
