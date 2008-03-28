@@ -59,15 +59,12 @@
   <active>yes</active>
  </developer>
  
- <date>2008-03-25</date>
- <version><release>3.0.17</release><api>3.0.0</api></version>
+ <date>2008-03-28</date>
+ <version><release>3.0.18</release><api>3.0.0</api></version>
  <stability><release>stable</release><api>stable</api></stability>
  <license uri="http://www.php.net/license">PHP License</license>
  <notes>
-* Fix for CVE-2008-1488 (Daniel Papasian, Rasmus)
-* Fix apc_add() cache expunge bug (Rasmus)
-* Added parameter to apc_fetch to determine success/failure when fetching booleans (Shire)
-* Fix misc. memleaks (Shire)
+* Revert memleak patch (Gopal)
  </notes>
 
  <contents>
@@ -474,6 +471,19 @@ Allow keys used in apc_store/apc_fetch/apc_delete to be binary safe and prevent 
 * Added PTHREAD_MUTEX_ADAPTIVE_NP option pthread locks (Paul Saab)
 * Minor cleanups (Lucas Nealan)
 * Added configure option to enable apc_cache_info('filehits') (Shire)
+     </notes>
+    </release>
+
+    <release>
+     <date>2008-03-25</date>
+     <version><release>3.0.17</release><api>3.0.0</api></version>
+     <stability><release>stable</release><api>stable</api></stability>
+     <license uri="http://www.php.net/license">PHP License</license>
+     <notes>
+* Fix for CVE-2008-1488 (Daniel Papasian, Rasmus)
+* Fix apc_add() cache expunge bug (Rasmus)
+* Added parameter to apc_fetch to determine success/failure when fetching booleans (Shire)
+* Fix misc. memleaks (Shire)
      </notes>
     </release>
 

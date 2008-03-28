@@ -1,3 +1,8 @@
+3.0.18: 2008-03-28
+- Revert memleak patch
+
+3.0.17: 2008-03-25
+- Fix for CVE-2008-1488 (Daniel Papasian, Rasmus)
 - Fix apc_add() cache expunge bug (Rasmus)
 - Added parameter to apc_fetch to determine success/failure when fetching booleans (shire)
 - Fix misc. memleaks (shire)
