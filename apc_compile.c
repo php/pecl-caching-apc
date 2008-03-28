@@ -1972,8 +1972,6 @@ zend_op_array* apc_copy_op_array_for_execution(zend_op_array* dst, zend_op_array
                                       sizeof(src->refcount[0]),
                                       apc_php_malloc);
 
-    apc_stack_push(APCG(refcount_stack), (void*)dst->refcount);
-    
     my_prepare_op_array_for_execution(dst,src TSRMLS_CC);
 
     return dst;
