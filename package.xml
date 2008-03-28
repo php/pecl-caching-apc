@@ -65,6 +65,7 @@
  <license uri="http://www.php.net/license">PHP License</license>
  <notes>
 * Revert memleak patch (Gopal)
+* Fix for bug 13504 (David Fraser)
  </notes>
 
  <contents>
