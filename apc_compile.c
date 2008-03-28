@@ -296,7 +296,10 @@ static zval** my_copy_zval_ptr(zval** dst, const zval** src, apc_malloc_t alloca
         if(local_dst_alloc) deallocate(dst);
         return NULL;
     }
-    dst_new = my_copy_zval(*dst, *src, allocate, deallocate);
+    if(!(dst_new = my_copy_zval(*dst, *src, allocate, deallocate)) {
+        if(local_dst_alloc) deallocate(dst);
+        return NULL;
+    }
     if(dst_new != *dst) {
         deallocate(*dst);
         *dst = dst_new;
