@@ -416,16 +416,6 @@ void* apc_sma_malloc(size_t n)
     LOCK(((header_t*)sma_shmaddrs[sma_lastseg])->sma_lock);
 
     off = sma_allocate(sma_shmaddrs[sma_lastseg], n);
-    if(off == -1) { 
-        /* retry failed allocation after we expunge */
-        UNLOCK(((header_t*)sma_shmaddrs[sma_lastseg])->sma_lock);
-        orig_mem_size_ptr = APCG(mem_size_ptr);
-        APCG(mem_size_ptr) = NULL;
-        APCG(current_cache)->expunge_cb(APCG(current_cache), n);
-        APCG(mem_size_ptr) = orig_mem_size_ptr;
-        LOCK(((header_t*)sma_shmaddrs[sma_lastseg])->sma_lock);
-        off = sma_allocate(sma_shmaddrs[sma_lastseg], n);
-    }
     if (off != -1) {
         void* p = (void *)(((char *)(sma_shmaddrs[sma_lastseg])) + off);
         if (APCG(mem_size_ptr) != NULL) { *(APCG(mem_size_ptr)) += n; }
@@ -443,16 +433,6 @@ void* apc_sma_malloc(size_t n)
         }
         LOCK(((header_t*)sma_shmaddrs[i])->sma_lock);
         off = sma_allocate(sma_shmaddrs[i], n);
-        if(off == -1) { 
-            /* retry failed allocation after we expunge */
-            UNLOCK(((header_t*)sma_shmaddrs[i])->sma_lock);
-            orig_mem_size_ptr = APCG(mem_size_ptr);
-            APCG(mem_size_ptr) = NULL;
-            APCG(current_cache)->expunge_cb(APCG(current_cache), n);
-            APCG(mem_size_ptr) = orig_mem_size_ptr;
-            LOCK(((header_t*)sma_shmaddrs[i])->sma_lock);
-            off = sma_allocate(sma_shmaddrs[sma_lastseg], n);
-        }
         if (off != -1) {
             void* p = (void *)(((char *)(sma_shmaddrs[i])) + off);
             if (APCG(mem_size_ptr) != NULL) { *(APCG(mem_size_ptr)) += n; }
