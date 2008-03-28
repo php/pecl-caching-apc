@@ -597,7 +597,6 @@ int apc_process_shutdown(TSRMLS_D)
 /* {{{ apc_deactivate */
 static void apc_deactivate(TSRMLS_D)
 {
-    zend_uint *refcount_p;
     /* The execution stack was unwound, which prevented us from decrementing
      * the reference counts on active cache entries in `my_execute`.
      */
@@ -613,11 +612,6 @@ static void apc_deactivate(TSRMLS_D)
             (apc_cache_entry_t*) apc_stack_pop(APCG(cache_stack));
 
         if (cache_entry->data.file.classes) {
-            for (i = 0; cache_entry->data.file.functions[i].function != NULL; i++) {
-                zend_hash_del(EG(function_table),
-                    cache_entry->data.file.functions[i].name,
-                    cache_entry->data.file.functions[i].name_len+1);
-            }
             for (i = 0; cache_entry->data.file.classes[i].class_entry != NULL; i++) {
 #ifdef ZEND_ENGINE_2
                 centry = (void**)&pzce; /* a triple indirection to get zend_class_entry*** */
@@ -646,11 +640,6 @@ static void apc_deactivate(TSRMLS_D)
         apc_cache_release(apc_cache, cache_entry);
     }
 
-    /* prevent memleak warnings on refcounts that have been alloc'd */
-    while (apc_stack_size(APCG(refcount_stack)) > 0) {
-        refcount_p = (zend_uint*)apc_stack_pop(APCG(refcount_stack)); 
-        efree(refcount_p);
-    }
 }
 /* }}} */
 
