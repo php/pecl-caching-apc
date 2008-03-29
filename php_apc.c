@@ -559,18 +559,18 @@ int _apc_store(char *strkey, int strkey_len, const zval *val, const unsigned int
     HANDLE_BLOCK_INTERRUPTIONS();
 
     APCG(mem_size_ptr) = &mem_size;
-    APCG(current_cache) = apc_user_cache;
     if (!(entry = apc_cache_make_user_entry(strkey, strkey_len + 1, val, ttl))) {
         APCG(mem_size_ptr) = NULL;
-        APCG(current_cache) = NULL;
+        apc_cache_expunge(apc_cache,t);
+        apc_cache_expunge(apc_user_cache,t);
         HANDLE_UNBLOCK_INTERRUPTIONS();
         return 0;
     }
 
     if (!apc_cache_make_user_key(&key, strkey, strkey_len + 1, t)) {
         APCG(mem_size_ptr) = NULL;
-        APCG(current_cache) = NULL;
         apc_cache_free_entry(entry);
+        /* make_user_key doesn't allocate anything, so no expunge */
         HANDLE_UNBLOCK_INTERRUPTIONS();
         return 0;
     }
@@ -578,13 +578,15 @@ int _apc_store(char *strkey, int strkey_len, const zval *val, const unsigned int
     if (!apc_cache_user_insert(apc_user_cache, key, entry, t, exclusive TSRMLS_CC)) {
         apc_cache_free_entry(entry);
         APCG(mem_size_ptr) = NULL;
-        APCG(current_cache) = NULL;
+        /* 
+           No expunge here - user_insert can fail for non-memory related reasons
+           The alloc-based expunge hook in 3.1 will do a better job here
+        */
         HANDLE_UNBLOCK_INTERRUPTIONS();
         return 0;
     }
 
     APCG(mem_size_ptr) = NULL;
-    APCG(current_cache) = NULL;
 
     HANDLE_UNBLOCK_INTERRUPTIONS();
 

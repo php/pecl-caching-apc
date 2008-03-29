@@ -409,7 +409,6 @@ void* apc_sma_malloc(size_t n)
 {
     size_t off;
     int i;
-    size_t *orig_mem_size_ptr;
 
     TSRMLS_FETCH();
     assert(sma_initialized);

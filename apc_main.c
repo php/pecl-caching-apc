@@ -430,10 +430,10 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
 
     mem_size = 0;
     APCG(mem_size_ptr) = &mem_size;
-    APCG(current_cache) = apc_cache;
     if(!(alloc_op_array = apc_copy_op_array(NULL, op_array, apc_sma_malloc, apc_sma_free TSRMLS_CC))) {
+        apc_cache_expunge(apc_cache,t);
+        apc_cache_expunge(apc_user_cache,t);
         APCG(mem_size_ptr) = NULL;
-        APCG(current_cache) = NULL;
 #if NONBLOCKING_LOCK_AVAILABLE
         if(APCG(write_lock)) {
             apc_cache_write_unlock(apc_cache);
@@ -445,8 +445,9 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
     
     if(!(alloc_functions = apc_copy_new_functions(num_functions, apc_sma_malloc, apc_sma_free TSRMLS_CC))) {
         apc_free_op_array(alloc_op_array, apc_sma_free);
+        apc_cache_expunge(apc_cache,t);
+        apc_cache_expunge(apc_user_cache,t);
         APCG(mem_size_ptr) = NULL;
-        APCG(current_cache) = NULL;
 #if NONBLOCKING_LOCK_AVAILABLE
         if(APCG(write_lock)) {
             apc_cache_write_unlock(apc_cache);
@@ -458,8 +459,9 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
     if(!(alloc_classes = apc_copy_new_classes(op_array, num_classes, apc_sma_malloc, apc_sma_free TSRMLS_CC))) {
         apc_free_op_array(alloc_op_array, apc_sma_free);
         apc_free_functions(alloc_functions, apc_sma_free);
+        apc_cache_expunge(apc_cache,t);
+        apc_cache_expunge(apc_user_cache,t);
         APCG(mem_size_ptr) = NULL;
-        APCG(current_cache) = NULL;
 #if NONBLOCKING_LOCK_AVAILABLE
         if(APCG(write_lock)) {
             apc_cache_write_unlock(apc_cache);
@@ -480,8 +482,9 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
         apc_free_op_array(alloc_op_array, apc_sma_free);
         apc_free_functions(alloc_functions, apc_sma_free);
         apc_free_classes(alloc_classes, apc_sma_free);
+        apc_cache_expunge(apc_cache,t);
+        apc_cache_expunge(apc_user_cache,t);
         APCG(mem_size_ptr) = NULL;
-        APCG(current_cache) = NULL;
 #if NONBLOCKING_LOCK_AVAILABLE
         if(APCG(write_lock)) {
             apc_cache_write_unlock(apc_cache);
@@ -495,9 +498,11 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
 
     if ((ret = apc_cache_insert(apc_cache, key, cache_entry, t)) != 1) {
         apc_cache_free_entry(cache_entry);
+        if(ret==-1) {
+            apc_cache_expunge(apc_cache,t);
+            apc_cache_expunge(apc_user_cache,t);
+        }
     }
-
-    APCG(current_cache) = NULL;
 
 #if NONBLOCKING_LOCK_AVAILABLE
     if(APCG(write_lock)) {

@@ -54,8 +54,6 @@
 #define key_equals(a, b) (a.inode==b.inode && a.device==b.device)
 /* }}} */
 
-static void apc_cache_expunge(apc_cache_t* cache, size_t size);
-
 /* {{{ hash */
 static unsigned int hash(apc_cache_key_t key)
 {
@@ -265,7 +263,6 @@ apc_cache_t* apc_cache_create(int size_hint, int gc_ttl, int ttl)
     for (i = 0; i < num_slots; i++) {
         cache->slots[i] = NULL;
     }
-    cache->expunge_cb = apc_cache_expunge;
 
     return cache;
 }
@@ -307,21 +304,9 @@ void apc_cache_clear(apc_cache_t* cache)
 /* }}} */
 
 /* {{{ apc_cache_expunge */
-static void apc_cache_expunge(apc_cache_t* cache, size_t size)
+void apc_cache_expunge(apc_cache_t* cache, time_t t)
 {
     int i;
-    time_t t;
-    TSRMLS_FETCH();
-
-#if PHP_API_VERSION < 20041225
-#if HAVE_APACHE && defined(APC_PHP4_STAT)
-    t = ((request_rec *)SG(server_context))->request_time;
-#else
-    t = time(0);
-#endif
-#else
-    t = sapi_get_request_time(TSRMLS_C);
-#endif
 
     if(!cache) return;
 

@@ -309,8 +309,6 @@ struct cache_header_t {
 };
 /* }}} */
 
-typedef void (*apc_expunge_cb_t)(T cache, size_t n); 
-
 /* {{{ struct definition: apc_cache_t */
 struct apc_cache_t {
     void* shmaddr;              /* process (local) address of shared cache */
@@ -319,12 +317,12 @@ struct apc_cache_t {
     int num_slots;              /* number of slots in cache */
     int gc_ttl;                 /* maximum time on GC list for a slot */
     int ttl;                    /* if slot is needed and entry's access time is older than this ttl, remove it */
-    apc_expunge_cb_t expunge_cb;  /* cache specific expunge callback to free up sma memory */
 };
 /* }}} */
 
 extern apc_cache_info_t* apc_cache_info(T cache, zend_bool limited);
 extern void apc_cache_free_info(apc_cache_info_t* info);
+extern void apc_cache_expunge(apc_cache_t* cache, time_t t);
 extern void apc_cache_unlock(apc_cache_t* cache);
 extern zend_bool apc_cache_busy(apc_cache_t* cache);
 extern zend_bool apc_cache_write_lock(apc_cache_t* cache);

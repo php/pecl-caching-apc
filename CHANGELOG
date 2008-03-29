@@ -1,3 +1,6 @@
+3.0.19: 2008-03-29
+- Move expunge callback groundwork to 3.1 (Rasmus)
+
 3.0.18: 2008-03-28
 - Revert memleak patch (Gopal)
 - Fix for bug #13504 (David Fraser)
