@@ -581,6 +581,7 @@ int _apc_store(char *strkey, int strkey_len, const zval *val, const unsigned int
         /* 
            No expunge here - user_insert can fail for non-memory related reasons
            The alloc-based expunge hook in 3.1 will do a better job here
+           (removing the expunge here also fixes bug #13336)
         */
         HANDLE_UNBLOCK_INTERRUPTIONS();
         return 0;
