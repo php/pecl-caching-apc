@@ -287,7 +287,7 @@ found:
  */
 static int apc_realpool_check_integrity(apc_realpool *rpool) 
 {
-	apc_pool *pool = &(rpool->parent); 
+    apc_pool *pool = &(rpool->parent); 
     pool_block *entry;
     size_t *sizeinfo = NULL;
     unsigned char *start;
@@ -301,9 +301,9 @@ static int apc_realpool_check_integrity(apc_realpool *rpool)
             return 0;
         }
     }
-	
-	if(!APC_POOL_HAS_REDZONES(pool) ||
-		!APC_POOL_HAS_SIZEINFO(pool)) {
+    
+    if(!APC_POOL_HAS_REDZONES(pool) ||
+        !APC_POOL_HAS_SIZEINFO(pool)) {
         return 1;
     }
 
@@ -319,7 +319,7 @@ static int apc_realpool_check_integrity(apc_realpool *rpool)
             redzone = start + SIZEINFO_SIZE + (*sizeinfo);
             redsize = REDZONE_SIZE(*sizeinfo);
 #ifdef VALGRIND_MAKE_MEM_DEFINED
-        	VALGRIND_MAKE_MEM_DEFINED(redzone, redsize);
+            VALGRIND_MAKE_MEM_DEFINED(redzone, redsize);
 #endif
             if(!CHECK_REDZONE(redzone, redsize))
             {
@@ -329,7 +329,7 @@ static int apc_realpool_check_integrity(apc_realpool *rpool)
                 return 0;
             }
 #ifdef VALGRIND_MAKE_MEM_NOACCESS
-        	VALGRIND_MAKE_MEM_NOACCESS(redzone, redsize);
+            VALGRIND_MAKE_MEM_NOACCESS(redzone, redsize);
 #endif
             realsize = SIZEINFO_SIZE + *sizeinfo + redsize;
             start += realsize;
@@ -358,7 +358,7 @@ static void apc_realpool_cleanup(apc_pool *pool)
     apc_realpool *rpool = (apc_realpool*)pool;
     apc_free_t deallocate = pool->deallocate;
 
-	assert(apc_realpool_check_integrity(rpool)!=0);
+    assert(apc_realpool_check_integrity(rpool)!=0);
 
     entry = rpool->head;
 

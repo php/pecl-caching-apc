@@ -34,7 +34,7 @@
 #include "apc_sma.h"
 
 typedef enum {
-	APC_UNPOOL         = 0x0,
+    APC_UNPOOL         = 0x0,
     APC_SMALL_POOL     = 0x1,
     APC_MEDIUM_POOL    = 0x2,
     APC_LARGE_POOL     = 0x3,
@@ -55,20 +55,20 @@ typedef void* (*apc_palloc_t)(apc_pool *pool, size_t size);
 typedef void  (*apc_pfree_t) (apc_pool *pool, void* p);
 
 struct _apc_pool {
-	apc_pool_type   type;
+    apc_pool_type   type;
 
     apc_malloc_t    allocate;
     apc_free_t      deallocate;
 
-	apc_palloc_t    palloc;
-	apc_pfree_t     pfree;
+    apc_palloc_t    palloc;
+    apc_pfree_t     pfree;
 
-	apc_pcleanup_t  cleanup;
-	
-	size_t          size;
-	size_t          used;
-	
-	char data[0]; /* fill in apc_sma_pool and apc_unpool */
+    apc_pcleanup_t  cleanup;
+    
+    size_t          size;
+    size_t          used;
+    
+    char data[0]; /* fill in apc_sma_pool and apc_unpool */
 };
 
 #define apc_pool_alloc(pool, size) ((pool)->palloc((pool), (size)))
