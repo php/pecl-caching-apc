@@ -35,6 +35,94 @@
 #include <valgrind/memcheck.h>
 #endif
 
+
+/* {{{ forward references */
+static apc_pool* apc_unpool_create(apc_pool_type type, apc_malloc_t, apc_free_t);
+static apc_pool* apc_realpool_create(apc_pool_type type, apc_malloc_t, apc_free_t);
+/* }}} */
+
+/* {{{ apc_pool_create */
+apc_pool* apc_pool_create(apc_pool_type pool_type, 
+                            apc_malloc_t allocate, 
+                            apc_free_t deallocate)
+{
+    if(pool_type == APC_UNPOOL) {
+        return apc_unpool_create(pool_type, allocate, deallocate);
+    }
+    
+    return apc_realpool_create(pool_type, allocate, deallocate);
+}
+/* }}} */
+
+/* {{{ apc_pool_destroy */
+void apc_pool_destroy(apc_pool *pool)
+{
+    apc_free_t deallocate = pool->deallocate;
+    apc_pcleanup_t cleanup = pool->cleanup;
+
+    cleanup(pool);
+    deallocate(pool);
+}
+/* }}} */
+
+/* {{{ apc_unpool implementation */
+
+typedef struct _apc_unpool apc_unpool;
+
+struct _apc_unpool {
+    apc_pool parent;
+    /* apc_unpool is a lie! */
+};
+
+static void* apc_unpool_alloc(apc_pool* pool, size_t size) 
+{
+    apc_unpool *upool = (apc_unpool*)pool;
+    
+    apc_malloc_t allocate = upool->parent.allocate;
+    
+    upool->parent.size += size;
+    upool->parent.used += size;
+
+    return allocate(size);
+}
+
+static void apc_unpool_free(apc_pool* pool, void *ptr)
+{
+    apc_unpool *upool = (apc_unpool*)upool;
+    
+    apc_free_t deallocate = upool->parent.deallocate;
+
+    deallocate(ptr);
+}
+
+static void apc_unpool_cleanup(apc_pool* pool)
+{
+}
+
+static apc_pool* apc_unpool_create(apc_pool_type type, 
+                    apc_malloc_t allocate, apc_free_t deallocate)
+{
+    apc_unpool* upool = allocate(sizeof(apc_unpool));
+
+    upool->parent.type = type;
+    upool->parent.allocate = allocate;
+    upool->parent.deallocate = deallocate;
+    
+    upool->parent.palloc = apc_unpool_alloc;
+    upool->parent.pfree  = apc_unpool_free;
+
+    upool->parent.cleanup = apc_unpool_cleanup;
+    
+    upool->parent.used = 0;
+    upool->parent.size = 0;
+    
+    return &(upool->parent);
+}
+/* }}} */
+
+
+/*{{{ apc_realpool implementation */
+
 /* {{{ typedefs */
 typedef struct _pool_block
 {
@@ -57,22 +145,18 @@ typedef struct _pool_block
    +-------------+--------------+-----------+-------------+-------------->>>
  */
 
-struct _apc_pool
+typedef struct _apc_realpool apc_realpool;
+
+struct _apc_realpool
 {
-    apc_malloc_t allocate;
-    apc_free_t   deallocate;
+    struct _apc_pool parent;
 
     size_t     dsize;
     void       *owner;
 
-    struct
-    {
-        unsigned int redzones:1;
-        unsigned int sizeinfo:1;
-    } options;
-
     pool_block *head;
 };
+
 /* }}} */
 
 /* {{{ redzone code */
@@ -99,42 +183,200 @@ static const unsigned char decaff[] =  {
 
 /* }}} */
 
-#define APC_POOL_OPTION(pool, option) ((pool)->options.option)
-
 /* {{{ create_pool_block */
-static pool_block* create_pool_block(apc_pool *pool, size_t size)
+static pool_block* create_pool_block(apc_realpool *rpool, size_t size)
 {
+    apc_malloc_t allocate = rpool->parent.allocate;
+
     size_t realsize = sizeof(pool_block) + ALIGNWORD(size);
     
-    pool_block* entry = pool->allocate(realsize);
+    pool_block* entry = allocate(realsize);
 
     entry->avail = entry->capacity = size;
 
     entry->mark = entry->data;
 
-    entry->next = pool->head;
+    entry->next = rpool->head;
 
-    pool->head = entry;
+    rpool->head = entry;
+
+    rpool->parent.size += realsize; 
 
     return entry;
 }
 /* }}} */
 
-/* {{{ apc_pool_create */
-apc_pool* apc_pool_create(apc_pool_type pool_type, 
-                            apc_malloc_t allocate, 
-                            apc_free_t deallocate)
+/* {{{ apc_realpool_alloc */
+static void* apc_realpool_alloc(apc_pool *pool, size_t size)
 {
-    apc_pool* pool = NULL;
+    apc_realpool *rpool = (apc_realpool*)pool;
+    unsigned char *p = NULL;
+    size_t realsize = ALIGNWORD(size);
+    size_t poolsize;
+    unsigned char *redzone  = NULL;
+    size_t redsize  = 0;
+    size_t *sizeinfo= NULL;
+
+    pool_block *entry;
+
+    if(APC_POOL_HAS_REDZONES(pool)) {
+        redsize = REDZONE_SIZE(size); /* redsize might be re-using word size padding */
+        realsize = size + redsize;    /* recalculating realsize */
+    } else {
+        redsize = realsize - size; /* use padding space */
+    }
+
+    if(APC_POOL_HAS_SIZEINFO(pool)) {
+        realsize += ALIGNWORD(sizeof(size_t));
+    }
+
+
+    for(entry = rpool->head; entry != NULL; entry = entry->next) {
+        if(entry->avail >= realsize) {
+            goto found;
+        }
+    }
+
+    poolsize = ALIGNSIZE(realsize, rpool->dsize);
+
+    entry = create_pool_block(rpool, poolsize);
+
+    if(!entry) {
+        return NULL;
+    }
+
+found:
+    p = entry->mark;
+
+    if(APC_POOL_HAS_SIZEINFO(pool)) {
+        sizeinfo = (size_t*)p;
+        p += SIZEINFO_SIZE;
+        *sizeinfo = size;
+    }
+    
+    redzone = p + size;
+
+    if(APC_POOL_HAS_REDZONES(pool)) {
+        MARK_REDZONE(redzone, redsize);
+    }
+
+#ifdef VALGRIND_MAKE_MEM_NOACCESS
+    if(redsize != 0) {
+        VALGRIND_MAKE_MEM_NOACCESS(redzone, redsize);
+    }
+#endif
+
+    entry->avail -= realsize;
+    entry->mark  += realsize;
+    pool->used   += realsize; 
+
+#ifdef VALGRIND_MAKE_MEM_UNDEFINED
+    /* need to write before reading data off this */
+    VALGRIND_MAKE_MEM_UNDEFINED(p, size);
+#endif
+
+    return (void*)p;
+}
+/* }}} */
+
+/* {{{ apc_realpool_check_integrity */
+/*
+ * Checking integrity at runtime, does an
+ * overwrite check only when the sizeinfo
+ * is set.
+ */
+static int apc_realpool_check_integrity(apc_realpool *rpool) 
+{
+	apc_pool *pool = &(rpool->parent); 
+    pool_block *entry;
+    size_t *sizeinfo = NULL;
+    unsigned char *start;
+    size_t realsize;
+    unsigned char   *redzone;
+    size_t redsize;
+
+    for(entry = rpool->head; entry != NULL; entry = entry->next) {
+        start = (unsigned char *)entry + ALIGNWORD(sizeof(pool_block));
+        if((entry->mark - start) != (entry->capacity - entry->avail)) {
+            return 0;
+        }
+    }
+	
+	if(!APC_POOL_HAS_REDZONES(pool) ||
+		!APC_POOL_HAS_SIZEINFO(pool)) {
+        return 1;
+    }
+
+    for(entry = rpool->head; entry != NULL; entry = entry->next) {
+        start = (unsigned char *)entry + ALIGNWORD(sizeof(pool_block));
+        
+        while(start < entry->mark) {
+            sizeinfo = (size_t*)start;
+            /* redzone starts where real data ends, in a non-word boundary
+             * redsize is at least 4 bytes + whatever's needed to make it
+             * to another word boundary.
+             */
+            redzone = start + SIZEINFO_SIZE + (*sizeinfo);
+            redsize = REDZONE_SIZE(*sizeinfo);
+#ifdef VALGRIND_MAKE_MEM_DEFINED
+        	VALGRIND_MAKE_MEM_DEFINED(redzone, redsize);
+#endif
+            if(!CHECK_REDZONE(redzone, redsize))
+            {
+                /*
+                fprintf(stderr, "Redzone check failed for %p\n", 
+                                start + ALIGNWORD(sizeof(size_t)));*/
+                return 0;
+            }
+#ifdef VALGRIND_MAKE_MEM_NOACCESS
+        	VALGRIND_MAKE_MEM_NOACCESS(redzone, redsize);
+#endif
+            realsize = SIZEINFO_SIZE + *sizeinfo + redsize;
+            start += realsize;
+        }
+    }
+
+    return 1;
+}
+/* }}} */
+
+/* {{{ apc_pool_free */
+/*
+ * free does not do anything other than
+ * check for redzone values when free'ing
+ * data areas.
+ */
+static void apc_realpool_free(apc_pool *pool, void *p)
+{
+}
+/* }}} */
+
+static void apc_realpool_cleanup(apc_pool *pool) 
+{
+    pool_block *entry;
+    pool_block *tmp;
+    apc_realpool *rpool = (apc_realpool*)pool;
+    apc_free_t deallocate = pool->deallocate;
+
+	assert(apc_realpool_check_integrity(rpool)!=0);
+
+    entry = rpool->head;
+
+    while(entry != NULL) {
+        tmp = entry->next;
+        deallocate(entry);
+        entry = tmp;
+    }
+}
+
+/* {{{ apc_realpool_create */
+static apc_pool* apc_realpool_create(apc_pool_type type, apc_malloc_t allocate, apc_free_t deallocate)
+{
+
     size_t dsize = 0;
+    apc_realpool *rpool;
 
-    /* sanity checks */
-    assert(sizeof(decaff) > REDZONE_SIZE(ALIGNWORD(sizeof(char))));
-    assert(sizeof(pool_block) == ALIGNWORD(sizeof(pool_block)));
-
-    assert(APC_POOL_SIZE_MASK & (APC_POOL_SIZEINFO | APC_POOL_REDZONES) == 0);
-
-    switch(pool_type & APC_POOL_SIZE_MASK) {
+    switch(type & APC_POOL_SIZE_MASK) {
         case APC_SMALL_POOL:
             dsize = 512;
             break;
@@ -151,186 +393,45 @@ apc_pool* apc_pool_create(apc_pool_type pool_type,
             return NULL;
     }
 
-    pool = (apc_pool*)allocate(sizeof(apc_pool));
+    rpool = (apc_realpool*)allocate(sizeof(apc_realpool));
 
-    if(!pool) {
+    if(!rpool) {
         return NULL;
     }
 
-    pool->allocate = allocate;
-    pool->deallocate = deallocate;
-    pool->dsize = dsize;
-    pool->head = NULL;
+    rpool->parent.type = type;
 
-    APC_POOL_OPTION(pool, redzones) = (pool_type & APC_POOL_REDZONES) != 0;
-    APC_POOL_OPTION(pool, sizeinfo) = (pool_type & APC_POOL_SIZEINFO) != 0;
+    rpool->parent.allocate = allocate;
+    rpool->parent.deallocate = deallocate;
 
-    if(!create_pool_block(pool, dsize)) {
-        deallocate(pool);
-        return NULL;
-    }
+    rpool->parent.size = sizeof(apc_pool);
 
-    return pool; 
-}
-/* }}} */
+    rpool->parent.palloc = apc_realpool_alloc;
+    rpool->parent.pfree  = apc_realpool_free;
 
-/* {{{ apc_pool_destroy */
-void apc_pool_destroy(apc_pool *pool)
-{
-
-    apc_free_t deallocate = pool->deallocate;
-    pool_block *entry;
-    pool_block *tmp;
-
-    entry = pool->head;
-
-    while(entry != NULL) {
-        tmp = entry->next;
-        deallocate(entry);
-        entry = tmp;
-    }
-
-    deallocate(pool);
-}
-/* }}} */
-
-/* {{{ apc_pool_alloc */
-void* apc_pool_alloc(apc_pool *pool, size_t size)
-{
-    unsigned char *p = NULL;
-    size_t realsize = ALIGNWORD(size);
-    size_t poolsize;
-    unsigned char *redzone  = NULL;
-    size_t redsize  = 0;
-    size_t *sizeinfo= NULL;
-
-    pool_block *entry;
-
-
-    if(APC_POOL_OPTION(pool, redzones)) {
-        redsize = REDZONE_SIZE(size); /* redsize might be re-using word size padding */
-        realsize = size + redsize;    /* recalculating realsize */
-    } else {
-        redsize = realsize - size; /* use padding space */
-    }
-
-    if(APC_POOL_OPTION(pool, sizeinfo)) {
-        realsize += ALIGNWORD(sizeof(size_t));
-    }
-
-
-    for(entry = pool->head; entry != NULL; entry = entry->next) {
-        if(entry->avail >= realsize) {
-            goto found;
-        }
-    }
-
-    poolsize = ALIGNSIZE(realsize, pool->dsize);
-
-    entry = create_pool_block(pool, poolsize);
-
-    if(!entry) {
-        return NULL;
-    }
-
-found:
-    p = entry->mark;
-
-    if(APC_POOL_OPTION(pool, sizeinfo)) {
-        sizeinfo = (size_t*)p;
-        p += SIZEINFO_SIZE;
-        *sizeinfo = size;
-    }
+    rpool->parent.cleanup = apc_realpool_cleanup;
     
-    redzone = p + size;
+    rpool->dsize = dsize;
+    rpool->head = NULL;
 
-    if(APC_POOL_OPTION(pool, redzones)) {
-        MARK_REDZONE(redzone, redsize);
+    if(!create_pool_block(rpool, dsize)) {
+        deallocate(rpool);
+        return NULL;
     }
 
-#ifdef VALGRIND_MAKE_MEM_NOACCESS
-    if(redsize != 0) {
-        VALGRIND_MAKE_MEM_NOACCESS(redzone, redsize);
-    }
-#endif
-
-    entry->avail -= realsize;
-    entry->mark  += realsize;
-
-#ifdef VALGRIND_MAKE_MEM_UNDEFINED
-    /* need to write before reading data off this */
-    VALGRIND_MAKE_MEM_UNDEFINED(p, size);
-#endif
-
-    return (void*)p;
+    return &(rpool->parent);
 }
+
+
 /* }}} */
 
-/* {{{ apc_pool_free */
-/*
- * free does not do anything other than
- * check for redzone values when free'ing
- * data areas.
- */
-void apc_pool_free(apc_pool *pool, void *p)
+/* {{{ apc_pool_init */ 
+void apc_pool_init() 
 {
-    if(!APC_POOL_OPTION(pool, sizeinfo) || 
-        !APC_POOL_OPTION(pool, redzones)) {
-    }
-}
-/* }}} */
-
-/* {{{ apc_pool_check_integrity */
-/*
- * Checking integrity at runtime, does an
- * overwrite check only when the sizeinfo
- * is set.
- */
-int apc_pool_check_integrity(apc_pool *pool) 
-{
-    pool_block *entry;
-    size_t *sizeinfo = NULL;
-    unsigned char *start;
-    size_t realsize;
-    unsigned char   *redzone;
-    size_t redsize;
-
-    for(entry = pool->head; entry != NULL; entry = entry->next) {
-        start = (unsigned char *)entry + ALIGNWORD(sizeof(pool_block));
-        if((entry->mark - start) != (entry->capacity - entry->avail)) {
-            return 0;
-        }
-    }
-
-    if(!APC_POOL_OPTION(pool, sizeinfo) || 
-        !APC_POOL_OPTION(pool, redzones)) {
-        return 1;
-    }
-
-    for(entry = pool->head; entry != NULL; entry = entry->next) {
-        start = (unsigned char *)entry + ALIGNWORD(sizeof(pool_block));
-        
-        while(start < entry->mark) {
-            sizeinfo = (size_t*)start;
-            /* redzone starts where real data ends, in a non-word boundary
-             * redsize is at least 4 bytes + whatever's needed to make it
-             * to another word boundary.
-             */
-            redzone = start + SIZEINFO_SIZE + (*sizeinfo);
-            redsize = REDZONE_SIZE(*sizeinfo);
-            if(!CHECK_REDZONE(redzone, redsize))
-            {
-                /*
-                fprintf(stderr, "Redzone check failed for %p\n", 
-                                start + ALIGNWORD(sizeof(size_t)));*/
-                return 0;
-            }
-            realsize = SIZEINFO_SIZE + *sizeinfo + redsize;
-            start += realsize;
-        }
-    }
-
-    return 1;
+    /* put all ye sanity checks here */
+    assert(sizeof(decaff) > REDZONE_SIZE(ALIGNWORD(sizeof(char))));
+    assert(sizeof(pool_block) == ALIGNWORD(sizeof(pool_block)));
+    assert((APC_POOL_SIZE_MASK & (APC_POOL_SIZEINFO | APC_POOL_REDZONES)) == 0);
 }
 /* }}} */
 

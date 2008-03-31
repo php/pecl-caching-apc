@@ -34,6 +34,7 @@
 #include "apc_sma.h"
 
 typedef enum {
+	APC_UNPOOL         = 0x0,
     APC_SMALL_POOL     = 0x1,
     APC_MEDIUM_POOL    = 0x2,
     APC_LARGE_POOL     = 0x3,
@@ -43,16 +44,41 @@ typedef enum {
     APC_POOL_OPT_MASK  = 0x18
 } apc_pool_type;
 
+#define APC_POOL_HAS_SIZEINFO(pool) ((pool->type & APC_POOL_SIZEINFO)!=0)
+#define APC_POOL_HAS_REDZONES(pool) ((pool->type & APC_POOL_REDZONES)!=0)
+
 typedef struct _apc_pool apc_pool;
+
+typedef void  (*apc_pcleanup_t)(apc_pool *pool);
+
+typedef void* (*apc_palloc_t)(apc_pool *pool, size_t size);
+typedef void  (*apc_pfree_t) (apc_pool *pool, void* p);
+
+struct _apc_pool {
+	apc_pool_type   type;
+
+    apc_malloc_t    allocate;
+    apc_free_t      deallocate;
+
+	apc_palloc_t    palloc;
+	apc_pfree_t     pfree;
+
+	apc_pcleanup_t  cleanup;
+	
+	size_t          size;
+	size_t          used;
+	
+	char data[0]; /* fill in apc_sma_pool and apc_unpool */
+};
+
+#define apc_pool_alloc(pool, size) ((pool)->palloc((pool), (size)))
+#define apc_pool_free (pool, ptr)  ((pool)->pfree((pool), (ptr)))
+
+extern void apc_pool_init();
 
 extern apc_pool* apc_pool_create(apc_pool_type pool_type, 
                             apc_malloc_t allocate, 
                             apc_free_t deallocate);
 
-
-extern void apc_pool_destroy(apc_pool *pool);
-extern void* apc_pool_alloc(apc_pool *pool, size_t size);
-extern void apc_pool_free(apc_pool *pool, void *ptr);
-extern int apc_pool_check_integrity(apc_pool *pool);
-
+extern void apc_pool_destroy(apc_pool* pool);
 #endif
