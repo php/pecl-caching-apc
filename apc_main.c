@@ -349,10 +349,8 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
 
     if (cache_entry != NULL) {
         int dummy = 1;
-        int reset_opened_path = 0; 
         if (h->opened_path == NULL) {
-            h->opened_path = cache_entry->data.file.filename;
-            reset_opened_path = 1;
+            h->opened_path = estrdup(cache_entry->data.file.filename);
         }
         zend_hash_add(&EG(included_files), h->opened_path, strlen(h->opened_path)+1, (void *)&dummy, sizeof(int), NULL);
 
@@ -371,9 +369,6 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
         }
         if(APCG(report_autofilter)) {
             apc_wprint("Recompiling %s", h->opened_path);
-        }
-        if (reset_opened_path == 1) {
-            h->opened_path = NULL;
         }
         /* TODO: check what happens with EG(included_files) */
     }
