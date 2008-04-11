@@ -203,8 +203,8 @@ PHP_INI_END()
 static PHP_MINFO_FUNCTION(apc)
 {
     php_info_print_table_start();
-    php_info_print_table_row(2, "APC Support", APCG(enabled) ? "enabled" : "disabled");
-    php_info_print_table_row(2, "Version", APC_VERSION);
+    php_info_print_table_header(2, "APC Support", APCG(enabled) ? "enabled" : "disabled");
+    php_info_print_table_row(2, "Version", PHP_APC_VERSION);
 #if APC_MMAP
     php_info_print_table_row(2, "MMAP Support", "Enabled");
     php_info_print_table_row(2, "MMAP File Mask", APCG(mmap_file_mask));
@@ -952,7 +952,7 @@ zend_module_entry apc_module_entry = {
 	PHP_RINIT(apc),
 	PHP_RSHUTDOWN(apc),
 	PHP_MINFO(apc),
-	APC_VERSION,
+	PHP_APC_VERSION,
 	STANDARD_MODULE_PROPERTIES
 };
 

@@ -35,6 +35,8 @@
 #include "apc_php.h"
 #include "apc_globals.h"
 
+#define PHP_APC_VERSION "3.1.0-dev"
+
 extern zend_module_entry apc_module_entry;
 #define apc_module_ptr &apc_module_entry
 
