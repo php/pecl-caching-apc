@@ -691,7 +691,7 @@ static zend_arg_info* my_copy_arg_info(zend_arg_info* dst, zend_arg_info* src, a
 
 cleanup:
     if(dst->name) deallocate(dst->name);
-    if(dst->class_name) deallocate(dst->name);
+    if(dst->class_name) deallocate(dst->class_name);
     if(local_dst_alloc) deallocate(dst);
     return NULL;
 }
