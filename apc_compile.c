@@ -813,7 +813,7 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
                                    allocate, deallocate)) {
                 int ii;
 
-                for(ii=i-1; i>=0; i--) my_destroy_function_entry((zend_function_entry*)(&dst->builtin_functions[ii]), deallocate);
+                for(ii=i-1; ii>=0; ii--) my_destroy_function_entry((zend_function_entry*)(&dst->builtin_functions[ii]), deallocate);
                 goto cleanup;
             }
         }
