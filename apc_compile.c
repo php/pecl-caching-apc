@@ -98,15 +98,15 @@ static zval* my_copy_zval(zval*, const zval*, apc_malloc_t, apc_free_t);
 static znode* my_copy_znode(znode*, znode*, apc_malloc_t, apc_free_t);
 static zend_op* my_copy_zend_op(zend_op*, zend_op*, apc_malloc_t, apc_free_t);
 static zend_function* my_copy_function(zend_function*, zend_function*, apc_malloc_t, apc_free_t);
-static zend_function_entry* my_copy_function_entry(zend_function_entry*, zend_function_entry*, apc_malloc_t, apc_free_t);
+static zend_function_entry* my_copy_function_entry(zend_function_entry*, const zend_function_entry*, apc_malloc_t, apc_free_t);
 static zend_class_entry* my_copy_class_entry(zend_class_entry*, zend_class_entry*, apc_malloc_t, apc_free_t);
 static HashTable* my_copy_hashtable_ex(HashTable*, HashTable*, ht_copy_fun_t, ht_free_fun_t, int, apc_malloc_t, apc_free_t, ht_check_copy_fun_t, ...);
 #define my_copy_hashtable( dst, src, copy_fn, free_fn, holds_ptr, allocate, deallocate) \
     my_copy_hashtable_ex(dst, src, copy_fn, free_fn, holds_ptr, allocate, deallocate, NULL)
 static HashTable* my_copy_static_variables(zend_op_array* src, apc_malloc_t allocate, apc_free_t deallocate);
 static zend_property_info* my_copy_property_info(zend_property_info* dst, zend_property_info* src, apc_malloc_t allocate, apc_free_t deallocate);
-static zend_arg_info* my_copy_arg_info_array(zend_arg_info*, zend_arg_info*, uint, apc_malloc_t, apc_free_t);
-static zend_arg_info* my_copy_arg_info(zend_arg_info*, zend_arg_info*, apc_malloc_t, apc_free_t);
+static zend_arg_info* my_copy_arg_info_array(zend_arg_info*, const zend_arg_info*, uint, apc_malloc_t, apc_free_t);
+static zend_arg_info* my_copy_arg_info(zend_arg_info*, const zend_arg_info*, apc_malloc_t, apc_free_t);
 /*
  * The "destroy" functions free the memory associated with a particular data
  * structure but do not free the pointer to the data structure.
@@ -287,8 +287,8 @@ static zval** my_copy_zval_ptr(zval** dst, const zval** src, apc_malloc_t alloca
         *dst = dst_new;
     }
 
-    Z_SET_REFCOUNT_PP(dst, Z_REFCOUNT_PP(src));
-    Z_SET_ISREF_TO_PP(dst, Z_ISREF_PP(src));
+    Z_SET_REFCOUNT_PP(dst, Z_REFCOUNT_PP((zval**)src));
+    Z_SET_ISREF_TO_PP(dst, Z_ISREF_PP((zval**)src));
     
     return dst;
 }
@@ -462,7 +462,7 @@ static zend_function* my_copy_function(zend_function* dst, zend_function* src, a
 /* }}} */
 
 /* {{{ my_copy_function_entry */
-static zend_function_entry* my_copy_function_entry(zend_function_entry* dst, zend_function_entry* src, apc_malloc_t allocate, apc_free_t deallocate)
+static zend_function_entry* my_copy_function_entry(zend_function_entry* dst, const zend_function_entry* src, apc_malloc_t allocate, apc_free_t deallocate)
 {
     int local_dst_alloc = 0;
     assert(src != NULL);
@@ -497,7 +497,7 @@ static zend_function_entry* my_copy_function_entry(zend_function_entry* dst, zen
     return dst;
 
 cleanup:
-    if(dst->fname) deallocate(dst->fname);
+    if(dst->fname) deallocate((char*)dst->fname);
     if(local_dst_alloc) deallocate(dst);
     return NULL;
 }
@@ -575,7 +575,7 @@ static zend_property_info* my_copy_property_info_for_execution(zend_property_inf
 /* }}} */
 
 /* {{{ my_copy_arg_info_array */
-static zend_arg_info* my_copy_arg_info_array(zend_arg_info* dst, zend_arg_info* src, uint num_args, apc_malloc_t allocate, apc_free_t deallocate)
+static zend_arg_info* my_copy_arg_info_array(zend_arg_info* dst, const zend_arg_info* src, uint num_args, apc_malloc_t allocate, apc_free_t deallocate)
 {
     int local_dst_alloc = 0;
     int i = 0;
@@ -602,7 +602,7 @@ static zend_arg_info* my_copy_arg_info_array(zend_arg_info* dst, zend_arg_info* 
 /* }}} */
 
 /* {{{ my_copy_arg_info */
-static zend_arg_info* my_copy_arg_info(zend_arg_info* dst, zend_arg_info* src, apc_malloc_t allocate, apc_free_t deallocate)
+static zend_arg_info* my_copy_arg_info(zend_arg_info* dst, const zend_arg_info* src, apc_malloc_t allocate, apc_free_t deallocate)
 {
     int local_dst_alloc = 0;
     
@@ -636,8 +636,8 @@ static zend_arg_info* my_copy_arg_info(zend_arg_info* dst, zend_arg_info* src, a
     return dst;
 
 cleanup:
-    if(dst->name) deallocate(dst->name);
-    if(dst->class_name) deallocate(dst->class_name);
+    if(dst->name) deallocate((char*)dst->name);
+    if(dst->class_name) deallocate((char*)dst->class_name);
     if(local_dst_alloc) deallocate(dst);
     return NULL;
 }
@@ -808,12 +808,12 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
 
 
         for (i = 0; i < n; i++) {
-            if(!my_copy_function_entry(&dst->builtin_functions[i],
+            if(!my_copy_function_entry((zend_function_entry*)(&dst->builtin_functions[i]),
                                    &src->builtin_functions[i],
                                    allocate, deallocate)) {
                 int ii;
 
-                for(ii=i-1; i>=0; i--) my_destroy_function_entry(&dst->builtin_functions[ii], deallocate);
+                for(ii=i-1; i>=0; i--) my_destroy_function_entry((zend_function_entry*)(&dst->builtin_functions[ii]), deallocate);
                 goto cleanup;
             }
         }
@@ -834,7 +834,7 @@ cleanup:
     if(dst->doc_comment) deallocate(dst->doc_comment);
     if(dst->filename) deallocate(dst->filename);
     
-    if(dst->builtin_functions) deallocate(dst->builtin_functions);
+    if(dst->builtin_functions) deallocate((zend_function_entry*)dst->builtin_functions);
     if(dst->function_table.arBuckets) my_destroy_hashtable(&dst->function_table, (ht_free_fun_t) my_free_function, deallocate);
     if(dst->default_properties.arBuckets) my_destroy_hashtable(&dst->default_properties, (ht_free_fun_t) my_free_zval_ptr, deallocate);
 
@@ -1585,9 +1585,9 @@ static void my_destroy_function_entry(zend_function_entry* src, apc_free_t deall
 {
     assert(src != NULL);
 
-    deallocate(src->fname);
+    deallocate((char*)src->fname);
     if (src->arg_info) {
-            my_free_arg_info_array(src->arg_info, src->num_args, deallocate);
+            my_free_arg_info_array((zend_arg_info*)src->arg_info, src->num_args, deallocate);
     }
 }
 /* }}} */
@@ -1622,8 +1622,8 @@ static void my_destroy_arg_info(zend_arg_info* src, apc_free_t deallocate)
 {
     assert(src != NULL);
 
-    deallocate(src->name);
-    deallocate(src->class_name);
+    deallocate((char*)src->name);
+    deallocate((char*)src->class_name);
 }
 /* }}} */
 
@@ -1666,9 +1666,9 @@ static void my_destroy_class_entry(zend_class_entry* src, apc_free_t deallocate)
 
     if (src->builtin_functions) {
         for (i = 0; src->builtin_functions[i].fname != NULL; i++) {
-            my_destroy_function_entry(&src->builtin_functions[i], deallocate);
+            my_destroy_function_entry((zend_function_entry*)(&src->builtin_functions[i]), deallocate);
         }
-        deallocate(src->builtin_functions);
+        deallocate((zend_function_entry*)src->builtin_functions);
     }
 }
 /* }}} */
