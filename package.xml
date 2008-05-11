@@ -59,13 +59,15 @@
   <active>yes</active>
  </developer>
  
- <date>2008-03-28</date>
- <version><release>3.0.18</release><api>3.0.0</api></version>
+ <date>2008-05-11</date>
+ <version><release>3.0.19</release><api>3.0.0</api></version>
  <stability><release>stable</release><api>stable</api></stability>
  <license uri="http://www.php.net/license">PHP License</license>
  <notes>
-* Revert memleak patch (Gopal)
-* Fix for bug 13504 (David Fraser)
+* Move expunge callback groundwork to 3.1 (Rasmus)
+* Fix fd-leak (Gopal)
+* Fix double-free on builtin functions (Gopal)
+* Initial PHP 5.3 support (Gopal)
  </notes>
 
  <contents>
@@ -485,6 +487,17 @@ Allow keys used in apc_store/apc_fetch/apc_delete to be binary safe and prevent 
 * Fix apc_add() cache expunge bug (Rasmus)
 * Added parameter to apc_fetch to determine success/failure when fetching booleans (Shire)
 * Fix misc. memleaks (Shire)
+     </notes>
+    </release>
+
+    <release>
+     <date>2008-03-28</date>
+     <version><release>3.0.18</release><api>3.0.0</api></version>
+     <stability><release>stable</release><api>stable</api></stability>
+     <license uri="http://www.php.net/license">PHP License</license>
+     <notes>
+* Revert memleak patch (Gopal)
+* Fix for bug 13504 (David Fraser)
      </notes>
     </release>
 

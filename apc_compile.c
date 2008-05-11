@@ -2,7 +2,7 @@
   +----------------------------------------------------------------------+
   | APC                                                                  |
   +----------------------------------------------------------------------+
-  | Copyright (c) 2006 The PHP Group                                     |
+  | Copyright (c) 2008 The PHP Group                                     |
   +----------------------------------------------------------------------+
   | This source file is subject to version 3.01 of the PHP license,      |
   | that is bundled with this package in the file LICENSE, and is        |
@@ -292,10 +292,21 @@ static zval** my_copy_zval_ptr(zval** dst, const zval** src, apc_malloc_t alloca
         local_dst_alloc = 1;
     }
 
+#ifdef ZEND_ENGINE_2_3
+    if(!(dst[0] = (zval*) allocate(sizeof(zval_gc_info)))) {
+        if(local_dst_alloc) deallocate(dst);
+        return NULL;
+    }
+
+    if(allocate == apc_php_malloc) {
+        GC_ZVAL_INIT(dst[0]);
+    }
+#else
     if(!(dst[0] = (zval*) allocate(sizeof(zval)))) {
         if(local_dst_alloc) deallocate(dst);
         return NULL;
     }
+#endif
     if(!(dst_new = my_copy_zval(*dst, *src, allocate, deallocate))) {
         if(local_dst_alloc) deallocate(dst);
         return NULL;
@@ -1089,7 +1100,15 @@ zval* apc_copy_zval(zval* dst, const zval* src, apc_malloc_t allocate, apc_free_
     assert(src != NULL);
 
     if (!dst) {
+#ifdef ZEND_ENGINE_2_3
+        CHECK(dst = (zval*) allocate(sizeof(zval_gc_info)));
+
+        if(allocate == apc_php_malloc) {
+            GC_ZVAL_INIT(dst);
+        }
+#else
         CHECK(dst = (zval*) allocate(sizeof(zval)));
+#endif
         local_dst_alloc = 1;
     }
 

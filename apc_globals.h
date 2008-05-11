@@ -2,7 +2,7 @@
   +----------------------------------------------------------------------+
   | APC                                                                  |
   +----------------------------------------------------------------------+
-  | Copyright (c) 2006 The PHP Group                                     |
+  | Copyright (c) 2008 The PHP Group                                     |
   +----------------------------------------------------------------------+
   | This source file is subject to version 3.01 of the PHP license,      |
   | that is bundled with this package in the file LICENSE, and is        |
@@ -34,7 +34,7 @@
 #ifndef APC_GLOBALS_H
 #define APC_GLOBALS_H
 
-#define APC_VERSION "3.0.19-dev"
+#define APC_VERSION "3.0.19"
 
 #include "apc_cache.h"
 #include "apc_stack.h"
