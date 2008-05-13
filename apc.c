@@ -273,7 +273,7 @@ char** apc_tokenize(const char* s, char delim)
 /* similar to php_stream_stat_path */
 #ifdef ZEND_ENGINE_2
 #define APC_URL_STAT(wrapper, filename, pstatbuf) \
-    ((wrapper)->wops->url_stat((wrapper), (filename), 0, (pstatbuf), NULL TSRMLS_CC))
+    ((wrapper)->wops->url_stat((wrapper), (filename), PHP_STREAM_URL_STAT_QUIET, (pstatbuf), NULL TSRMLS_CC))
 #else
 #define APC_URL_STAT(wrapper, filename, pstatbuf) \
     ((wrapper)->wops->url_stat((wrapper), (filename), (pstatbuf) TSRMLS_CC))
