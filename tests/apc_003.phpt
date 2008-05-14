@@ -11,13 +11,13 @@ apc.file_update_protection=0
 
 class foo { }
 $foo = new foo;
-var_dump($foo);
+print_r($foo);
 apc_store('foo',$foo);
 unset($foo);
 $bar = apc_fetch('foo');
-var_dump($bar);
+print_r($bar);
 $bar->a = true;
-var_dump($bar);
+print_r($bar);
 
 class bar extends foo
 {
@@ -48,65 +48,52 @@ class baz extends bar
 }
 
 $baz = new baz;
-var_dump($baz);
+print_r($baz);
 $baz->change();
-var_dump($baz);
+print_r($baz);
 apc_store('baz', $baz);
 unset($baz);
-var_dump(apc_fetch('baz'));
+print_r(apc_fetch('baz'));
 
 ?>
 ===DONE===
 <?php exit(0); ?>
 --EXPECTF--
-object(foo)#%d (0) {
-}
-object(foo)#%d (0) {
-}
-object(foo)#%d (1) {
-  ["a"]=>
-  bool(true)
-}
-object(baz)#%d (6) {
-  ["pri:private"]=>
-  string(3) "baz"
-  ["pub"]=>
-  string(3) "bar"
-  ["pro:protected"]=>
-  string(3) "bar"
-  ["pri:private"]=>
-  string(3) "bar"
-  ["bar"]=>
-  bool(true)
-  ["baz"]=>
-  bool(true)
-}
-object(baz)#%d (6) {
-  ["pri:private"]=>
-  string(3) "baz"
-  ["pub"]=>
-  string(3) "bar"
-  ["pro:protected"]=>
-  string(3) "bar"
-  ["pri:private"]=>
-  string(3) "mod"
-  ["bar"]=>
-  bool(true)
-  ["baz"]=>
-  bool(true)
-}
-object(baz)#%d (6) {
-  ["pri:private"]=>
-  string(3) "baz"
-  ["pub"]=>
-  string(3) "bar"
-  ["pro:protected"]=>
-  string(3) "bar"
-  ["pri:private"]=>
-  string(3) "mod"
-  ["bar"]=>
-  bool(true)
-  ["baz"]=>
-  bool(true)
-}
+foo Object
+(
+)
+foo Object
+(
+)
+foo Object
+(
+    [a] => 1
+)
+baz Object
+(
+    [pri%sprivate] => baz
+    [pub] => bar
+    [pro:protected] => bar
+    [pri%sprivate] => bar
+    [bar] => 1
+    [baz] => 1
+)
+baz Object
+(
+    [pri%sprivate] => baz
+    [pub] => bar
+    [pro:protected] => bar
+    [pri%sprivate] => mod
+    [bar] => 1
+    [baz] => 1
+)
+baz Object
+(
+    [pri%sprivate] => baz
+    [pub] => bar
+    [pro:protected] => bar
+    [pri%sprivate] => mod
+    [bar] => 1
+    [baz] => 1
+)
 ===DONE===
