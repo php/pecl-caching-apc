@@ -1,4 +1,4 @@
-3.0.19: 2008-05-11
+3.0.19: 2008-05-13
 - Move expunge callback groundwork to 3.1 (Rasmus)
 - Fix fd-leak (Gopal)
 - Fix double-free on builtin functions (Gopal)
@@ -13,7 +13,7 @@
 - Fix apc_add() cache expunge bug (Rasmus)
 - Added parameter to apc_fetch to determine success/failure when fetching booleans (shire)
 - Fix misc. memleaks (shire)
-  
+
 3.0.16: 2007-12-26
 - Fix for longstanding cache-full crash (Christian Seiler)
   http://news.php.net/php.pecl.dev/4951 for the details
