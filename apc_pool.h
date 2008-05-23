@@ -68,7 +68,7 @@ struct _apc_pool {
     size_t          size;
     size_t          used;
     
-    char data[0]; /* fill in apc_sma_pool and apc_unpool */
+    /* apc_realpool and apc_unpool add more here */
 };
 
 #define apc_pool_alloc(pool, size) ((pool)->palloc((pool), (size)))
