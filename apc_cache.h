@@ -39,6 +39,8 @@
 #include "apc.h"
 #include "apc_compile.h"
 #include "apc_lock.h"
+#include "apc_pool.h"
+#include "apc_main.h"
 
 #define APC_CACHE_ENTRY_FILE   1
 #define APC_CACHE_ENTRY_USER   2
@@ -96,6 +98,7 @@ struct apc_cache_entry_t {
     unsigned char type;
     int ref_count;
     size_t mem_size;
+    apc_pool *pool;
 };
 /* }}} */
 
@@ -145,10 +148,10 @@ extern void apc_cache_clear(T cache);
  * value is a cache entry returned by apc_cache_make_entry (see below).
  */
 extern int apc_cache_insert(T cache, apc_cache_key_t key,
-                            apc_cache_entry_t* value, time_t t);
+                            apc_cache_entry_t* value, apc_context_t* ctxt, time_t t);
 
 extern int apc_cache_user_insert(T cache, apc_cache_key_t key,
-                            apc_cache_entry_t* value, time_t t, int exclusive TSRMLS_DC);
+                            apc_cache_entry_t* value, apc_context_t* ctxt, time_t t, int exclusive TSRMLS_DC);
 
 /*
  * apc_cache_find searches for a cache entry by filename, and returns a
@@ -174,7 +177,7 @@ extern int apc_cache_user_delete(apc_cache_t* cache, char *strkey, int keylen);
  * zval from it.
  *
  */
-zval* apc_cache_fetch_zval(zval* dst, const zval* src, apc_malloc_t allocate, apc_free_t deallocate);
+zval* apc_cache_fetch_zval(zval* dst, const zval* src, apc_context_t* ctxt);
 
 /*
  * apc_cache_release decrements the reference count associated with a cache
@@ -207,7 +210,7 @@ extern int apc_cache_make_file_key(apc_cache_key_t* key,
                                    const char* filename,
                                    const char* include_path,
                                    time_t t
-							       TSRMLS_DC);
+                                   TSRMLS_DC);
 
 /*
  * apc_cache_make_file_entry creates an apc_cache_entry_t object given a filename
@@ -216,12 +219,13 @@ extern int apc_cache_make_file_key(apc_cache_key_t* key,
 extern apc_cache_entry_t* apc_cache_make_file_entry(const char* filename,
                                                     zend_op_array* op_array,
                                                     apc_function_t* functions,
-                                                    apc_class_t* classes);
+                                                    apc_class_t* classes,
+                                                    apc_context_t* ctxt);
 /*
  * apc_cache_make_user_entry creates an apc_cache_entry_t object given an info string
  * and the zval to be stored.
  */
-extern apc_cache_entry_t* apc_cache_make_user_entry(const char* info, int info_len, const zval *val, const unsigned int ttl);
+extern apc_cache_entry_t* apc_cache_make_user_entry(const char* info, int info_len, const zval *val, apc_context_t* ctxt, const unsigned int ttl);
 
 extern int apc_cache_make_user_key(apc_cache_key_t* key, char* identifier, int identifier_len, const time_t t);
 

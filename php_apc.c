@@ -79,7 +79,6 @@ static void php_apc_init_globals(zend_apc_globals* apc_globals TSRMLS_DC)
     apc_globals->initialized = 0;
     apc_globals->cache_stack = apc_stack_create(0);
     apc_globals->cache_by_default = 1;
-    apc_globals->slam_defense = 0;
     apc_globals->mem_size_ptr = NULL;
     apc_globals->fpstat = 1;
     apc_globals->stat_ctime = 0;
@@ -180,7 +179,6 @@ STD_PHP_INI_ENTRY("apc.mmap_file_mask",  NULL,  PHP_INI_SYSTEM, OnUpdateString, 
 #endif
 PHP_INI_ENTRY("apc.filters",        NULL,     PHP_INI_SYSTEM, OnUpdate_filters)
 STD_PHP_INI_BOOLEAN("apc.cache_by_default", "1",  PHP_INI_ALL, OnUpdateBool,         cache_by_default, zend_apc_globals, apc_globals)
-STD_PHP_INI_ENTRY("apc.slam_defense", "0",      PHP_INI_SYSTEM, OnUpdateInt,            slam_defense,     zend_apc_globals, apc_globals)
 STD_PHP_INI_ENTRY("apc.file_update_protection", "2", PHP_INI_SYSTEM, OnUpdateInt,file_update_protection,  zend_apc_globals, apc_globals)
 STD_PHP_INI_BOOLEAN("apc.enable_cli", "0",      PHP_INI_SYSTEM, OnUpdateBool,           enable_cli,       zend_apc_globals, apc_globals)
 STD_PHP_INI_ENTRY("apc.max_file_size", "1M",    PHP_INI_SYSTEM, OnUpdateInt,            max_file_size,    zend_apc_globals, apc_globals)
@@ -539,6 +537,7 @@ int _apc_store(char *strkey, int strkey_len, const zval *val, const unsigned int
     apc_cache_key_t key;
     time_t t;
     size_t mem_size = 0;
+    apc_context_t ctxt={0,};
 
 #if PHP_API_VERSION < 20041225
 #if HAVE_APACHE && defined(APC_PHP4_STAT)
@@ -554,9 +553,11 @@ int _apc_store(char *strkey, int strkey_len, const zval *val, const unsigned int
 
     HANDLE_BLOCK_INTERRUPTIONS();
 
+    ctxt.pool = apc_pool_create(APC_SMALL_POOL, apc_sma_malloc, apc_sma_free);
+
     APCG(mem_size_ptr) = &mem_size;
     APCG(current_cache) = apc_user_cache;
-    if (!(entry = apc_cache_make_user_entry(strkey, strkey_len + 1, val, ttl))) {
+    if (!(entry = apc_cache_make_user_entry(strkey, strkey_len + 1, val, &ctxt, ttl))) {
         APCG(mem_size_ptr) = NULL;
         APCG(current_cache) = NULL;
         HANDLE_UNBLOCK_INTERRUPTIONS();
@@ -571,7 +572,7 @@ int _apc_store(char *strkey, int strkey_len, const zval *val, const unsigned int
         return 0;
     }
 
-    if (!apc_cache_user_insert(apc_user_cache, key, entry, t, exclusive TSRMLS_CC)) {
+    if (!apc_cache_user_insert(apc_user_cache, key, entry, &ctxt, t, exclusive TSRMLS_CC)) {
         apc_cache_free_entry(entry);
         APCG(mem_size_ptr) = NULL;
         APCG(current_cache) = NULL;
@@ -644,12 +645,15 @@ PHP_FUNCTION(apc_fetch) {
     int strkey_len;
     apc_cache_entry_t* entry;
     time_t t;
+    apc_context_t ctxt = {0,};
 
     if(!APCG(enabled)) RETURN_FALSE;
 
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z|z", &key, &success) == FAILURE) {
         return;
     }
+
+    ctxt.pool = apc_pool_create(APC_UNPOOL, apc_php_malloc, apc_php_free);
 
 #if PHP_API_VERSION < 20041225
 #if HAVE_APACHE && defined(APC_PHP4_STAT)
@@ -676,7 +680,7 @@ PHP_FUNCTION(apc_fetch) {
         entry = apc_cache_user_find(apc_user_cache, strkey, strkey_len + 1, t);
         if(entry) {
             /* deep-copy returned shm zval to emalloc'ed return_value */
-            apc_cache_fetch_zval(return_value, entry->data.user.val, apc_php_malloc, apc_php_free);
+            apc_cache_fetch_zval(return_value, entry->data.user.val, &ctxt);
             apc_cache_release(apc_user_cache, entry);
         } else {
             RETURN_FALSE;
@@ -695,7 +699,7 @@ PHP_FUNCTION(apc_fetch) {
             if(entry) {
                 /* deep-copy returned shm zval to emalloc'ed return_value */
                 MAKE_STD_ZVAL(result_entry);
-                apc_cache_fetch_zval(result_entry, entry->data.user.val, apc_php_malloc, apc_php_free);
+                apc_cache_fetch_zval(result_entry, entry->data.user.val, &ctxt);
                 apc_cache_release(apc_user_cache, entry);
                 zend_hash_add(Z_ARRVAL_P(result), Z_STRVAL_PP(hentry), Z_STRLEN_PP(hentry) +1, &result_entry, sizeof(zval*), NULL);
             } /* don't set values we didn't find */
@@ -843,7 +847,6 @@ PHP_FUNCTION(apc_compile_file) {
     int filename_len;
     zend_file_handle file_handle;
     zend_op_array *op_array;
-    long slam_defense = 0;
     char** filters = NULL;
     zend_bool cache_by_default = 1;
     HashTable cg_function_table, cg_class_table, eg_function_table, eg_class_table;
@@ -857,9 +860,7 @@ PHP_FUNCTION(apc_compile_file) {
 
     if(!filename) RETURN_FALSE;
 
-    /* reset slam defense, filters, and cache_by_default */
-    slam_defense = APCG(slam_defense);
-    APCG(slam_defense) = 0;
+    /* reset filters and cache_by_default */
    
     filters = APCG(filters);
     APCG(filters) = NULL;
@@ -902,7 +903,6 @@ PHP_FUNCTION(apc_compile_file) {
     EG(class_table) = eg_orig_class_table;
     
     /* Restore global settings */
-    APCG(slam_defense) = slam_defense;
     APCG(filters) = filters;
     APCG(cache_by_default) = cache_by_default;
 

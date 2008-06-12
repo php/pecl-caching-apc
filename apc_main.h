@@ -34,6 +34,8 @@
 #ifndef APC_MAIN_H
 #define APC_MAIN_H
 
+#include "apc_pool.h"
+
 /*
  * This module provides the primary interface between PHP and APC.
  */
@@ -44,6 +46,11 @@ extern int apc_process_init(int module_number TSRMLS_DC);
 extern int apc_process_shutdown(TSRMLS_D);
 extern int apc_request_init(TSRMLS_D);
 extern int apc_request_shutdown(TSRMLS_D);
+
+typedef struct _apc_context_t
+{
+    apc_pool *pool;
+} apc_context_t;
 
 #endif
 

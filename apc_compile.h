@@ -40,6 +40,7 @@
 
 #include "apc.h"
 #include "apc_php.h"
+#include "apc_main.h"
 
 /* {{{ struct definition: apc_function_t */
 typedef struct apc_function_t apc_function_t;
@@ -55,7 +56,6 @@ typedef struct apc_class_t apc_class_t;
 struct apc_class_t {
     char* name;                     /* the class name */
     int name_len;                   /* length of name */
-    int is_derived;                 /* true if this is a derived class */
     char* parent_name;              /* the parent class name */
     zend_class_entry* class_entry;  /* the zend class data structure */
 };
@@ -83,20 +83,22 @@ struct apc_opflags_t {
  * These are the top-level copy functions.
  */
 
-extern zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_malloc_t allocate, apc_free_t deallocate TSRMLS_DC);
-extern zend_class_entry* apc_copy_class_entry(zend_class_entry* dst, zend_class_entry* src, apc_malloc_t allocate, apc_free_t deallocate);
-extern apc_function_t* apc_copy_new_functions(int old_count, apc_malloc_t allocate, apc_free_t deallocate TSRMLS_DC);
-extern apc_class_t* apc_copy_new_classes(zend_op_array* op_array, int old_count, apc_malloc_t allocate, apc_free_t deallocate TSRMLS_DC);
-extern zval* apc_copy_zval(zval* dst, const zval* src, apc_malloc_t allocate, apc_free_t deallocate);
+extern zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_context_t* ctxt TSRMLS_DC);
+extern zend_class_entry* apc_copy_class_entry(zend_class_entry* dst, zend_class_entry* src, apc_context_t* ctxt);
+extern apc_function_t* apc_copy_new_functions(int old_count, apc_context_t* ctxt TSRMLS_DC);
+extern apc_class_t* apc_copy_new_classes(zend_op_array* op_array, int old_count, apc_context_t* ctxt TSRMLS_DC);
+extern zval* apc_copy_zval(zval* dst, const zval* src, apc_context_t* ctxt);
 
+#if 0
 /*
  * Deallocation functions corresponding to the copy functions above.
  */
 
-extern void apc_free_op_array(zend_op_array* src, apc_free_t deallocate);
-extern void apc_free_functions(apc_function_t* src, apc_free_t deallocate);
-extern void apc_free_classes(apc_class_t* src, apc_free_t deallocate);
-extern void apc_free_zval(zval* src, apc_free_t deallocate);
+extern void apc_free_op_array(zend_op_array* src, apc_context_t* ctxt);
+extern void apc_free_functions(apc_function_t* src, apc_context_t* ctxt);
+extern void apc_free_classes(apc_class_t* src, apc_context_t* ctxt);
+extern void apc_free_zval(zval* src, apc_context_t* ctxt);
+#endif
 
 /*
  * These "copy-for-execution" functions must be called after retrieving an
@@ -105,9 +107,9 @@ extern void apc_free_zval(zval* src, apc_free_t deallocate);
  * structures.
  */
 
-extern zend_op_array* apc_copy_op_array_for_execution(zend_op_array* dst, zend_op_array* src TSRMLS_DC);
-extern zend_function* apc_copy_function_for_execution(zend_function* src);
-extern zend_class_entry* apc_copy_class_entry_for_execution(zend_class_entry* src, int is_derived);
+extern zend_op_array* apc_copy_op_array_for_execution(zend_op_array* dst, zend_op_array* src, apc_context_t* ctxt TSRMLS_DC);
+extern zend_function* apc_copy_function_for_execution(zend_function* src, apc_context_t* ctxt);
+extern zend_class_entry* apc_copy_class_entry_for_execution(zend_class_entry* src, apc_context_t* ctxt);
 
 /*
  * The "free-after-execution" function performs a cursory clean up of the class data

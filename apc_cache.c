@@ -33,6 +33,7 @@
 #include "apc_cache.h"
 #include "apc_lock.h"
 #include "apc_sma.h"
+#include "apc_main.h"
 #include "apc_globals.h"
 #include "SAPI.h"
 #include "ext/standard/php_var.h"
@@ -87,20 +88,21 @@ static unsigned int string_nhash_8(const char *s, size_t len)
 /* {{{ make_slot */
 slot_t* make_slot(apc_cache_key_t key, apc_cache_entry_t* value, slot_t* next, time_t t)
 {
-    slot_t* p = apc_sma_malloc(sizeof(slot_t));
+    slot_t* p = apc_pool_alloc(value->pool, sizeof(slot_t));
+
     if (!p) return NULL;
 
     if(value->type == APC_CACHE_ENTRY_USER) {
-        char *identifier = (char*) apc_xstrdup(key.data.user.identifier, apc_sma_malloc);
+        char *identifier = (char*) apc_pstrdup(key.data.user.identifier, value->pool);
         if (!identifier) {
-            apc_sma_free(p);
+            //apc_sma_free(p);
             return NULL;
         }
         key.data.user.identifier = identifier;
     } else if(key.type == APC_CACHE_KEY_FPFILE) {
-        char *fullpath = (char*) apc_xstrdup(key.data.fpfile.fullpath, apc_sma_malloc);
+        char *fullpath = (char*) apc_pstrdup(key.data.fpfile.fullpath, value->pool);
         if (!fullpath) {
-            apc_sma_free(p);
+            //apc_sma_free(p);
             return NULL;
         }
         key.data.fpfile.fullpath = fullpath;
@@ -119,6 +121,7 @@ slot_t* make_slot(apc_cache_key_t key, apc_cache_entry_t* value, slot_t* next, t
 /* {{{ free_slot */
 static void free_slot(slot_t* slot)
 {
+#if 0
     if(slot->value->type == APC_CACHE_ENTRY_USER) {
         apc_sma_free((char *)slot->key.data.user.identifier);
     } else if(slot->key.type == APC_CACHE_KEY_FPFILE) {
@@ -126,6 +129,8 @@ static void free_slot(slot_t* slot)
     }
     apc_cache_free_entry(slot->value);
     apc_sma_free(slot);
+#endif
+    apc_pool_destroy(slot->value->pool);
 }
 /* }}} */
 
@@ -389,6 +394,7 @@ static void apc_cache_expunge(apc_cache_t* cache, size_t size)
 int apc_cache_insert(apc_cache_t* cache,
                      apc_cache_key_t key,
                      apc_cache_entry_t* value,
+                     apc_context_t* ctxt,
                      time_t t)
 {
     slot_t** slot;
@@ -451,7 +457,7 @@ int apc_cache_insert(apc_cache_t* cache,
 /* }}} */
 
 /* {{{ apc_cache_user_insert */
-int apc_cache_user_insert(apc_cache_t* cache, apc_cache_key_t key, apc_cache_entry_t* value, time_t t, int exclusive TSRMLS_DC)
+int apc_cache_user_insert(apc_cache_t* cache, apc_cache_key_t key, apc_cache_entry_t* value, apc_context_t* ctxt, time_t t, int exclusive TSRMLS_DC)
 {
     slot_t** slot;
     size_t* mem_size_ptr = NULL;
@@ -654,7 +660,7 @@ int apc_cache_make_file_key(apc_cache_key_t* key,
                        const char* filename,
                        const char* include_path,
                        time_t t
-					   TSRMLS_DC)
+                       TSRMLS_DC)
 {
     struct stat *tmp_buf=NULL;
     struct apc_fileinfo_t fileinfo = { {0}, };
@@ -667,7 +673,7 @@ int apc_cache_make_file_key(apc_cache_key_t* key,
         fprintf(stderr,"No filename and no path_translated - bailing\n");
 #endif
         return 0;
-	}
+    }
 
     len = strlen(filename);
     if(APCG(fpstat)==0) {
@@ -778,19 +784,21 @@ int apc_cache_make_user_key(apc_cache_key_t* key, char* identifier, int identifi
 apc_cache_entry_t* apc_cache_make_file_entry(const char* filename,
                                         zend_op_array* op_array,
                                         apc_function_t* functions,
-                                        apc_class_t* classes)
+                                        apc_class_t* classes,
+                                        apc_context_t* ctxt)
 {
     apc_cache_entry_t* entry;
+    apc_pool* pool = ctxt->pool;
 
-    entry = (apc_cache_entry_t*) apc_sma_malloc(sizeof(apc_cache_entry_t));
+    entry = (apc_cache_entry_t*) apc_pool_alloc(pool, sizeof(apc_cache_entry_t));
     if (!entry) return NULL;
 
-    entry->data.file.filename  = apc_xstrdup(filename, apc_sma_malloc);
+    entry->data.file.filename  = apc_pstrdup(filename, pool);
     if(!entry->data.file.filename) {
 #ifdef __DEBUG_APC__
         fprintf(stderr,"apc_cache_make_file_entry: entry->data.file.filename is NULL - bailing\n");
 #endif
-        apc_sma_free(entry);
+        //apc_sma_free(entry);
         return NULL;
     }
 #ifdef __DEBUG_APC__
@@ -802,22 +810,24 @@ apc_cache_entry_t* apc_cache_make_file_entry(const char* filename,
     entry->type = APC_CACHE_ENTRY_FILE;
     entry->ref_count = 0;
     entry->mem_size = 0;
+    entry->pool = pool;
     return entry;
 }
 /* }}} */
 
 /* {{{ apc_cache_store_zval */
-zval* apc_cache_store_zval(zval* dst, const zval* src, apc_malloc_t allocate, apc_free_t deallocate)
+zval* apc_cache_store_zval(zval* dst, const zval* src, apc_context_t* ctxt)
 {
     smart_str buf = {0};
     php_serialize_data_t var_hash;
+    apc_pool* pool = ctxt->pool;
     TSRMLS_FETCH();
 
     if((src->type & ~IS_CONSTANT_INDEX) == IS_OBJECT) {
         if(!dst) {
-            CHECK(dst = (zval*) allocate(sizeof(zval)));
+            CHECK(dst = (zval*) apc_pool_alloc(pool, sizeof(zval)));
         }
-		
+
         PHP_VAR_SERIALIZE_INIT(var_hash);
         php_var_serialize(&buf, (zval**)&src, &var_hash TSRMLS_CC);
         PHP_VAR_SERIALIZE_DESTROY(var_hash);
@@ -826,7 +836,7 @@ zval* apc_cache_store_zval(zval* dst, const zval* src, apc_malloc_t allocate, ap
         if(buf.c) {
             dst->type = src->type & ~IS_CONSTANT_INDEX;
             dst->value.str.len = buf.len;
-            CHECK(dst->value.str.val = apc_xmemcpy(buf.c, buf.len+1, allocate));
+            CHECK(dst->value.str.val = apc_pmemcpy(buf.c, buf.len+1, pool));
             dst->type = src->type;
             smart_str_free(&buf);
         }
@@ -838,7 +848,7 @@ zval* apc_cache_store_zval(zval* dst, const zval* src, apc_malloc_t allocate, ap
         APCG(copied_zvals) = emalloc(sizeof(HashTable));
         zend_hash_init(APCG(copied_zvals), 0, NULL, NULL, 0);
         
-        dst = apc_copy_zval(dst, src, allocate, deallocate);
+        dst = apc_copy_zval(dst, src, ctxt);
 
         if(APCG(copied_zvals)) {
             zend_hash_destroy(APCG(copied_zvals));
@@ -853,7 +863,7 @@ zval* apc_cache_store_zval(zval* dst, const zval* src, apc_malloc_t allocate, ap
 /* }}} */
 
 /* {{{ apc_cache_fetch_zval */
-zval* apc_cache_fetch_zval(zval* dst, const zval* src, apc_malloc_t allocate, apc_free_t deallocate)
+zval* apc_cache_fetch_zval(zval* dst, const zval* src, apc_context_t* ctxt)
 {
     TSRMLS_FETCH();
     if((src->type & ~IS_CONSTANT_INDEX) == IS_OBJECT) {
@@ -876,7 +886,7 @@ zval* apc_cache_fetch_zval(zval* dst, const zval* src, apc_malloc_t allocate, ap
         APCG(copied_zvals) = emalloc(sizeof(HashTable));
         zend_hash_init(APCG(copied_zvals), 0, NULL, NULL, 0);
         
-        dst = apc_copy_zval(dst, src, allocate, deallocate);
+        dst = apc_copy_zval(dst, src, ctxt);
 
         if(APCG(copied_zvals)) {
             zend_hash_destroy(APCG(copied_zvals));
@@ -890,8 +900,9 @@ zval* apc_cache_fetch_zval(zval* dst, const zval* src, apc_malloc_t allocate, ap
 }
 /* }}} */
 
+#if 0
 /* {{{ apc_cache_free_zval */
-void apc_cache_free_zval(zval* src, apc_free_t deallocate)
+void apc_cache_free_zval(zval* src, apc_context_t* ctxt)
 {
     TSRMLS_FETCH();
     if ((src->type & ~IS_CONSTANT_INDEX) == IS_OBJECT) {
@@ -916,25 +927,27 @@ void apc_cache_free_zval(zval* src, apc_free_t deallocate)
     }
 }
 /* }}} */
+#endif
 
 /* {{{ apc_cache_make_user_entry */
-apc_cache_entry_t* apc_cache_make_user_entry(const char* info, int info_len, const zval* val, const unsigned int ttl)
+apc_cache_entry_t* apc_cache_make_user_entry(const char* info, int info_len, const zval* val, apc_context_t* ctxt, const unsigned int ttl)
 {
     apc_cache_entry_t* entry;
+    apc_pool* pool = ctxt->pool;
 
-    entry = (apc_cache_entry_t*) apc_sma_malloc(sizeof(apc_cache_entry_t));
+    entry = (apc_cache_entry_t*) apc_pool_alloc(pool, sizeof(apc_cache_entry_t));
     if (!entry) return NULL;
 
-    entry->data.user.info = apc_xmemcpy(info, info_len, apc_sma_malloc);
+    entry->data.user.info = apc_pmemcpy(info, info_len, pool);
     entry->data.user.info_len = info_len;
     if(!entry->data.user.info) {
-        apc_sma_free(entry);
+        //apc_sma_free(entry);
         return NULL;
     }
-    entry->data.user.val = apc_cache_store_zval(NULL, val, apc_sma_malloc, apc_sma_free);
+    entry->data.user.val = apc_cache_store_zval(NULL, val, ctxt);
     if(!entry->data.user.val) {
-        apc_sma_free(entry->data.user.info);
-        apc_sma_free(entry);
+        //apc_sma_free(entry->data.user.info);
+        //apc_sma_free(entry);
         return NULL;
     }
     INIT_PZVAL(entry->data.user.val);
@@ -942,15 +955,18 @@ apc_cache_entry_t* apc_cache_make_user_entry(const char* info, int info_len, con
     entry->type = APC_CACHE_ENTRY_USER;
     entry->ref_count = 0;
     entry->mem_size = 0;
+    entry->pool = pool;
     return entry;
 }
 /* }}} */
 
+#if 0
 /* {{{ apc_cache_free_entry */
 void apc_cache_free_entry(apc_cache_entry_t* entry)
 {
     if (entry != NULL) {
         assert(entry->ref_count == 0);
+		apc_pool_destroy(entry->pool);
         switch(entry->type) {
             case APC_CACHE_ENTRY_FILE:
                 apc_sma_free(entry->data.file.filename);
@@ -967,6 +983,7 @@ void apc_cache_free_entry(apc_cache_entry_t* entry)
     }
 }
 /* }}} */
+#endif
 
 /* {{{ apc_cache_info */
 apc_cache_info_t* apc_cache_info(apc_cache_t* cache, zend_bool limited)

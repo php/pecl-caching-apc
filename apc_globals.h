@@ -58,12 +58,10 @@ ZEND_BEGIN_MODULE_GLOBALS(apc)
     apc_stack_t* cache_stack;    /* the stack of cached executable code */
     zend_bool cache_by_default;  /* true if files should be cached unless filtered out */
                                  /* false if files should only be cached if filtered in */
-    long slam_defense;           /* Probability of a process not caching an uncached file */
     size_t* mem_size_ptr;        /* size of blocks allocated to file being cached (NULL outside my_compile_file) */
     long file_update_protection; /* Age in seconds before a file is eligible to be cached - 0 to disable */
     zend_bool enable_cli;        /* Flag to override turning APC off for CLI */
     long max_file_size;	         /* Maximum size of file, in bytes that APC will be allowed to cache */
-    long slam_rand;              /* A place to store the slam rand value for the request */
     zend_bool fpstat;            /* true if fullpath includes should be stat'ed */
     zend_bool stat_ctime;        /* true if ctime in addition to mtime should be checked */
     zend_bool write_lock;        /* true for a global write lock */

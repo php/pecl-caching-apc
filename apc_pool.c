@@ -435,6 +435,26 @@ void apc_pool_init()
 }
 /* }}} */
 
+/* {{{ apc_pstrdup */
+void* apc_pstrdup(const char* s, apc_pool* pool)
+{
+    return s != NULL ? apc_pmemcpy(s, strlen(s)+1, pool) : NULL;
+}
+/* }}} */
+
+/* {{{ apc_pmemcpy */
+void* apc_pmemcpy(const void* p, size_t n, apc_pool* pool)
+{
+    void* q;
+
+    if (p != NULL && (q = apc_pool_alloc(pool, n)) != NULL) {
+        memcpy(q, p, n);
+        return q;
+    }
+    return NULL;
+}
+/* }}} */
+
 /*
  * Local variables:
  * tab-width: 4

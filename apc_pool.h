@@ -81,4 +81,8 @@ extern apc_pool* apc_pool_create(apc_pool_type pool_type,
                             apc_free_t deallocate);
 
 extern void apc_pool_destroy(apc_pool* pool);
+
+extern void* apc_pmemcpy(const void* p, size_t n, apc_pool* pool);
+extern void* apc_pstrdup(const char* s, apc_pool* pool);
+
 #endif

@@ -40,6 +40,7 @@
 #include "apc_sma.h"
 #include "apc_stack.h"
 #include "apc_zend.h"
+#include "apc_pool.h"
 #include "SAPI.h"
 #if PHP_API_VERSION <= 20020918
 #if HAVE_APACHE
@@ -69,12 +70,12 @@ static zend_compile_t* set_compile_hook(zend_compile_t *ptr)
 /* }}} */
 
 /* {{{ install_function */
-static int install_function(apc_function_t fn TSRMLS_DC)
+static int install_function(apc_function_t fn, apc_context_t* ctxt TSRMLS_DC)
 {
     zend_function *func;
     int status;
     
-    func = apc_copy_function_for_execution(fn.function);
+    func = apc_copy_function_for_execution(fn.function, ctxt);
     
     status =  zend_hash_add(EG(function_table),
                       fn.name,
@@ -94,7 +95,7 @@ static int install_function(apc_function_t fn TSRMLS_DC)
 /* }}} */
 
 /* {{{ install_class */
-static int install_class(apc_class_t cl TSRMLS_DC)
+static int install_class(apc_class_t cl, apc_context_t* ctxt TSRMLS_DC)
 {
     zend_class_entry* class_entry = cl.class_entry;
     zend_class_entry* parent = NULL;
@@ -127,8 +128,7 @@ static int install_class(apc_class_t cl TSRMLS_DC)
 
     *allocated_ce = 
     class_entry =
-        apc_copy_class_entry_for_execution(cl.class_entry,
-                                           cl.is_derived);
+        apc_copy_class_entry_for_execution(cl.class_entry, ctxt);
 
 
     /* restore parent class pointer for compile-time inheritance */
@@ -205,7 +205,8 @@ static int compare_file_handles(void* a, void* b)
 
 /* {{{ cached_compile */
 static zend_op_array* cached_compile(zend_file_handle* h,
-                                        int type TSRMLS_DC)
+                                        int type,
+                                        apc_context_t* ctxt TSRMLS_DC)
 {
     apc_cache_entry_t* cache_entry;
     int i, ii;
@@ -215,7 +216,7 @@ static zend_op_array* cached_compile(zend_file_handle* h,
 
     if (cache_entry->data.file.classes) {
         for (i = 0; cache_entry->data.file.classes[i].class_entry != NULL; i++) {
-            if(install_class(cache_entry->data.file.classes[i] TSRMLS_CC) == FAILURE) {
+            if(install_class(cache_entry->data.file.classes[i], ctxt TSRMLS_CC) == FAILURE) {
                 goto default_compile;
             }
         }
@@ -223,12 +224,12 @@ static zend_op_array* cached_compile(zend_file_handle* h,
 
     if (cache_entry->data.file.functions) {
         for (i = 0; cache_entry->data.file.functions[i].function != NULL; i++) {
-            install_function(cache_entry->data.file.functions[i] TSRMLS_CC);
+            install_function(cache_entry->data.file.functions[i], ctxt TSRMLS_CC);
         }
     }
 
 
-    return apc_copy_op_array_for_execution(NULL, cache_entry->data.file.op_array TSRMLS_CC);
+    return apc_copy_op_array_for_execution(NULL, cache_entry->data.file.op_array, ctxt TSRMLS_CC);
 
 default_compile:
 
@@ -271,6 +272,7 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
     time_t t;
     char *path;
     size_t mem_size;
+    apc_context_t ctxt = {0,};
 
     if (!APCG(enabled) || apc_cache_busy(apc_cache)) { 
         return old_compile_file(h, type TSRMLS_CC);
@@ -315,6 +317,9 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
 
     if (cache_entry != NULL) {
         int dummy = 1;
+
+        ctxt.pool = apc_pool_create(APC_UNPOOL, apc_php_malloc, apc_php_free);
+
         if (h->opened_path == NULL) {
             h->opened_path = estrdup(cache_entry->data.file.filename);
         }
@@ -323,7 +328,7 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
         zend_llist_add_element(&CG(open_files), h); /* We leak fds without this hack */
 
         apc_stack_push(APCG(cache_stack), cache_entry);
-        op_array = cached_compile(h, type TSRMLS_CC);
+        op_array = cached_compile(h, type, &ctxt TSRMLS_CC);
         if(op_array) {
 #ifdef APC_FILEHITS
             /* If the file comes from the cache, add it to the global request file list */
@@ -346,24 +351,8 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
     if (op_array == NULL) {
         return NULL;
     }
-    /*
-     * Basically this will cause a file only to be cached on a percentage 
-     * of the attempts.  This is to avoid cache slams when starting up a
-     * very busy server or when modifying files on a very busy live server.
-     * There is no point having many processes all trying to cache the same
-     * file at the same time.  By introducing a chance of being cached
-     * we theoretically cut the cache slam problem by the given percentage.
-     * For example if apc.slam_defense is set to 66 then 2/3 of the attempts
-     * to cache an uncached file will be ignored.
-     */
-    if(APCG(slam_defense)) {
-        if(APCG(slam_rand)==-1) {
-            APCG(slam_rand) = (int)(100.0*rand()/(RAND_MAX+1.0));
-        }
-        if(APCG(slam_rand) < APCG(slam_defense)) {
-            return op_array;
-        }
-    }
+
+    ctxt.pool = apc_pool_create(APC_MEDIUM_POOL, apc_sma_malloc, apc_sma_free);
 
     /* Make sure the mtime reflects the files last known mtime in the case of fpstat==0 */
     if(key.type == APC_CACHE_KEY_FPFILE) {
@@ -399,7 +388,7 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
     mem_size = 0;
     APCG(mem_size_ptr) = &mem_size;
     APCG(current_cache) = apc_cache;
-    if(!(alloc_op_array = apc_copy_op_array(NULL, op_array, apc_sma_malloc, apc_sma_free TSRMLS_CC))) {
+    if(!(alloc_op_array = apc_copy_op_array(NULL, op_array, &ctxt TSRMLS_CC))) {
         APCG(mem_size_ptr) = NULL;
         APCG(current_cache) = NULL;
 #if NONBLOCKING_LOCK_AVAILABLE
@@ -411,8 +400,8 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
         return op_array;
     }
     
-    if(!(alloc_functions = apc_copy_new_functions(num_functions, apc_sma_malloc, apc_sma_free TSRMLS_CC))) {
-        apc_free_op_array(alloc_op_array, apc_sma_free);
+    if(!(alloc_functions = apc_copy_new_functions(num_functions, &ctxt TSRMLS_CC))) {
+        apc_free_op_array(alloc_op_array, &ctxt);
         APCG(mem_size_ptr) = NULL;
         APCG(current_cache) = NULL;
 #if NONBLOCKING_LOCK_AVAILABLE
@@ -423,9 +412,9 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
         HANDLE_UNBLOCK_INTERRUPTIONS();
         return op_array;
     }
-    if(!(alloc_classes = apc_copy_new_classes(op_array, num_classes, apc_sma_malloc, apc_sma_free TSRMLS_CC))) {
-        apc_free_op_array(alloc_op_array, apc_sma_free);
-        apc_free_functions(alloc_functions, apc_sma_free);
+    if(!(alloc_classes = apc_copy_new_classes(op_array, num_classes, &ctxt TSRMLS_CC))) {
+        apc_free_op_array(alloc_op_array, &ctxt);
+        apc_free_functions(alloc_functions, &ctxt);
         APCG(mem_size_ptr) = NULL;
         APCG(current_cache) = NULL;
 #if NONBLOCKING_LOCK_AVAILABLE
@@ -444,10 +433,10 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
     fprintf(stderr,"2. h->opened_path=[%s]  h->filename=[%s]\n", h->opened_path?h->opened_path:"null",h->filename);
 #endif
 
-    if(!(cache_entry = apc_cache_make_file_entry(path, alloc_op_array, alloc_functions, alloc_classes))) {
-        apc_free_op_array(alloc_op_array, apc_sma_free);
-        apc_free_functions(alloc_functions, apc_sma_free);
-        apc_free_classes(alloc_classes, apc_sma_free);
+    if(!(cache_entry = apc_cache_make_file_entry(path, alloc_op_array, alloc_functions, alloc_classes, &ctxt))) {
+        apc_free_op_array(alloc_op_array, &ctxt);
+        apc_free_functions(alloc_functions, &ctxt);
+        apc_free_classes(alloc_classes, &ctxt);
         APCG(mem_size_ptr) = NULL;
         APCG(current_cache) = NULL;
 #if NONBLOCKING_LOCK_AVAILABLE
@@ -461,7 +450,7 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
     APCG(mem_size_ptr) = NULL;
     cache_entry->mem_size = mem_size;
 
-    if ((ret = apc_cache_insert(apc_cache, key, cache_entry, t)) != 1) {
+    if ((ret = apc_cache_insert(apc_cache, key, cache_entry, &ctxt, t)) != 1) {
         apc_cache_free_entry(cache_entry);
     }
 
@@ -497,6 +486,8 @@ int apc_module_init(int module_number TSRMLS_DC)
     old_compile_file = zend_compile_file;
     zend_compile_file = my_compile_file;
     REGISTER_LONG_CONSTANT("\000apc_magic", (long)&set_compile_hook, CONST_PERSISTENT | CONST_CS);
+
+    apc_pool_init();
 
     APCG(initialized) = 1;
     return 0;
@@ -609,7 +600,6 @@ static void apc_deactivate(TSRMLS_D)
 int apc_request_init(TSRMLS_D)
 {
     apc_stack_clear(APCG(cache_stack));
-    APCG(slam_rand) = -1;
     APCG(copied_zvals) = NULL;
 
 #ifdef APC_FILEHITS
