@@ -352,8 +352,6 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
         return NULL;
     }
 
-    ctxt.pool = apc_pool_create(APC_MEDIUM_POOL, apc_sma_malloc, apc_sma_free);
-
     /* Make sure the mtime reflects the files last known mtime in the case of fpstat==0 */
     if(key.type == APC_CACHE_KEY_FPFILE) {
         apc_fileinfo_t fileinfo;
@@ -385,45 +383,20 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
     }
 #endif
 
+    ctxt.pool = apc_pool_create(APC_MEDIUM_POOL, apc_sma_malloc, apc_sma_free);
+
     mem_size = 0;
     APCG(mem_size_ptr) = &mem_size;
     APCG(current_cache) = apc_cache;
     if(!(alloc_op_array = apc_copy_op_array(NULL, op_array, &ctxt TSRMLS_CC))) {
-        APCG(mem_size_ptr) = NULL;
-        APCG(current_cache) = NULL;
-#if NONBLOCKING_LOCK_AVAILABLE
-        if(APCG(write_lock)) {
-            apc_cache_write_unlock(apc_cache);
-        }
-#endif
-        HANDLE_UNBLOCK_INTERRUPTIONS();
-        return op_array;
+        goto freepool;
     }
     
     if(!(alloc_functions = apc_copy_new_functions(num_functions, &ctxt TSRMLS_CC))) {
-        apc_free_op_array(alloc_op_array, &ctxt);
-        APCG(mem_size_ptr) = NULL;
-        APCG(current_cache) = NULL;
-#if NONBLOCKING_LOCK_AVAILABLE
-        if(APCG(write_lock)) {
-            apc_cache_write_unlock(apc_cache);
-        }
-#endif
-        HANDLE_UNBLOCK_INTERRUPTIONS();
-        return op_array;
+        goto freepool;
     }
     if(!(alloc_classes = apc_copy_new_classes(op_array, num_classes, &ctxt TSRMLS_CC))) {
-        apc_free_op_array(alloc_op_array, &ctxt);
-        apc_free_functions(alloc_functions, &ctxt);
-        APCG(mem_size_ptr) = NULL;
-        APCG(current_cache) = NULL;
-#if NONBLOCKING_LOCK_AVAILABLE
-        if(APCG(write_lock)) {
-            apc_cache_write_unlock(apc_cache);
-        }
-#endif
-        HANDLE_UNBLOCK_INTERRUPTIONS();
-        return op_array;
+        goto freepool;
     }
 
     path = h->opened_path;
@@ -434,25 +407,17 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
 #endif
 
     if(!(cache_entry = apc_cache_make_file_entry(path, alloc_op_array, alloc_functions, alloc_classes, &ctxt))) {
-        apc_free_op_array(alloc_op_array, &ctxt);
-        apc_free_functions(alloc_functions, &ctxt);
-        apc_free_classes(alloc_classes, &ctxt);
-        APCG(mem_size_ptr) = NULL;
-        APCG(current_cache) = NULL;
-#if NONBLOCKING_LOCK_AVAILABLE
-        if(APCG(write_lock)) {
-            apc_cache_write_unlock(apc_cache);
-        }
-#endif
-        HANDLE_UNBLOCK_INTERRUPTIONS();
-        return op_array;
+        goto freepool;
     }
+
     APCG(mem_size_ptr) = NULL;
     cache_entry->mem_size = mem_size;
 
     if ((ret = apc_cache_insert(apc_cache, key, cache_entry, &ctxt, t)) != 1) {
-        apc_cache_free_entry(cache_entry);
-    }
+freepool:
+        apc_pool_destroy(ctxt.pool);
+        ctxt.pool = NULL;
+    } 
 
     APCG(current_cache) = NULL;
 
