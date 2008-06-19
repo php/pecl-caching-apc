@@ -79,7 +79,6 @@ static void php_apc_init_globals(zend_apc_globals* apc_globals TSRMLS_DC)
     apc_globals->initialized = 0;
     apc_globals->cache_stack = apc_stack_create(0);
     apc_globals->cache_by_default = 1;
-    apc_globals->mem_size_ptr = NULL;
     apc_globals->fpstat = 1;
     apc_globals->stat_ctime = 0;
     apc_globals->write_lock = 1;
@@ -536,7 +535,6 @@ int _apc_store(char *strkey, int strkey_len, const zval *val, const unsigned int
     apc_cache_entry_t *entry;
     apc_cache_key_t key;
     time_t t;
-    size_t mem_size = 0;
     apc_context_t ctxt={0,};
 
 #if PHP_API_VERSION < 20041225
@@ -555,32 +553,22 @@ int _apc_store(char *strkey, int strkey_len, const zval *val, const unsigned int
 
     ctxt.pool = apc_pool_create(APC_SMALL_POOL, apc_sma_malloc, apc_sma_free);
 
-    APCG(mem_size_ptr) = &mem_size;
     APCG(current_cache) = apc_user_cache;
     if (!(entry = apc_cache_make_user_entry(strkey, strkey_len + 1, val, &ctxt, ttl))) {
-        APCG(mem_size_ptr) = NULL;
-        APCG(current_cache) = NULL;
-        HANDLE_UNBLOCK_INTERRUPTIONS();
-        return 0;
+		goto freepool;
     }
 
     if (!apc_cache_make_user_key(&key, strkey, strkey_len + 1, t)) {
-        APCG(mem_size_ptr) = NULL;
-        APCG(current_cache) = NULL;
-        apc_cache_free_entry(entry);
-        HANDLE_UNBLOCK_INTERRUPTIONS();
-        return 0;
+		goto freepool;
     }
 
     if (!apc_cache_user_insert(apc_user_cache, key, entry, &ctxt, t, exclusive TSRMLS_CC)) {
-        apc_cache_free_entry(entry);
-        APCG(mem_size_ptr) = NULL;
-        APCG(current_cache) = NULL;
+freepool:
+		apc_pool_destroy(ctxt.pool);
         HANDLE_UNBLOCK_INTERRUPTIONS();
         return 0;
     }
 
-    APCG(mem_size_ptr) = NULL;
     APCG(current_cache) = NULL;
 
     HANDLE_UNBLOCK_INTERRUPTIONS();

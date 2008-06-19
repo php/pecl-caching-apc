@@ -95,14 +95,12 @@ slot_t* make_slot(apc_cache_key_t key, apc_cache_entry_t* value, slot_t* next, t
     if(value->type == APC_CACHE_ENTRY_USER) {
         char *identifier = (char*) apc_pstrdup(key.data.user.identifier, value->pool);
         if (!identifier) {
-            //apc_sma_free(p);
             return NULL;
         }
         key.data.user.identifier = identifier;
     } else if(key.type == APC_CACHE_KEY_FPFILE) {
         char *fullpath = (char*) apc_pstrdup(key.data.fpfile.fullpath, value->pool);
         if (!fullpath) {
-            //apc_sma_free(p);
             return NULL;
         }
         key.data.fpfile.fullpath = fullpath;
@@ -121,15 +119,6 @@ slot_t* make_slot(apc_cache_key_t key, apc_cache_entry_t* value, slot_t* next, t
 /* {{{ free_slot */
 static void free_slot(slot_t* slot)
 {
-#if 0
-    if(slot->value->type == APC_CACHE_ENTRY_USER) {
-        apc_sma_free((char *)slot->key.data.user.identifier);
-    } else if(slot->key.type == APC_CACHE_KEY_FPFILE) {
-        apc_sma_free((char *)slot->key.data.fpfile.fullpath);
-    }
-    apc_cache_free_entry(slot->value);
-    apc_sma_free(slot);
-#endif
     apc_pool_destroy(slot->value->pool);
 }
 /* }}} */
@@ -446,8 +435,9 @@ int apc_cache_insert(apc_cache_t* cache,
         UNLOCK(cache);
         return -1;
     }
-   
-    cache->header->mem_size += value->mem_size;
+
+    value->mem_size = ctxt->pool->size;
+    cache->header->mem_size += ctxt->pool->size;
     cache->header->num_entries++;
     cache->header->num_inserts++;
     
@@ -460,7 +450,6 @@ int apc_cache_insert(apc_cache_t* cache,
 int apc_cache_user_insert(apc_cache_t* cache, apc_cache_key_t key, apc_cache_entry_t* value, apc_context_t* ctxt, time_t t, int exclusive TSRMLS_DC)
 {
     slot_t** slot;
-    size_t* mem_size_ptr = NULL;
 
     if (!value) {
         return 0;
@@ -470,11 +459,6 @@ int apc_cache_user_insert(apc_cache_t* cache, apc_cache_key_t key, apc_cache_ent
     process_pending_removals(cache);
 
     slot = &cache->slots[string_nhash_8(key.data.user.identifier, key.data.user.identifier_len) % cache->num_slots];
-
-    if (APCG(mem_size_ptr) != NULL) {
-        mem_size_ptr = APCG(mem_size_ptr);
-        APCG(mem_size_ptr) = NULL;
-    }
 
     while (*slot) {
         if (!memcmp((*slot)->key.data.user.identifier, key.data.user.identifier, key.data.user.identifier_len)) {
@@ -508,18 +492,14 @@ int apc_cache_user_insert(apc_cache_t* cache, apc_cache_key_t key, apc_cache_ent
         slot = &(*slot)->next;
     }
 
-    if (mem_size_ptr != NULL) {
-        APCG(mem_size_ptr) = mem_size_ptr;
-    }
-
     if ((*slot = make_slot(key, value, *slot, t)) == NULL) {
         UNLOCK(cache);
         return 0;
     }
-    if (APCG(mem_size_ptr) != NULL) {
-        value->mem_size = *APCG(mem_size_ptr);
-        cache->header->mem_size += *APCG(mem_size_ptr);
-    }
+    
+	value->mem_size = ctxt->pool->size;
+    cache->header->mem_size += ctxt->pool->size;
+
     cache->header->num_entries++;
     cache->header->num_inserts++;
 
@@ -798,7 +778,6 @@ apc_cache_entry_t* apc_cache_make_file_entry(const char* filename,
 #ifdef __DEBUG_APC__
         fprintf(stderr,"apc_cache_make_file_entry: entry->data.file.filename is NULL - bailing\n");
 #endif
-        //apc_sma_free(entry);
         return NULL;
     }
 #ifdef __DEBUG_APC__
@@ -941,13 +920,10 @@ apc_cache_entry_t* apc_cache_make_user_entry(const char* info, int info_len, con
     entry->data.user.info = apc_pmemcpy(info, info_len, pool);
     entry->data.user.info_len = info_len;
     if(!entry->data.user.info) {
-        //apc_sma_free(entry);
         return NULL;
     }
     entry->data.user.val = apc_cache_store_zval(NULL, val, ctxt);
     if(!entry->data.user.val) {
-        //apc_sma_free(entry->data.user.info);
-        //apc_sma_free(entry);
         return NULL;
     }
     INIT_PZVAL(entry->data.user.val);
@@ -959,31 +935,6 @@ apc_cache_entry_t* apc_cache_make_user_entry(const char* info, int info_len, con
     return entry;
 }
 /* }}} */
-
-#if 0
-/* {{{ apc_cache_free_entry */
-void apc_cache_free_entry(apc_cache_entry_t* entry)
-{
-    if (entry != NULL) {
-        assert(entry->ref_count == 0);
-		apc_pool_destroy(entry->pool);
-        switch(entry->type) {
-            case APC_CACHE_ENTRY_FILE:
-                apc_sma_free(entry->data.file.filename);
-                apc_free_op_array(entry->data.file.op_array, apc_sma_free);
-                apc_free_functions(entry->data.file.functions, apc_sma_free);
-                apc_free_classes(entry->data.file.classes, apc_sma_free);
-                break;
-            case APC_CACHE_ENTRY_USER:
-                apc_sma_free(entry->data.user.info);
-                apc_cache_free_zval(entry->data.user.val, apc_sma_free);
-                break;
-        }
-        apc_sma_free(entry);
-    }
-}
-/* }}} */
-#endif
 
 /* {{{ apc_cache_info */
 apc_cache_info_t* apc_cache_info(apc_cache_t* cache, zend_bool limited)

@@ -409,7 +409,6 @@ void* apc_sma_malloc(size_t n)
 {
     size_t off;
     int i;
-    size_t *orig_mem_size_ptr;
 
     TSRMLS_FETCH();
     assert(sma_initialized);
@@ -419,16 +418,12 @@ void* apc_sma_malloc(size_t n)
     if(off == -1) { 
         /* retry failed allocation after we expunge */
         UNLOCK(((header_t*)sma_shmaddrs[sma_lastseg])->sma_lock);
-        orig_mem_size_ptr = APCG(mem_size_ptr);
-        APCG(mem_size_ptr) = NULL;
         APCG(current_cache)->expunge_cb(APCG(current_cache), n);
-        APCG(mem_size_ptr) = orig_mem_size_ptr;
         LOCK(((header_t*)sma_shmaddrs[sma_lastseg])->sma_lock);
         off = sma_allocate(sma_shmaddrs[sma_lastseg], n);
     }
     if (off != -1) {
         void* p = (void *)(((char *)(sma_shmaddrs[sma_lastseg])) + off);
-        if (APCG(mem_size_ptr) != NULL) { *(APCG(mem_size_ptr)) += n; }
         UNLOCK(((header_t*)sma_shmaddrs[sma_lastseg])->sma_lock);
 #ifdef VALGRIND_MALLOCLIKE_BLOCK
         VALGRIND_MALLOCLIKE_BLOCK(p, n, 0, 0);
@@ -446,16 +441,12 @@ void* apc_sma_malloc(size_t n)
         if(off == -1) { 
             /* retry failed allocation after we expunge */
             UNLOCK(((header_t*)sma_shmaddrs[i])->sma_lock);
-            orig_mem_size_ptr = APCG(mem_size_ptr);
-            APCG(mem_size_ptr) = NULL;
             APCG(current_cache)->expunge_cb(APCG(current_cache), n);
-            APCG(mem_size_ptr) = orig_mem_size_ptr;
             LOCK(((header_t*)sma_shmaddrs[i])->sma_lock);
             off = sma_allocate(sma_shmaddrs[sma_lastseg], n);
         }
         if (off != -1) {
             void* p = (void *)(((char *)(sma_shmaddrs[i])) + off);
-            if (APCG(mem_size_ptr) != NULL) { *(APCG(mem_size_ptr)) += n; }
             UNLOCK(((header_t*)sma_shmaddrs[i])->sma_lock);
             sma_lastseg = i;
 #ifdef VALGRIND_MALLOCLIKE_BLOCK
@@ -513,7 +504,6 @@ void apc_sma_free(void* p)
         offset = (size_t)((char *)p - (char *)(sma_shmaddrs[i]));
         if (p >= sma_shmaddrs[i] && offset < sma_segsize) {
             d_size = sma_deallocate(sma_shmaddrs[i], offset);
-            if (APCG(mem_size_ptr) != NULL) { *(APCG(mem_size_ptr)) -= d_size; }
             UNLOCK(((header_t*)sma_shmaddrs[i])->sma_lock);
 #ifdef VALGRIND_FREELIKE_BLOCK
             VALGRIND_FREELIKE_BLOCK(p, 0);
