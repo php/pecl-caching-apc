@@ -318,6 +318,7 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
         int dummy = 1;
 
         ctxt.pool = apc_pool_create(APC_UNPOOL, apc_php_malloc, apc_php_free);
+        ctxt.copy = APC_COPY_OUT_OPCODE;
 
         if (h->opened_path == NULL) {
             h->opened_path = estrdup(cache_entry->data.file.filename);
@@ -384,6 +385,7 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
 
     APCG(current_cache) = apc_cache;
     ctxt.pool = apc_pool_create(APC_MEDIUM_POOL, apc_sma_malloc, apc_sma_free);
+    ctxt.copy = APC_COPY_IN_OPCODE;
 
     if(!(alloc_op_array = apc_copy_op_array(NULL, op_array, &ctxt TSRMLS_CC))) {
         goto freepool;

@@ -197,6 +197,7 @@ static zval** my_copy_zval_ptr(zval** dst, const zval** src, apc_context_t* ctxt
 {
     zval* dst_new;
     apc_pool* pool = ctxt->pool;
+    int usegc = (ctxt->copy == APC_COPY_OUT_OPCODE) || (ctxt->copy == APC_COPY_OUT_USER);
     
     assert(src != NULL);
 
@@ -204,7 +205,13 @@ static zval** my_copy_zval_ptr(zval** dst, const zval** src, apc_context_t* ctxt
         CHECK(dst = (zval**) apc_pool_alloc(pool, sizeof(zval*)));
     }
 
-    CHECK((dst[0] = (zval*) apc_pool_alloc(pool, sizeof(zval))));
+    if(usegc) {
+        ALLOC_ZVAL(dst[0]);
+        CHECK(dst[0]);
+    } else {
+        CHECK((dst[0] = (zval*) apc_pool_alloc(pool, sizeof(zval))));
+    }
+
     CHECK((dst_new = my_copy_zval(*dst, *src, ctxt)));
 
     if(dst_new != *dst) {
@@ -783,9 +790,15 @@ zval* apc_copy_zval(zval* dst, const zval* src, apc_context_t* ctxt)
 {
     apc_pool* pool = ctxt->pool;
     assert(src != NULL);
+    int usegc = (ctxt->copy == APC_COPY_OUT_OPCODE) || (ctxt->copy == APC_COPY_OUT_USER);
 
     if (!dst) {
-        CHECK(dst = (zval*) apc_pool_alloc(pool, sizeof(zval)));
+        if(usegc) {
+            ALLOC_ZVAL(dst);
+            CHECK(dst);
+        } else {
+            CHECK(dst = (zval*) apc_pool_alloc(pool, sizeof(zval)));
+        }
     }
 
     CHECK(dst = my_copy_zval(dst, src, ctxt));

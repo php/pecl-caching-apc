@@ -552,19 +552,20 @@ int _apc_store(char *strkey, int strkey_len, const zval *val, const unsigned int
     HANDLE_BLOCK_INTERRUPTIONS();
 
     ctxt.pool = apc_pool_create(APC_SMALL_POOL, apc_sma_malloc, apc_sma_free);
+    ctxt.copy = APC_COPY_IN_USER;
 
     APCG(current_cache) = apc_user_cache;
     if (!(entry = apc_cache_make_user_entry(strkey, strkey_len + 1, val, &ctxt, ttl))) {
-		goto freepool;
+        goto freepool;
     }
 
     if (!apc_cache_make_user_key(&key, strkey, strkey_len + 1, t)) {
-		goto freepool;
+        goto freepool;
     }
 
     if (!apc_cache_user_insert(apc_user_cache, key, entry, &ctxt, t, exclusive TSRMLS_CC)) {
 freepool:
-		apc_pool_destroy(ctxt.pool);
+        apc_pool_destroy(ctxt.pool);
         HANDLE_UNBLOCK_INTERRUPTIONS();
         return 0;
     }
@@ -642,6 +643,7 @@ PHP_FUNCTION(apc_fetch) {
     }
 
     ctxt.pool = apc_pool_create(APC_UNPOOL, apc_php_malloc, apc_php_free);
+    ctxt.copy = APC_COPY_OUT_USER;
 
 #if PHP_API_VERSION < 20041225
 #if HAVE_APACHE && defined(APC_PHP4_STAT)
