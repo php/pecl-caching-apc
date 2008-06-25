@@ -73,6 +73,10 @@
 #define Z_SET_ISREF_TO_P(pz, isref)   (pz)->is_ref = isref
 #define Z_SET_ISREF_TO_PP(ppz, isref) Z_SET_ISREF_TO_P(*(ppz), isref)
 #endif
+
+#ifndef IS_CONSTANT_TYPE_MASK
+#define IS_CONSTANT_TYPE_MASK (~IS_CONSTANT_INDEX)
+#endif
  
 typedef void* (*ht_copy_fun_t)(void*, void*, apc_context_t*);
 //typedef void  (*ht_free_fun_t)(void*, apc_context_t*);
@@ -237,7 +241,7 @@ static zval* my_copy_zval(zval* dst, const zval* src, apc_context_t* ctxt)
 
     memcpy(dst, src, sizeof(src[0]));
 
-    switch (src->type & ~IS_CONSTANT_INDEX) {
+    switch (src->type & IS_CONSTANT_TYPE_MASK) {
     case IS_RESOURCE:
     case IS_BOOL:
     case IS_LONG:
