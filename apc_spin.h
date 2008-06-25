@@ -43,6 +43,6 @@ zend_bool apc_spin_nonblocking_lock(pthread_mutex_t *lock);
  * tab-width: 4
  * c-basic-offset: 4
  * End:
- * vim600: expandtab sw=4 ts=4 sts=4 fdm=marker
+ * vim>600: expandtab sw=4 ts=4 sts=4 fdm=marker
  * vim<600: expandtab sw=4 ts=4 sts=4
  */

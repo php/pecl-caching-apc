@@ -673,8 +673,7 @@ PHP_FUNCTION(apc_fetch) {
             apc_cache_fetch_zval(return_value, entry->data.user.val, &ctxt);
             apc_cache_release(apc_user_cache, entry);
         } else {
-            apc_pool_destroy(ctxt.pool);
-            RETURN_FALSE;
+            goto freepool;
         }
     } else if(Z_TYPE_P(key) == IS_ARRAY) {
         hash = Z_ARRVAL_P(key);
@@ -684,8 +683,7 @@ PHP_FUNCTION(apc_fetch) {
         while(zend_hash_get_current_data_ex(hash, (void**)&hentry, &hpos) == SUCCESS) {
             if(Z_TYPE_PP(hentry) != IS_STRING) {
                 apc_wprint("apc_fetch() expects a string or array of strings.");
-                apc_pool_destroy(ctxt.pool);
-                RETURN_FALSE;
+                goto freepool;
             }
             entry = apc_cache_user_find(apc_user_cache, Z_STRVAL_PP(hentry), Z_STRLEN_PP(hentry) + 1, t);
             if(entry) {
@@ -700,7 +698,8 @@ PHP_FUNCTION(apc_fetch) {
         RETVAL_ZVAL(result, 0, 1);
     } else {
         apc_wprint("apc_fetch() expects a string or array of strings.");
-		apc_pool_destroy(ctxt.pool);
+freepool:
+        apc_pool_destroy(ctxt.pool);
         RETURN_FALSE;
     }
 
@@ -921,33 +920,33 @@ ZEND_END_ARG_INFO()
 
 /* {{{ apc_functions[] */
 function_entry apc_functions[] = {
-	PHP_FE(apc_cache_info,          NULL)
-	PHP_FE(apc_clear_cache,         NULL)
-	PHP_FE(apc_sma_info,            NULL)
-	PHP_FE(apc_store,               NULL)
-	PHP_FE(apc_fetch,               php_apc_fetch_arginfo)
-	PHP_FE(apc_delete,              NULL)
-	PHP_FE(apc_define_constants,    NULL)
-	PHP_FE(apc_load_constants,      NULL)
-	PHP_FE(apc_compile_file,        NULL)
-	PHP_FE(apc_add,                 NULL)
-	{NULL, 		NULL,				NULL}
+    PHP_FE(apc_cache_info,          NULL)
+    PHP_FE(apc_clear_cache,         NULL)
+    PHP_FE(apc_sma_info,            NULL)
+    PHP_FE(apc_store,               NULL)
+    PHP_FE(apc_fetch,               php_apc_fetch_arginfo)
+    PHP_FE(apc_delete,              NULL)
+    PHP_FE(apc_define_constants,    NULL)
+    PHP_FE(apc_load_constants,      NULL)
+    PHP_FE(apc_compile_file,        NULL)
+    PHP_FE(apc_add,                 NULL)
+    {NULL,    NULL,                 NULL}
 };
 /* }}} */
 
 /* {{{ module definition structure */
 
 zend_module_entry apc_module_entry = {
-	STANDARD_MODULE_HEADER,
-	"apc",
-	apc_functions,
-	PHP_MINIT(apc),
-	PHP_MSHUTDOWN(apc),
-	PHP_RINIT(apc),
-	PHP_RSHUTDOWN(apc),
-	PHP_MINFO(apc),
-	PHP_APC_VERSION,
-	STANDARD_MODULE_PROPERTIES
+    STANDARD_MODULE_HEADER,
+    "apc",
+    apc_functions,
+    PHP_MINIT(apc),
+    PHP_MSHUTDOWN(apc),
+    PHP_RINIT(apc),
+    PHP_RSHUTDOWN(apc),
+    PHP_MINFO(apc),
+    PHP_APC_VERSION,
+    STANDARD_MODULE_PROPERTIES
 };
 
 #ifdef COMPILE_DL_APC
@@ -960,6 +959,6 @@ ZEND_GET_MODULE(apc)
  * tab-width: 4
  * c-basic-offset: 4
  * End:
- * vim600: expandtab sw=4 ts=4 sts=4 fdm=marker
+ * vim>600: expandtab sw=4 ts=4 sts=4 fdm=marker
  * vim<600: expandtab sw=4 ts=4 sts=4
  */
