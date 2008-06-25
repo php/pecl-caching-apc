@@ -673,6 +673,7 @@ PHP_FUNCTION(apc_fetch) {
             apc_cache_fetch_zval(return_value, entry->data.user.val, &ctxt);
             apc_cache_release(apc_user_cache, entry);
         } else {
+            apc_pool_destroy(ctxt.pool);
             RETURN_FALSE;
         }
     } else if(Z_TYPE_P(key) == IS_ARRAY) {
@@ -683,6 +684,7 @@ PHP_FUNCTION(apc_fetch) {
         while(zend_hash_get_current_data_ex(hash, (void**)&hentry, &hpos) == SUCCESS) {
             if(Z_TYPE_PP(hentry) != IS_STRING) {
                 apc_wprint("apc_fetch() expects a string or array of strings.");
+                apc_pool_destroy(ctxt.pool);
                 RETURN_FALSE;
             }
             entry = apc_cache_user_find(apc_user_cache, Z_STRVAL_PP(hentry), Z_STRLEN_PP(hentry) + 1, t);
@@ -698,6 +700,7 @@ PHP_FUNCTION(apc_fetch) {
         RETVAL_ZVAL(result, 0, 1);
     } else {
         apc_wprint("apc_fetch() expects a string or array of strings.");
+		apc_pool_destroy(ctxt.pool);
         RETURN_FALSE;
     }
 
@@ -705,6 +708,7 @@ PHP_FUNCTION(apc_fetch) {
         ZVAL_BOOL(success, 1);
     }
 
+    apc_pool_destroy(ctxt.pool);
     return;
 }
 /* }}} */
