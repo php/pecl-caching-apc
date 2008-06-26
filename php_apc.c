@@ -551,10 +551,11 @@ int _apc_store(char *strkey, int strkey_len, const zval *val, const unsigned int
 
     HANDLE_BLOCK_INTERRUPTIONS();
 
+    APCG(current_cache) = apc_user_cache;
+
     ctxt.pool = apc_pool_create(APC_SMALL_POOL, apc_sma_malloc, apc_sma_free);
     ctxt.copy = APC_COPY_IN_USER;
 
-    APCG(current_cache) = apc_user_cache;
     if (!(entry = apc_cache_make_user_entry(strkey, strkey_len + 1, val, &ctxt, ttl))) {
         goto freepool;
     }
