@@ -585,6 +585,7 @@ apc_cache_entry_t* apc_cache_user_find(apc_cache_t* cache, char *strkey, int key
             /* Check to make sure this entry isn't expired by a hard TTL */
             if((*slot)->value->data.user.ttl && ((*slot)->creation_time + (*slot)->value->data.user.ttl) < t) {
                 remove_slot(cache, slot);
+                cache->header->num_misses++;
                 UNLOCK(cache);
                 return NULL;
             }
@@ -601,6 +602,7 @@ apc_cache_entry_t* apc_cache_user_find(apc_cache_t* cache, char *strkey, int key
         slot = &(*slot)->next;
     }
  
+    cache->header->num_misses++;
     UNLOCK(cache);
     return NULL;
 }
