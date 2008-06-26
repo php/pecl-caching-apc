@@ -45,7 +45,7 @@
 
 /* {{{ locking macros */
 #define CREATE_LOCK(lock)     apc_lck_create(NULL, 0, 1, lock)
-#define DESTROY_LOCK(c) apc_lck_destroy(c->header->lock)
+#define DESTROY_LOCK(lock)    apc_lck_destroy(lock)
 #define LOCK(c)         { HANDLE_BLOCK_INTERRUPTIONS(); apc_lck_lock(c->header->lock); }
 #define RDLOCK(c)       { HANDLE_BLOCK_INTERRUPTIONS(); apc_lck_rdlock(c->header->lock); }
 #define UNLOCK(c)       { apc_lck_unlock(c->header->lock); HANDLE_UNBLOCK_INTERRUPTIONS(); }
@@ -264,7 +264,10 @@ apc_cache_t* apc_cache_create(int size_hint, int gc_ttl, int ttl)
 /* {{{ apc_cache_destroy */
 void apc_cache_destroy(apc_cache_t* cache)
 {
-    DESTROY_LOCK(cache);
+    DESTROY_LOCK(cache->header->lock);
+#ifdef NONBLOCKING_LOCK_AVAILABLE
+    DESTROY_LOCK(cache->header->wrlock);
+#endif
     apc_efree(cache);
 }
 /* }}} */
