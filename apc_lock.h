@@ -34,22 +34,12 @@
 #include "apc_sem.h"
 #include "apc_fcntl.h"
 #include "apc_pthreadmutex.h"
-#include "apc_futex.h"
 #include "apc_spin.h"
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#ifdef TSRM_LOCKS
-#define RDLOCK_AVAILABLE 0
-#define NONBLOCKING_LOCK_AVAILABLE 0
-/* quick & dirty: use TSRM mutex locks for now */
-#define apc_lck_create(a,b,c,d) d=(int)tsrm_mutex_alloc()
-#define apc_lck_destroy(a)    tsrm_mutex_free((MUTEX_T)a)
-#define apc_lck_lock(a)       tsrm_mutex_lock((MUTEX_T)a)
-#define apc_lck_rdlock(a)     tsrm_mutex_lock((MUTEX_T)a)
-#define apc_lck_unlock(a)     tsrm_mutex_unlock((MUTEX_T)a)
-#elif defined(APC_SEM_LOCKS)
+#if defined(APC_SEM_LOCKS)
 #define RDLOCK_AVAILABLE 0
 #define NONBLOCKING_LOCK_AVAILABLE 0
 #define apc_lck_t int
@@ -68,15 +58,6 @@
 #define apc_lck_nb_lock(a)    apc_pthreadmutex_nonblocking_lock(&a)
 #define apc_lck_rdlock(a)     apc_pthreadmutex_lock(&a)
 #define apc_lck_unlock(a)     apc_pthreadmutex_unlock(&a)
-#elif defined(APC_FUTEX_LOCKS)
-#define NONBLOCKING_LOCK_AVAILABLE 1 
-#define apc_lck_t int 
-#define apc_lck_create(a,b,c,d) d=apc_futex_create()
-#define apc_lck_destroy(a)    apc_futex_destroy(&a)
-#define apc_lck_lock(a)       apc_futex_lock(&a)
-#define apc_lck_nb_lock(a)    apc_futex_nonblocking_lock(&a)
-#define apc_lck_rdlock(a)     apc_futex_lock(&a)
-#define apc_lck_unlock(a)     apc_futex_unlock(&a)
 #elif defined(APC_SPIN_LOCKS)
 #define NONBLOCKING_LOCK_AVAILABLE APC_SLOCK_NONBLOCKING_LOCK_AVAILABLE
 #define apc_lck_t slock_t 

@@ -210,8 +210,6 @@ static PHP_MINFO_FUNCTION(apc)
 #endif
 #if APC_SEM_LOCKS
     php_info_print_table_row(2, "Locking type", "IPC Semaphore");
-#elif APC_FUTEX_LOCKS
-    php_info_print_table_row(2, "Locking type", "Linux Futex Locks");
 #elif APC_PTHREADMUTEX_LOCKS
     php_info_print_table_row(2, "Locking type", "pthread mutex Locks");
 #elif APC_SPIN_LOCKS
@@ -364,8 +362,6 @@ PHP_FUNCTION(apc_cache_info)
 #endif
 #if APC_SEM_LOCKS
     add_assoc_stringl(return_value, "locking_type", "IPC semaphore", sizeof("IPC semaphore")-1, 1);
-#elif APC_FUTEX_LOCKS
-    add_assoc_stringl(return_value, "locking_type", "Linux Futex", sizeof("Linux Futex")-1, 1);
 #elif APC_PTHREADMUTEX_LOCKS
     add_assoc_stringl(return_value, "locking_type", "pthread mutex", sizeof("pthread mutex")-1, 1);
 #elif APC_SPIN_LOCKS
