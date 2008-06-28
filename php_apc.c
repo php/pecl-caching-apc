@@ -839,7 +839,7 @@ PHP_FUNCTION(apc_compile_file) {
     zend_op_array *op_array;
     char** filters = NULL;
     zend_bool cache_by_default = 1;
-    HashTable cg_function_table, cg_class_table, eg_function_table, eg_class_table;
+    HashTable cg_function_table, cg_class_table;
     HashTable *cg_orig_function_table, *cg_orig_class_table, *eg_orig_function_table, *eg_orig_class_table;
 
     if(!APCG(enabled)) RETURN_FALSE;
