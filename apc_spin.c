@@ -26,6 +26,7 @@
 slock_t *apc_slock_create(slock_t *lock) 
 {
    S_INIT_LOCK(lock); 
+   return lock;
 }
 
 void apc_slock_destroy(slock_t *lock)

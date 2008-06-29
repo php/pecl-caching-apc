@@ -39,6 +39,14 @@
 #include <config.h>
 #endif
 
+/* {{{ generic locking macros */
+#define CREATE_LOCK(lock)     apc_lck_create(NULL, 0, 1, lock)
+#define DESTROY_LOCK(lock)    apc_lck_destroy(lock)
+#define LOCK(lock)          { HANDLE_BLOCK_INTERRUPTIONS(); apc_lck_lock(lock); }
+#define RDLOCK(lock)        { HANDLE_BLOCK_INTERRUPTIONS(); apc_lck_rdlock(lock); }
+#define UNLOCK(lock)        { apc_lck_unlock(lock); HANDLE_UNBLOCK_INTERRUPTIONS(); }
+/* }}} */
+
 #if defined(APC_SEM_LOCKS)
 #define RDLOCK_AVAILABLE 0
 #define NONBLOCKING_LOCK_AVAILABLE 0
@@ -59,6 +67,7 @@
 #define apc_lck_rdlock(a)     apc_pthreadmutex_lock(&a)
 #define apc_lck_unlock(a)     apc_pthreadmutex_unlock(&a)
 #elif defined(APC_SPIN_LOCKS)
+#define RDLOCK_AVAILABLE 0
 #define NONBLOCKING_LOCK_AVAILABLE APC_SLOCK_NONBLOCKING_LOCK_AVAILABLE
 #define apc_lck_t slock_t 
 #define apc_lck_create(a,b,c,d) apc_slock_create((slock_t*)&(d))

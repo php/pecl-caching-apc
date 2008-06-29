@@ -44,12 +44,6 @@ void apc_unmap(void* shmaddr, size_t size);
 #include <valgrind/memcheck.h>
 #endif
 
-/* {{{ locking macros */
-#define LOCK(c)         { HANDLE_BLOCK_INTERRUPTIONS(); apc_lck_lock(c); }
-#define RDLOCK(c)       { HANDLE_BLOCK_INTERRUPTIONS(); apc_lck_rdlock(c); }
-#define UNLOCK(c)       { apc_lck_unlock(c); HANDLE_UNBLOCK_INTERRUPTIONS(); }
-/* }}} */
-
 enum { DEFAULT_NUMSEG=1, DEFAULT_SEGSIZE=30*1024*1024 };
 
 static int sma_initialized = 0;     /* true if the sma has been initialized */

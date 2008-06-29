@@ -43,12 +43,11 @@
 
 #define CHECK(p) { if ((p) == NULL) return NULL; }
 
-/* {{{ locking macros */
-#define CREATE_LOCK(lock)     apc_lck_create(NULL, 0, 1, lock)
-#define DESTROY_LOCK(lock)    apc_lck_destroy(lock)
-#define LOCK(c)         { HANDLE_BLOCK_INTERRUPTIONS(); apc_lck_lock(c->header->lock); }
-#define RDLOCK(c)       { HANDLE_BLOCK_INTERRUPTIONS(); apc_lck_rdlock(c->header->lock); }
-#define UNLOCK(c)       { apc_lck_unlock(c->header->lock); HANDLE_UNBLOCK_INTERRUPTIONS(); }
+/* {{{ cache locking macros */
+#define CACHE_LOCK(cache)        { LOCK(cache->header->lock);   cache->has_lock = 1; }
+#define CACHE_UNLOCK(cache)      { UNLOCK(cache->header->lock); cache->has_lock = 0; }
+#define CACHE_SAFE_LOCK(cache)   { if ((++cache->has_lock) == 1) LOCK(cache->header->lock); }
+#define CACHE_SAFE_UNLOCK(cache) { if ((--cache->has_lock) == 0) UNLOCK(cache->header->lock); }
 /* }}} */
 
 /* {{{ key_equals */
@@ -256,6 +255,7 @@ apc_cache_t* apc_cache_create(int size_hint, int gc_ttl, int ttl)
         cache->slots[i] = NULL;
     }
     cache->expunge_cb = apc_cache_expunge;
+    cache->has_lock = 0;
 
     return cache;
 }
@@ -279,7 +279,7 @@ void apc_cache_clear(apc_cache_t* cache)
 
     if(!cache) return;
 
-    LOCK(cache);
+    CACHE_LOCK(cache);
     cache->header->busy = 1;
     cache->header->num_hits = 0;
     cache->header->num_misses = 0;
@@ -295,7 +295,7 @@ void apc_cache_clear(apc_cache_t* cache)
     }
     
     cache->header->busy = 0;
-    UNLOCK(cache);
+    CACHE_UNLOCK(cache);
 }
 /* }}} */
 
@@ -323,7 +323,7 @@ static void apc_cache_expunge(apc_cache_t* cache, size_t size)
          * If cache->ttl is not set, we wipe out the entire cache when
          * we run out of space. 
          */
-        LOCK(cache);
+        CACHE_SAFE_LOCK(cache);
         cache->header->busy = 1;
         cache->header->expunges++;
         for (i = 0; i < cache->num_slots; i++) {
@@ -334,7 +334,7 @@ static void apc_cache_expunge(apc_cache_t* cache, size_t size)
             cache->slots[i] = NULL;
         }
         cache->header->busy = 0;
-        UNLOCK(cache);
+        CACHE_SAFE_UNLOCK(cache);
     } else {
         slot_t **p;
 
@@ -347,7 +347,7 @@ static void apc_cache_expunge(apc_cache_t* cache, size_t size)
          * on insert
          */
 
-        LOCK(cache);
+        CACHE_SAFE_LOCK(cache);
         cache->header->busy = 1;
         cache->header->expunges++;
         for (i = 0; i < cache->num_slots; i++) {
@@ -377,7 +377,7 @@ static void apc_cache_expunge(apc_cache_t* cache, size_t size)
             }
         }
         cache->header->busy = 0;
-        UNLOCK(cache);
+        CACHE_SAFE_UNLOCK(cache);
     }
 }
 /* }}} */
@@ -399,7 +399,7 @@ int apc_cache_insert(apc_cache_t* cache,
     fprintf(stderr,"Inserting [%s]\n", value->data.file.filename);
 #endif
 
-    LOCK(cache);
+    CACHE_LOCK(cache);
     process_pending_removals(cache);
 
     if(key.type == APC_CACHE_KEY_FILE) slot = &cache->slots[hash(key) % cache->num_slots];
@@ -414,7 +414,7 @@ int apc_cache_insert(apc_cache_t* cache,
                     remove_slot(cache, slot);
                     break;
                 }
-                UNLOCK(cache);
+                CACHE_UNLOCK(cache);
                 return 0;
             } else if(cache->ttl && (*slot)->access_time < (t - cache->ttl)) {
                 remove_slot(cache, slot);
@@ -435,7 +435,7 @@ int apc_cache_insert(apc_cache_t* cache,
     }
 
     if ((*slot = make_slot(key, value, *slot, t)) == NULL) {
-        UNLOCK(cache);
+        CACHE_UNLOCK(cache);
         return -1;
     }
 
@@ -444,7 +444,7 @@ int apc_cache_insert(apc_cache_t* cache,
     cache->header->num_entries++;
     cache->header->num_inserts++;
     
-    UNLOCK(cache);
+    CACHE_UNLOCK(cache);
     return 1;
 }
 /* }}} */
@@ -458,7 +458,7 @@ int apc_cache_user_insert(apc_cache_t* cache, apc_cache_key_t key, apc_cache_ent
         return 0;
     }
 
-    LOCK(cache);
+    CACHE_LOCK(cache);
     process_pending_removals(cache);
 
     slot = &cache->slots[string_nhash_8(key.data.user.identifier, key.data.user.identifier_len) % cache->num_slots];
@@ -474,7 +474,7 @@ int apc_cache_user_insert(apc_cache_t* cache, apc_cache_key_t key, apc_cache_ent
             if(exclusive && (  !(*slot)->value->data.user.ttl ||
                               ( (*slot)->value->data.user.ttl && ((*slot)->creation_time + (*slot)->value->data.user.ttl) >= t ) 
                             ) ) {
-                UNLOCK(cache);
+                CACHE_UNLOCK(cache);
                 return 0;
             }
             remove_slot(cache, slot);
@@ -496,7 +496,7 @@ int apc_cache_user_insert(apc_cache_t* cache, apc_cache_key_t key, apc_cache_ent
     }
 
     if ((*slot = make_slot(key, value, *slot, t)) == NULL) {
-        UNLOCK(cache);
+        CACHE_UNLOCK(cache);
         return 0;
     }
     
@@ -506,7 +506,7 @@ int apc_cache_user_insert(apc_cache_t* cache, apc_cache_key_t key, apc_cache_ent
     cache->header->num_entries++;
     cache->header->num_inserts++;
 
-    UNLOCK(cache);
+    CACHE_UNLOCK(cache);
     return 1;
 }
 /* }}} */
@@ -517,7 +517,7 @@ slot_t* apc_cache_find_slot(apc_cache_t* cache, apc_cache_key_t key, time_t t)
     slot_t** slot;
     volatile slot_t* retval = NULL;
 
-    LOCK(cache);
+    CACHE_LOCK(cache);
     if(key.type == APC_CACHE_KEY_FILE) slot = &cache->slots[hash(key) % cache->num_slots];
     else slot = &cache->slots[string_nhash_8(key.data.fpfile.fullpath, key.data.fpfile.fullpath_len) % cache->num_slots];
 
@@ -528,7 +528,7 @@ slot_t* apc_cache_find_slot(apc_cache_t* cache, apc_cache_key_t key, time_t t)
                 if((*slot)->key.mtime != key.mtime) {
                     remove_slot(cache, slot);
                     cache->header->num_misses++;
-                    UNLOCK(cache);
+                    CACHE_UNLOCK(cache);
                     return NULL;
                 }
                 (*slot)->num_hits++;
@@ -537,7 +537,7 @@ slot_t* apc_cache_find_slot(apc_cache_t* cache, apc_cache_key_t key, time_t t)
                 prevent_garbage_collection((*slot)->value);
                 cache->header->num_hits++;
                 retval = *slot;
-                UNLOCK(cache);
+                CACHE_UNLOCK(cache);
                 return (slot_t*)retval;
             }
         } else {  /* APC_CACHE_KEY_FPFILE */
@@ -549,7 +549,7 @@ slot_t* apc_cache_find_slot(apc_cache_t* cache, apc_cache_key_t key, time_t t)
                 prevent_garbage_collection((*slot)->value);
                 cache->header->num_hits++;
                 retval = *slot;
-                UNLOCK(cache);
+                CACHE_UNLOCK(cache);
                 return (slot_t*)retval;
             }
         }
@@ -557,7 +557,7 @@ slot_t* apc_cache_find_slot(apc_cache_t* cache, apc_cache_key_t key, time_t t)
       slot = &(*slot)->next;
     }
     cache->header->num_misses++;
-    UNLOCK(cache);
+    CACHE_UNLOCK(cache);
     return NULL;
 }
 /* }}} */
@@ -576,7 +576,7 @@ apc_cache_entry_t* apc_cache_user_find(apc_cache_t* cache, char *strkey, int key
     slot_t** slot;
     volatile apc_cache_entry_t* value = NULL;
 
-    LOCK(cache);
+    CACHE_LOCK(cache);
 
     slot = &cache->slots[string_nhash_8(strkey, keylen) % cache->num_slots];
 
@@ -586,7 +586,7 @@ apc_cache_entry_t* apc_cache_user_find(apc_cache_t* cache, char *strkey, int key
             if((*slot)->value->data.user.ttl && ((*slot)->creation_time + (*slot)->value->data.user.ttl) < t) {
                 remove_slot(cache, slot);
                 cache->header->num_misses++;
-                UNLOCK(cache);
+                CACHE_UNLOCK(cache);
                 return NULL;
             }
             /* Otherwise we are fine, increase counters and return the cache entry */
@@ -596,14 +596,14 @@ apc_cache_entry_t* apc_cache_user_find(apc_cache_t* cache, char *strkey, int key
 
             cache->header->num_hits++;
             value = (*slot)->value;
-            UNLOCK(cache);
+            CACHE_UNLOCK(cache);
             return (apc_cache_entry_t*)value;
         }
         slot = &(*slot)->next;
     }
  
     cache->header->num_misses++;
-    UNLOCK(cache);
+    CACHE_UNLOCK(cache);
     return NULL;
 }
 /* }}} */
@@ -613,20 +613,20 @@ int apc_cache_user_delete(apc_cache_t* cache, char *strkey, int keylen)
 {
     slot_t** slot;
 
-    LOCK(cache);
+    CACHE_LOCK(cache);
 
     slot = &cache->slots[string_nhash_8(strkey, keylen) % cache->num_slots];
 
     while (*slot) {
         if (!memcmp((*slot)->key.data.user.identifier, strkey, keylen)) {
             remove_slot(cache, slot);
-            UNLOCK(cache);
+            CACHE_UNLOCK(cache);
             return 1;
         }
         slot = &(*slot)->next;
     }
 
-    UNLOCK(cache);
+    CACHE_UNLOCK(cache);
     return 0;
 }
 /* }}} */
@@ -634,9 +634,9 @@ int apc_cache_user_delete(apc_cache_t* cache, char *strkey, int keylen)
 /* {{{ apc_cache_release */
 void apc_cache_release(apc_cache_t* cache, apc_cache_entry_t* entry)
 {
-    LOCK(cache);
+    CACHE_LOCK(cache);
     entry->ref_count--;
-    UNLOCK(cache);
+    CACHE_UNLOCK(cache);
 }
 /* }}} */
 
@@ -950,11 +950,11 @@ apc_cache_info_t* apc_cache_info(apc_cache_t* cache, zend_bool limited)
 
     if(!cache) return NULL;
 
-    LOCK(cache);
+    CACHE_LOCK(cache);
 
     info = (apc_cache_info_t*) apc_emalloc(sizeof(apc_cache_info_t));
     if(!info) {
-        UNLOCK(cache);
+        CACHE_UNLOCK(cache);
         return NULL;
     }
     info->num_slots = cache->num_slots;
@@ -1029,7 +1029,7 @@ apc_cache_info_t* apc_cache_info(apc_cache_t* cache, zend_bool limited)
         }
     }
 
-    UNLOCK(cache);
+    CACHE_UNLOCK(cache);
     return info;
 }
 /* }}} */
@@ -1061,7 +1061,7 @@ void apc_cache_free_info(apc_cache_info_t* info)
 /* {{{ apc_cache_unlock */
 void apc_cache_unlock(apc_cache_t* cache)
 {
-    UNLOCK(cache);
+    CACHE_UNLOCK(cache);
 }
 /* }}} */
 

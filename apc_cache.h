@@ -299,7 +299,7 @@ struct slot_t {
    Any values that must be shared among processes should go in here. */
 typedef struct cache_header_t cache_header_t;
 struct cache_header_t {
-    apc_lck_t lock;              /* read/write lock (exclusive blocking cache lock) */
+    apc_lck_t lock;             /* read/write lock (exclusive blocking cache lock) */
     apc_lck_t wrlock;           /* write lock (non-blocking used to prevent cache slams) */
     int num_hits;               /* total successful hits in cache */
     int num_misses;             /* total unsuccessful hits in cache */
@@ -317,13 +317,14 @@ typedef void (*apc_expunge_cb_t)(T cache, size_t n);
 
 /* {{{ struct definition: apc_cache_t */
 struct apc_cache_t {
-    void* shmaddr;              /* process (local) address of shared cache */
-    cache_header_t* header;           /* cache header (stored in SHM) */
-    slot_t** slots;             /* array of cache slots (stored in SHM) */
-    int num_slots;              /* number of slots in cache */
-    int gc_ttl;                 /* maximum time on GC list for a slot */
-    int ttl;                    /* if slot is needed and entry's access time is older than this ttl, remove it */
+    void* shmaddr;                /* process (local) address of shared cache */
+    cache_header_t* header;       /* cache header (stored in SHM) */
+    slot_t** slots;               /* array of cache slots (stored in SHM) */
+    int num_slots;                /* number of slots in cache */
+    int gc_ttl;                   /* maximum time on GC list for a slot */
+    int ttl;                      /* if slot is needed and entry's access time is older than this ttl, remove it */
     apc_expunge_cb_t expunge_cb;  /* cache specific expunge callback to free up sma memory */
+    uint has_lock;                /* flag for possible recursive locks within the same process */
 };
 /* }}} */
 

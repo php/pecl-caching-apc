@@ -28,11 +28,12 @@
 
 #include "pgsql_s_lock.h"
 
-pthread_mutex_t *apc_spin_create();
-void apc_spin_destroy(pthread_mutex_t *lock);
-void apc_spin_lock(pthread_mutex_t *lock);
-void apc_spin_unlock(pthread_mutex_t *lock);
-zend_bool apc_spin_nonblocking_lock(pthread_mutex_t *lock);
+slock_t *apc_slock_create(slock_t *lock);
+void apc_slock_destroy(slock_t *lock);
+void apc_slock_lock(slock_t *lock);
+zend_bool apc_slock_nonblocking_lock(slock_t *lock);
+void apc_slock_lock(slock_t *lock);
+void apc_slock_unlock(slock_t *lock);
 
 #endif
 
