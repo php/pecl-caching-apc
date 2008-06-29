@@ -104,6 +104,10 @@ static apc_pool* apc_unpool_create(apc_pool_type type,
 {
     apc_unpool* upool = allocate(sizeof(apc_unpool));
 
+    if (!upool) {
+        return NULL;
+    }
+
     upool->parent.type = type;
     upool->parent.allocate = allocate;
     upool->parent.deallocate = deallocate;
@@ -191,6 +195,10 @@ static pool_block* create_pool_block(apc_realpool *rpool, size_t size)
     size_t realsize = sizeof(pool_block) + ALIGNWORD(size);
     
     pool_block* entry = allocate(realsize);
+
+    if (!entry) {
+        return NULL;
+    }
 
     entry->avail = entry->capacity = size;
 
