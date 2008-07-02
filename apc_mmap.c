@@ -35,7 +35,7 @@
 #include <sys/types.h>
 #include <sys/mman.h>
 
-/* 
+/*
  * Some operating systems (like FreeBSD) have a MAP_NOSYNC flag that
  * tells whatever update daemons might be running to not flush dirty
  * vm pages to disk unless absolutely necessary.  My guess is that
@@ -56,7 +56,7 @@ void *apc_mmap(char *file_mask, size_t size)
     } else {
         int fd;
 
-        /* 
+        /*
          * If the filemask contains .shm we try to do a POSIX-compliant shared memory
          * backed mmap which should avoid synchs on some platforms.  At least on
          * FreeBSD this implies MAP_NOSYNC and on Linux it is equivalent of mmap'ing
@@ -95,7 +95,7 @@ void *apc_mmap(char *file_mask, size_t size)
             shmaddr = (void *)mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
             close(fd);
         }
-        /* 
+        /*
          * Otherwise we do a normal filesystem mmap
          */
         else {

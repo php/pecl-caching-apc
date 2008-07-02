@@ -16,7 +16,7 @@
   +----------------------------------------------------------------------+
 
    This software was contributed to PHP by Yahoo! Inc. in 2008.
-   
+
    Future revisions and derivatives of this source code must acknowledge
    Yahoo! Inc. as the original contributor of this module by
    leaving this note intact in the source code.
@@ -49,7 +49,7 @@ apc_pool* apc_pool_create(apc_pool_type pool_type,
     if(pool_type == APC_UNPOOL) {
         return apc_unpool_create(pool_type, allocate, deallocate);
     }
-    
+
     return apc_realpool_create(pool_type, allocate, deallocate);
 }
 /* }}} */
@@ -77,9 +77,9 @@ struct _apc_unpool {
 static void* apc_unpool_alloc(apc_pool* pool, size_t size) 
 {
     apc_unpool *upool = (apc_unpool*)pool;
-    
+
     apc_malloc_t allocate = upool->parent.allocate;
-    
+
     upool->parent.size += size;
     upool->parent.used += size;
 
@@ -89,7 +89,7 @@ static void* apc_unpool_alloc(apc_pool* pool, size_t size)
 static void apc_unpool_free(apc_pool* pool, void *ptr)
 {
     apc_unpool *upool = (apc_unpool*)upool;
-    
+
     apc_free_t deallocate = upool->parent.deallocate;
 
     deallocate(ptr);
@@ -111,15 +111,15 @@ static apc_pool* apc_unpool_create(apc_pool_type type,
     upool->parent.type = type;
     upool->parent.allocate = allocate;
     upool->parent.deallocate = deallocate;
-    
+
     upool->parent.palloc = apc_unpool_alloc;
     upool->parent.pfree  = apc_unpool_free;
 
     upool->parent.cleanup = apc_unpool_cleanup;
-    
+
     upool->parent.used = 0;
     upool->parent.size = 0;
-    
+
     return &(upool->parent);
 }
 /* }}} */
@@ -144,8 +144,8 @@ typedef struct _pool_block
 
                  |--------> data[0]         |<-- non word boundary (too)
    +-------------+--------------+-----------+-------------+-------------->>>
-   | pool_block  | ?sizeinfo<1> | block<1>  | ?redzone<1> | ?sizeinfo<2> 
-   |             |  (size_t)    |           | padded left |    
+   | pool_block  | ?sizeinfo<1> | block<1>  | ?redzone<1> | ?sizeinfo<2>
+   |             |  (size_t)    |           | padded left |
    +-------------+--------------+-----------+-------------+-------------->>>
  */
 
@@ -176,7 +176,7 @@ static const unsigned char decaff[] =  {
     ((ALIGNWORD((size)) > ((size) + 4)) ? \
         (ALIGNWORD((size)) - (size)) : /* does not change realsize */\
         ALIGNWORD((size)) - (size) + ALIGNWORD((sizeof(char)))) /* adds 1 word to realsize */
-    
+
 #define SIZEINFO_SIZE ALIGNWORD(sizeof(size_t))
 
 #define MARK_REDZONE(block, redsize) do {\
@@ -193,7 +193,7 @@ static pool_block* create_pool_block(apc_realpool *rpool, size_t size)
     apc_malloc_t allocate = rpool->parent.allocate;
 
     size_t realsize = sizeof(pool_block) + ALIGNWORD(size);
-    
+
     pool_block* entry = allocate(realsize);
 
     if (!entry) {
@@ -261,7 +261,7 @@ found:
         p += SIZEINFO_SIZE;
         *sizeinfo = size;
     }
-    
+
     redzone = p + size;
 
     if(APC_POOL_HAS_REDZONES(pool)) {
@@ -276,7 +276,7 @@ found:
 
     entry->avail -= realsize;
     entry->mark  += realsize;
-    pool->used   += realsize; 
+    pool->used   += realsize;
 
 #ifdef VALGRIND_MAKE_MEM_UNDEFINED
     /* need to write before reading data off this */
@@ -309,7 +309,7 @@ static int apc_realpool_check_integrity(apc_realpool *rpool)
             return 0;
         }
     }
-    
+
     if(!APC_POOL_HAS_REDZONES(pool) ||
         !APC_POOL_HAS_SIZEINFO(pool)) {
         return 1;
@@ -317,7 +317,7 @@ static int apc_realpool_check_integrity(apc_realpool *rpool)
 
     for(entry = rpool->head; entry != NULL; entry = entry->next) {
         start = (unsigned char *)entry + ALIGNWORD(sizeof(pool_block));
-        
+
         while(start < entry->mark) {
             sizeinfo = (size_t*)start;
             /* redzone starts where real data ends, in a non-word boundary
@@ -418,7 +418,7 @@ static apc_pool* apc_realpool_create(apc_pool_type type, apc_malloc_t allocate, 
     rpool->parent.pfree  = apc_realpool_free;
 
     rpool->parent.cleanup = apc_realpool_cleanup;
-    
+
     rpool->dsize = dsize;
     rpool->head = NULL;
 
@@ -433,8 +433,8 @@ static apc_pool* apc_realpool_create(apc_pool_type type, apc_malloc_t allocate, 
 
 /* }}} */
 
-/* {{{ apc_pool_init */ 
-void apc_pool_init() 
+/* {{{ apc_pool_init */
+void apc_pool_init()
 {
     /* put all ye sanity checks here */
     assert(sizeof(decaff) > REDZONE_SIZE(ALIGNWORD(sizeof(char))));

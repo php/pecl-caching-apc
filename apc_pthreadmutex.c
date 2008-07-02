@@ -24,7 +24,7 @@
 #ifdef APC_PTHREADMUTEX_LOCKS
 
 pthread_mutex_t *apc_pthreadmutex_create(pthread_mutex_t *lock) 
-{ 
+{
     int result;
     pthread_mutexattr_t* attr;
     attr = malloc(sizeof(pthread_mutexattr_t));
@@ -36,7 +36,7 @@ pthread_mutex_t *apc_pthreadmutex_create(pthread_mutex_t *lock)
         apc_eprint("pthread mutex error: attr does not point to writeable memory.");
     } else if(result == EFAULT) {
         apc_eprint("pthread mutex error: attr is an invalid pointer.");
-    } 
+    }
 
 #ifdef PTHREAD_ADAPTIVE_MUTEX_INITIALIZER_NP
        result = pthread_mutexattr_settype(attr, PTHREAD_MUTEX_ADAPTIVE_NP);
@@ -74,7 +74,7 @@ void apc_pthreadmutex_lock(pthread_mutex_t *lock)
         apc_eprint("unable to obtain pthread lock (EINVAL)");
     } else if(result == EDEADLK) {
         apc_eprint("unable to obtain pthread lock (EDEADLK)");
-    }  
+    }
 }
 
 void apc_pthreadmutex_unlock(pthread_mutex_t *lock)

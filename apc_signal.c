@@ -16,7 +16,7 @@
   +----------------------------------------------------------------------+
 
    This software was contributed to PHP by Facebook Inc. in 2007.
-   
+
    Future revisions and derivatives of this source code must acknowledge
    Facebook Inc. as the original contributor of this module by leaving
    this note intact in the source code.
@@ -100,7 +100,7 @@ static int apc_register_signal(int signo, void (*handler)(int, siginfo_t*, void*
             p_sig.signo = signo;
             p_sig.siginfo = ((sa.sa_flags & SA_SIGINFO) == SA_SIGINFO);
             p_sig.handler = (void *)sa.sa_handler;
-           
+
             apc_signal_info.prev = (apc_signal_entry_t **)apc_erealloc(apc_signal_info.prev, (apc_signal_info.installed+1)*sizeof(apc_signal_entry_t *));
             apc_signal_info.prev[apc_signal_info.installed] = (apc_signal_entry_t *)apc_emalloc(sizeof(apc_signal_entry_t));
             *apc_signal_info.prev[apc_signal_info.installed++] = p_sig;

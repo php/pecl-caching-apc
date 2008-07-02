@@ -69,7 +69,7 @@ PHP_FUNCTION(apc_add);
 ZEND_DECLARE_MODULE_GLOBALS(apc)
 
 /* True globals */
-apc_cache_t* apc_cache = NULL;       
+apc_cache_t* apc_cache = NULL;
 apc_cache_t* apc_user_cache = NULL;
 void* apc_compiled_filters = NULL;
 
@@ -105,7 +105,7 @@ static void php_apc_shutdown_globals(zend_apc_globals* apc_globals TSRMLS_DC)
     }
 
     /* the stack should be empty */
-    assert(apc_stack_size(apc_globals->cache_stack) == 0); 
+    assert(apc_stack_size(apc_globals->cache_stack) == 0);
 
     /* apc cleanup */
     apc_stack_destroy(apc_globals->cache_stack);
@@ -130,7 +130,7 @@ static PHP_INI_MH(OnUpdateShmSegments) /* {{{ */
     if(atoi(new_value)!=1) {
         php_error_docref(NULL TSRMLS_CC, E_WARNING, "apc.shm_segments setting ignored in MMAP mode");
     }
-    APCG(shm_segments) = 1; 
+    APCG(shm_segments) = 1;
 #else
     APCG(shm_segments) = atoi(new_value);
 #endif
@@ -373,7 +373,7 @@ PHP_FUNCTION(apc_cache_info)
         apc_cache_free_info(info);
         return;
     }
-    
+
     ALLOC_INIT_ZVAL(list);
     array_init(list);
 
@@ -645,7 +645,7 @@ PHP_FUNCTION(apc_fetch) {
 #if PHP_API_VERSION < 20041225
 #if HAVE_APACHE && defined(APC_PHP4_STAT)
     t = ((request_rec *)SG(server_context))->request_time;
-#else 
+#else
     t = time(0);
 #endif
 #else
@@ -659,7 +659,7 @@ PHP_FUNCTION(apc_fetch) {
     if(Z_TYPE_P(key) != IS_STRING && Z_TYPE_P(key) != IS_ARRAY) {
         convert_to_string(key);
     }
-    
+
     if(Z_TYPE_P(key) == IS_STRING) {
         strkey = Z_STRVAL_P(key);
         strkey_len = Z_STRLEN_P(key);
@@ -851,7 +851,7 @@ PHP_FUNCTION(apc_compile_file) {
     if(!filename) RETURN_FALSE;
 
     /* reset filters and cache_by_default */
-   
+
     filters = APCG(filters);
     APCG(filters) = NULL;
 
@@ -870,7 +870,7 @@ PHP_FUNCTION(apc_compile_file) {
     eg_orig_class_table = EG(class_table);
     EG(class_table) = CG(class_table);
     APCG(force_file_update) = 1;
-    
+
     /* Compile the file, loading it into the cache */
     file_handle.type = ZEND_HANDLE_FILENAME;
     file_handle.filename = filename;
@@ -891,7 +891,7 @@ PHP_FUNCTION(apc_compile_file) {
     zend_hash_destroy(&cg_class_table);
     EG(function_table) = eg_orig_function_table;
     EG(class_table) = eg_orig_class_table;
-    
+
     /* Restore global settings */
     APCG(filters) = filters;
     APCG(cache_by_default) = cache_by_default;

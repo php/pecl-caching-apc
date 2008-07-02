@@ -16,7 +16,7 @@
   +----------------------------------------------------------------------+
 
    This software was contributed to PHP by Yahoo! Inc. in 2008.
-   
+
    Future revisions and derivatives of this source code must acknowledge
    Yahoo! Inc. as the original contributor of this module by
    leaving this note intact in the source code.
@@ -64,10 +64,10 @@ struct _apc_pool {
     apc_pfree_t     pfree;
 
     apc_pcleanup_t  cleanup;
-    
+
     size_t          size;
     size_t          used;
-    
+
     /* apc_realpool and apc_unpool add more here */
 };
 
@@ -76,8 +76,8 @@ struct _apc_pool {
 
 extern void apc_pool_init();
 
-extern apc_pool* apc_pool_create(apc_pool_type pool_type, 
-                            apc_malloc_t allocate, 
+extern apc_pool* apc_pool_create(apc_pool_type pool_type,
+                            apc_malloc_t allocate,
                             apc_free_t deallocate);
 
 extern void apc_pool_destroy(apc_pool* pool);

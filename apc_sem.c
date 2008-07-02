@@ -81,7 +81,7 @@ int apc_sem_create(const char* pathname, int proj, int initval)
             apc_eprint("apc_sem_create: ftok(%s,%d) failed:", pathname, proj);
         }
     }
-    
+
     if ((semid = semget(key, 1, IPC_CREAT | IPC_EXCL | perms)) >= 0) {
         /* sempahore created for the first time, initialize now */
         arg.val = initval;

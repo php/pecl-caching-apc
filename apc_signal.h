@@ -37,7 +37,7 @@ typedef struct apc_signal_info_t {
 } apc_signal_info_t;
 
 void apc_set_signals(TSRMLS_D);
-void apc_shutdown_signals(); 
+void apc_shutdown_signals();
 
 #endif
 

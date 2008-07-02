@@ -24,7 +24,7 @@
 
 #include "apc.h"
 
-#ifdef APC_SPIN_LOCKS 
+#ifdef APC_SPIN_LOCKS
 
 #include "pgsql_s_lock.h"
 

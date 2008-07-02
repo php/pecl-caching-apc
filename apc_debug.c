@@ -43,15 +43,15 @@ typedef void (*vld_dump_f) (zend_op_array * TSRMLS_DC);
 void dump(zend_op_array *op_array TSRMLS_DC)
 {
 #ifdef __DEBUG_APC__
-	vld_dump_f dump_op_array = dlsym(NULL, "vld_dump_oparray");
+  vld_dump_f dump_op_array = dlsym(NULL, "vld_dump_oparray");
 
-	if(dump_op_array)
-	{
-		dump_op_array(op_array TSRMLS_CC); 
-	}
-	else
-	{
-		apc_wprint("vld is not installed or something even worse.");
-	}
+  if(dump_op_array)
+  {
+  dump_op_array(op_array TSRMLS_CC); 
+  }
+  else
+  {
+  apc_wprint("vld is not installed or something even worse.");
+  }
 #endif
 }

@@ -74,9 +74,9 @@ static int install_function(apc_function_t fn, apc_context_t* ctxt TSRMLS_DC)
 {
     zend_function *func;
     int status;
-    
+
     func = apc_copy_function_for_execution(fn.function, ctxt);
-    
+
     status =  zend_hash_add(EG(function_table),
                       fn.name,
                       fn.name_len+1,
@@ -116,17 +116,17 @@ static int install_class(apc_class_t cl, apc_context_t* ctxt TSRMLS_DC)
             return SUCCESS;
         }
     }
-    
+
     /*
      * XXX: We need to free this somewhere...
      */
-    allocated_ce = apc_php_malloc(sizeof(zend_class_entry*));    
+    allocated_ce = apc_php_malloc(sizeof(zend_class_entry*));
 
     if(!allocated_ce) {
         return FAILURE;
     }
 
-    *allocated_ce = 
+    *allocated_ce =
     class_entry =
         apc_copy_class_entry_for_execution(cl.class_entry, ctxt);
 
@@ -135,13 +135,13 @@ static int install_class(apc_class_t cl, apc_context_t* ctxt TSRMLS_DC)
     if (cl.parent_name != NULL) {
         zend_class_entry** parent_ptr = NULL;
         /*
-         * zend_lookup_class has to be due to presence of __autoload, 
+         * zend_lookup_class has to be due to presence of __autoload,
          * just looking up the EG(class_table) is not enough in php5!
          * Even more dangerously, thanks to __autoload and people using
          * class names as filepaths for inclusion, this has to be case
          * sensitive. zend_lookup_class automatically does a case_fold
          * internally, but passes the case preserved version to __autoload.
-         * Aside: Do NOT pass *strlen(cl.parent_name)+1* because 
+         * Aside: Do NOT pass *strlen(cl.parent_name)+1* because
          * zend_lookup_class does it internally anyway!
          */
         status = zend_lookup_class(cl.parent_name,
@@ -172,7 +172,7 @@ static int install_class(apc_class_t cl, apc_context_t* ctxt TSRMLS_DC)
 
     if (status == FAILURE) {
         apc_eprint("Cannot redeclare class %s", cl.name);
-    } 
+    }
     return status;
 }
 /* }}} */
@@ -187,7 +187,7 @@ static int uninstall_class(apc_class_t cl TSRMLS_DC)
                            cl.name_len+1);
     if (status == FAILURE) {
         apc_eprint("Cannot delete class %s", cl.name);
-    } 
+    }
     return status;
 }
 /* }}} */
@@ -242,15 +242,15 @@ default_compile:
             uninstall_class(cache_entry->data.file.classes[ii] TSRMLS_CC);
         }
     }
-    
+
     apc_stack_pop(APCG(cache_stack)); /* pop out cache_entry */
-    
+
     apc_cache_release(apc_cache, cache_entry);
 
     /* cannot free up cache data yet, it maybe in use */
 
     zend_llist_del_element(&CG(open_files), h, compare_file_handles); /* We leak fds without this hack */
-    
+
     h->type = ZEND_HANDLE_FILENAME;
 
     return NULL;
@@ -273,7 +273,7 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
     char *path;
     apc_context_t ctxt = {0,};
 
-    if (!APCG(enabled) || apc_cache_busy(apc_cache)) { 
+    if (!APCG(enabled) || apc_cache_busy(apc_cache)) {
         return old_compile_file(h, type TSRMLS_CC);
     }
 
@@ -290,10 +290,10 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
 #if PHP_API_VERSION < 20041225
 #if HAVE_APACHE && defined(APC_PHP4_STAT)
     t = ((request_rec *)SG(server_context))->request_time;
-#else 
+#else
     t = time(0);
 #endif
-#else 
+#else
     t = sapi_get_request_time(TSRMLS_C);
 #endif
 
@@ -341,11 +341,11 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
         }
         /* TODO: check what happens with EG(included_files) */
     }
-    
+
     /* remember how many functions and classes existed before compilation */
     num_functions = zend_hash_num_elements(CG(function_table));
     num_classes   = zend_hash_num_elements(CG(class_table));
-    
+
     /* compile the file using the default compile function */
     op_array = old_compile_file(h, type TSRMLS_CC);
     if (op_array == NULL) {
@@ -390,7 +390,7 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
     if(!(alloc_op_array = apc_copy_op_array(NULL, op_array, &ctxt TSRMLS_CC))) {
         goto freepool;
     }
-    
+
     if(!(alloc_functions = apc_copy_new_functions(num_functions, &ctxt TSRMLS_CC))) {
         goto freepool;
     }
@@ -413,7 +413,7 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
 freepool:
         apc_pool_destroy(ctxt.pool);
         ctxt.pool = NULL;
-    } 
+    }
 
     APCG(current_cache) = NULL;
 
@@ -462,7 +462,7 @@ int apc_module_shutdown(TSRMLS_D)
     /* restore compilation */
     zend_compile_file = old_compile_file;
 
-    /* 
+    /*
      * In case we got interrupted by a SIGTERM or something else during execution
      * we may have cache entries left on the stack that we need to check to make
      * sure that any functions or classes these may have added to the global function
@@ -525,7 +525,7 @@ static void apc_deactivate(TSRMLS_D)
         zend_class_entry* zce = NULL;
         void ** centry = (void*)(&zce);
         zend_class_entry** pzce = NULL;
-        
+
         apc_cache_entry_t* cache_entry =
             (apc_cache_entry_t*) apc_stack_pop(APCG(cache_stack));
 
@@ -547,7 +547,7 @@ static void apc_deactivate(TSRMLS_D)
                 zend_hash_del(EG(class_table),
                     cache_entry->data.file.classes[i].name,
                     cache_entry->data.file.classes[i].name_len+1);
-                
+
                 apc_free_class_entry_after_execution(zce);
             }
         }

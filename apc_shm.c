@@ -55,7 +55,7 @@ int apc_shm_create(const char* pathname, int proj, size_t size)
 
     key = IPC_PRIVATE;
 #ifndef PHP_WIN32
-	/* no ftok yet for win32 */
+    /* no ftok yet for win32 */
     if (pathname != NULL) {
         if ((key = ftok(pathname, proj)) < 0) {
             apc_eprint("apc_shm_create: ftok failed:");

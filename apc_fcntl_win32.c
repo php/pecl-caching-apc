@@ -39,72 +39,72 @@
 
 int apc_fcntl_create(const char* pathname)
 {
-	char *lock_file = emalloc(MAXPATHLEN);
-	HANDLE fd;
-	DWORD tmplen;
-	static int i=0;
-	
-	tmplen = GetTempPath(MAXPATHLEN, lock_file);
-	if (!tmplen) {
-		efree(lock_file);
-		return -1;
-	}
+    char *lock_file = emalloc(MAXPATHLEN);
+    HANDLE fd;
+    DWORD tmplen;
+    static int i=0;
 
-	snprintf(lock_file + tmplen, MAXPATHLEN - tmplen - 1, "apc.lock.%d", i++);
-	
-	fd = CreateFile(lock_file,
+    tmplen = GetTempPath(MAXPATHLEN, lock_file);
+    if (!tmplen) {
+        efree(lock_file);
+        return -1;
+    }
+
+    snprintf(lock_file + tmplen, MAXPATHLEN - tmplen - 1, "apc.lock.%d", i++);
+
+    fd = CreateFile(lock_file,
         GENERIC_READ | GENERIC_WRITE,
         FILE_SHARE_READ | FILE_SHARE_WRITE,
         NULL,
         OPEN_ALWAYS,
         FILE_ATTRIBUTE_NORMAL,
         NULL);
-        
 
-	if (fd == INVALID_HANDLE_VALUE) {
-		apc_eprint("apc_fcntl_create: could not open %s", lock_file);
-		efree(lock_file);
-		return -1;
-	}
-	
-	efree(lock_file);
-	return (int)fd;
+
+    if (fd == INVALID_HANDLE_VALUE) {
+        apc_eprint("apc_fcntl_create: could not open %s", lock_file);
+        efree(lock_file);
+        return -1;
+    }
+
+    efree(lock_file);
+    return (int)fd;
 }
 
 void apc_fcntl_destroy(int fd)
 {
-	CloseHandle((HANDLE)fd);
+    CloseHandle((HANDLE)fd);
 }
 
 void apc_fcntl_lock(int fd)
 {
-	OVERLAPPED offset =	{0, 0, 0, 0, NULL};
-	
-	if (!LockFileEx((HANDLE)fd, LOCKFILE_EXCLUSIVE_LOCK, 0, 1, 0, &offset)) {
-		apc_eprint("apc_fcntl_lock failed errno:%d", GetLastError());
-	}
+    OVERLAPPED offset = {0, 0, 0, 0, NULL};
+
+    if (!LockFileEx((HANDLE)fd, LOCKFILE_EXCLUSIVE_LOCK, 0, 1, 0, &offset)) {
+        apc_eprint("apc_fcntl_lock failed errno:%d", GetLastError());
+    }
 }
 
 void apc_fcntl_rdlock(int fd)
 {
-	OVERLAPPED offset =	{0, 0, 0, 0, NULL};
-	
-	if (!LockFileEx((HANDLE)fd, 0, 0, 1, 0, &offset)) {
-		apc_eprint("apc_fcntl_rdlock failed errno:%d", GetLastError());
-	}
+    OVERLAPPED offset = {0, 0, 0, 0, NULL};
+
+    if (!LockFileEx((HANDLE)fd, 0, 0, 1, 0, &offset)) {
+        apc_eprint("apc_fcntl_rdlock failed errno:%d", GetLastError());
+    }
 }
 
 void apc_fcntl_unlock(int fd)
 {
-	OVERLAPPED offset =	{0, 0, 0, 0, NULL};
+    OVERLAPPED offset = {0, 0, 0, 0, NULL};
 
-	if (!UnlockFileEx((HANDLE)fd, 0, 1, 0, &offset)) {
-		DWORD error_code = GetLastError();
-		/* Ignore already unlocked error */
-		if (error_code != ERROR_NOT_LOCKED) {
-			apc_eprint("apc_fcntl_unlock failed errno:%d", error_code);
-		}
-	}
+    if (!UnlockFileEx((HANDLE)fd, 0, 1, 0, &offset)) {
+        DWORD error_code = GetLastError();
+        /* Ignore already unlocked error */
+        if (error_code != ERROR_NOT_LOCKED) {
+            apc_eprint("apc_fcntl_unlock failed errno:%d", error_code);
+        }
+    }
 }
 
 /*

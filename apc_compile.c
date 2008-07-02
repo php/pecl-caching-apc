@@ -38,7 +38,7 @@
 #define Z_REFCOUNT_P(pz)              (pz)->refcount
 #define Z_REFCOUNT_PP(ppz)            Z_REFCOUNT_P(*(ppz))
 #endif
- 
+
 #ifndef Z_SET_REFCOUNT_P
 #define Z_SET_REFCOUNT_P(pz, rc)      (pz)->refcount = rc
 #define Z_SET_REFCOUNT_PP(ppz, rc)    Z_SET_REFCOUNT_P(*(ppz), rc)
@@ -48,27 +48,27 @@
 #define Z_ADDREF_P(pz)                (pz)->refcount++
 #define Z_ADDREF_PP(ppz)              Z_ADDREF_P(*(ppz))
 #endif
- 
+
 #ifndef Z_DELREF_P
 #define Z_DELREF_P(pz)                (pz)->refcount--
 #define Z_DELREF_PP(ppz)              Z_DELREF_P(*(ppz))
 #endif
- 
+
 #ifndef Z_ISREF_P
 #define Z_ISREF_P(pz)                 (pz)->is_ref
 #define Z_ISREF_PP(ppz)               Z_ISREF_P(*(ppz))
 #endif
- 
+
 #ifndef Z_SET_ISREF_P
 #define Z_SET_ISREF_P(pz)             (pz)->is_ref = 1
 #define Z_SET_ISREF_PP(ppz)           Z_SET_ISREF_P(*(ppz))
 #endif
- 
+
 #ifndef Z_UNSET_ISREF_P
 #define Z_UNSET_ISREF_P(pz)           (pz)->is_ref = 0
 #define Z_UNSET_ISREF_PP(ppz)         Z_UNSET_ISREF_P(*(ppz))
 #endif
- 
+
 #ifndef Z_SET_ISREF_TO_P
 #define Z_SET_ISREF_TO_P(pz, isref)   (pz)->is_ref = isref
 #define Z_SET_ISREF_TO_PP(ppz, isref) Z_SET_ISREF_TO_P(*(ppz), isref)
@@ -77,7 +77,7 @@
 #ifndef IS_CONSTANT_TYPE_MASK
 #define IS_CONSTANT_TYPE_MASK (~IS_CONSTANT_INDEX)
 #endif
- 
+
 typedef void* (*ht_copy_fun_t)(void*, void*, apc_context_t*);
 //typedef void  (*ht_free_fun_t)(void*, apc_context_t*);
 typedef int (*ht_check_copy_fun_t)(Bucket*, va_list);
@@ -202,7 +202,7 @@ static zval** my_copy_zval_ptr(zval** dst, const zval** src, apc_context_t* ctxt
     zval* dst_new;
     apc_pool* pool = ctxt->pool;
     int usegc = (ctxt->copy == APC_COPY_OUT_OPCODE) || (ctxt->copy == APC_COPY_OUT_USER);
-    
+
     assert(src != NULL);
 
     if (!dst) {
@@ -224,7 +224,7 @@ static zval** my_copy_zval_ptr(zval** dst, const zval** src, apc_context_t* ctxt
 
     Z_SET_REFCOUNT_PP(dst, Z_REFCOUNT_PP((zval**)src));
     Z_SET_ISREF_TO_PP(dst, Z_ISREF_PP((zval**)src));
-    
+
     return dst;
 }
 /* }}} */
@@ -235,7 +235,7 @@ static zval* my_copy_zval(zval* dst, const zval* src, apc_context_t* ctxt)
     zval **tmp;
     apc_pool* pool = ctxt->pool;
     TSRMLS_FETCH();
-    
+
     assert(dst != NULL);
     assert(src != NULL);
 
@@ -257,7 +257,7 @@ static zval* my_copy_zval(zval* dst, const zval* src, apc_context_t* ctxt)
                                                    pool));
         }
         break;
-    
+
     case IS_ARRAY:
 
         if(APCG(copied_zvals)) {
@@ -265,11 +265,11 @@ static zval* my_copy_zval(zval* dst, const zval* src, apc_context_t* ctxt)
                 Z_ADDREF_PP(tmp);
                 return *tmp;
             }
-        
+
             zend_hash_index_update(APCG(copied_zvals), (ulong)src, (void**)&dst, sizeof(zval*), NULL);
         }
         /* fall through */
- 
+
     case IS_CONSTANT_ARRAY:
 
         CHECK(dst->value.ht =
@@ -354,7 +354,7 @@ static zend_function* my_copy_function(zend_function* dst, zend_function* src, a
         /* shallow copy because op_array is internal */
         dst->op_array = src->op_array;
         break;
-        
+
     case ZEND_USER_FUNCTION:
     case ZEND_EVAL_CODE:
         CHECK(apc_copy_op_array(&dst->op_array,
@@ -365,17 +365,17 @@ static zend_function* my_copy_function(zend_function* dst, zend_function* src, a
     default:
         assert(0);
     }
-    /* 
+    /*
      * op_array bitwise copying overwrites what ever you modified
      * before apc_copy_op_array - which is why this code is outside 
-     * my_bitwise_copy_function. 
+     * my_bitwise_copy_function.
      */
 
     /* zend_do_inheritance will re-look this up, because the pointers
      * in prototype are from a function table of another class. It just
      * helps if that one is from EG(class_table).
      */
-    dst->common.prototype = NULL; 
+    dst->common.prototype = NULL;
 
     /* once a method is marked as ZEND_ACC_IMPLEMENTED_ABSTRACT then you
      * have to carry around a prototype. Thankfully zend_do_inheritance
@@ -422,7 +422,7 @@ static zend_function_entry* my_copy_function_entry(zend_function_entry* dst, con
 static zend_property_info* my_copy_property_info(zend_property_info* dst, zend_property_info* src, apc_context_t* ctxt)
 {
     apc_pool* pool = ctxt->pool;
-    
+
     assert(src != NULL);
 
     if (!dst) {
@@ -476,7 +476,7 @@ static zend_arg_info* my_copy_arg_info_array(zend_arg_info* dst, const zend_arg_
 {
     int i = 0;
 
-    
+
     if (!dst) {
         CHECK(dst = (zend_arg_info*) apc_pool_alloc(ctxt->pool, sizeof(*src)*num_args));
     }
@@ -488,7 +488,7 @@ static zend_arg_info* my_copy_arg_info_array(zend_arg_info* dst, const zend_arg_
         CHECK((my_copy_arg_info( &dst[i], &src[i], ctxt)));
     }
 
-    return dst;    
+    return dst;
 }
 /* }}} */
 
@@ -496,7 +496,7 @@ static zend_arg_info* my_copy_arg_info_array(zend_arg_info* dst, const zend_arg_
 static zend_arg_info* my_copy_arg_info(zend_arg_info* dst, const zend_arg_info* src, apc_context_t* ctxt)
 {
     apc_pool* pool = ctxt->pool;
-    
+
     assert(src != NULL);
 
     if (!dst) {
@@ -593,7 +593,7 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
     /* unset function proxies */
     dst->serialize_func = NULL;
     dst->unserialize_func = NULL;
-    
+
     my_fixup_hashtable(&dst->function_table, (ht_fixup_fun_t)my_fixup_function, src, dst);
 
     CHECK((my_copy_hashtable_ex(&dst->default_properties,
@@ -616,7 +616,7 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
     /* php5.2 introduced a scope attribute for property info */
     my_fixup_hashtable(&dst->properties_info, (ht_fixup_fun_t)my_fixup_property_info_for_execution, src, dst);
 #endif
-    
+
     CHECK(my_copy_hashtable_ex(&dst->default_static_members,
                             &src->default_static_members,
                             (ht_copy_fun_t) my_copy_zval_ptr,
@@ -652,7 +652,7 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
         CHECK(dst->doc_comment =
                     apc_pmemcpy(src->doc_comment, src->doc_comment_len+1, pool));
     }
-    
+
     if (src->builtin_functions) {
         int i, n;
 
@@ -672,7 +672,7 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
     if (src->filename) {
         CHECK((dst->filename = apc_pstrdup(src->filename, pool)));
     }
-   
+
     return dst;
 }
 /* }}} */
@@ -706,7 +706,7 @@ static HashTable* my_copy_hashtable_ex(HashTable* dst,
     memset(dst->arBuckets, 0, dst->nTableSize * sizeof(Bucket*));
     dst->pInternalPointer = NULL;
     dst->pListHead = NULL;
-    
+
     for (curr = src->pListHead; curr != NULL; curr = curr->pListNext) {
         int n = curr->h % dst->nTableSize;
 
@@ -714,7 +714,7 @@ static HashTable* my_copy_hashtable_ex(HashTable* dst,
             va_list args;
             va_start(args, check_fn);
 
-            /* Call the check_fn to see if the current bucket 
+            /* Call the check_fn to see if the current bucket
              * needs to be copied out
              */
             if(!check_fn(curr, args)) {
@@ -776,7 +776,7 @@ static HashTable* my_copy_hashtable_ex(HashTable* dst,
 
 /* {{{ my_copy_static_variables */
 static HashTable* my_copy_static_variables(zend_op_array* src, apc_context_t* ctxt)
-{ 
+{
     if (src->static_variables == NULL) {
         return NULL;
     }
@@ -806,7 +806,7 @@ zval* apc_copy_zval(zval* dst, const zval* src, apc_context_t* ctxt)
     }
 
     CHECK(dst = my_copy_zval(dst, src, ctxt));
-    return dst; 
+    return dst;
 }
 /* }}} */
 
@@ -855,7 +855,7 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_con
     if(APCG(apc_optimize_function)) {
         APCG(apc_optimize_function)(src TSRMLS_CC);
     }
-    
+
     /* start with a bitwise copy of the array */
     memcpy(dst, src, sizeof(src[0]));
 
@@ -901,7 +901,7 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_con
         memset(flags, 0, sizeof(apc_opflags_t));
         /* assert(sizeof(apc_opflags_t) < sizeof(dst->reserved)); */
     }
-    
+
     for (i = 0; i < src->last; i++) {
         zend_op *zo = &(src->opcodes[i]);
         /* a lot of files are merely constant arrays with no jumps */
@@ -1007,7 +1007,7 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_con
     if (src->static_variables) {
         CHECK(dst->static_variables = my_copy_static_variables(src, ctxt));
     }
-    
+
     if (src->try_catch_array) {
         CHECK(dst->try_catch_array = apc_pmemcpy(src->try_catch_array,
                                         sizeof(src->try_catch_array[0]) * src->last_try_catch,
@@ -1019,9 +1019,9 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_con
         CHECK(dst->vars = apc_pmemcpy(src->vars,
                             sizeof(src->vars[0]) * src->last_var,
                             pool));
-        
+
         for(i = 0; i <  src->last_var; i++) dst->vars[i].name = NULL;
-        
+
         for(i = 0; i <  src->last_var; i++) {
             CHECK(dst->vars[i].name = apc_pmemcpy(src->vars[i].name,
                                 src->vars[i].name_len + 1,
@@ -1031,7 +1031,7 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_con
 #endif
 
     if (src->doc_comment) {
-        CHECK(dst->doc_comment 
+        CHECK(dst->doc_comment
                 = apc_pmemcpy(src->doc_comment, src->doc_comment_len+1, pool));
     }
 
@@ -1058,7 +1058,7 @@ apc_function_t* apc_copy_new_functions(int old_count, apc_context_t* ctxt TSRMLS
         array[0].function = NULL;
         return array;
     }
-    
+
     /* Skip the first `old_count` functions in the table */
     zend_hash_internal_pointer_reset(CG(function_table));
     for (i = 0; i < old_count; i++) {
@@ -1098,14 +1098,14 @@ apc_class_t* apc_copy_new_classes(zend_op_array* op_array, int old_count, apc_co
     int new_count;              /* number of new classes in table */
     int i;
     apc_pool* pool = ctxt->pool;
-    
+
     new_count = zend_hash_num_elements(CG(class_table)) - old_count;
     assert(new_count >= 0);
 
     CHECK(array =
         (apc_class_t*)
             apc_pool_alloc(pool, sizeof(apc_class_t)*(new_count+1)));
-    
+
     if (new_count == 0) {
         array[0].class_entry = NULL;
         return array;
@@ -1132,11 +1132,11 @@ apc_class_t* apc_copy_new_classes(zend_op_array* op_array, int old_count, apc_co
                                      0,
                                      NULL);
 
-       zend_hash_get_current_data(CG(class_table), (void**) &elem);
-  
-        
-       elem = *((zend_class_entry**)elem);
-        
+        zend_hash_get_current_data(CG(class_table), (void**) &elem);
+
+
+        elem = *((zend_class_entry**)elem);
+
         CHECK(array[i].name = apc_pmemcpy(key, (int) key_size, pool));
         array[i].name_len = (int) key_size-1;
         CHECK(array[i].class_entry = my_copy_class_entry(NULL, elem, ctxt));
@@ -1201,8 +1201,8 @@ static int my_prepare_op_array_for_execution(zend_op_array* dst, zend_op_array* 
                             (sizeof(#member) - 1)\
                             TSRMLS_CC);\
     } \
-}while(0); 
-            
+} while(0);
+
     FETCH_AUTOGLOBAL(_GET);
     FETCH_AUTOGLOBAL(_POST);
     FETCH_AUTOGLOBAL(_COOKIE);
@@ -1213,7 +1213,7 @@ static int my_prepare_op_array_for_execution(zend_op_array* dst, zend_op_array* 
 
     if(needcopy) {
 
-        dst->opcodes = (zend_op*) apc_xmemcpy(src->opcodes, 
+        dst->opcodes = (zend_op*) apc_xmemcpy(src->opcodes,
                                     sizeof(zend_op) * src->last,
                                     apc_php_malloc);
         zo = src->opcodes;
@@ -1221,7 +1221,7 @@ static int my_prepare_op_array_for_execution(zend_op_array* dst, zend_op_array* 
         while(i > 0) {
 
             if( ((zo->op1.op_type == IS_CONST &&
-                  zo->op1.u.constant.type == IS_CONSTANT_ARRAY)) ||  
+                  zo->op1.u.constant.type == IS_CONSTANT_ARRAY)) ||
                 ((zo->op2.op_type == IS_CONST &&
                   zo->op2.u.constant.type == IS_CONSTANT_ARRAY))) {
 
@@ -1229,17 +1229,17 @@ static int my_prepare_op_array_for_execution(zend_op_array* dst, zend_op_array* 
                     assert(0); /* emalloc failed or a bad constant array */
                 }
             }
-            
+
             switch(zo->opcode) {
                 case ZEND_JMP:
-                    dzo->op1.u.jmp_addr = dst->opcodes + 
+                    dzo->op1.u.jmp_addr = dst->opcodes +
                                             (zo->op1.u.jmp_addr - src->opcodes);
                     break;
                 case ZEND_JMPZ:
                 case ZEND_JMPNZ:
                 case ZEND_JMPZ_EX:
                 case ZEND_JMPNZ_EX:
-                    dzo->op2.u.jmp_addr = dst->opcodes + 
+                    dzo->op2.u.jmp_addr = dst->opcodes +
                                             (zo->op2.u.jmp_addr - src->opcodes);
                     break;
                 case ZEND_FETCH_R:
@@ -1265,10 +1265,10 @@ static int my_prepare_op_array_for_execution(zend_op_array* dst, zend_op_array* 
             zo = src->opcodes;
             while(i > 0) {
 
-                if(zo->opcode == ZEND_FETCH_R || 
+                if(zo->opcode == ZEND_FETCH_R ||
                    zo->opcode == ZEND_FETCH_W ||
                    zo->opcode == ZEND_FETCH_IS ||
-                   zo->opcode == ZEND_FETCH_FUNC_ARG 
+                   zo->opcode == ZEND_FETCH_FUNC_ARG
                   ) {
                     APC_PREPARE_FETCH_GLOBAL_FOR_EXECUTION();
                 }
@@ -1452,14 +1452,14 @@ static void my_fixup_function(Bucket *p, zend_class_entry *src, zend_class_entry
 
     if(zf->common.scope == src)
     {
-    
+
         /* Fixing up the default functions for objects here since
          * we need to compare with the newly allocated functions
          *
          * caveat: a sub-class method can have the same name as the
          * parent's constructor and create problems.
          */
-        
+
         if(zf->common.fn_flags & ZEND_ACC_CTOR) dst->constructor = zf;
         else if(zf->common.fn_flags & ZEND_ACC_DTOR) dst->destructor = zf;
         else if(zf->common.fn_flags & ZEND_ACC_CLONE) dst->clone = zf;
@@ -1508,9 +1508,8 @@ static void my_fixup_property_info(Bucket *p, zend_class_entry *src, zend_class_
 static void my_fixup_hashtable(HashTable *ht, ht_fixup_fun_t fixup, zend_class_entry *src, zend_class_entry *dst)
 {
     Bucket *p;
-    
     uint i;
-    
+
     for (i = 0; i < ht->nTableSize; i++) {
         if(!ht->arBuckets) break;
         p = ht->arBuckets[i];
@@ -1571,13 +1570,13 @@ static int my_check_copy_property_info(Bucket* p, va_list args)
 #endif
 
     if (parent &&
-        zend_hash_quick_find(&parent->properties_info, p->arKey, p->nKeyLength, 
+        zend_hash_quick_find(&parent->properties_info, p->arKey, p->nKeyLength,
             p->h, (void **) &parent_info)==SUCCESS) {
         if(parent_info->flags & ZEND_ACC_PRIVATE)
         {
             return 1;
         }
-        if((parent_info->flags & ZEND_ACC_PPP_MASK) != 
+        if((parent_info->flags & ZEND_ACC_PPP_MASK) !=
             (child_info->flags & ZEND_ACC_PPP_MASK))
         {
             /* TODO: figure out whether ACC_CHANGED is more appropriate
@@ -1586,7 +1585,7 @@ static int my_check_copy_property_info(Bucket* p, va_list args)
         }
         return 0;
     }
-    
+
     /* property doesn't exist in parent, copy into cached child */
     return 1;
 }
@@ -1621,19 +1620,19 @@ static int my_check_copy_static_member(Bucket* p, va_list args)
     /* please refer do_inherit_property_access_check in zend_compile.c
      * to understand why we lookup in properties_info.
      */
-    if((zend_hash_find(&parent->properties_info, member_name, 
+    if((zend_hash_find(&parent->properties_info, member_name,
                         strlen(member_name)+1, (void**)&parent_info) == SUCCESS)
         &&
         (zend_hash_find(&src->properties_info, member_name,
                         strlen(member_name)+1, (void**)&child_info) == SUCCESS))
     {
-        if(child_info->flags & ZEND_ACC_STATIC &&    
+        if(child_info->flags & ZEND_ACC_STATIC &&
             (parent_info->flags & ZEND_ACC_PROTECTED &&
             child_info->flags & ZEND_ACC_PUBLIC))
         {
             /* Do not copy into static_members. zend_do_inheritance
              * will automatically insert a NULL value.
-             * TODO: decrement refcount or fixup when copying out for exec ? 
+             * TODO: decrement refcount or fixup when copying out for exec ?
              */ 
             return 0;
         }
@@ -1656,7 +1655,7 @@ static int my_check_copy_static_member(Bucket* p, va_list args)
             }
         }
     }
-    
+
     return 1;
 }
 /* }}} */

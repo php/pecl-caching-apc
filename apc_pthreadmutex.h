@@ -24,7 +24,7 @@
 
 #include "apc.h"
 
-#ifdef APC_PTHREADMUTEX_LOCKS 
+#ifdef APC_PTHREADMUTEX_LOCKS
 
 #include <pthread.h>
 

@@ -85,8 +85,8 @@ typedef union _apc_cache_entry_value_t {
         apc_class_t* classes;       /* array of apc_class_t's */
     } file;
     struct {
-        char *info; 
-        int info_len; 
+        char *info;
+        int info_len;
         zval *val;
         unsigned int ttl;
     } user;
@@ -162,7 +162,7 @@ extern int apc_cache_user_insert(T cache, apc_cache_key_t key,
 extern apc_cache_entry_t* apc_cache_find(T cache, apc_cache_key_t key, time_t t);
 
 /*
- * apc_cache_user_find searches for a cache entry by its hashed identifier, 
+ * apc_cache_user_find searches for a cache entry by its hashed identifier,
  * and returns a pointer to the entry if found, NULL otherwise.
  *
  */

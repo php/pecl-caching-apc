@@ -23,9 +23,9 @@
 
 #ifdef APC_SPIN_LOCKS
 
-slock_t *apc_slock_create(slock_t *lock) 
+slock_t *apc_slock_create(slock_t *lock)
 {
-   S_INIT_LOCK(lock); 
+   S_INIT_LOCK(lock);
    return lock;
 }
 

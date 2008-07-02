@@ -60,12 +60,12 @@ ZEND_BEGIN_MODULE_GLOBALS(apc)
                                  /* false if files should only be cached if filtered in */
     long file_update_protection; /* Age in seconds before a file is eligible to be cached - 0 to disable */
     zend_bool enable_cli;        /* Flag to override turning APC off for CLI */
-    long max_file_size;	         /* Maximum size of file, in bytes that APC will be allowed to cache */
+    long max_file_size;          /* Maximum size of file, in bytes that APC will be allowed to cache */
     zend_bool fpstat;            /* true if fullpath includes should be stat'ed */
     zend_bool stat_ctime;        /* true if ctime in addition to mtime should be checked */
     zend_bool write_lock;        /* true for a global write lock */
     zend_bool report_autofilter; /* true for auto-filter warnings */
-    zend_bool include_once;	     /* Override the ZEND_INCLUDE_OR_EVAL opcode handler to avoid pointless fopen()s [still experimental] */
+    zend_bool include_once;      /* Override the ZEND_INCLUDE_OR_EVAL opcode handler to avoid pointless fopen()s [still experimental] */
     apc_optimize_function_t apc_optimize_function;   /* optimizer function callback */
 #ifdef MULTIPART_EVENT_FORMDATA
     zend_bool rfc1867;           /* Flag to enable rfc1867 handler */

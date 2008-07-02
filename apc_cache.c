@@ -293,7 +293,7 @@ void apc_cache_clear(apc_cache_t* cache)
         }
         cache->slots[i] = NULL;
     }
-    
+
     cache->header->busy = 0;
     CACHE_UNLOCK(cache);
 }
@@ -319,9 +319,9 @@ static void apc_cache_expunge(apc_cache_t* cache, size_t size)
     if(!cache) return;
 
     if(!cache->ttl) {
-        /* 
+        /*
          * If cache->ttl is not set, we wipe out the entire cache when
-         * we run out of space. 
+         * we run out of space.
          */
         CACHE_SAFE_LOCK(cache);
         cache->header->busy = 1;
@@ -353,7 +353,7 @@ static void apc_cache_expunge(apc_cache_t* cache, size_t size)
         for (i = 0; i < cache->num_slots; i++) {
             p = &cache->slots[i];
             while(*p) {
-                /* 
+                /*
                  * For the user cache we look at the individual entry ttl values
                  * and if not set fall back to the default ttl for the user cache
                  */
@@ -443,7 +443,7 @@ int apc_cache_insert(apc_cache_t* cache,
     cache->header->mem_size += ctxt->pool->size;
     cache->header->num_entries++;
     cache->header->num_inserts++;
-    
+
     CACHE_UNLOCK(cache);
     return 1;
 }
@@ -499,8 +499,8 @@ int apc_cache_user_insert(apc_cache_t* cache, apc_cache_key_t key, apc_cache_ent
         CACHE_UNLOCK(cache);
         return 0;
     }
-    
-	value->mem_size = ctxt->pool->size;
+
+    value->mem_size = ctxt->pool->size;
     cache->header->mem_size += ctxt->pool->size;
 
     cache->header->num_entries++;
@@ -684,13 +684,13 @@ int apc_cache_make_file_key(apc_cache_key_t* key,
             key->type = APC_CACHE_KEY_FPFILE;
         }
         return 1;
-    } 
+    }
 
     if(!strcmp(SG(request_info).path_translated, filename)) {
         tmp_buf = sapi_get_stat(TSRMLS_C);  /* Apache has already done this stat() for us */
     }
-    if(tmp_buf) { 
-		fileinfo.st_buf.sb = *tmp_buf;
+    if(tmp_buf) {
+        fileinfo.st_buf.sb = *tmp_buf;
     } else {
         if (apc_search_paths(filename, include_path, &fileinfo) != 0) {
 #ifdef __DEBUG_APC__
@@ -728,7 +728,7 @@ int apc_cache_make_file_key(apc_cache_key_t* key,
 
     key->data.file.device = fileinfo.st_buf.sb.st_dev;
     key->data.file.inode  = fileinfo.st_buf.sb.st_ino;
-    /* 
+    /*
      * If working with content management systems that like to munge the mtime, 
      * it might be appropriate to key off of the ctime to be immune to systems
      * that try to backdate a template.  If the mtime is set to something older
@@ -815,7 +815,7 @@ zval* apc_cache_store_zval(zval* dst, const zval* src, apc_context_t* ctxt)
         PHP_VAR_SERIALIZE_INIT(var_hash);
         php_var_serialize(&buf, (zval**)&src, &var_hash TSRMLS_CC);
         PHP_VAR_SERIALIZE_DESTROY(var_hash);
-		
+
         dst->type = IS_NULL; /* in case we fail */
         if(buf.c) {
             dst->type = src->type & ~IS_CONSTANT_INDEX;
@@ -824,14 +824,14 @@ zval* apc_cache_store_zval(zval* dst, const zval* src, apc_context_t* ctxt)
             dst->type = src->type;
             smart_str_free(&buf);
         }
-        return dst; 
+        return dst;
     } else {
-        
+
         /* Maintain a list of zvals we've copied to properly handle recursive structures */
         HashTable *old = APCG(copied_zvals);
         APCG(copied_zvals) = emalloc(sizeof(HashTable));
         zend_hash_init(APCG(copied_zvals), 0, NULL, NULL, 0);
-        
+
         dst = apc_copy_zval(dst, src, ctxt);
 
         if(APCG(copied_zvals)) {
@@ -861,15 +861,15 @@ zval* apc_cache_fetch_zval(zval* dst, const zval* src, apc_context_t* ctxt)
             php_error_docref(NULL TSRMLS_CC, E_NOTICE, "Error at offset %ld of %d bytes", (long)((char*)p - Z_STRVAL_P(src)), Z_STRLEN_P(src));
             dst->type = IS_NULL;
         }
-        PHP_VAR_UNSERIALIZE_DESTROY(var_hash);		
-        return dst; 
+        PHP_VAR_UNSERIALIZE_DESTROY(var_hash);
+        return dst;
     } else {
-    
+
         /* Maintain a list of zvals we've copied to properly handle recursive structures */
         HashTable *old = APCG(copied_zvals);
         APCG(copied_zvals) = emalloc(sizeof(HashTable));
         zend_hash_init(APCG(copied_zvals), 0, NULL, NULL, 0);
-        
+
         dst = apc_copy_zval(dst, src, ctxt);
 
         if(APCG(copied_zvals)) {
@@ -891,7 +891,7 @@ void apc_cache_free_zval(zval* src, apc_context_t* ctxt)
     TSRMLS_FETCH();
     if ((src->type & ~IS_CONSTANT_INDEX) == IS_OBJECT) {
         if (src->value.str.val) {
-        	deallocate(src->value.str.val);
+            deallocate(src->value.str.val);
         }
         deallocate(src);
     } else {
@@ -899,7 +899,7 @@ void apc_cache_free_zval(zval* src, apc_context_t* ctxt)
         HashTable *old = APCG(copied_zvals);
         APCG(copied_zvals) = emalloc(sizeof(HashTable));
         zend_hash_init(APCG(copied_zvals), 0, NULL, NULL, 0);
-        
+
         apc_free_zval(src, deallocate);
 
         if(APCG(copied_zvals)) {

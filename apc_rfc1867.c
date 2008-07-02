@@ -61,9 +61,9 @@ void apc_rfc1867_progress(unsigned int event, void *event_data, void **extra TSR
     static double rate;
     zval *track = NULL;
 
-	switch (event) {
-		case MULTIPART_EVENT_START:
-			{
+    switch (event) {
+        case MULTIPART_EVENT_START:
+            {
                 multipart_event_start *data = (multipart_event_start *) event_data;
                 content_length = data->content_length;
                 *tracking_key = '\0';
@@ -79,23 +79,23 @@ void apc_rfc1867_progress(unsigned int event, void *event_data, void **extra TSR
                 if(update_freq < 0) {  // frequency is a percentage, not bytes
                     update_freq = content_length * APCG(rfc1867_freq) / 100; 
                 }
-			}
-			break;
+            }
+            break;
 
-		case MULTIPART_EVENT_FORMDATA:
-			{
+        case MULTIPART_EVENT_FORMDATA:
+            {
                 int prefix_len = strlen(APCG(rfc1867_prefix));
                 multipart_event_formdata *data = (multipart_event_formdata *) event_data;
- 				if(data->name && !strncasecmp(data->name, APCG(rfc1867_name), strlen(APCG(rfc1867_name))) && data->value && data->length && data->length < sizeof(tracking_key) - prefix_len) {
+                if(data->name && !strncasecmp(data->name, APCG(rfc1867_name), strlen(APCG(rfc1867_name))) && data->value && data->length && data->length < sizeof(tracking_key) - prefix_len) {
                     strlcat(tracking_key, APCG(rfc1867_prefix), 63);
                     strlcat(tracking_key, *data->value, 63);
                     key_length = data->length + prefix_len;
                     bytes_processed = data->post_bytes_processed;
-				}
-			}
-			break;
+                }
+            }
+            break;
 
-		case MULTIPART_EVENT_FILE_START:
+        case MULTIPART_EVENT_FILE_START:
             if(*tracking_key) {
                 multipart_event_file_start *data = (multipart_event_file_start *) event_data;
 
@@ -116,7 +116,7 @@ void apc_rfc1867_progress(unsigned int event, void *event_data, void **extra TSR
             }
             break;
 
-		case MULTIPART_EVENT_FILE_DATA:
+        case MULTIPART_EVENT_FILE_DATA:
             if(*tracking_key) {
                 multipart_event_file_data *data = (multipart_event_file_data *) event_data;
                 bytes_processed = data->post_bytes_processed;
@@ -133,10 +133,10 @@ void apc_rfc1867_progress(unsigned int event, void *event_data, void **extra TSR
                     prev_bytes_processed = bytes_processed;
                 }
                 zval_ptr_dtor(&track);
-			}
-			break;
+            }
+            break;
 
-		case MULTIPART_EVENT_FILE_END:
+        case MULTIPART_EVENT_FILE_END:
             if(*tracking_key) {
                 multipart_event_file_end *data = (multipart_event_file_end *) event_data;
                 bytes_processed = data->post_bytes_processed;
@@ -154,10 +154,10 @@ void apc_rfc1867_progress(unsigned int event, void *event_data, void **extra TSR
                 add_assoc_double(track, "start_time", start_time);
                 _apc_store(tracking_key, key_length, track, 3600, 0 TSRMLS_CC);
                 zval_ptr_dtor(&track);
-			}
-			break;
+            }
+            break;
 
-		case MULTIPART_EVENT_END:
+        case MULTIPART_EVENT_END:
             if(*tracking_key) {
                 double now = my_time(); 
                 multipart_event_end *data = (multipart_event_end *) event_data;
@@ -179,9 +179,9 @@ void apc_rfc1867_progress(unsigned int event, void *event_data, void **extra TSR
                 add_assoc_double(track, "start_time", start_time);
                 _apc_store(tracking_key, key_length, track, 3600, 0 TSRMLS_CC);
                 zval_ptr_dtor(&track);
-			}
-			break;
-	}
+            }
+            break;
+    }
 }
 
 #endif
