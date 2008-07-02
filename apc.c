@@ -145,14 +145,6 @@ static void my_log(int level, const char* fmt, va_list args)
     }
 }
 
-void apc_log(int level, const char* fmt, ...)
-{
-    va_list args;
-    va_start(args, fmt);
-    my_log(level, fmt, args);
-    va_end(args);
-}
-
 void apc_eprint(const char* fmt, ...)
 {
     va_list args;

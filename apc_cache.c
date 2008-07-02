@@ -168,13 +168,11 @@ static void process_pending_removals(apc_cache_t* cache)
             if (dead->value->ref_count > 0) {
                 switch(dead->value->type) {
                     case APC_CACHE_ENTRY_FILE:
-                        apc_log(APC_WARNING, "GC cache entry '%s' (dev=%d ino=%d) "
-                            "was on gc-list for %d seconds", dead->value->data.file.filename,
-                            dead->key.data.file.device, dead->key.data.file.inode, gc_sec);
+                        apc_wprint("GC cache entry '%s' (dev=%d ino=%d) was on gc-list for %d seconds", 
+                            dead->value->data.file.filename, dead->key.data.file.device, dead->key.data.file.inode, gc_sec);
                         break;
                     case APC_CACHE_ENTRY_USER:
-                        apc_log(APC_WARNING, "GC cache entry '%s' "
-                            "was on gc-list for %d seconds", dead->value->data.user.info, gc_sec);
+                        apc_wprint("GC cache entry '%s'was on gc-list for %d seconds", dead->value->data.user.info, gc_sec);
                         break;
                 }
             }

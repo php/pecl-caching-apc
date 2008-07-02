@@ -61,7 +61,7 @@
 #include "php.h"
 #include "main/php_streams.h"
 
-/* log levels constants (see apc_log) */
+/* log levels constants (see my_log) */
 enum { APC_DBG, APC_NOTICE, APC_WARNING, APC_ERROR };
 
 /* typedefs for extensible memory allocators */
@@ -77,7 +77,6 @@ extern void* apc_xstrdup(const char* s, apc_malloc_t f);
 extern void* apc_xmemcpy(const void* p, size_t n, apc_malloc_t f);
 
 /* console display functions */
-extern void apc_log(int level, const char* fmt, ...);
 extern void apc_eprint(const char* fmt, ...);
 extern void apc_wprint(const char* fmt, ...);
 extern void apc_dprint(const char* fmt, ...);
