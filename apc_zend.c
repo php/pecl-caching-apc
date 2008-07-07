@@ -101,6 +101,10 @@ static inline int _apc_opcode_handler_decode(zend_op *opline)
 # define APC_REPLACE_OPCODE(opname)         zend_opcode_handlers[opname] = apc_op_##opname;
 #endif
 
+#ifndef ZEND_FASTCALL  /* Added in ZE2.3.0 */
+#define ZEND_FASTCALL
+#endif
+
 static opcode_handler_t *apc_original_opcode_handlers;
 static opcode_handler_t apc_opcode_handlers[APC_OPCODE_HANDLER_COUNT];
 
@@ -139,7 +143,7 @@ static zval *apc_get_zval_ptr(znode *node, zval **freeval, zend_execute_data *ex
     }
 }
 
-static int apc_op_ZEND_INCLUDE_OR_EVAL(ZEND_OPCODE_HANDLER_ARGS)
+static int ZEND_FASTCALL apc_op_ZEND_INCLUDE_OR_EVAL(ZEND_OPCODE_HANDLER_ARGS)
 {
     APC_ZEND_OPLINE
     zval *freeop1 = NULL;
