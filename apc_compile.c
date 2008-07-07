@@ -182,8 +182,9 @@ static void check_op_array_integrity(zend_op_array* src)
 /* {{{ my_bitwise_copy_function */
 static zend_function* my_bitwise_copy_function(zend_function* dst, zend_function* src, apc_context_t* ctxt)
 {
-    assert(src != NULL);
     apc_pool* pool = ctxt->pool;
+
+    assert(src != NULL);
 
     if (!dst) {
         CHECK(dst = (zend_function*) apc_pool_alloc(pool, sizeof(src[0])));
@@ -793,8 +794,9 @@ static HashTable* my_copy_static_variables(zend_op_array* src, apc_context_t* ct
 zval* apc_copy_zval(zval* dst, const zval* src, apc_context_t* ctxt)
 {
     apc_pool* pool = ctxt->pool;
-    assert(src != NULL);
     int usegc = (ctxt->copy == APC_COPY_OUT_OPCODE) || (ctxt->copy == APC_COPY_OUT_USER);
+
+    assert(src != NULL);
 
     if (!dst) {
         if(usegc) {
