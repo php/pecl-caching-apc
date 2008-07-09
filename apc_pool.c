@@ -159,6 +159,7 @@ struct _apc_realpool
     void       *owner;
 
     pool_block *head;
+    pool_block first; 
 };
 
 /* }}} */
@@ -187,6 +188,13 @@ static const unsigned char decaff[] =  {
 
 /* }}} */
 
+#define INIT_POOL_BLOCK(rpool, entry, size) do {\
+    (entry)->avail = (entry)->capacity = (size);\
+    (entry)->mark = (entry)->data;\
+    (entry)->next = (rpool)->head;\
+    (rpool)->head = (entry);\
+} while(0)
+
 /* {{{ create_pool_block */
 static pool_block* create_pool_block(apc_realpool *rpool, size_t size)
 {
@@ -200,15 +208,9 @@ static pool_block* create_pool_block(apc_realpool *rpool, size_t size)
         return NULL;
     }
 
-    entry->avail = entry->capacity = size;
-
-    entry->mark = entry->data;
-
-    entry->next = rpool->head;
-
-    rpool->head = entry;
-
-    rpool->parent.size += realsize; 
+    INIT_POOL_BLOCK(rpool, entry, size);
+    
+    rpool->parent.size += realsize;
 
     return entry;
 }
@@ -370,7 +372,7 @@ static void apc_realpool_cleanup(apc_pool *pool)
 
     entry = rpool->head;
 
-    while(entry != NULL) {
+    while(entry->next != NULL) {
         tmp = entry->next;
         deallocate(entry);
         entry = tmp;
@@ -401,7 +403,7 @@ static apc_pool* apc_realpool_create(apc_pool_type type, apc_malloc_t allocate, 
             return NULL;
     }
 
-    rpool = (apc_realpool*)allocate(sizeof(apc_realpool));
+    rpool = (apc_realpool*)allocate(sizeof(apc_realpool) + ALIGNWORD(dsize));
 
     if(!rpool) {
         return NULL;
@@ -412,7 +414,7 @@ static apc_pool* apc_realpool_create(apc_pool_type type, apc_malloc_t allocate, 
     rpool->parent.allocate = allocate;
     rpool->parent.deallocate = deallocate;
 
-    rpool->parent.size = sizeof(apc_pool);
+    rpool->parent.size = sizeof(apc_realpool) + ALIGNWORD(dsize);
 
     rpool->parent.palloc = apc_realpool_alloc;
     rpool->parent.pfree  = apc_realpool_free;
@@ -422,10 +424,7 @@ static apc_pool* apc_realpool_create(apc_pool_type type, apc_malloc_t allocate, 
     rpool->dsize = dsize;
     rpool->head = NULL;
 
-    if(!create_pool_block(rpool, dsize)) {
-        deallocate(rpool);
-        return NULL;
-    }
+    INIT_POOL_BLOCK(rpool, &(rpool->first), dsize);
 
     return &(rpool->parent);
 }
