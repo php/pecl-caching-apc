@@ -665,7 +665,8 @@ int apc_cache_make_file_key(apc_cache_key_t* key,
             key->data.fpfile.fullpath_len = len;
             key->mtime = t;
             key->type = APC_CACHE_KEY_FPFILE;
-        } else {
+            return 1;
+        } else if(APCG(canonicalize)) {
             if (apc_search_paths(filename, include_path, &fileinfo) != 0) {
                 apc_wprint("apc failed to locate %s - bailing", filename);
                 return 0;
@@ -680,8 +681,9 @@ int apc_cache_make_file_key(apc_cache_key_t* key,
             key->data.fpfile.fullpath_len = strlen(APCG(canon_path));
             key->mtime = t;
             key->type = APC_CACHE_KEY_FPFILE;
+            return 1;
         }
-        return 1;
+        /* fall through to stat mode */
     }
 
     if(!strcmp(SG(request_info).path_translated, filename)) {

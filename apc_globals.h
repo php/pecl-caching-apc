@@ -62,6 +62,7 @@ ZEND_BEGIN_MODULE_GLOBALS(apc)
     zend_bool enable_cli;        /* Flag to override turning APC off for CLI */
     long max_file_size;          /* Maximum size of file, in bytes that APC will be allowed to cache */
     zend_bool fpstat;            /* true if fullpath includes should be stat'ed */
+    zend_bool canonicalize;      /* true if relative paths should be canonicalized in no-stat mode */
     zend_bool stat_ctime;        /* true if ctime in addition to mtime should be checked */
     zend_bool write_lock;        /* true for a global write lock */
     zend_bool report_autofilter; /* true for auto-filter warnings */

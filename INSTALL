@@ -366,6 +366,10 @@ users should consider tuning the following parameters:
                             your server in order to update scripts.
                             (Default: 1)
 
+    apc.canonicalize        Whether to canonicalize paths in stat=0 mode or
+                            fall back to stat behaviour if set to 0
+                            (Default: 0)
+
     apc.write_lock          On busy servers when you first start up the server, or when
                             many files are modified, you can end up with all your processes
                             trying to compile and cache the same files.  With write_lock 
