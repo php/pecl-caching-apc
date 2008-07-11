@@ -210,15 +210,7 @@ static PHP_MINFO_FUNCTION(apc)
 #else
     php_info_print_table_row(2, "MMAP Support", "Disabled");
 #endif
-#if APC_SEM_LOCKS
-    php_info_print_table_row(2, "Locking type", "IPC Semaphore");
-#elif APC_PTHREADMUTEX_LOCKS
-    php_info_print_table_row(2, "Locking type", "pthread mutex Locks");
-#elif APC_SPIN_LOCKS
-    php_info_print_table_row(2, "Locking type", "spin Locks");
-#else
-    php_info_print_table_row(2, "Locking type", "File Locks");
-#endif
+    php_info_print_table_row(2, "Locking type", APC_LOCK_TYPE);
     php_info_print_table_row(2, "Revision", "$Revision$");
     php_info_print_table_row(2, "Build Date", __DATE__ " " __TIME__);
     php_info_print_table_end();

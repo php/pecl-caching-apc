@@ -48,6 +48,7 @@
 /* }}} */
 
 #if defined(APC_SEM_LOCKS)
+#define APC_LOCK_TYPE "IPC Semaphore"
 #define RDLOCK_AVAILABLE 0
 #define NONBLOCKING_LOCK_AVAILABLE 0
 #define apc_lck_t int
@@ -57,6 +58,7 @@
 #define apc_lck_rdlock(a)     apc_sem_lock(a)
 #define apc_lck_unlock(a)     apc_sem_unlock(a)
 #elif defined(APC_PTHREADMUTEX_LOCKS)
+#define APC_LOCK_TYPE "pthread mutex Locks"
 #define RDLOCK_AVAILABLE 0
 #define NONBLOCKING_LOCK_AVAILABLE 1
 #define apc_lck_t pthread_mutex_t 
@@ -67,6 +69,7 @@
 #define apc_lck_rdlock(a)     apc_pthreadmutex_lock(&a)
 #define apc_lck_unlock(a)     apc_pthreadmutex_unlock(&a)
 #elif defined(APC_SPIN_LOCKS)
+#define APC_LOCK_TYPE "spin Locks"
 #define RDLOCK_AVAILABLE 0
 #define NONBLOCKING_LOCK_AVAILABLE APC_SLOCK_NONBLOCKING_LOCK_AVAILABLE
 #define apc_lck_t slock_t 
@@ -77,6 +80,7 @@
 #define apc_lck_rdlock(a)     apc_slock_lock(&a)
 #define apc_lck_unlock(a)     apc_slock_unlock(&a)
 #else
+#define APC_LOCK_TYPE "File Locks"
 #define RDLOCK_AVAILABLE 1
 #ifdef PHP_WIN32
 #define NONBLOCKING_LOCK_AVAILABLE 0
