@@ -33,11 +33,7 @@
 
 #include "apc.h"
 /* for POSIX regular expressions */
-#if (PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION >= 3) || PHP_MAJOR_VERSION >= 6
-    #include <ext/ereg/php_regex.h>
-#else
-    #include <regex.h>
-#endif
+#include <regex.h>
 #include "php.h"
 
 #define NELEMS(a) (sizeof(a)/sizeof((a)[0]))
