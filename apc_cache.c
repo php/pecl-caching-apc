@@ -36,8 +36,6 @@
 #include "apc_main.h"
 #include "apc_globals.h"
 #include "SAPI.h"
-#include "ext/standard/php_var.h"
-#include "ext/standard/php_smart_str.h"
 
 /* TODO: rehash when load factor exceeds threshold */
 
@@ -802,47 +800,22 @@ apc_cache_entry_t* apc_cache_make_file_entry(const char* filename,
 /* {{{ apc_cache_store_zval */
 zval* apc_cache_store_zval(zval* dst, const zval* src, apc_context_t* ctxt)
 {
-    smart_str buf = {0};
-    php_serialize_data_t var_hash;
-    apc_pool* pool = ctxt->pool;
     TSRMLS_FETCH();
+    /* Maintain a list of zvals we've copied to properly handle recursive structures */
+    HashTable *old = APCG(copied_zvals);
+    APCG(copied_zvals) = emalloc(sizeof(HashTable));
+    zend_hash_init(APCG(copied_zvals), 0, NULL, NULL, 0);
 
-    if((src->type & ~IS_CONSTANT_INDEX) == IS_OBJECT) {
-        if(!dst) {
-            CHECK(dst = (zval*) apc_pool_alloc(pool, sizeof(zval)));
-        }
+    dst = apc_copy_zval(dst, src, ctxt);
 
-        PHP_VAR_SERIALIZE_INIT(var_hash);
-        php_var_serialize(&buf, (zval**)&src, &var_hash TSRMLS_CC);
-        PHP_VAR_SERIALIZE_DESTROY(var_hash);
-
-        dst->type = IS_NULL; /* in case we fail */
-        if(buf.c) {
-            dst->type = src->type & ~IS_CONSTANT_INDEX;
-            dst->value.str.len = buf.len;
-            CHECK(dst->value.str.val = apc_pmemcpy(buf.c, buf.len+1, pool));
-            dst->type = src->type;
-            smart_str_free(&buf);
-        }
-        return dst;
-    } else {
-
-        /* Maintain a list of zvals we've copied to properly handle recursive structures */
-        HashTable *old = APCG(copied_zvals);
-        APCG(copied_zvals) = emalloc(sizeof(HashTable));
-        zend_hash_init(APCG(copied_zvals), 0, NULL, NULL, 0);
-
-        dst = apc_copy_zval(dst, src, ctxt);
-
-        if(APCG(copied_zvals)) {
-            zend_hash_destroy(APCG(copied_zvals));
-            efree(APCG(copied_zvals));
-        }
-
-        APCG(copied_zvals) = old;
-
-        return dst;
+    if(APCG(copied_zvals)) {
+        zend_hash_destroy(APCG(copied_zvals));
+        efree(APCG(copied_zvals));
     }
+
+    APCG(copied_zvals) = old;
+
+    return dst;
 }
 /* }}} */
 
@@ -850,68 +823,23 @@ zval* apc_cache_store_zval(zval* dst, const zval* src, apc_context_t* ctxt)
 zval* apc_cache_fetch_zval(zval* dst, const zval* src, apc_context_t* ctxt)
 {
     TSRMLS_FETCH();
-    if((src->type & ~IS_CONSTANT_INDEX) == IS_OBJECT) {
-        php_unserialize_data_t var_hash;
-        const unsigned char *p = (unsigned char*)Z_STRVAL_P(src);
+    /* Maintain a list of zvals we've copied to properly handle recursive structures */
+    HashTable *old = APCG(copied_zvals);
+    APCG(copied_zvals) = emalloc(sizeof(HashTable));
+    zend_hash_init(APCG(copied_zvals), 0, NULL, NULL, 0);
 
-        PHP_VAR_UNSERIALIZE_INIT(var_hash);
-        if(!php_var_unserialize(&dst, &p, p + Z_STRLEN_P(src), &var_hash TSRMLS_CC)) {
-            PHP_VAR_UNSERIALIZE_DESTROY(var_hash);
-            zval_dtor(dst);
-            php_error_docref(NULL TSRMLS_CC, E_NOTICE, "Error at offset %ld of %d bytes", (long)((char*)p - Z_STRVAL_P(src)), Z_STRLEN_P(src));
-            dst->type = IS_NULL;
-        }
-        PHP_VAR_UNSERIALIZE_DESTROY(var_hash);
-        return dst;
-    } else {
+    dst = apc_copy_zval(dst, src, ctxt);
 
-        /* Maintain a list of zvals we've copied to properly handle recursive structures */
-        HashTable *old = APCG(copied_zvals);
-        APCG(copied_zvals) = emalloc(sizeof(HashTable));
-        zend_hash_init(APCG(copied_zvals), 0, NULL, NULL, 0);
-
-        dst = apc_copy_zval(dst, src, ctxt);
-
-        if(APCG(copied_zvals)) {
-            zend_hash_destroy(APCG(copied_zvals));
-            efree(APCG(copied_zvals));
-        }
-
-        APCG(copied_zvals) = old;
-
-        return dst;
+    if(APCG(copied_zvals)) {
+        zend_hash_destroy(APCG(copied_zvals));
+        efree(APCG(copied_zvals));
     }
+
+    APCG(copied_zvals) = old;
+
+    return dst;
 }
 /* }}} */
-
-#if 0
-/* {{{ apc_cache_free_zval */
-void apc_cache_free_zval(zval* src, apc_context_t* ctxt)
-{
-    TSRMLS_FETCH();
-    if ((src->type & ~IS_CONSTANT_INDEX) == IS_OBJECT) {
-        if (src->value.str.val) {
-            deallocate(src->value.str.val);
-        }
-        deallocate(src);
-    } else {
-        /* Maintain a list of zvals we've copied to properly handle recursive structures */
-        HashTable *old = APCG(copied_zvals);
-        APCG(copied_zvals) = emalloc(sizeof(HashTable));
-        zend_hash_init(APCG(copied_zvals), 0, NULL, NULL, 0);
-
-        apc_free_zval(src, deallocate);
-
-        if(APCG(copied_zvals)) {
-            zend_hash_destroy(APCG(copied_zvals));
-            efree(APCG(copied_zvals));
-        }
-
-        APCG(copied_zvals) = old;
-    }
-}
-/* }}} */
-#endif
 
 /* {{{ apc_cache_make_user_entry */
 apc_cache_entry_t* apc_cache_make_user_entry(const char* info, int info_len, const zval* val, apc_context_t* ctxt, const unsigned int ttl)

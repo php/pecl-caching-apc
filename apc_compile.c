@@ -33,6 +33,8 @@
 #include "apc_compile.h"
 #include "apc_globals.h"
 #include "apc_zend.h"
+#include "ext/standard/php_var.h"
+#include "ext/standard/php_smart_str.h"
 
 #ifndef Z_REFCOUNT_P
 #define Z_REFCOUNT_P(pz)              (pz)->refcount
@@ -283,6 +285,33 @@ static zval* my_copy_zval(zval* dst, const zval* src, apc_context_t* ctxt)
 
     case IS_OBJECT:
         dst->type = IS_NULL;
+        if(ctxt->copy == APC_COPY_IN_USER) {
+            smart_str buf = {0};
+            php_serialize_data_t var_hash;
+            PHP_VAR_SERIALIZE_INIT(var_hash);
+            php_var_serialize(&buf, (zval**)&src, &var_hash TSRMLS_CC);
+            PHP_VAR_SERIALIZE_DESTROY(var_hash);
+
+            if(buf.c) {
+                dst->type = src->type & ~IS_CONSTANT_INDEX;
+                dst->value.str.len = buf.len;
+                CHECK(dst->value.str.val = apc_pmemcpy(buf.c, buf.len+1, pool));
+                dst->type = src->type;
+                smart_str_free(&buf);
+            }
+        } else if(ctxt->copy == APC_COPY_OUT_USER) {
+            php_unserialize_data_t var_hash;
+            const unsigned char *p = (unsigned char*)Z_STRVAL_P(src);
+
+            PHP_VAR_UNSERIALIZE_INIT(var_hash);
+            if(!php_var_unserialize(&dst, &p, p + Z_STRLEN_P(src), &var_hash TSRMLS_CC)) {
+                PHP_VAR_UNSERIALIZE_DESTROY(var_hash);
+                zval_dtor(dst);
+                php_error_docref(NULL TSRMLS_CC, E_NOTICE, "Error at offset %ld of %d bytes", (long)((char*)p - Z_STRVAL_P(src)), Z_STRLEN_P(src));
+                dst->type = IS_NULL;
+            }
+            PHP_VAR_UNSERIALIZE_DESTROY(var_hash);
+        }
         break;
 
     default:
