@@ -225,9 +225,51 @@ static zval** my_copy_zval_ptr(zval** dst, const zval** src, apc_context_t* ctxt
         *dst = dst_new;
     }
 
-    Z_SET_REFCOUNT_PP(dst, Z_REFCOUNT_PP((zval**)src));
-    Z_SET_ISREF_TO_PP(dst, Z_ISREF_PP((zval**)src));
+    return dst;
+}
+/* }}} */
 
+/* {{{ my_serialize_object */
+static zval* my_serialize_object(zval* dst, const zval* src, apc_context_t* ctxt)
+{
+    smart_str buf = {0};
+    php_serialize_data_t var_hash;
+    apc_pool* pool = ctxt->pool;
+
+    TSRMLS_FETCH();
+
+    PHP_VAR_SERIALIZE_INIT(var_hash);
+    php_var_serialize(&buf, (zval**)&src, &var_hash TSRMLS_CC);
+    PHP_VAR_SERIALIZE_DESTROY(var_hash);
+
+    if(buf.c) {
+        dst->type = src->type & ~IS_CONSTANT_INDEX;
+        dst->value.str.len = buf.len;
+        CHECK(dst->value.str.val = apc_pmemcpy(buf.c, buf.len+1, pool));
+        dst->type = src->type;
+        smart_str_free(&buf);
+    }
+
+    return dst;
+}
+/* }}} */
+
+/* {{{ my_unserialize_object */
+static zval* my_unserialize_object(zval* dst, const zval* src, apc_context_t* ctxt)
+{
+    php_unserialize_data_t var_hash;
+    const unsigned char *p = (unsigned char*)Z_STRVAL_P(src);
+
+    TSRMLS_FETCH();
+
+    PHP_VAR_UNSERIALIZE_INIT(var_hash);
+    if(!php_var_unserialize(&dst, &p, p + Z_STRLEN_P(src), &var_hash TSRMLS_CC)) {
+        PHP_VAR_UNSERIALIZE_DESTROY(var_hash);
+        zval_dtor(dst);
+        php_error_docref(NULL TSRMLS_CC, E_NOTICE, "Error at offset %ld of %d bytes", (long)((char*)p - Z_STRVAL_P(src)), Z_STRLEN_P(src));
+        dst->type = IS_NULL;
+    }
+    PHP_VAR_UNSERIALIZE_DESTROY(var_hash);
     return dst;
 }
 /* }}} */
@@ -237,12 +279,20 @@ static zval* my_copy_zval(zval* dst, const zval* src, apc_context_t* ctxt)
 {
     zval **tmp;
     apc_pool* pool = ctxt->pool;
-    TSRMLS_FETCH();
 
     assert(dst != NULL);
     assert(src != NULL);
 
     memcpy(dst, src, sizeof(src[0]));
+
+    if(APCG(copied_zvals)) {
+        if(zend_hash_index_find(APCG(copied_zvals), (ulong)src, (void**)&tmp) == SUCCESS) {
+            Z_ADDREF_PP(tmp);
+            return *tmp;
+        }
+
+        zend_hash_index_update(APCG(copied_zvals), (ulong)src, (void**)&dst, sizeof(zval*), NULL);
+    }
 
     switch (src->type & IS_CONSTANT_TYPE_MASK) {
     case IS_RESOURCE:
@@ -262,17 +312,6 @@ static zval* my_copy_zval(zval* dst, const zval* src, apc_context_t* ctxt)
         break;
 
     case IS_ARRAY:
-
-        if(APCG(copied_zvals)) {
-            if(zend_hash_index_find(APCG(copied_zvals), (ulong)src, (void**)&tmp) == SUCCESS) {
-                Z_ADDREF_PP(tmp);
-                return *tmp;
-            }
-
-            zend_hash_index_update(APCG(copied_zvals), (ulong)src, (void**)&dst, sizeof(zval*), NULL);
-        }
-        /* fall through */
-
     case IS_CONSTANT_ARRAY:
 
         CHECK(dst->value.ht =
@@ -284,39 +323,22 @@ static zval* my_copy_zval(zval* dst, const zval* src, apc_context_t* ctxt)
         break;
 
     case IS_OBJECT:
+    
         dst->type = IS_NULL;
         if(ctxt->copy == APC_COPY_IN_USER) {
-            smart_str buf = {0};
-            php_serialize_data_t var_hash;
-            PHP_VAR_SERIALIZE_INIT(var_hash);
-            php_var_serialize(&buf, (zval**)&src, &var_hash TSRMLS_CC);
-            PHP_VAR_SERIALIZE_DESTROY(var_hash);
-
-            if(buf.c) {
-                dst->type = src->type & ~IS_CONSTANT_INDEX;
-                dst->value.str.len = buf.len;
-                CHECK(dst->value.str.val = apc_pmemcpy(buf.c, buf.len+1, pool));
-                dst->type = src->type;
-                smart_str_free(&buf);
-            }
+            dst = my_serialize_object(dst, src, ctxt);
         } else if(ctxt->copy == APC_COPY_OUT_USER) {
-            php_unserialize_data_t var_hash;
-            const unsigned char *p = (unsigned char*)Z_STRVAL_P(src);
-
-            PHP_VAR_UNSERIALIZE_INIT(var_hash);
-            if(!php_var_unserialize(&dst, &p, p + Z_STRLEN_P(src), &var_hash TSRMLS_CC)) {
-                PHP_VAR_UNSERIALIZE_DESTROY(var_hash);
-                zval_dtor(dst);
-                php_error_docref(NULL TSRMLS_CC, E_NOTICE, "Error at offset %ld of %d bytes", (long)((char*)p - Z_STRVAL_P(src)), Z_STRLEN_P(src));
-                dst->type = IS_NULL;
-            }
-            PHP_VAR_UNSERIALIZE_DESTROY(var_hash);
+            dst = my_unserialize_object(dst, src, ctxt);
         }
         break;
 
     default:
         assert(0);
     }
+
+    /* deep copies are refcount(1) */
+    Z_SET_REFCOUNT_P(dst, 1);
+    Z_UNSET_ISREF_P(dst);
 
     return dst;
 }
