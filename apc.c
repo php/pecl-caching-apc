@@ -32,9 +32,12 @@
 /* $Id$ */
 
 #include "apc.h"
-/* for POSIX regular expressions */
-#include <regex.h>
 #include "php.h"
+
+#if HAVE_PCRE || HAVE_BUNDLED_PCRE
+#include "ext/pcre/php_pcre.h"
+#include "ext/standard/php_smart_str.h"
+#endif
 
 #define NELEMS(a) (sizeof(a)/sizeof((a)[0]))
 
@@ -263,6 +266,7 @@ char** apc_tokenize(const char* s, char delim)
 
 /* }}} */
 
+/* {{{ apc stat */
 /* similar to php_stream_stat_path */
 #define APC_URL_STAT(wrapper, filename, pstatbuf) \
     ((wrapper)->wops->url_stat((wrapper), (filename), PHP_STREAM_URL_STAT_QUIET, (pstatbuf), NULL TSRMLS_CC))
@@ -345,51 +349,70 @@ int apc_search_paths(const char* filename, const char* path, apc_fileinfo_t* fil
 
 /* {{{ regular expression wrapper functions */
 
+#if (HAVE_PCRE || HAVE_BUNDLED_PCRE)
 typedef struct {
-    regex_t *reg;
-    unsigned char type;
+    pcre *preg;
+    pcre *nreg;
 } apc_regex;
 
-void* apc_regex_compile_array(char* patterns[])
+#define APC_ADD_PATTERN(match, pat) do {\
+    if(match.len > 1) {\
+        smart_str_appendc(&match, '|');\
+    }\
+    smart_str_appendc(&match, '(');\
+    smart_str_appends(&match, pat);\
+    smart_str_appendc(&match, ')');\
+} while(0)
+
+#define APC_COMPILE_PATTERN(re, match) do {\
+    if(match.len > 2) { /* more than just "//" */\
+        if (((re) = pcre_get_compiled_regex(match.c, NULL, NULL TSRMLS_CC)) == NULL) {\
+            apc_wprint("apc_regex_compile_array: invalid expression '%s'", match.c); \
+            smart_str_free(&match);\
+            return NULL;\
+        }\
+    } else { \
+        (re) = NULL;\
+    }\
+} while(0)
+
+void* apc_regex_compile_array(char* patterns[] TSRMLS_DC)
 {
-    apc_regex** regs;
+    apc_regex* regs;
     int npat;
-    int i;
+    smart_str pmatch = {0,};
+    smart_str nmatch = {0,};
+    char* pattern;
 
     if (!patterns)
         return NULL;
 
-    /* count the number of patterns in patterns */
-    for (npat = 0; patterns[npat] != NULL; npat++) {}
-
-    if (npat == 0)
-        return NULL;
-
-    /* allocate the array of compiled expressions */
-    regs = (apc_regex**) apc_emalloc(sizeof(apc_regex*) * (npat + 1));
-    for (i = 0; i <= npat; i++) {
-        regs[i] = (apc_regex *) apc_emalloc(sizeof(apc_regex));
-        regs[i]->reg = NULL;
-        regs[i]->type = APC_NEGATIVE_MATCH;
-    }
-
-    /* compile the expressions */
-    for (i = 0; i < npat; i++) {
-        char *pattern = patterns[i];
-        if(pattern[0]=='+') { regs[i]->type = APC_POSITIVE_MATCH; pattern = patterns[i]+sizeof(char); }
-        else if(pattern[0]=='-') { regs[i]->type = APC_NEGATIVE_MATCH; pattern = patterns[i]+sizeof(char); }
-
-        regs[i]->reg = (regex_t*) apc_emalloc(sizeof(regex_t));
-
-        if (regcomp(regs[i]->reg, pattern, REG_EXTENDED | REG_NOSUB) != 0) {
-            apc_wprint("apc_regex_compile_array: invalid expression '%s'",
-                       pattern);
-
-            apc_regex_destroy_array(regs);
-
-            return NULL;
+    regs = (apc_regex*) apc_emalloc(sizeof(apc_regex));
+        
+    smart_str_appendc(&pmatch, '/');
+    smart_str_appendc(&nmatch, '/');
+    
+    for (npat = 0; patterns[npat] != NULL; npat++) {
+        pattern = patterns[npat];
+        if(pattern[0] == '+') {
+            pattern += sizeof(char);
+            APC_ADD_PATTERN(pmatch, pattern);
+        } else {
+            if(pattern[0] == '-') pattern += sizeof(char);
+            APC_ADD_PATTERN(nmatch, pattern);
         }
     }
+    smart_str_appendc(&pmatch, '/');
+    smart_str_appendc(&nmatch, '/');
+
+    smart_str_0(&nmatch);
+    smart_str_0(&pmatch);
+
+    APC_COMPILE_PATTERN(regs->preg, pmatch);
+    APC_COMPILE_PATTERN(regs->nreg, nmatch);
+
+    smart_str_free(&pmatch);
+    smart_str_free(&nmatch);
 
     return (void*) regs;
 }
@@ -397,34 +420,49 @@ void* apc_regex_compile_array(char* patterns[])
 void apc_regex_destroy_array(void* p)
 {
     if (p != NULL) {
-        apc_regex** regs = (apc_regex**) p;
-        int i;
-
-        for (i = 0; regs[i]->reg != NULL; i++) {
-            regfree(regs[i]->reg);
-            apc_efree(regs[i]->reg);
-            apc_efree(regs[i]);
-        }
+        apc_regex* regs = (apc_regex*) p;
         apc_efree(regs);
     }
 }
 
+#define APC_MATCH_PATTERN(re, input, output) do {\
+    if (re && pcre_exec(re, NULL, (input), strlen(input), 0, 0, NULL, 0) >= 0) {\
+        return (output);\
+    }\
+} while(0)
+
+
 int apc_regex_match_array(void* p, const char* input)
 {
-    apc_regex** regs;
-    int i;
+    apc_regex* regs;
 
     if (!p)
         return 0;
 
-    regs = (apc_regex**) p;
-    for (i = 0; regs[i]->reg != NULL; i++)
-        if (regexec(regs[i]->reg, input, 0, NULL, 0) == 0)
-            return (int)(regs[i]->type);
-
+    regs = (apc_regex*) p;
+    
+    APC_MATCH_PATTERN(regs->preg, input, APC_POSITIVE_MATCH);
+    APC_MATCH_PATTERN(regs->nreg, input, APC_NEGATIVE_MATCH);
+    
     return 0;
 }
-
+#else /* no pcre */ 
+void* apc_regex_compile_array(char* patterns[] TSRMLS_DC)
+{
+    if(patterns && patterns[0] != NULL) {
+        apc_wprint("pcre missing, disabling filters");
+    }
+    return NULL;
+}
+void apc_regex_destroy_array(void* p)
+{
+    /* nothing */
+}
+int apc_regex_match_array(void* p, const char* input)
+{
+    return 0;
+}
+#endif
 /* }}} */
 
 /* {{{ crc32 implementation */

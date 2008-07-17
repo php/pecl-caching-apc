@@ -441,7 +441,7 @@ int apc_module_init(int module_number TSRMLS_DC)
     apc_cache = apc_cache_create(APCG(num_files_hint), APCG(gc_ttl), APCG(ttl));
     apc_user_cache = apc_cache_create(APCG(user_entries_hint), APCG(gc_ttl), APCG(user_ttl));
 
-    apc_compiled_filters = apc_regex_compile_array(APCG(filters));
+    apc_compiled_filters = apc_regex_compile_array(APCG(filters) TSRMLS_CC);
 
     /* override compilation */
     old_compile_file = zend_compile_file;

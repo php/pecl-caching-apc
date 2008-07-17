@@ -98,7 +98,7 @@ typedef struct apc_fileinfo_t
 extern int apc_search_paths(const char* filename, const char* path, apc_fileinfo_t* fileinfo);
 
 /* regular expression wrapper functions */
-extern void* apc_regex_compile_array(char* patterns[]);
+extern void* apc_regex_compile_array(char* patterns[] TSRMLS_DC);
 extern void apc_regex_destroy_array(void* p);
 extern int apc_regex_match_array(void* p, const char* input);
 
