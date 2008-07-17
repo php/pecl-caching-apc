@@ -277,16 +277,6 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
         return old_compile_file(h, type TSRMLS_CC);
     }
 
-    /* check our regular expression filters */
-    if (APCG(filters) && apc_compiled_filters) {
-        int ret = apc_regex_match_array(apc_compiled_filters, h->filename);
-        if(ret == APC_NEGATIVE_MATCH || (ret != APC_POSITIVE_MATCH && !APCG(cache_by_default))) {
-            return old_compile_file(h, type TSRMLS_CC);
-        }
-    } else if(!APCG(cache_by_default)) {
-        return old_compile_file(h, type TSRMLS_CC);
-    }
-
 #if PHP_API_VERSION < 20041225
 #if HAVE_APACHE && defined(APC_PHP4_STAT)
     t = ((request_rec *)SG(server_context))->request_time;
@@ -350,6 +340,17 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
     op_array = old_compile_file(h, type TSRMLS_CC);
     if (op_array == NULL) {
         return NULL;
+    }
+
+    /* check our regular expression filters */
+    if (APCG(filters) && apc_compiled_filters) {
+        int ret = apc_regex_match_array(apc_compiled_filters, h->opened_path);
+        if(ret == APC_NEGATIVE_MATCH || (ret != APC_POSITIVE_MATCH && !APCG(cache_by_default))) {
+            /* never cache, never find */
+            return op_array;
+        }
+    } else if(!APCG(cache_by_default)) {
+        return op_array;
     }
 
     /* Make sure the mtime reflects the files last known mtime in the case of fpstat==0 */
