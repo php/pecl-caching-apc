@@ -287,12 +287,21 @@ static zval* my_copy_zval(zval* dst, const zval* src, apc_context_t* ctxt)
 
     if(APCG(copied_zvals)) {
         if(zend_hash_index_find(APCG(copied_zvals), (ulong)src, (void**)&tmp) == SUCCESS) {
+            if(Z_ISREF_P((zval*)src)) {
+                Z_SET_ISREF_PP(tmp);
+            }
             Z_ADDREF_PP(tmp);
             return *tmp;
         }
 
         zend_hash_index_update(APCG(copied_zvals), (ulong)src, (void**)&dst, sizeof(zval*), NULL);
     }
+
+    /* deep copies are refcount(1), but moved up for recursive 
+     * arrays,  which end up being add_ref'd during it copy. */
+
+    Z_SET_REFCOUNT_P(dst, 1);
+    Z_UNSET_ISREF_P(dst);
 
     switch (src->type & IS_CONSTANT_TYPE_MASK) {
     case IS_RESOURCE:
@@ -335,10 +344,6 @@ static zval* my_copy_zval(zval* dst, const zval* src, apc_context_t* ctxt)
     default:
         assert(0);
     }
-
-    /* deep copies are refcount(1) */
-    Z_SET_REFCOUNT_P(dst, 1);
-    Z_UNSET_ISREF_P(dst);
 
     return dst;
 }
