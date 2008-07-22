@@ -229,12 +229,6 @@ extern apc_cache_entry_t* apc_cache_make_user_entry(const char* info, int info_l
 
 extern int apc_cache_make_user_key(apc_cache_key_t* key, char* identifier, int identifier_len, const time_t t);
 
-/*
- * Frees all memory associated with an object returned by apc_cache_make_entry
- * (see above).
- */
-extern void apc_cache_free_entry(apc_cache_entry_t* entry);
-
 /* {{{ struct definition: apc_cache_link_data_t */
 typedef union _apc_cache_link_data_t {
     struct {

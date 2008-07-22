@@ -92,6 +92,7 @@ static void php_apc_init_globals(zend_apc_globals* apc_globals TSRMLS_DC)
     apc_globals->reserved_offset = -1;
     apc_globals->force_file_update = 0;
     apc_globals->coredump_unmap = 0;
+    apc_globals->preload_path = NULL;
 }
 
 static void php_apc_shutdown_globals(zend_apc_globals* apc_globals TSRMLS_DC)
@@ -194,6 +195,7 @@ STD_PHP_INI_ENTRY("apc.rfc1867_name", "APC_UPLOAD_PROGRESS", PHP_INI_SYSTEM, OnU
 STD_PHP_INI_ENTRY("apc.rfc1867_freq", "0", PHP_INI_SYSTEM, OnUpdateRfc1867Freq, rfc1867_freq, zend_apc_globals, apc_globals)
 #endif
 STD_PHP_INI_BOOLEAN("apc.coredump_unmap", "0", PHP_INI_SYSTEM, OnUpdateBool, coredump_unmap, zend_apc_globals, apc_globals)
+STD_PHP_INI_ENTRY("apc.preload_path", (char*)NULL,              PHP_INI_SYSTEM, OnUpdateString,       preload_path,  zend_apc_globals, apc_globals)
 PHP_INI_END()
 
 /* }}} */

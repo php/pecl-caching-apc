@@ -42,6 +42,8 @@
 #include "apc_zend.h"
 #include "apc_pool.h"
 #include "SAPI.h"
+#include "php_scandir.h"
+#include "ext/standard/php_var.h"
 #if PHP_API_VERSION <= 20020918
 #if HAVE_APACHE
 #ifdef APC_PHP4_STAT
@@ -438,6 +440,128 @@ freepool:
 }
 /* }}} */
 
+/* {{{ data preload */
+
+extern int _apc_store(char *strkey, int strkey_len, const zval *val, const unsigned int ttl, const int exclusive TSRMLS_DC);
+
+static zval* data_unserialize(const char *filename)
+{
+	zval* retval;
+	long len = 0;
+	struct stat sb;
+	char *contents, *tmp;
+	FILE *fp;
+	php_unserialize_data_t var_hash;
+
+	if(VCWD_STAT(filename, &sb) == -1) 
+	{
+		return NULL;
+	}
+
+	fp = fopen(filename, "rb");
+
+	len = sizeof(char)*sb.st_size;
+
+	tmp = contents = malloc(len);
+
+	fread(contents, 1, len, fp);
+
+	MAKE_STD_ZVAL(retval);
+
+	PHP_VAR_UNSERIALIZE_INIT(var_hash);
+	
+	/* I wish I could use json */
+	if(!php_var_unserialize(&retval, (const unsigned char**)&tmp, contents+len, &var_hash TSRMLS_CC)) {
+		zval_ptr_dtor(&retval);
+		return NULL;
+	}
+
+	PHP_VAR_UNSERIALIZE_DESTROY(var_hash);
+
+	free(contents);
+	fclose(fp);
+
+	return retval;
+}
+
+static int apc_load_data(const char *data_file TSRMLS_DC)
+{
+	char *p;
+	char key[MAXPATHLEN] = {0,};
+	unsigned int key_len;
+	zval *data;
+
+	p = strrchr(data_file, DEFAULT_SLASH);
+
+	if(p && p[1]) {
+		strlcpy(key, p+1, sizeof(key));
+		p = strrchr(key, '.');
+
+		if(p) {
+			p[0] = '\0';
+			key_len = strlen(key);
+
+			data = data_unserialize(data_file);
+            if(data) {
+                _apc_store(key, key_len, data, 0, 1 TSRMLS_CC);
+            }
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
+static int apc_walk_dir(const char *path TSRMLS_DC)
+{
+	char file[MAXPATHLEN]={0,};
+	int ndir, i, k;
+	char *p = NULL;
+	struct stat sb;
+	struct dirent **namelist = NULL;
+
+	if ((ndir = php_scandir(path, &namelist, 0, php_alphasort)) > 0)
+	{
+		for (i = 0; i < ndir; i++) 
+		{
+			/* check for extension */
+			if (!(p = strrchr(namelist[i]->d_name, '.')) 
+					|| (p && strcmp(p, ".data"))) 
+			{
+				free(namelist[i]);
+				continue;
+			}
+			snprintf(file, MAXPATHLEN, "%s%c%s", 
+					path, DEFAULT_SLASH, namelist[i]->d_name);
+			if(!apc_load_data(file))
+			{
+                /* print error */
+			}
+			free(namelist[i]);
+		}
+		free(namelist);
+	}
+
+	return 1;
+
+cleanup:
+	for(k = i; k < ndir; k++)
+	{
+		free(namelist[k]);
+	}
+	free(namelist);
+
+	return 0;
+}
+
+void apc_data_preload(TSRMLS_D)
+{
+    if(!APCG(preload_path)) return;
+
+    apc_walk_dir(APCG(preload_path));
+}
+/* }}} */
+
 /* {{{ module init and shutdown */
 
 int apc_module_init(int module_number TSRMLS_DC)
@@ -459,6 +583,8 @@ int apc_module_init(int module_number TSRMLS_DC)
     REGISTER_LONG_CONSTANT("\000apc_magic", (long)&set_compile_hook, CONST_PERSISTENT | CONST_CS);
 
     apc_pool_init();
+
+    apc_data_preload(TSRMLS_C);
 
     APCG(initialized) = 1;
     return 0;
