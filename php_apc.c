@@ -63,6 +63,9 @@ PHP_FUNCTION(apc_compile_file);
 PHP_FUNCTION(apc_define_constants);
 PHP_FUNCTION(apc_load_constants);
 PHP_FUNCTION(apc_add);
+PHP_FUNCTION(apc_inc);
+PHP_FUNCTION(apc_dec);
+PHP_FUNCTION(apc_cas);
 /* }}} */
 
 /* {{{ ZEND_DECLARE_MODULE_GLOBALS(apc) */
@@ -627,6 +630,111 @@ PHP_FUNCTION(apc_add) {
 }
 /* }}} */
 
+/* {{{ inc_updater */
+
+struct _inc_update_args {
+    long step;
+    long lval;
+};
+
+static int inc_updater(apc_cache_t* cache, apc_cache_entry_t* entry, void* data) {
+
+    struct _inc_update_args *args = (struct _inc_update_args*) data;
+    
+    zval* val = entry->data.user.val;
+
+    if(Z_TYPE_P(val) == IS_LONG) {
+        val->value.lval += args->step;
+        args->lval = val->value.lval;
+        return 1;
+    }
+
+    return 0;
+}
+/* }}} */
+
+/* {{{ proto long apc_inc(string key [, long step [, bool& success]])
+ */
+PHP_FUNCTION(apc_inc) {
+    char *strkey;
+    int strkey_len;
+    struct _inc_update_args args = {1L, -1};
+    zval *success = NULL;
+
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|lz", &strkey, &strkey_len, &(args.step), &success) == FAILURE) {
+        return;
+    }
+
+    if(_apc_update(strkey, strkey_len, inc_updater, &args TSRMLS_CC)) {
+        if(success) ZVAL_TRUE(success);
+        RETURN_LONG(args.lval);
+    }
+    
+    if(success) ZVAL_FALSE(success);
+    
+    RETURN_FALSE;
+}
+/* }}} */
+
+/* {{{ proto long apc_dec(string key [, long step [, long &success]])
+ */
+PHP_FUNCTION(apc_dec) {
+    char *strkey;
+    int strkey_len;
+    struct _inc_update_args args = {1L, -1};
+    zval *success = NULL;
+
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|lz", &strkey, &strkey_len, &(args.step), &success) == FAILURE) {
+        return;
+    }
+
+    args.step = args.step * -1;
+
+    if(_apc_update(strkey, strkey_len, inc_updater, &args TSRMLS_CC)) {
+        if(success) ZVAL_TRUE(success);
+        RETURN_LONG(args.lval);
+    }
+    
+    if(success) ZVAL_FALSE(success);
+    
+    RETURN_FALSE;
+}
+/* }}} */
+
+/* {{{ cas_updater */
+static int cas_updater(apc_cache_t* cache, apc_cache_entry_t* entry, void* data) {
+    long* vals = ((long*)data);
+    long old = vals[0];
+    long new = vals[1];
+    zval* val = entry->data.user.val;
+
+    if(Z_TYPE_P(val) == IS_LONG) {
+        if(val->value.lval == old) {
+            val->value.lval = new;
+            return 1;
+        }
+    }
+
+    return 0;
+}
+/* }}} */
+
+/* {{{ proto int apc_cas(string key, long old, long new)
+ */
+PHP_FUNCTION(apc_cas) {
+    char *strkey;
+    int strkey_len;
+    long vals[2];
+
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sll", &strkey, &strkey_len, &vals[0], &vals[1]) == FAILURE) {
+        return;
+    }
+
+    if(_apc_update(strkey, strkey_len, cas_updater, &vals TSRMLS_CC)) RETURN_TRUE;
+    RETURN_FALSE;
+}
+/* }}} */
+
 void *apc_erealloc_wrapper(void *ptr, size_t size) {
     return _erealloc(ptr, size, 0 ZEND_FILE_LINE_CC ZEND_FILE_LINE_EMPTY_CC);
 }
@@ -927,6 +1035,12 @@ ZEND_BEGIN_ARG_INFO(php_apc_fetch_arginfo, 0)
     ZEND_ARG_INFO(0, "key")
     ZEND_ARG_INFO(1, "success")
 ZEND_END_ARG_INFO()
+static
+ZEND_BEGIN_ARG_INFO(php_apc_inc_arginfo, 0)
+    ZEND_ARG_INFO(0, "key")
+    ZEND_ARG_INFO(0, "step")
+    ZEND_ARG_INFO(1, "success")
+ZEND_END_ARG_INFO()
 /* }}} */
 
 /* {{{ apc_functions[] */
@@ -941,6 +1055,9 @@ function_entry apc_functions[] = {
     PHP_FE(apc_load_constants,      NULL)
     PHP_FE(apc_compile_file,        NULL)
     PHP_FE(apc_add,                 NULL)
+    PHP_FE(apc_inc,                 php_apc_inc_arginfo)
+    PHP_FE(apc_dec,                 php_apc_inc_arginfo)
+    PHP_FE(apc_cas,                 NULL)
     {NULL,    NULL,                 NULL}
 };
 /* }}} */

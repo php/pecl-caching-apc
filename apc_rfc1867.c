@@ -39,8 +39,7 @@
 extern int _apc_store(char *strkey, int strkey_len, const zval *val, const unsigned int ttl, const int exclusive TSRMLS_DC);
 extern int _apc_update(char *strkey, int strkey_len, apc_cache_updater_t updater, void* data TSRMLS_DC);
 
-static int update_bytes_processed(apc_cache_t* cache, apc_cache_entry_t* entry, void* data) 
-{
+static int update_bytes_processed(apc_cache_t* cache, apc_cache_entry_t* entry, void* data) {
     int *bytes_ptr = (int*)data;
     zval* val = entry->data.user.val;
 
@@ -144,7 +143,7 @@ void apc_rfc1867_progress(unsigned int event, void *event_data, void **extra TSR
                 multipart_event_file_data *data = (multipart_event_file_data *) event_data;
                 bytes_processed = data->post_bytes_processed;
                 if(bytes_processed - prev_bytes_processed > update_freq) {
-                    if(!_apc_update(tracking_key, key_length, update_bytes_processed, &bytes_processed)) {
+                    if(!_apc_update(tracking_key, key_length, update_bytes_processed, &bytes_processed TSRMLS_CC)) {
                         ALLOC_INIT_ZVAL(track);
                         array_init(track);
                         add_assoc_long(track, "total", content_length);
