@@ -37,6 +37,29 @@
 
 #ifdef MULTIPART_EVENT_FORMDATA
 extern int _apc_store(char *strkey, int strkey_len, const zval *val, const unsigned int ttl, const int exclusive TSRMLS_DC);
+extern int _apc_update(char *strkey, int strkey_len, apc_cache_updater_t updater, void* data TSRMLS_DC);
+
+static int update_bytes_processed(apc_cache_t* cache, apc_cache_entry_t* entry, void* data) 
+{
+    int *bytes_ptr = (int*)data;
+    zval* val = entry->data.user.val;
+
+    if(Z_TYPE_P(val) == IS_ARRAY) {
+        HashTable *ht = val->value.ht;
+        Bucket* curr = NULL;
+        Bucket* prev = NULL;
+        for (curr = ht->pListHead; curr != NULL; curr = curr->pListNext) {
+            if(curr->nKeyLength == 8 && 
+                (!memcmp(curr->arKey, "current", curr->nKeyLength))) {
+                zval* current =  ((zval**)curr->pData)[0];
+                current->value.lval = *bytes_ptr;
+                return 1;
+            }
+        }
+    }
+
+    return 0;
+}
 
 static double my_time() {
     struct timeval a;
@@ -120,19 +143,21 @@ void apc_rfc1867_progress(unsigned int event, void *event_data, void **extra TSR
             if(*tracking_key) {
                 multipart_event_file_data *data = (multipart_event_file_data *) event_data;
                 bytes_processed = data->post_bytes_processed;
-                ALLOC_INIT_ZVAL(track);
-                array_init(track);
-                add_assoc_long(track, "total", content_length);
-                add_assoc_long(track, "current", bytes_processed);
-                add_assoc_string(track, "filename", filename, 1);
-                add_assoc_string(track, "name", name, 1);
-                add_assoc_long(track, "done", 0);
-                add_assoc_double(track, "start_time", start_time);
                 if(bytes_processed - prev_bytes_processed > update_freq) {
-                    _apc_store(tracking_key, key_length, track, 3600, 0 TSRMLS_CC);
+                    if(!_apc_update(tracking_key, key_length, update_bytes_processed, &bytes_processed)) {
+                        ALLOC_INIT_ZVAL(track);
+                        array_init(track);
+                        add_assoc_long(track, "total", content_length);
+                        add_assoc_long(track, "current", bytes_processed);
+                        add_assoc_string(track, "filename", filename, 1);
+                        add_assoc_string(track, "name", name, 1);
+                        add_assoc_long(track, "done", 0);
+                        add_assoc_double(track, "start_time", start_time);
+                        _apc_store(tracking_key, key_length, track, 3600, 0 TSRMLS_CC);
+                        zval_ptr_dtor(&track);
+                    }
                     prev_bytes_processed = bytes_processed;
                 }
-                zval_ptr_dtor(&track);
             }
             break;
 

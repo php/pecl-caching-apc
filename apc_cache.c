@@ -610,6 +610,35 @@ apc_cache_entry_t* apc_cache_user_find(apc_cache_t* cache, char *strkey, int key
 }
 /* }}} */
 
+/* {{{ apc_cache_user_update */
+int _apc_cache_user_update(apc_cache_t* cache, char *strkey, int keylen, apc_cache_updater_t updater, void* data TSRMLS_DC)
+{
+    slot_t** slot;
+    int retval;
+
+    if(apc_cache_busy(cache))
+    {
+        /* cache cleanup in progress */ 
+        return 0;
+    }
+
+    CACHE_LOCK(cache);
+
+    slot = &cache->slots[string_nhash_8(strkey, keylen) % cache->num_slots];
+
+    while (*slot) {
+        if (!memcmp((*slot)->key.data.user.identifier, strkey, keylen)) {
+            retval = updater(cache, (*slot)->value, data);
+            CACHE_UNLOCK(cache);
+            return retval;
+        }
+        slot = &(*slot)->next;
+    }
+    CACHE_UNLOCK(cache);
+    return 0;
+}
+/* }}} */
+
 /* {{{ apc_cache_user_delete */
 int apc_cache_user_delete(apc_cache_t* cache, char *strkey, int keylen)
 {

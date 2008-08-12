@@ -522,6 +522,24 @@ PHP_FUNCTION(apc_sma_info)
 }
 /* }}} */
 
+/* {{{ */
+int _apc_update(char *strkey, int strkey_len, apc_cache_updater_t updater, void* data TSRMLS_DC) 
+{
+    HANDLE_BLOCK_INTERRUPTIONS();
+    APCG(current_cache) = apc_user_cache;
+    
+    if (!_apc_cache_user_update(apc_user_cache, strkey, strkey_len, updater, data TSRMLS_CC)) {
+        HANDLE_UNBLOCK_INTERRUPTIONS();
+        return 0;
+    }
+
+    APCG(current_cache) = NULL;
+    HANDLE_UNBLOCK_INTERRUPTIONS();
+
+    return 1;
+}
+/* }}} */
+    
 /* {{{ _apc_store */
 int _apc_store(char *strkey, int strkey_len, const zval *val, const unsigned int ttl, const int exclusive TSRMLS_DC) {
     apc_cache_entry_t *entry;

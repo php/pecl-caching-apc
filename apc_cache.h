@@ -329,6 +329,13 @@ extern zend_bool apc_cache_busy(apc_cache_t* cache);
 extern zend_bool apc_cache_write_lock(apc_cache_t* cache);
 extern void apc_cache_write_unlock(apc_cache_t* cache);
 
+/* used by apc_rfc1867 to update data in-place - not to be used elsewhere */
+
+typedef int (*apc_cache_updater_t)(apc_cache_t*, apc_cache_entry_t*, void* data);
+extern int _apc_cache_user_update(apc_cache_t* cache, char *strkey, int keylen,
+                                    apc_cache_updater_t updater, void* data TSRMLS_DC);
+
+
 #undef T
 #endif
 
