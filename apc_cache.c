@@ -572,6 +572,12 @@ apc_cache_entry_t* apc_cache_user_find(apc_cache_t* cache, char *strkey, int key
     slot_t** slot;
     volatile apc_cache_entry_t* value = NULL;
 
+    if(apc_cache_busy(cache))
+    {
+        /* cache cleanup in progress */ 
+        return NULL;
+    }
+
     CACHE_LOCK(cache);
 
     slot = &cache->slots[string_nhash_8(strkey, keylen) % cache->num_slots];
