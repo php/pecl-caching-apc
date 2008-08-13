@@ -471,7 +471,7 @@ static zval* data_unserialize(const char *filename)
 	PHP_VAR_UNSERIALIZE_INIT(var_hash);
 	
 	/* I wish I could use json */
-	if(!php_var_unserialize(&retval, (const unsigned char**)&tmp, contents+len, &var_hash TSRMLS_CC)) {
+	if(!php_var_unserialize(&retval, (const unsigned char**)&tmp, (const unsigned char*)(contents+len), &var_hash TSRMLS_CC)) {
 		zval_ptr_dtor(&retval);
 		return NULL;
 	}
@@ -515,9 +515,8 @@ static int apc_load_data(const char *data_file TSRMLS_DC)
 static int apc_walk_dir(const char *path TSRMLS_DC)
 {
 	char file[MAXPATHLEN]={0,};
-	int ndir, i, k;
+	int ndir, i;
 	char *p = NULL;
-	struct stat sb;
 	struct dirent **namelist = NULL;
 
 	if ((ndir = php_scandir(path, &namelist, 0, php_alphasort)) > 0)
@@ -543,15 +542,6 @@ static int apc_walk_dir(const char *path TSRMLS_DC)
 	}
 
 	return 1;
-
-cleanup:
-	for(k = i; k < ndir; k++)
-	{
-		free(namelist[k]);
-	}
-	free(namelist);
-
-	return 0;
 }
 
 void apc_data_preload(TSRMLS_D)

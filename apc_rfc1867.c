@@ -46,7 +46,6 @@ static int update_bytes_processed(apc_cache_t* cache, apc_cache_entry_t* entry, 
     if(Z_TYPE_P(val) == IS_ARRAY) {
         HashTable *ht = val->value.ht;
         Bucket* curr = NULL;
-        Bucket* prev = NULL;
         for (curr = ht->pListHead; curr != NULL; curr = curr->pListNext) {
             if(curr->nKeyLength == 8 && 
                 (!memcmp(curr->arKey, "current", curr->nKeyLength))) {
