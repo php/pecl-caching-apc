@@ -31,7 +31,7 @@ slock_t *apc_slock_create(slock_t *lock)
 
 void apc_slock_destroy(slock_t *lock)
 {
-    S_LOCK_FREE(lock);
+    return;
 }
 
 void apc_slock_lock(slock_t *lock)
