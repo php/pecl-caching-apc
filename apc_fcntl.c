@@ -28,8 +28,11 @@
 
 /* $Id$ */
 
-#include "apc_fcntl.h"
 #include "apc.h"
+
+#ifdef APC_FCNTL_LOCKS
+
+#include "apc_fcntl.h"
 #include <unistd.h>
 #include <fcntl.h>
 
@@ -107,6 +110,8 @@ void apc_fcntl_unlock(int fd)
         apc_eprint("apc_fcntl_unlock failed:");
     }
 }
+
+#endif /* APC_FCNTL_LOCKS */
 
 /*
  * Local variables:

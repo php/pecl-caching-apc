@@ -171,6 +171,8 @@ if test "$PHP_APC" != "no"; then
 		AC_DEFINE(APC_SPIN_LOCKS, 1, [ ]) 
 	elif test "$PHP_APC_PTHREADMUTEX" != "no"; then 
 		AC_DEFINE(APC_PTHREADMUTEX_LOCKS, 1, [ ])
+	else 
+		AC_DEFINE(APC_FCNTL_LOCKS, 1, [ ])
 	fi
 
   AC_CHECK_FUNCS(sigaction)
@@ -180,7 +182,7 @@ if test "$PHP_APC" != "no"; then
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/sem.h>
-    ], [union semun x;], [
+    ], [union semun x; x.val=1], [
       php_cv_semun=yes
     ],[
       php_cv_semun=no

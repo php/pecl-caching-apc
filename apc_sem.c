@@ -27,8 +27,11 @@
 
 /* $Id$ */
 
-#include "apc_sem.h"
 #include "apc.h"
+
+#ifdef APC_SEM_LOCKS
+
+#include "apc_sem.h"
 #include "php.h"
 #include <sys/types.h>
 #include <sys/ipc.h>
@@ -166,6 +169,8 @@ int apc_sem_get_value(int semid)
     }
     return val[0];
 }
+
+#endif /* APC_SEM_LOCKS */
 
 /*
  * Local variables:
