@@ -58,7 +58,6 @@ struct header_t {
     apc_lck_t sma_lock;     /* segment lock, MUST BE ALIGNED for futex locks */
     size_t segsize;         /* size of entire segment */
     size_t avail;           /* bytes available (not necessarily contiguous) */
-    size_t nfoffset;        /* start next fit search from this offset       */
 #if ALLOC_DISTRIBUTION
     size_t adist[30];
 #endif
@@ -81,7 +80,9 @@ static volatile size_t block_id = 0;
 typedef struct block_t block_t;
 struct block_t {
     size_t size;       /* size of this block */
-    size_t next;       /* offset in segment of next free block */
+    size_t prev_size;  /* size of sequentially previous block, 0 if prev is allocated */
+    size_t fnext;      /* offset in segment of next free block */
+    size_t fprev;      /* offset in segment of prev free block */
 #ifdef APC_SMA_CANARIES
     size_t canary;     /* canary to check for memory overwrites */
 #endif
@@ -96,6 +97,10 @@ struct block_t {
 
 #define BLOCKAT(offset) ((block_t*)((char *)shmaddr + offset))
 #define OFFSET(block) ((size_t)(((char*)block) - (char*)shmaddr))
+
+/* macros for getting the next or previous sequential block */
+#define NEXT_SBLOCK(block) ((block_t*)((char*)block + block->size))
+#define PREV_SBLOCK(block) (block->prev_size ? ((block_t*)((char*)block - block->prev_size)) : NULL)
 
 /* Canary macros for setting, checking and resetting memory canaries */
 #ifdef APC_SMA_CANARIES
@@ -113,6 +118,62 @@ struct block_t {
 #define MINBLOCKSIZE (ALIGNWORD(1) + ALIGNWORD(sizeof(block_t)))
 /* }}} */
 
+#if 0
+/* {{{ sma_debug_state(apc_sma_segment_t *segment, int canary_check, int verbose)
+ *        useful for debuging state of memory blocks and free list, and sanity checking
+ */
+static void sma_debug_state(void* shmaddr, int canary_check, int verbose) {
+    header_t *header = (header_t*)shmaddr;
+    block_t *cur = BLOCKAT(ALIGNWORD(sizeof(header_t)));
+    block_t *prv = NULL;
+    size_t avail;
+
+    /* Verify free list */
+    if (verbose) apc_wprint("Free List: ");
+    while(1) {
+        if (verbose) apc_wprint(" 0x%x[%d] (s%d)", cur, OFFSET(cur), cur->size);
+        if (canary_check) CHECK_CANARY(cur);
+        if (!cur->fnext) break;
+        cur = BLOCKAT(cur->fnext);
+        avail += cur->size;
+        if (prv == cur) {
+            apc_wprint("Circular list detected!");
+            assert(0);
+        }
+        if (prv && cur->fprev != OFFSET(prv)) {
+            apc_wprint("Previous pointer does not point to previous!");
+            assert(0);
+        }
+        prv = cur;
+    }
+    assert(avail == header->avail);
+
+    /* Verify each block */
+    if (verbose) apc_wprint("Block List: ");
+    cur = BLOCKAT(ALIGNWORD(sizeof(header_t)));
+    while(1) {
+        if(!cur->fnext) {
+            if (verbose) apc_wprint(" 0x%x[%d] (s%d) (u)", cur, OFFSET(cur), cur->size);
+        } else {
+            if (verbose) apc_wprint(" 0x%x[%d] (s%d) (f)", cur, OFFSET(cur), cur->size);
+        }
+        if (canary_check) CHECK_CANARY(cur);
+        if (!cur->size && !cur->fnext) break;
+        if (!cur->size) {
+            cur = BLOCKAT(OFFSET(cur) + ALIGNWORD(sizeof(block_t)));
+        } else {
+            cur = NEXT_SBLOCK(cur);
+        }
+        if (prv == cur) {
+            apc_wprint("Circular list detected!");
+            assert(0);
+        }
+        prv = cur;
+    }
+}
+/* }}} */
+#endif
+
 /* {{{ sma_allocate: tries to allocate size bytes in a segment */
 static size_t sma_allocate(void* shmaddr, size_t size)
 {
@@ -121,8 +182,6 @@ static size_t sma_allocate(void* shmaddr, size_t size)
     block_t* cur;           /* working block in list */
     block_t* prvnextfit;    /* block before next fit */
     size_t realsize;        /* actual size of block needed, including header */
-    size_t last_offset;     /* save the last search offset */
-    int wrapped=0;
     const size_t block_size = ALIGNWORD(sizeof(struct block_t));
 
     realsize = ALIGNWORD(size + block_size);
@@ -137,24 +196,11 @@ static size_t sma_allocate(void* shmaddr, size_t size)
     }
 
     prvnextfit = 0;     /* initially null (no fit) */
-    last_offset = 0;
-
-    /* If we have a next fit offset, start searching from there */
-    if(header->nfoffset) {
-        prv = BLOCKAT(header->nfoffset);
-        /* if prv is the last block, jump to the beginning */
-        if(prv->next == 0) {
-            prv = BLOCKAT(ALIGNWORD(sizeof(header_t)));
-            wrapped = 1;
-        }
-    } else {
-        prv = BLOCKAT(ALIGNWORD(sizeof(header_t)));
-    }
-
+    prv = BLOCKAT(ALIGNWORD(sizeof(header_t)));
     CHECK_CANARY(prv);
 
-    while (prv->next != header->nfoffset) {
-        cur = BLOCKAT(prv->next);
+    while (prv->fnext != 0) {
+        cur = BLOCKAT(prv->fnext);
 #ifdef __APC_SMA_DEBUG__
         CHECK_CANARY(cur);
 #endif
@@ -163,62 +209,54 @@ static size_t sma_allocate(void* shmaddr, size_t size)
             prvnextfit = prv;
             break;
         }
-        last_offset = prv->next;
         prv = cur;
-        if(wrapped && (prv->next >= header->nfoffset)) break;
-
-        /* Check to see if we need to wrap around and search from the top */
-        if(header->nfoffset && prv->next == 0) {
-            prv = BLOCKAT(ALIGNWORD(sizeof(header_t)));
-#ifdef __APC_SMA_DEBUG__
-            CHECK_CANARY(prv);
-#endif
-            last_offset = 0;
-            wrapped = 1;
-        }
     }
 
     if (prvnextfit == 0) {
-        header->nfoffset = 0;
         return -1;
     }
 
     prv = prvnextfit;
-    cur = BLOCKAT(prv->next);
+    cur = BLOCKAT(prv->fnext);
 
     CHECK_CANARY(prv);
     CHECK_CANARY(cur);
 
     if (cur->size == realsize || (cur->size > realsize && cur->size < (realsize + (MINBLOCKSIZE * 2)))) {
         /* cur is big enough for realsize, but too small to split - unlink it */
-        prv->next = cur->next;
-    }
-    else {
+        prv->fnext = cur->fnext;
+        BLOCKAT(cur->fnext)->fprev = OFFSET(prv);
+        NEXT_SBLOCK(cur)->prev_size = 0;  /* block is alloc'd */
+    } else {
+        /* nextfit is too big; split it into two smaller blocks */
         block_t* nxt;      /* the new block (chopped part of cur) */
-        size_t nxtoffset;  /* offset of the block currently after cur */
         size_t oldsize;    /* size of cur before split */
 
-        /* nextfit is too big; split it into two smaller blocks */
-        nxtoffset = cur->next;
         oldsize = cur->size;
-        prv->next += realsize;  /* skip over newly allocated block */
-        cur->size = realsize;   /* Set the size of this new block */
-        nxt = BLOCKAT(prv->next);
-        nxt->next = nxtoffset;  /* Re-link the shortened block */
-        nxt->size = oldsize - realsize;  /* and fix the size */
+        cur->size = realsize;
+        nxt = NEXT_SBLOCK(cur);
+        nxt->prev_size = 0;                       /* block is alloc'd */
+        nxt->size = oldsize - realsize;           /* and fix the size */
+        NEXT_SBLOCK(nxt)->prev_size = nxt->size;  /* adjust size */
         SET_CANARY(nxt);
+
+        /* replace cur with next in free list */
+        nxt->fnext = cur->fnext;
+        nxt->fprev = cur->fprev;
+        BLOCKAT(nxt->fnext)->fprev = OFFSET(nxt);
+        BLOCKAT(nxt->fprev)->fnext = OFFSET(nxt);
 #ifdef __APC_SMA_DEBUG__
         nxt->id = -1;
 #endif
     }
+
+    cur->fnext = 0;
 
     /* update the block header */
     header->avail -= cur->size;
 #if ALLOC_DISTRIBUTION
     header->adist[(int)(log(size)/log(2))]++;
 #endif
-
-    header->nfoffset = last_offset;
 
     SET_CANARY(cur);
 #ifdef __APC_SMA_DEBUG__
@@ -244,58 +282,45 @@ static size_t sma_deallocate(void* shmaddr, size_t offset)
 
     /* find position of new block in free list */
     cur = BLOCKAT(offset);
-    prv = BLOCKAT(ALIGNWORD(sizeof(header_t)));
-
-    CHECK_CANARY(cur);
-
-#ifdef __APC_SMA_DEBUG__
-    CHECK_CANARY(prv);
-    fprintf(stderr, "free(%p, size=%d,id=%d)\n", cur, (int)(cur->size), cur->id);
-#endif
-    while (prv->next != 0 && prv->next < offset) {
-        prv = BLOCKAT(prv->next);
-#ifdef __APC_SMA_DEBUG__
-        CHECK_CANARY(prv);
-#endif
-    }
-
-    CHECK_CANARY(prv);
-
-    /* insert new block after prv */
-    cur->next = prv->next;
-    prv->next = offset;
-
-#ifdef __APC_SMA_DEBUG__
-    CHECK_CANARY(cur);
-    cur->id = -1;
-#endif
 
     /* update the block header */
     header = (header_t*) shmaddr;
     header->avail += cur->size;
     size = cur->size;
 
-    if (((char *)prv) + prv->size == (char *) cur) {
+    if (cur->prev_size != 0) {
+        /* remove prv from list */
+        prv = PREV_SBLOCK(cur);
+        BLOCKAT(prv->fnext)->fprev = prv->fprev;
+        BLOCKAT(prv->fprev)->fnext = prv->fnext;
         /* cur and prv share an edge, combine them */
-        prv->size += cur->size;
-        prv->next = cur->next;
+        prv->size +=cur->size;
         RESET_CANARY(cur);
         cur = prv;
     }
 
-    nxt = BLOCKAT(cur->next);
-
-    if (((char *)cur) + cur->size == (char *) nxt) {
+    nxt = NEXT_SBLOCK(cur);
+    if (nxt->fnext != 0) {
+        assert(NEXT_SBLOCK(NEXT_SBLOCK(cur))->prev_size == nxt->size);
         /* cur and nxt shared an edge, combine them */
+        BLOCKAT(nxt->fnext)->fprev = nxt->fprev;
+        BLOCKAT(nxt->fprev)->fnext = nxt->fnext;
         cur->size += nxt->size;
-        cur->next = nxt->next;
 #ifdef __APC_SMA_DEBUG__
         CHECK_CANARY(nxt);
         nxt->id = -1; /* assert this or set it ? */
 #endif
         RESET_CANARY(nxt);
     }
-    header->nfoffset = 0;  /* Reset the next fit search marker */
+
+    NEXT_SBLOCK(cur)->prev_size = cur->size;
+
+    /* insert new block after prv */
+    prv = BLOCKAT(ALIGNWORD(sizeof(header_t)));
+    cur->fnext = prv->fnext;
+    prv->fnext = OFFSET(cur);
+    cur->fprev = OFFSET(prv);
+    BLOCKAT(cur->fnext)->fprev = OFFSET(cur);
 
     return size;
 }
@@ -351,8 +376,7 @@ void apc_sma_init(int numseg, size_t segsize, char *mmap_file_mask)
         header = (header_t*) shmaddr;
         apc_lck_create(NULL, 0, 1, header->sma_lock);
         header->segsize = sma_segsize;
-        header->avail = sma_segsize - ALIGNWORD(sizeof(header_t)) - ALIGNWORD(sizeof(block_t));
-        header->nfoffset = 0;
+        header->avail = sma_segsize - ALIGNWORD(sizeof(header_t)) - ALIGNWORD(sizeof(block_t)) - ALIGNWORD(sizeof(block_t));
 #if ALLOC_DISTRIBUTION
         {
            int j;
@@ -361,14 +385,27 @@ void apc_sma_init(int numseg, size_t segsize, char *mmap_file_mask)
 #endif
         block = BLOCKAT(ALIGNWORD(sizeof(header_t)));
         block->size = 0;
-        block->next = ALIGNWORD(sizeof(header_t)) + ALIGNWORD(sizeof(block_t));
+        block->fnext = ALIGNWORD(sizeof(header_t)) + ALIGNWORD(sizeof(block_t));
+        block->fprev = 0;
+        block->prev_size = 0;
         SET_CANARY(block);
 #ifdef __APC_SMA_DEBUG__
         block->id = -1;
 #endif
-        block = BLOCKAT(block->next);
-        block->size = header->avail;
-        block->next = 0;
+        block = BLOCKAT(block->fnext);
+        block->size = header->avail - ALIGNWORD(sizeof(block_t));
+        block->fnext = OFFSET(block) + block->size;
+        block->fprev = ALIGNWORD(sizeof(header_t));
+        block->prev_size = 0;
+        SET_CANARY(block);
+#ifdef __APC_SMA_DEBUG__
+        block->id = -1;
+#endif
+        block = BLOCKAT(block->fnext);
+        block->size = 0;
+        block->fnext = 0;
+        block->fprev =  ALIGNWORD(sizeof(header_t)) + ALIGNWORD(sizeof(block_t));
+        block->prev_size = header->avail - ALIGNWORD(sizeof(block_t));
         SET_CANARY(block);
 #ifdef __APC_SMA_DEBUG__
         block->id = -1;
@@ -526,7 +563,7 @@ apc_sma_info_t* apc_sma_info(zend_bool limited)
 
     info = (apc_sma_info_t*) apc_emalloc(sizeof(apc_sma_info_t));
     info->num_seg = sma_numseg;
-    info->seg_size = sma_segsize - ALIGNWORD(sizeof(header_t)) - ALIGNWORD(sizeof(block_t));
+    info->seg_size = sma_segsize - (ALIGNWORD(sizeof(header_t)) + ALIGNWORD(sizeof(block_t)) + ALIGNWORD(sizeof(block_t)));
 
     info->list = apc_emalloc(info->num_seg * sizeof(apc_sma_link_t*));
     for (i = 0; i < sma_numseg; i++) {
@@ -544,19 +581,25 @@ apc_sma_info_t* apc_sma_info(zend_bool limited)
         link = &info->list[i];
 
         /* For each block in this segment */
-        while (prv->next != 0) {
-            block_t* cur = BLOCKAT(prv->next);
+        while (BLOCKAT(prv->fnext)->fnext != 0) {
+            block_t* cur = BLOCKAT(prv->fnext);
 #ifdef __APC_SMA_DEBUG__
             CHECK_CANARY(cur);
 #endif
 
             *link = apc_emalloc(sizeof(apc_sma_link_t));
             (*link)->size = cur->size;
-            (*link)->offset = prv->next;
+            (*link)->offset = prv->fnext;
             (*link)->next = NULL;
             link = &(*link)->next;
 
             prv = cur;
+
+#if ALLOC_DISTRIBUTION
+            header_t* header = (header_t*) segment->shmaddr;
+            memcpy(info->seginfo[i].adist, header->adist, sizeof(size_t) * 30);
+#endif
+
         }
         UNLOCK(((header_t*)sma_shmaddrs[i])->sma_lock);
     }
@@ -602,32 +645,6 @@ size_t *apc_sma_get_alloc_distribution(void) {
     header_t* header = (header_t*) sma_shmaddrs[0];
     return header->adist;
 }
-#endif
-
-#if 0
-/* {{{ apc_sma_check_integrity */
-void apc_sma_check_integrity()
-{
-    int i;
-
-    /* For each segment */
-    for (i = 0; i < sma_numseg; i++) {
-        char* shmaddr = sma_shmaddrs[i];
-        header_t* header = (header_t*) shmaddr;
-        block_t* prv = BLOCKAT(ALIGNWORD(sizeof(header_t)));
-        int avail = 0;
-
-        /* For each block in this segment */
-        while (prv->next != 0) {
-            block_t* cur = BLOCKAT(prv->next);
-            avail += cur->size;
-            prv = cur;
-        }
-
-        assert(avail == header->avail);
-    }
-}
-/* }}} */
 #endif
 
 /*

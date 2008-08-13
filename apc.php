@@ -340,6 +340,7 @@ if (isset($MYREQUEST['IMG']))
 		for($i=0; $i<$mem['num_seg']; $i++) {	
 			$ptr = 0;
 			$free = $mem['block_lists'][$i];
+			uasort($free, 'block_sort');
 			foreach($free as $block) {
 				if($block['offset']!=$ptr) {       // Used block
 					$angle_to = $angle_from+($block['offset']-$ptr)/$s;
@@ -397,6 +398,7 @@ if (isset($MYREQUEST['IMG']))
 		for($i=0; $i<$mem['num_seg']; $i++) {	
 			$ptr = 0;
 			$free = $mem['block_lists'][$i];
+			uasort($free, 'block_sort');
 			foreach($free as $block) {
 				if($block['offset']!=$ptr) {       // Used block
 					$h=(GRAPH_SIZE-5)*($block['offset']-$ptr)/$s;
@@ -491,6 +493,15 @@ EOB;
 		print <<<EOB
 			<a href="$MY_SELF&LO=1&OB={$MYREQUEST['OB']}">$s</a>
 EOB;
+	}
+}
+
+function block_sort($array1, $array2)
+{
+	if ($array1['offset'] > $array2['offset']) {
+		return 1;
+	} else {
+		return -1;
 	}
 }
 
