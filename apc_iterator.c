@@ -550,6 +550,10 @@ int apc_iterator_delete(zval *zobj TSRMLS_DC) {
     }
     iterator = (apc_iterator_t*)zend_object_store_get_object(zobj TSRMLS_CC);
 
+    if (iterator->initialized == 0) {
+        return 0;
+    }
+
     while (iterator->fetch(iterator)) {
         while (iterator->stack_idx < apc_stack_size(iterator->stack)) {
             item = apc_stack_get(iterator->stack, iterator->stack_idx++);

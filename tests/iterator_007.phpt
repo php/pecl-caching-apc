@@ -19,7 +19,8 @@ var_dump(
 	$obj->valid(),
 	$obj->getTotalHits(),
 	$obj->getTotalSize(),
-	$obj->getTotalCount()
+	$obj->getTotalCount(),
+	apc_delete($obj)
 );
 ?>
 --EXPECTF--
