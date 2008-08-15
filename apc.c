@@ -388,10 +388,10 @@ void* apc_regex_compile_array(char* patterns[] TSRMLS_DC)
         return NULL;
 
     regs = (apc_regex*) apc_emalloc(sizeof(apc_regex));
-        
+
     smart_str_appendc(&pmatch, '/');
     smart_str_appendc(&nmatch, '/');
-    
+
     for (npat = 0; patterns[npat] != NULL; npat++) {
         pattern = patterns[npat];
         if(pattern[0] == '+') {
@@ -440,13 +440,13 @@ int apc_regex_match_array(void* p, const char* input)
         return 0;
 
     regs = (apc_regex*) p;
-    
+
     APC_MATCH_PATTERN(regs->preg, input, APC_POSITIVE_MATCH);
     APC_MATCH_PATTERN(regs->nreg, input, APC_NEGATIVE_MATCH);
-    
+
     return 0;
 }
-#else /* no pcre */ 
+#else /* no pcre */
 void* apc_regex_compile_array(char* patterns[] TSRMLS_DC)
 {
     if(patterns && patterns[0] != NULL) {

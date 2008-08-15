@@ -82,7 +82,7 @@ static int install_function(apc_function_t fn, apc_context_t* ctxt TSRMLS_DC)
     status =  zend_hash_add(EG(function_table),
                       fn.name,
                       fn.name_len+1,
-                      func, 
+                      func,
                       sizeof(fn.function[0]),
                       NULL);
 
@@ -278,7 +278,7 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
     if (!APCG(enabled) || apc_cache_busy(apc_cache)) {
         return old_compile_file(h, type TSRMLS_CC);
     }
-    
+
     /* check our regular expression filters */
     if (APCG(filters) && apc_compiled_filters) {
         int ret = apc_regex_match_array(apc_compiled_filters, h->filename);
@@ -371,7 +371,7 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
         if(!strcmp(SG(request_info).path_translated, h->filename)) {
             tmp_buf = sapi_get_stat(TSRMLS_C);  /* Apache has already done this stat() for us */
         }
-        if(tmp_buf) { 
+        if(tmp_buf) {
             fileinfo.st_buf.sb = *tmp_buf;
         } else {
             if (apc_search_paths(h->filename, PG(include_path), &fileinfo) != 0) {
@@ -446,103 +446,103 @@ extern int _apc_store(char *strkey, int strkey_len, const zval *val, const unsig
 
 static zval* data_unserialize(const char *filename)
 {
-	zval* retval;
-	long len = 0;
-	struct stat sb;
-	char *contents, *tmp;
-	FILE *fp;
-	php_unserialize_data_t var_hash;
+    zval* retval;
+    long len = 0;
+    struct stat sb;
+    char *contents, *tmp;
+    FILE *fp;
+    php_unserialize_data_t var_hash;
     TSRMLS_FETCH();
 
-	if(VCWD_STAT(filename, &sb) == -1) 
-	{
-		return NULL;
-	}
+    if(VCWD_STAT(filename, &sb) == -1) 
+    {
+        return NULL;
+    }
 
-	fp = fopen(filename, "rb");
+    fp = fopen(filename, "rb");
 
-	len = sizeof(char)*sb.st_size;
+    len = sizeof(char)*sb.st_size;
 
-	tmp = contents = malloc(len);
+    tmp = contents = malloc(len);
 
-	fread(contents, 1, len, fp);
+    fread(contents, 1, len, fp);
 
-	MAKE_STD_ZVAL(retval);
+    MAKE_STD_ZVAL(retval);
 
-	PHP_VAR_UNSERIALIZE_INIT(var_hash);
-	
-	/* I wish I could use json */
-	if(!php_var_unserialize(&retval, (const unsigned char**)&tmp, (const unsigned char*)(contents+len), &var_hash TSRMLS_CC)) {
-		zval_ptr_dtor(&retval);
-		return NULL;
-	}
+    PHP_VAR_UNSERIALIZE_INIT(var_hash);
+    
+    /* I wish I could use json */
+    if(!php_var_unserialize(&retval, (const unsigned char**)&tmp, (const unsigned char*)(contents+len), &var_hash TSRMLS_CC)) {
+        zval_ptr_dtor(&retval);
+        return NULL;
+    }
 
-	PHP_VAR_UNSERIALIZE_DESTROY(var_hash);
+    PHP_VAR_UNSERIALIZE_DESTROY(var_hash);
 
-	free(contents);
-	fclose(fp);
+    free(contents);
+    fclose(fp);
 
-	return retval;
+    return retval;
 }
 
 static int apc_load_data(const char *data_file TSRMLS_DC)
 {
-	char *p;
-	char key[MAXPATHLEN] = {0,};
-	unsigned int key_len;
-	zval *data;
+    char *p;
+    char key[MAXPATHLEN] = {0,};
+    unsigned int key_len;
+    zval *data;
 
-	p = strrchr(data_file, DEFAULT_SLASH);
+    p = strrchr(data_file, DEFAULT_SLASH);
 
-	if(p && p[1]) {
-		strlcpy(key, p+1, sizeof(key));
-		p = strrchr(key, '.');
+    if(p && p[1]) {
+        strlcpy(key, p+1, sizeof(key));
+        p = strrchr(key, '.');
 
-		if(p) {
-			p[0] = '\0';
-			key_len = strlen(key);
+        if(p) {
+            p[0] = '\0';
+            key_len = strlen(key);
 
-			data = data_unserialize(data_file);
+            data = data_unserialize(data_file);
             if(data) {
                 _apc_store(key, key_len, data, 0, 1 TSRMLS_CC);
             }
-			return 1;
-		}
-	}
+            return 1;
+        }
+    }
 
-	return 0;
+    return 0;
 }
 
 static int apc_walk_dir(const char *path TSRMLS_DC)
 {
-	char file[MAXPATHLEN]={0,};
-	int ndir, i;
-	char *p = NULL;
-	struct dirent **namelist = NULL;
+    char file[MAXPATHLEN]={0,};
+    int ndir, i;
+    char *p = NULL;
+    struct dirent **namelist = NULL;
 
-	if ((ndir = php_scandir(path, &namelist, 0, php_alphasort)) > 0)
-	{
-		for (i = 0; i < ndir; i++) 
-		{
-			/* check for extension */
-			if (!(p = strrchr(namelist[i]->d_name, '.')) 
-					|| (p && strcmp(p, ".data"))) 
-			{
-				free(namelist[i]);
-				continue;
-			}
-			snprintf(file, MAXPATHLEN, "%s%c%s", 
-					path, DEFAULT_SLASH, namelist[i]->d_name);
-			if(!apc_load_data(file TSRMLS_CC))
-			{
+    if ((ndir = php_scandir(path, &namelist, 0, php_alphasort)) > 0)
+    {
+        for (i = 0; i < ndir; i++)
+        {
+            /* check for extension */
+            if (!(p = strrchr(namelist[i]->d_name, '.'))
+                    || (p && strcmp(p, ".data")))
+            {
+                free(namelist[i]);
+                continue;
+            }
+            snprintf(file, MAXPATHLEN, "%s%c%s",
+                    path, DEFAULT_SLASH, namelist[i]->d_name);
+            if(!apc_load_data(file TSRMLS_CC))
+            {
                 /* print error */
-			}
-			free(namelist[i]);
-		}
-		free(namelist);
-	}
+            }
+            free(namelist[i]);
+        }
+        free(namelist);
+    }
 
-	return 1;
+    return 1;
 }
 
 void apc_data_preload(TSRMLS_D)
