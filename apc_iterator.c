@@ -185,6 +185,7 @@ static zend_object_value apc_iterator_create(zend_class_entry *ce TSRMLS_DC) {
     ALLOC_HASHTABLE(iterator->obj.properties);
     zend_hash_init(iterator->obj.properties, 0, NULL, ZVAL_PTR_DTOR, 0);
     iterator->obj.guards = NULL;
+    iterator->initialized = 0;
     retval.handle = zend_objects_store_put(iterator, apc_iterator_destroy, apc_iterator_free, NULL TSRMLS_CC);
     retval.handlers = &apc_iterator_object_handlers;
 
@@ -452,6 +453,10 @@ PHP_METHOD(apc_iterator, getTotalHits) {
     zval *object = getThis();
     apc_iterator_t *iterator = (apc_iterator_t*)zend_object_store_get_object(object TSRMLS_CC);
 
+    if (iterator->initialized == 0) {
+        RETURN_FALSE;
+    }
+
     if (iterator->totals_flag == 0) {
         apc_iterator_totals(iterator);
     }
@@ -496,7 +501,7 @@ PHP_METHOD(apc_iterator, getTotalCount) {
 
 /* {{{ apc_iterator_functions */
 static function_entry apc_iterator_functions[] = {
-    PHP_ME(apc_iterator, __construct, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(apc_iterator, __construct, NULL, ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
     PHP_ME(apc_iterator, rewind, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(apc_iterator, current, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(apc_iterator, key, NULL, ZEND_ACC_PUBLIC)
