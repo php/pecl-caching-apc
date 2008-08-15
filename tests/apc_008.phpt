@@ -1,5 +1,7 @@
 --TEST--
 APC: apc_cas test
+--SKIPIF--
+<?php require_once(dirname(__FILE__) . '/skipif.inc'); ?>
 --INI--
 apc.enabled=1
 apc.enable_cli=1

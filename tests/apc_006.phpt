@@ -1,5 +1,7 @@
 --TEST--
 APC: apc_store/fetch reference test
+--SKIPIF--
+<?php require_once(dirname(__FILE__) . '/skipif.inc'); ?>
 --INI--
 apc.enabled=1
 apc.enable_cli=1
