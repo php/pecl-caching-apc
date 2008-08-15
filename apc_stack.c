@@ -95,6 +95,7 @@ int apc_stack_size(apc_stack_t* stack)
     return stack->size;
 }
 
+
 /*
  * Local variables:
  * tab-width: 4

@@ -30,6 +30,7 @@
 
 #include "apc_zend.h"
 #include "apc_cache.h"
+#include "apc_iterator.h"
 #include "apc_main.h"
 #include "apc_sma.h"
 #include "apc_lock.h"
@@ -252,6 +253,7 @@ static PHP_MINIT_FUNCTION(apc)
                 php_rfc1867_callback = apc_rfc1867_progress;
             }
 #endif
+            apc_iterator_init(module_number TSRMLS_CC);
         }
     }
 
@@ -831,24 +833,51 @@ freepool:
 }
 /* }}} */
 
-/* {{{ proto mixed apc_delete(string key)
+
+/* {{{ proto mixed apc_delete(mixed keys)
  */
 PHP_FUNCTION(apc_delete) {
-    char *strkey;
-    int strkey_len;
+    zval *keys;
 
     if(!APCG(enabled)) RETURN_FALSE;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &strkey, &strkey_len) == FAILURE) {
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &keys) == FAILURE) {
         return;
     }
 
-    if(!strkey_len) RETURN_FALSE;
-
-    if(apc_cache_user_delete(apc_user_cache, strkey, strkey_len + 1)) {
-        RETURN_TRUE;
+    if (Z_TYPE_P(keys) == IS_STRING) {
+        if (!Z_STRLEN_P(keys)) RETURN_FALSE;
+        if(apc_cache_user_delete(apc_user_cache, Z_STRVAL_P(keys), Z_STRLEN_P(keys) + 1)) {
+            RETURN_TRUE;
+        } else {
+            RETURN_FALSE;
+        }
+    } else if (Z_TYPE_P(keys) == IS_ARRAY) {
+        HashTable *hash = Z_ARRVAL_P(keys);
+        HashPosition hpos;
+        zval **hentry;
+        array_init(return_value);
+        zend_hash_internal_pointer_reset_ex(hash, &hpos);
+        while(zend_hash_get_current_data_ex(hash, (void**)&hentry, &hpos) == SUCCESS) {
+            if(Z_TYPE_PP(hentry) != IS_STRING) {
+                apc_wprint("apc_delete() expects a string, array of strings, or APCIterator instance.");
+            }
+            if(apc_cache_user_delete(apc_user_cache, Z_STRVAL_PP(hentry), Z_STRLEN_PP(hentry) + 1)) {
+                add_next_index_bool(return_value, 1);
+            } else {
+                add_next_index_bool(return_value, 0);
+            }
+            zend_hash_move_forward_ex(hash, &hpos);
+        }
+        return;
+    } else if (Z_TYPE_P(keys) == IS_OBJECT) {
+        if (apc_iterator_delete(keys TSRMLS_CC)) {
+            RETURN_TRUE;
+        } else {
+            RETURN_FALSE;
+        }
     } else {
-        RETURN_FALSE;
+        apc_wprint("apc_delete() expects a string, array of strings, or APCIterator instance.");
     }
 }
 /* }}} */

@@ -36,46 +36,6 @@
 #include "ext/standard/php_var.h"
 #include "ext/standard/php_smart_str.h"
 
-#ifndef Z_REFCOUNT_P
-#define Z_REFCOUNT_P(pz)              (pz)->refcount
-#define Z_REFCOUNT_PP(ppz)            Z_REFCOUNT_P(*(ppz))
-#endif
-
-#ifndef Z_SET_REFCOUNT_P
-#define Z_SET_REFCOUNT_P(pz, rc)      (pz)->refcount = rc
-#define Z_SET_REFCOUNT_PP(ppz, rc)    Z_SET_REFCOUNT_P(*(ppz), rc)
-#endif
-
-#ifndef Z_ADDREF_P
-#define Z_ADDREF_P(pz)                (pz)->refcount++
-#define Z_ADDREF_PP(ppz)              Z_ADDREF_P(*(ppz))
-#endif
-
-#ifndef Z_DELREF_P
-#define Z_DELREF_P(pz)                (pz)->refcount--
-#define Z_DELREF_PP(ppz)              Z_DELREF_P(*(ppz))
-#endif
-
-#ifndef Z_ISREF_P
-#define Z_ISREF_P(pz)                 (pz)->is_ref
-#define Z_ISREF_PP(ppz)               Z_ISREF_P(*(ppz))
-#endif
-
-#ifndef Z_SET_ISREF_P
-#define Z_SET_ISREF_P(pz)             (pz)->is_ref = 1
-#define Z_SET_ISREF_PP(ppz)           Z_SET_ISREF_P(*(ppz))
-#endif
-
-#ifndef Z_UNSET_ISREF_P
-#define Z_UNSET_ISREF_P(pz)           (pz)->is_ref = 0
-#define Z_UNSET_ISREF_PP(ppz)         Z_UNSET_ISREF_P(*(ppz))
-#endif
-
-#ifndef Z_SET_ISREF_TO_P
-#define Z_SET_ISREF_TO_P(pz, isref)   (pz)->is_ref = isref
-#define Z_SET_ISREF_TO_PP(ppz, isref) Z_SET_ISREF_TO_P(*(ppz), isref)
-#endif
-
 #ifndef IS_CONSTANT_TYPE_MASK
 #define IS_CONSTANT_TYPE_MASK (~IS_CONSTANT_INDEX)
 #endif

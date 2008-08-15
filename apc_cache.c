@@ -41,13 +41,6 @@
 
 #define CHECK(p) { if ((p) == NULL) return NULL; }
 
-/* {{{ cache locking macros */
-#define CACHE_LOCK(cache)        { LOCK(cache->header->lock);   cache->has_lock = 1; }
-#define CACHE_UNLOCK(cache)      { UNLOCK(cache->header->lock); cache->has_lock = 0; }
-#define CACHE_SAFE_LOCK(cache)   { if ((++cache->has_lock) == 1) LOCK(cache->header->lock); }
-#define CACHE_SAFE_UNLOCK(cache) { if ((--cache->has_lock) == 0) UNLOCK(cache->header->lock); }
-/* }}} */
-
 /* {{{ key_equals */
 #define key_equals(a, b) (a.inode==b.inode && a.device==b.device)
 /* }}} */
