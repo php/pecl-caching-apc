@@ -522,7 +522,6 @@ void apc_sma_free(void* p)
     int i;
     size_t offset;
     size_t d_size;
-    TSRMLS_FETCH();
 
     if (p == NULL) {
         return;

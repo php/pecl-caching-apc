@@ -279,6 +279,7 @@ static zval* my_copy_zval(zval* dst, const zval* src, apc_context_t* ctxt)
 {
     zval **tmp;
     apc_pool* pool = ctxt->pool;
+    TSRMLS_FETCH();
 
     assert(dst != NULL);
     assert(src != NULL);

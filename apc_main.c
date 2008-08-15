@@ -452,6 +452,7 @@ static zval* data_unserialize(const char *filename)
 	char *contents, *tmp;
 	FILE *fp;
 	php_unserialize_data_t var_hash;
+    TSRMLS_FETCH();
 
 	if(VCWD_STAT(filename, &sb) == -1) 
 	{
@@ -532,7 +533,7 @@ static int apc_walk_dir(const char *path TSRMLS_DC)
 			}
 			snprintf(file, MAXPATHLEN, "%s%c%s", 
 					path, DEFAULT_SLASH, namelist[i]->d_name);
-			if(!apc_load_data(file))
+			if(!apc_load_data(file TSRMLS_CC))
 			{
                 /* print error */
 			}
@@ -548,7 +549,7 @@ void apc_data_preload(TSRMLS_D)
 {
     if(!APCG(preload_path)) return;
 
-    apc_walk_dir(APCG(preload_path));
+    apc_walk_dir(APCG(preload_path) TSRMLS_CC);
 }
 /* }}} */
 
