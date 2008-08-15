@@ -307,7 +307,7 @@ static PHP_RSHUTDOWN_FUNCTION(apc)
 }
 /* }}} */
 
-/* {{{ proto array apc_cache_info([string type] [, bool limited]) */
+/* {{{ proto array apc_cache_info([string type [, bool limited]]) */
 PHP_FUNCTION(apc_cache_info)
 {
     apc_cache_info_t* info;
@@ -1060,15 +1060,15 @@ PHP_FUNCTION(apc_compile_file) {
 
 /* {{{ arginfo */
 static
-ZEND_BEGIN_ARG_INFO(php_apc_fetch_arginfo, 0)
-    ZEND_ARG_INFO(0, "key")
-    ZEND_ARG_INFO(1, "success")
+ZEND_BEGIN_ARG_INFO_EX(php_apc_fetch_arginfo, 0, 0, 1)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_INFO(1, success)
 ZEND_END_ARG_INFO()
 static
-ZEND_BEGIN_ARG_INFO(php_apc_inc_arginfo, 0)
-    ZEND_ARG_INFO(0, "key")
-    ZEND_ARG_INFO(0, "step")
-    ZEND_ARG_INFO(1, "success")
+ZEND_BEGIN_ARG_INFO_EX(php_apc_inc_arginfo, 0, 0, 1)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_INFO(0, step)
+    ZEND_ARG_INFO(1, success)
 ZEND_END_ARG_INFO()
 /* }}} */
 
