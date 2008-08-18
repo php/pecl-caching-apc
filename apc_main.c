@@ -572,6 +572,7 @@ int apc_module_init(int module_number TSRMLS_DC)
     old_compile_file = zend_compile_file;
     zend_compile_file = my_compile_file;
     REGISTER_LONG_CONSTANT("\000apc_magic", (long)&set_compile_hook, CONST_PERSISTENT | CONST_CS);
+    REGISTER_LONG_CONSTANT("\000apc_compile_file", (long)&my_compile_file, CONST_PERSISTENT | CONST_CS);
 
     apc_pool_init();
 
