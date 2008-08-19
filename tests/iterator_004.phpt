@@ -9,7 +9,7 @@ apc.file_update_protection=0
 --FILE--
 <?php
 
-$it = new APCIterator('user', 'key[0-9]0', APC_ITER_ALL, 1, APC_LIST_ACTIVE);
+$it = new APCIterator('user', '/key[0-9]0/', APC_ITER_ALL, 1, APC_LIST_ACTIVE);
 for($i = 0; $i < 41; $i++) {
   apc_store("key$i", "value$i");
 }

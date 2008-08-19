@@ -215,7 +215,7 @@ static int apc_iterator_fetch_active(apc_iterator_t *iterator) {
             } else if ((*slot)->key.type == APC_CACHE_KEY_FPFILE) {
                 key = (char*)(*slot)->key.data.fpfile.fullpath;
             }
-            if (!iterator->regex || regexec(&iterator->c_regex, key, 0, NULL, 0) == 0) {
+            if (!iterator->regex || pcre_exec(iterator->re, NULL, key, strlen(key), 0, 0, NULL, 0) >= 0) {
                 count++;
                 item = apc_iterator_item_ctor(iterator, slot);
                 if (item) {
@@ -254,7 +254,7 @@ static int apc_iterator_fetch_deleted(apc_iterator_t *iterator) {
         } else if ((*slot)->key.type == APC_CACHE_KEY_FPFILE) {
             key = (char*)(*slot)->key.data.fpfile.fullpath;
         }
-        if (!iterator->regex || regexec(&iterator->c_regex, key, 0, NULL, 0) == 0) {
+        if (!iterator->regex || pcre_exec(iterator->re, NULL, key, strlen(key), 0, 0, NULL, 0) >= 0) {
             count++;
             item = apc_iterator_item_ctor(iterator, slot);
             if (item) {
@@ -287,7 +287,7 @@ static void apc_iterator_totals(apc_iterator_t *iterator) {
             } else if ((*slot)->key.type == APC_CACHE_KEY_FPFILE) {
                 key = (char*)(*slot)->key.data.fpfile.fullpath;
             }
-            if (!iterator->regex || regexec(&iterator->c_regex, key, 0, NULL, 0) == 0) {
+            if (!iterator->regex || pcre_exec(iterator->re, NULL, key, strlen(key), 0, 0, NULL, 0) >= 0) {
                 iterator->size += (*slot)->value->mem_size;
                 iterator->hits += (*slot)->num_hits;
                 iterator->count++;
@@ -352,7 +352,9 @@ PHP_METHOD(apc_iterator, __construct) {
     if (regex_len) {
         iterator->regex = estrndup(regex, regex_len);
         iterator->regex_len = regex_len;
-        if(regcomp(&iterator->c_regex, regex, REG_EXTENDED | REG_NOSUB) != 0) {
+        iterator->re = pcre_get_compiled_regex(regex, NULL, NULL TSRMLS_CC);
+
+        if(!iterator->re) {
             apc_eprint("Could not compile regular expression: %s", regex);
         }
     } else {
