@@ -200,7 +200,7 @@ void apc_rfc1867_progress(unsigned int event, void *event_data, void **extra TSR
                 add_assoc_long(track, "cancel_upload", cancel_upload);
                 add_assoc_long(track, "done", 1);
                 add_assoc_double(track, "start_time", start_time);
-                _apc_store(tracking_key, key_length, track, 3600, 0 TSRMLS_CC);
+                _apc_store(tracking_key, key_length, track, APCG(rfc1867_ttl), 0 TSRMLS_CC);
                 zval_ptr_dtor(&track);
             }
             break;

@@ -73,6 +73,7 @@ ZEND_BEGIN_MODULE_GLOBALS(apc)
     char* rfc1867_prefix;        /* Key prefix */
     char* rfc1867_name;          /* Name of hidden field to activate upload progress/key suffix */
     double rfc1867_freq;         /* Update frequency as percentage or bytes */
+    long rfc1867_ttl;            /* TTL for rfc1867 entries */
 #endif
     HashTable *copied_zvals;     /* my_copy recursion detection list */
     int reserved_offset;         /* offset for apc info in op_array->reserved[] */
