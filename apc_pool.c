@@ -135,14 +135,14 @@ typedef struct _pool_block
     unsigned char       *mark;
     struct _pool_block  *next;
     unsigned             :0; /* this should align to word */
-    unsigned char       data[0]; 
+    unsigned char       data[]; 
 }pool_block;
 
 /*
    parts in ? are optional and turned on for fun, memory loss,
    and for something else that I forgot about ... ah, debugging
 
-                 |--------> data[0]         |<-- non word boundary (too)
+                 |--------> data[]         |<-- non word boundary (too)
    +-------------+--------------+-----------+-------------+-------------->>>
    | pool_block  | ?sizeinfo<1> | block<1>  | ?redzone<1> | ?sizeinfo<2>
    |             |  (size_t)    |           | padded left |
