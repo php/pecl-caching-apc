@@ -49,6 +49,8 @@ defaults('DATE_FORMAT', 'Y/m/d H:i:s'); 	// US
 
 defaults('GRAPH_SIZE',200);					// Image size
 
+//defaults('PROXY', 'tcp://127.0.0.1:8080');
+
 ////////// END OF DEFAULT CONFIG AREA /////////////////////////////////////////////////////////////
 
 
@@ -1295,8 +1297,12 @@ case OB_VERSION_CHECK:
 		<th></th>
 		</tr>
 EOB;
-
-	$rss = @file_get_contents("http://pecl.php.net/feeds/pkg_apc.rss");
+  if (defined('PROXY')) {
+    $ctxt = stream_context_create( array( 'http' => array( 'proxy' => PROXY, 'request_fulluri' => True ) ) );
+    $rss = @file_get_contents("http://pecl.php.net/feeds/pkg_apc.rss", False, $ctxt);
+  } else {
+    $rss = @file_get_contents("http://pecl.php.net/feeds/pkg_apc.rss");
+  }
 	if (!$rss) {
 		echo '<tr class="td-last center"><td>Unable to fetch version information.</td></tr>';
 	} else {
