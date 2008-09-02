@@ -135,7 +135,7 @@ typedef struct _pool_block
     unsigned char       *mark;
     struct _pool_block  *next;
     unsigned             :0; /* this should align to word */
-    unsigned char       data[]; 
+    /* data comes here */
 }pool_block;
 
 /*
@@ -190,7 +190,7 @@ static const unsigned char decaff[] =  {
 
 #define INIT_POOL_BLOCK(rpool, entry, size) do {\
     (entry)->avail = (entry)->capacity = (size);\
-    (entry)->mark = (entry)->data;\
+    (entry)->mark =  ((unsigned char*)(entry)) + ALIGNWORD(sizeof(pool_block));\
     (entry)->next = (rpool)->head;\
     (rpool)->head = (entry);\
 } while(0)
