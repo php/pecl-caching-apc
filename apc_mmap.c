@@ -46,13 +46,22 @@
 #define MAP_NOSYNC 0
 #endif
 
+/* support for systems where MAP_ANONYMOUS is defined but not MAP_ANON, ie: HP-UX bug #14615 */
+#if !defined(MAP_ANON) && defined(MAP_ANONYMOUS)
+# define MAP_ANON MAP_ANONYMOUS
+#endif
+
 void *apc_mmap(char *file_mask, size_t size)
 {
     void* shmaddr;  /* the shared memory address */
 
     /* If no filename was provided, do an anonymous mmap */
     if(!file_mask || (file_mask && !strlen(file_mask))) {
+#if !defined(MAP_ANON)
+        apc_eprint("Anonymous mmap does not apear to be available on this system (MAP_ANON/MAP_ANONYMOUS).  Please see the apc.mmap_file_mask INI option.");
+#else
         shmaddr = (void *)mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANON, -1, 0);
+#endif
     } else {
         int fd;
 
