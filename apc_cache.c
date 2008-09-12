@@ -450,10 +450,10 @@ int apc_cache_user_insert(apc_cache_t* cache, apc_cache_key_t key, apc_cache_ent
     CACHE_LOCK(cache);
     process_pending_removals(cache);
 
-    slot = &cache->slots[string_nhash_8(key.data.user.identifier, key.data.user.identifier_len) % cache->num_slots];
+    slot = &cache->slots[string_nhash_8(key.data.user.identifier, key.data.user.identifier_len+1) % cache->num_slots];
 
     while (*slot) {
-        if (!memcmp((*slot)->key.data.user.identifier, key.data.user.identifier, key.data.user.identifier_len)) {
+        if (!memcmp((*slot)->key.data.user.identifier, key.data.user.identifier, key.data.user.identifier_len+1)) {
             /* 
              * At this point we have found the user cache entry.  If we are doing 
              * an exclusive insert (apc_add) we are going to bail right away if
@@ -878,7 +878,7 @@ apc_cache_entry_t* apc_cache_make_user_entry(const char* info, int info_len, con
     entry = (apc_cache_entry_t*) apc_pool_alloc(pool, sizeof(apc_cache_entry_t));
     if (!entry) return NULL;
 
-    entry->data.user.info = apc_pmemcpy(info, info_len, pool);
+    entry->data.user.info = apc_pmemcpy(info, info_len+1, pool);
     entry->data.user.info_len = info_len;
     if(!entry->data.user.info) {
         return NULL;
@@ -938,7 +938,7 @@ apc_cache_info_t* apc_cache_info(apc_cache_t* cache, zend_bool limited)
                     link->data.file.inode = p->key.data.file.inode;
                     link->type = APC_CACHE_ENTRY_FILE;
                 } else if(p->value->type == APC_CACHE_ENTRY_USER) {
-                    link->data.user.info = apc_xmemcpy(p->value->data.user.info, p->value->data.user.info_len, apc_emalloc);
+                    link->data.user.info = apc_xmemcpy(p->value->data.user.info, p->value->data.user.info_len+1, apc_emalloc);
                     link->data.user.ttl = p->value->data.user.ttl;
                     link->type = APC_CACHE_ENTRY_USER;
                 }
@@ -969,7 +969,7 @@ apc_cache_info_t* apc_cache_info(apc_cache_t* cache, zend_bool limited)
                 }
                 link->type = APC_CACHE_ENTRY_FILE;
             } else if(p->value->type == APC_CACHE_ENTRY_USER) {
-                link->data.user.info = apc_xmemcpy(p->value->data.user.info, p->value->data.user.info_len, apc_emalloc);
+                link->data.user.info = apc_xmemcpy(p->value->data.user.info, p->value->data.user.info_len+1, apc_emalloc);
                 link->data.user.ttl = p->value->data.user.ttl;
                 link->type = APC_CACHE_ENTRY_USER;
             }

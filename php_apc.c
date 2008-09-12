@@ -572,11 +572,11 @@ int _apc_store(char *strkey, int strkey_len, const zval *val, const unsigned int
     ctxt.pool = apc_pool_create(APC_SMALL_POOL, apc_sma_malloc, apc_sma_free);
     ctxt.copy = APC_COPY_IN_USER;
 
-    if (!(entry = apc_cache_make_user_entry(strkey, strkey_len + 1, val, &ctxt, ttl))) {
+    if (!(entry = apc_cache_make_user_entry(strkey, strkey_len, val, &ctxt, ttl))) {
         goto freepool;
     }
 
-    if (!apc_cache_make_user_key(&key, strkey, strkey_len + 1, t)) {
+    if (!apc_cache_make_user_key(&key, strkey, strkey_len, t)) {
         goto freepool;
     }
 

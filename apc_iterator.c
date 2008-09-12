@@ -37,11 +37,11 @@ static void apc_iterator_item_key(slot_t **slot_pp, apc_iterator_item_t *item) {
         item->key = estrdup(slot->value->data.file.filename);
         item->key_len = strlen(item->key);
     } else if (slot->key.type == APC_CACHE_KEY_USER) {
-        item->key = estrndup((char*)slot->key.data.user.identifier, slot->key.data.user.identifier_len-1);
-        item->key_len = slot->key.data.user.identifier_len-1;
+        item->key = estrndup((char*)slot->key.data.user.identifier, slot->key.data.user.identifier_len);
+        item->key_len = slot->key.data.user.identifier_len;
     } else if (slot->key.type == APC_CACHE_KEY_FPFILE) {
-        item->key = estrndup((char*)slot->key.data.fpfile.fullpath, slot->key.data.fpfile.fullpath_len-1);
-        item->key_len = slot->key.data.fpfile.fullpath_len-1;
+        item->key = estrndup((char*)slot->key.data.fpfile.fullpath, slot->key.data.fpfile.fullpath_len);
+        item->key_len = slot->key.data.fpfile.fullpath_len;
     } else {
         apc_eprint("Internal error, invalid entry type.");
     }
