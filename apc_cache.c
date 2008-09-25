@@ -934,8 +934,13 @@ apc_cache_info_t* apc_cache_info(apc_cache_t* cache, zend_bool limited)
 
                 if(p->value->type == APC_CACHE_ENTRY_FILE) {
                     link->data.file.filename = apc_xstrdup(p->value->data.file.filename, apc_emalloc);
-                    link->data.file.device = p->key.data.file.device;
-                    link->data.file.inode = p->key.data.file.inode;
+                    if(p->key.type == APC_CACHE_KEY_FILE) {
+                        link->data.file.device = p->key.data.file.device;
+                        link->data.file.inode = p->key.data.file.inode;
+                    } else { /* This is a no-stat fullpath file entry */
+                        link->data.file.device = 0;
+                        link->data.file.inode = 0;
+                    }
                     link->type = APC_CACHE_ENTRY_FILE;
                 } else if(p->value->type == APC_CACHE_ENTRY_USER) {
                     link->data.user.info = apc_xmemcpy(p->value->data.user.info, p->value->data.user.info_len+1, apc_emalloc);
