@@ -215,13 +215,17 @@ static int apc_iterator_fetch_active(apc_iterator_t *iterator) {
             } else if ((*slot)->key.type == APC_CACHE_KEY_FPFILE) {
                 key = (char*)(*slot)->key.data.fpfile.fullpath;
             }
+#ifdef ITERATOR_PCRE
             if (!iterator->regex || pcre_exec(iterator->re, NULL, key, strlen(key), 0, 0, NULL, 0) >= 0) {
+#endif
                 count++;
                 item = apc_iterator_item_ctor(iterator, slot);
                 if (item) {
                     apc_stack_push(iterator->stack, item);
                 }
+#ifdef ITERATOR_PCRE
             }
+#endif
             slot = &(*slot)->next;
         }
         iterator->slot_idx++;
@@ -254,13 +258,17 @@ static int apc_iterator_fetch_deleted(apc_iterator_t *iterator) {
         } else if ((*slot)->key.type == APC_CACHE_KEY_FPFILE) {
             key = (char*)(*slot)->key.data.fpfile.fullpath;
         }
+#ifdef ITERATOR_PCRE
         if (!iterator->regex || pcre_exec(iterator->re, NULL, key, strlen(key), 0, 0, NULL, 0) >= 0) {
+#endif
             count++;
             item = apc_iterator_item_ctor(iterator, slot);
             if (item) {
                 apc_stack_push(iterator->stack, item);
             }
+#ifdef ITERATOR_PCRE
         }
+#endif
         slot = &(*slot)->next;
     }
     CACHE_UNLOCK(iterator->cache);
@@ -287,13 +295,17 @@ static void apc_iterator_totals(apc_iterator_t *iterator) {
             } else if ((*slot)->key.type == APC_CACHE_KEY_FPFILE) {
                 key = (char*)(*slot)->key.data.fpfile.fullpath;
             }
+#ifdef ITERATOR_PCRE
             if (!iterator->regex || pcre_exec(iterator->re, NULL, key, strlen(key), 0, 0, NULL, 0) >= 0) {
+#endif
                 iterator->size += (*slot)->value->mem_size;
                 iterator->hits += (*slot)->num_hits;
                 iterator->count++;
             }
             slot = &(*slot)->next;
+#ifdef ITERATOR_PCRE
         }
+#endif
     }
     CACHE_UNLOCK(iterator->cache);
     iterator->totals_flag = 1;
@@ -350,6 +362,7 @@ PHP_METHOD(apc_iterator, __construct) {
     iterator->size = 0;
     iterator->hits = 0;
     if (regex_len) {
+#ifdef ITERATOR_PCRE
         iterator->regex = estrndup(regex, regex_len);
         iterator->regex_len = regex_len;
         iterator->re = pcre_get_compiled_regex(regex, NULL, NULL TSRMLS_CC);
@@ -357,6 +370,9 @@ PHP_METHOD(apc_iterator, __construct) {
         if(!iterator->re) {
             apc_eprint("Could not compile regular expression: %s", regex);
         }
+#else
+        apc_eprint("Regular expressions support is not enabled, please enable PCRE for APCIterator regex support");
+#endif
     } else {
         iterator->regex = NULL;
         iterator->regex_len = 0;

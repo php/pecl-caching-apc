@@ -26,6 +26,7 @@
 #include "apc_stack.h"
 
 #if HAVE_PCRE || HAVE_BUNDLED_PCRE
+#define ITERATOR_PCRE 1
 #include "ext/pcre/php_pcre.h"
 #include "ext/standard/php_smart_str.h"
 #endif
@@ -58,7 +59,9 @@ typedef struct _apc_iterator_t {
     long chunk_size;         /* number of entries to pull down per fetch */
     apc_stack_t *stack;      /* stack of entries pulled from cache */
     int stack_idx;           /* index into the current stack */
+#ifdef ITERATOR_PCRE
     pcre *re;                /* regex filter on entry identifiers */
+#endif
     char *regex;             /* original regex expression or NULL */
     int regex_len;           /* regex length */
     long key_idx;            /* incrementing index for numerical keys */
