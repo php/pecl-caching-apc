@@ -34,8 +34,9 @@
     be called in request init (RINIT)
   */
 
-#if APC_HAVE_SIGACTION
+#include "config.h"
 
+#if HAVE_SIGACTION
 #include <signal.h>
 #include "apc_globals.h"
 #include "apc_sma.h"
@@ -184,7 +185,7 @@ void apc_shutdown_signals()
     }
 }
 
-#endif  /* APC_HAVE_SIGACTION */
+#endif  /* HAVE_SIGACTION */
 
 /*
  * Local variables:
