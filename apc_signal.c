@@ -34,9 +34,7 @@
     be called in request init (RINIT)
   */
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "apc.h"
 
 #if HAVE_SIGACTION
 #include <signal.h>
@@ -92,7 +90,6 @@ static void apc_rehandle_signal(int signo, siginfo_t *siginfo, void *context)
  */
 static int apc_register_signal(int signo, void (*handler)(int, siginfo_t*, void*))
 {
-#if HAVE_SIGACTION
     struct sigaction sa = {{0}};
     apc_signal_entry_t p_sig = {0};
 
@@ -128,7 +125,6 @@ static int apc_register_signal(int signo, void (*handler)(int, siginfo_t*, void*
 
         return SUCCESS;
     }
-#endif
     return FAILURE;
 } /* }}} */
 
