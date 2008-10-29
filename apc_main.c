@@ -137,17 +137,23 @@ static int install_class(apc_class_t cl, apc_context_t* ctxt TSRMLS_DC)
     if (cl.parent_name != NULL) {
         zend_class_entry** parent_ptr = NULL;
         /*
-         * zend_lookup_class has to be due to presence of __autoload,
-         * just looking up the EG(class_table) is not enough in php5!
-         * Even more dangerously, thanks to __autoload and people using
-         * class names as filepaths for inclusion, this has to be case
-         * sensitive. zend_lookup_class automatically does a case_fold
-         * internally, but passes the case preserved version to __autoload.
+         * __autoload brings in the old issues with mixed inheritance.
+         * When a statically inherited class triggers autoload, it runs
+         * afoul of a potential require_once "parent.php" in the previous 
+         * line, which when executed provides the parent class, but right
+         * now goes and hits __autoload which could fail. 
+         * 
+         * missing parent == re-compile. 
+         *
+         * whether __autoload is enabled or not, because __autoload errors
+         * cause php to die.
+         *
          * Aside: Do NOT pass *strlen(cl.parent_name)+1* because
-         * zend_lookup_class does it internally anyway!
+         * zend_lookup_class_ex does it internally anyway!
          */
-        status = zend_lookup_class(cl.parent_name,
-                                    strlen(cl.parent_name),
+        status = zend_lookup_class_ex(cl.parent_name,
+                                    strlen(cl.parent_name), 
+                                    0,
                                     &parent_ptr TSRMLS_CC);
         if (status == FAILURE) {
             if(APCG(report_autofilter)) {
@@ -253,7 +259,13 @@ default_compile:
 
     zend_llist_del_element(&CG(open_files), h, compare_file_handles); /* We leak fds without this hack */
 
+    /* WARNING: zend_llist shallow copies - so element delete via the 
+     * zend_file_handle_dtor leaves h->opened_path dangling onto bad memory.
+     */
+
+    h->opened_path = NULL;
     h->type = ZEND_HANDLE_FILENAME;
+    if(h->free_filename) h->filename = NULL;
 
     return NULL;
 }
@@ -340,7 +352,7 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
             return op_array;
         }
         if(APCG(report_autofilter)) {
-            apc_wprint("Recompiling %s", h->opened_path);
+            apc_wprint("Recompiling %s", cache_entry->data.file.filename);
         }
         /* TODO: check what happens with EG(included_files) */
     }
