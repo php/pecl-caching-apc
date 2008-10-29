@@ -59,6 +59,7 @@ typedef struct _apc_context_t
 {
     apc_pool *pool;
     apc_copy_type copy;
+    unsigned int force_update:1;
 } apc_context_t;
 
 #endif

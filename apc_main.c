@@ -325,8 +325,10 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
     if(!APCG(force_file_update)) {
         /* search for the file in the cache */
         cache_entry = apc_cache_find(apc_cache, key, t);
+        ctxt.force_update = 0;
     } else {
         cache_entry = NULL;
+        ctxt.force_update = 1;
     }
 
     if (cache_entry != NULL) {

@@ -571,6 +571,7 @@ int _apc_store(char *strkey, int strkey_len, const zval *val, const unsigned int
 
     ctxt.pool = apc_pool_create(APC_SMALL_POOL, apc_sma_malloc, apc_sma_free);
     ctxt.copy = APC_COPY_IN_USER;
+    ctxt.force_update = 0;
 
     if (!(entry = apc_cache_make_user_entry(strkey, strkey_len, val, &ctxt, ttl))) {
         goto freepool;
@@ -766,6 +767,7 @@ PHP_FUNCTION(apc_fetch) {
 
     ctxt.pool = apc_pool_create(APC_UNPOOL, apc_php_malloc, apc_php_free);
     ctxt.copy = APC_COPY_OUT_USER;
+    ctxt.force_update = 0;
 
 #if PHP_API_VERSION < 20041225
 #if HAVE_APACHE && defined(APC_PHP4_STAT)
