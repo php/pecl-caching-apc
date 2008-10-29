@@ -1060,12 +1060,10 @@ PHP_FUNCTION(apc_compile_file) {
 /* }}} */
 
 /* {{{ arginfo */
-static
 ZEND_BEGIN_ARG_INFO_EX(php_apc_fetch_arginfo, 0, 0, 1)
     ZEND_ARG_INFO(0, key)
     ZEND_ARG_INFO(1, success)
 ZEND_END_ARG_INFO()
-static
 ZEND_BEGIN_ARG_INFO_EX(php_apc_inc_arginfo, 0, 0, 1)
     ZEND_ARG_INFO(0, key)
     ZEND_ARG_INFO(0, step)
