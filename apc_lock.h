@@ -50,11 +50,12 @@
 #if defined(APC_SEM_LOCKS)
 #define APC_LOCK_TYPE "IPC Semaphore"
 #define RDLOCK_AVAILABLE 0
-#define NONBLOCKING_LOCK_AVAILABLE 0
+#define NONBLOCKING_LOCK_AVAILABLE 1 
 #define apc_lck_t int
 #define apc_lck_create(a,b,c,d) d=apc_sem_create(NULL,(b),(c))
 #define apc_lck_destroy(a)    apc_sem_destroy(a)
 #define apc_lck_lock(a)       apc_sem_lock(a)
+#define apc_lck_nb_lock(a)    apc_sem_nonblocking_lock(a)
 #define apc_lck_rdlock(a)     apc_sem_lock(a)
 #define apc_lck_unlock(a)     apc_sem_unlock(a)
 #elif defined(APC_PTHREADMUTEX_LOCKS)

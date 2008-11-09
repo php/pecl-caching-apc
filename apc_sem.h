@@ -35,6 +35,7 @@
 extern int apc_sem_create(const char* pathname, int proj, int initval);
 extern void apc_sem_destroy(int semid);
 extern void apc_sem_lock(int semid);
+extern int apc_sem_nonblocking_lock(int semid); 
 extern void apc_sem_unlock(int semid);
 extern void apc_sem_wait_for_zero(int semid);
 extern int apc_sem_get_value(int semid);

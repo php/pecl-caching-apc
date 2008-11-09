@@ -128,6 +128,25 @@ void apc_sem_lock(int semid)
     }
 }
 
+int apc_sem_nonblocking_lock(int semid) 
+{
+    struct sembuf op;
+
+    op.sem_num = 0;
+    op.sem_op  = -1;
+    op.sem_flg = UNDO | IPC_NOWAIT;
+
+    if (semop(semid, &op, 1) < 0) {
+      if (errno == EAGAIN) {
+        return 0;  /* Lock is already held */
+      } else if (errno != EINTR) {
+        apc_eprint("apc_sem_lock: semop(%d) failed:", semid);
+      }
+    }
+
+    return 1;  /* Lock obtained */
+}
+
 void apc_sem_unlock(int semid)
 {
     struct sembuf op;
