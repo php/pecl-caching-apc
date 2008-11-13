@@ -67,38 +67,33 @@ static double my_time() {
     return t;
 }
 
+
+#define RFC1867_DATA(name) \
+                ((request_data)->name)
+
 void apc_rfc1867_progress(unsigned int event, void *event_data, void **extra TSRMLS_DC) {
-    static char tracking_key[64];
-    static int  key_length = 0;
-    static size_t content_length = 0;
-    static char filename[128];
-    static char name[64];
-    static char *temp_filename=NULL;
-    static int cancel_upload = 0;
-    static double start_time;
-    static size_t bytes_processed = 0;
-    static size_t prev_bytes_processed = 0;
-    static int update_freq = 0;
-    static double rate;
+    apc_rfc1867_data *request_data = &APCG(rfc1867_data);
     zval *track = NULL;
 
     switch (event) {
         case MULTIPART_EVENT_START:
             {
                 multipart_event_start *data = (multipart_event_start *) event_data;
-                content_length = data->content_length;
-                *tracking_key = '\0';
-                *name = '\0';
-                cancel_upload = 0;
-                temp_filename = NULL;
-                *filename= '\0';
-                key_length = 0;
-                start_time = my_time();
-                bytes_processed = 0;
-                rate = 0;
-                update_freq = APCG(rfc1867_freq);
-                if(update_freq < 0) {  // frequency is a percentage, not bytes
-                    update_freq = content_length * APCG(rfc1867_freq) / 100; 
+                
+                RFC1867_DATA(content_length)    = data->content_length;
+                RFC1867_DATA(tracking_key)[0]   = '\0';
+                RFC1867_DATA(name)[0]           = '\0';
+                RFC1867_DATA(cancel_upload)     = 0;
+                RFC1867_DATA(temp_filename)     = NULL;
+                RFC1867_DATA(filename)[0]       = '\0';
+                RFC1867_DATA(key_length)        = 0;
+                RFC1867_DATA(start_time)        = my_time();
+                RFC1867_DATA(bytes_processed)   = 0;
+                RFC1867_DATA(rate)              = 0;
+                RFC1867_DATA(update_freq)       = APCG(rfc1867_freq);
+                
+                if(RFC1867_DATA(update_freq) < 0) {  // frequency is a percentage, not bytes
+                    RFC1867_DATA(update_freq) = RFC1867_DATA(content_length) * APCG(rfc1867_freq) / 100; 
                 }
             }
             break;
@@ -107,100 +102,103 @@ void apc_rfc1867_progress(unsigned int event, void *event_data, void **extra TSR
             {
                 int prefix_len = strlen(APCG(rfc1867_prefix));
                 multipart_event_formdata *data = (multipart_event_formdata *) event_data;
-                if(data->name && !strncasecmp(data->name, APCG(rfc1867_name), strlen(APCG(rfc1867_name))) && data->value && data->length && data->length < sizeof(tracking_key) - prefix_len) {
-                    strlcat(tracking_key, APCG(rfc1867_prefix), 63);
-                    strlcat(tracking_key, *data->value, 63);
-                    key_length = data->length + prefix_len;
-                    bytes_processed = data->post_bytes_processed;
+                if(data->name && !strncasecmp(data->name, APCG(rfc1867_name), strlen(APCG(rfc1867_name))) 
+                    && data->value && data->length && data->length < sizeof(RFC1867_DATA(tracking_key)) - prefix_len) {
+
+                    strlcat(RFC1867_DATA(tracking_key), APCG(rfc1867_prefix), 63);
+                    strlcat(RFC1867_DATA(tracking_key), *data->value, 63);
+                    RFC1867_DATA(key_length) = data->length + prefix_len;
+                    RFC1867_DATA(bytes_processed) = data->post_bytes_processed;
                 }
             }
             break;
 
         case MULTIPART_EVENT_FILE_START:
-            if(*tracking_key) {
+            if(*RFC1867_DATA(tracking_key)) {
                 multipart_event_file_start *data = (multipart_event_file_start *) event_data;
 
-                bytes_processed = data->post_bytes_processed;
-                strncpy(filename,*data->filename,127);
-                temp_filename = NULL;
-                strncpy(name,data->name,63);
+                RFC1867_DATA(bytes_processed) = data->post_bytes_processed;
+                strncpy(RFC1867_DATA(filename),*data->filename,127);
+                RFC1867_DATA(temp_filename) = NULL;
+                strncpy(RFC1867_DATA(name),data->name,63);
                 ALLOC_INIT_ZVAL(track);
                 array_init(track);
-                add_assoc_long(track, "total", content_length);
-                add_assoc_long(track, "current", bytes_processed);
-                add_assoc_string(track, "filename", filename, 1);
-                add_assoc_string(track, "name", name, 1);
+                add_assoc_long(track, "total", RFC1867_DATA(content_length));
+                add_assoc_long(track, "current", RFC1867_DATA(bytes_processed));
+                add_assoc_string(track, "filename", RFC1867_DATA(filename), 1);
+                add_assoc_string(track, "name", RFC1867_DATA(name), 1);
                 add_assoc_long(track, "done", 0);
-                add_assoc_double(track, "start_time", start_time);
-                _apc_store(tracking_key, key_length, track, 3600, 0 TSRMLS_CC);
+                add_assoc_double(track, "start_time", RFC1867_DATA(start_time));
+                _apc_store(RFC1867_DATA(tracking_key), RFC1867_DATA(key_length), track, 3600, 0 TSRMLS_CC);
                 zval_ptr_dtor(&track);
             }
             break;
 
         case MULTIPART_EVENT_FILE_DATA:
-            if(*tracking_key) {
+            if(*RFC1867_DATA(tracking_key)) {
                 multipart_event_file_data *data = (multipart_event_file_data *) event_data;
-                bytes_processed = data->post_bytes_processed;
-                if(bytes_processed - prev_bytes_processed > update_freq) {
-                    if(!_apc_update(tracking_key, key_length, update_bytes_processed, &bytes_processed TSRMLS_CC)) {
+                RFC1867_DATA(bytes_processed) = data->post_bytes_processed;
+                if(RFC1867_DATA(bytes_processed) - RFC1867_DATA(prev_bytes_processed) > RFC1867_DATA(update_freq)) {
+                    if(!_apc_update(RFC1867_DATA(tracking_key), RFC1867_DATA(key_length), update_bytes_processed, &RFC1867_DATA(bytes_processed) TSRMLS_CC)) {
                         ALLOC_INIT_ZVAL(track);
                         array_init(track);
-                        add_assoc_long(track, "total", content_length);
-                        add_assoc_long(track, "current", bytes_processed);
-                        add_assoc_string(track, "filename", filename, 1);
-                        add_assoc_string(track, "name", name, 1);
+                        add_assoc_long(track, "total", RFC1867_DATA(content_length));
+                        add_assoc_long(track, "current", RFC1867_DATA(bytes_processed));
+                        add_assoc_string(track, "filename", RFC1867_DATA(filename), 1);
+                        add_assoc_string(track, "name", RFC1867_DATA(name), 1);
                         add_assoc_long(track, "done", 0);
-                        add_assoc_double(track, "start_time", start_time);
-                        _apc_store(tracking_key, key_length, track, 3600, 0 TSRMLS_CC);
+                        add_assoc_double(track, "start_time", RFC1867_DATA(start_time));
+                        _apc_store(RFC1867_DATA(tracking_key), RFC1867_DATA(key_length), track, 3600, 0 TSRMLS_CC);
                         zval_ptr_dtor(&track);
                     }
-                    prev_bytes_processed = bytes_processed;
+                    RFC1867_DATA(prev_bytes_processed) = RFC1867_DATA(bytes_processed);
                 }
             }
             break;
 
         case MULTIPART_EVENT_FILE_END:
-            if(*tracking_key) {
+            if(*RFC1867_DATA(tracking_key)) {
                 multipart_event_file_end *data = (multipart_event_file_end *) event_data;
-                bytes_processed = data->post_bytes_processed;
-                cancel_upload = data->cancel_upload;
-                temp_filename = data->temp_filename;
+                RFC1867_DATA(bytes_processed) = data->post_bytes_processed;
+                RFC1867_DATA(cancel_upload) = data->cancel_upload;
+                RFC1867_DATA(temp_filename) = data->temp_filename;
                 ALLOC_INIT_ZVAL(track);
                 array_init(track);
-                add_assoc_long(track, "total", content_length);
-                add_assoc_long(track, "current", bytes_processed);
-                add_assoc_string(track, "filename", filename, 1);
-                add_assoc_string(track, "name", name, 1);
-                add_assoc_string(track, "temp_filename", temp_filename, 1);
-                add_assoc_long(track, "cancel_upload", cancel_upload);
+                add_assoc_long(track, "total", RFC1867_DATA(content_length));
+                add_assoc_long(track, "current", RFC1867_DATA(bytes_processed));
+                add_assoc_string(track, "filename", RFC1867_DATA(filename), 1);
+                add_assoc_string(track, "name", RFC1867_DATA(name), 1);
+                add_assoc_string(track, "temp_filename", RFC1867_DATA(temp_filename), 1);
+                add_assoc_long(track, "cancel_upload", RFC1867_DATA(cancel_upload));
                 add_assoc_long(track, "done", 0);
-                add_assoc_double(track, "start_time", start_time);
-                _apc_store(tracking_key, key_length, track, 3600, 0 TSRMLS_CC);
+                add_assoc_double(track, "start_time", RFC1867_DATA(start_time));
+                _apc_store(RFC1867_DATA(tracking_key), RFC1867_DATA(key_length), track, 3600, 0 TSRMLS_CC);
                 zval_ptr_dtor(&track);
             }
             break;
 
         case MULTIPART_EVENT_END:
-            if(*tracking_key) {
+            if(*RFC1867_DATA(tracking_key)) {
                 double now = my_time(); 
                 multipart_event_end *data = (multipart_event_end *) event_data;
-                bytes_processed = data->post_bytes_processed;
-                if(now>start_time) rate = 8.0*bytes_processed/(now-start_time);
-                else rate = 8.0*bytes_processed;  /* Too quick */
+                RFC1867_DATA(bytes_processed) = data->post_bytes_processed;
+                if(now>RFC1867_DATA(start_time)) RFC1867_DATA(rate) = 8.0*RFC1867_DATA(bytes_processed)/(now-RFC1867_DATA(start_time));
+                else RFC1867_DATA(rate) = 8.0*RFC1867_DATA(bytes_processed);  /* Too quick */
                 ALLOC_INIT_ZVAL(track);
                 array_init(track);
-                add_assoc_long(track, "total", content_length);
-                add_assoc_long(track, "current", bytes_processed);
-                add_assoc_double(track, "rate", rate);
-                add_assoc_string(track, "filename", filename, 1);
-                add_assoc_string(track, "name", name, 1);
-                if(temp_filename) {
-                    add_assoc_string(track, "temp_filename", temp_filename, 1);
+                add_assoc_long(track, "total", RFC1867_DATA(content_length));
+                add_assoc_long(track, "current", RFC1867_DATA(bytes_processed));
+                add_assoc_double(track, "rate", RFC1867_DATA(rate));
+                add_assoc_string(track, "filename", RFC1867_DATA(filename), 1);
+                add_assoc_string(track, "name", RFC1867_DATA(name), 1);
+                /* useless info, now that the file has been deleted? */
+                if(RFC1867_DATA(temp_filename)) {
+                    add_assoc_string(track, "temp_filename", RFC1867_DATA(temp_filename), 1);
                 }
-                add_assoc_long(track, "cancel_upload", cancel_upload);
+                add_assoc_long(track, "cancel_upload", RFC1867_DATA(cancel_upload));
                 add_assoc_long(track, "done", 1);
-                add_assoc_double(track, "start_time", start_time);
-                _apc_store(tracking_key, key_length, track, APCG(rfc1867_ttl), 0 TSRMLS_CC);
+                add_assoc_double(track, "start_time", RFC1867_DATA(start_time));
+                _apc_store(RFC1867_DATA(tracking_key), RFC1867_DATA(key_length), track, APCG(rfc1867_ttl), 0 TSRMLS_CC);
                 zval_ptr_dtor(&track);
             }
             break;
