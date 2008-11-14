@@ -105,7 +105,7 @@ ZEND_BEGIN_MODULE_GLOBALS(apc)
 #endif
     zend_bool coredump_unmap;    /* Trap signals that coredump and unmap shared memory */
     apc_cache_t *current_cache;  /* current cache being modified/read */
-	char *preload_path;
+    char *preload_path;
 ZEND_END_MODULE_GLOBALS(apc)
 
 /* (the following declaration is defined in php_apc.c) */
