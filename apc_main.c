@@ -44,14 +44,6 @@
 #include "SAPI.h"
 #include "php_scandir.h"
 #include "ext/standard/php_var.h"
-#if PHP_API_VERSION <= 20020918
-#if HAVE_APACHE
-#ifdef APC_PHP4_STAT
-#undef XtOffsetOf
-#include "httpd.h"
-#endif
-#endif
-#endif
 
 /* {{{ module variables */
 
@@ -302,15 +294,7 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
     }
 
 
-#if PHP_API_VERSION < 20041225
-#if HAVE_APACHE && defined(APC_PHP4_STAT)
-    t = ((request_rec *)SG(server_context))->request_time;
-#else
-    t = time(0);
-#endif
-#else
     t = sapi_get_request_time(TSRMLS_C);
-#endif
 
 #ifdef __DEBUG_APC__
     fprintf(stderr,"1. h->opened_path=[%s]  h->filename=[%s]\n", h->opened_path?h->opened_path:"null",h->filename);
@@ -351,6 +335,8 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
             /* If the file comes from the cache, add it to the global request file list */
             add_next_index_string(APCG(filehits), h->filename, 1);
 #endif
+            /* this is an unpool, which has no cleanup - this only free's the pool header */
+            apc_pool_destroy(ctxt.pool);
             return op_array;
         }
         if(APCG(report_autofilter)) {

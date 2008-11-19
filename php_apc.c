@@ -40,14 +40,6 @@
 #include "SAPI.h"
 #include "rfc1867.h"
 #include "php_apc.h"
-#if PHP_API_VERSION <= 20020918
-#if HAVE_APACHE
-#ifdef APC_PHP4_STAT
-#undef XtOffsetOf
-#include "httpd.h"
-#endif
-#endif
-#endif
 
 #if HAVE_SIGACTION
 #include "apc_signal.h"
@@ -554,15 +546,7 @@ int _apc_store(char *strkey, int strkey_len, const zval *val, const unsigned int
     time_t t;
     apc_context_t ctxt={0,};
 
-#if PHP_API_VERSION < 20041225
-#if HAVE_APACHE && defined(APC_PHP4_STAT)
-    t = ((request_rec *)SG(server_context))->request_time;
-#else
-    t = time(0);
-#endif
-#else
     t = sapi_get_request_time(TSRMLS_C);
-#endif
 
     if(!APCG(enabled)) return 0;
 
@@ -770,15 +754,7 @@ PHP_FUNCTION(apc_fetch) {
     ctxt.copy = APC_COPY_OUT_USER;
     ctxt.force_update = 0;
 
-#if PHP_API_VERSION < 20041225
-#if HAVE_APACHE && defined(APC_PHP4_STAT)
-    t = ((request_rec *)SG(server_context))->request_time;
-#else
-    t = time(0);
-#endif
-#else
     t = sapi_get_request_time(TSRMLS_C);
-#endif
 
     if (success) {
         ZVAL_BOOL(success, 0);
@@ -963,15 +939,7 @@ PHP_FUNCTION(apc_load_constants) {
 
     if(!strkey_len) RETURN_FALSE;
 
-#if PHP_API_VERSION < 20041225
-#if HAVE_APACHE && defined(APC_PHP4_STAT)
-    t = ((request_rec *)SG(server_context))->request_time;
-#else 
-    t = time(0);
-#endif
-#else 
     t = sapi_get_request_time(TSRMLS_C);
-#endif
 
     entry = apc_cache_user_find(apc_user_cache, strkey, strkey_len + 1, t);
 

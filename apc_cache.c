@@ -295,15 +295,7 @@ static void apc_cache_expunge(apc_cache_t* cache, size_t size)
     time_t t;
     TSRMLS_FETCH();
 
-#if PHP_API_VERSION < 20041225
-#if HAVE_APACHE && defined(APC_PHP4_STAT)
-    t = ((request_rec *)SG(server_context))->request_time;
-#else
-    t = time(0);
-#endif
-#else
     t = sapi_get_request_time(TSRMLS_C);
-#endif
 
     if(!cache) return;
 

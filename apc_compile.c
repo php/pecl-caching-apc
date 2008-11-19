@@ -1316,6 +1316,7 @@ zend_op_array* apc_copy_op_array_for_execution(zend_op_array* dst, zend_op_array
     memcpy(dst, src, sizeof(src[0]));
     dst->static_variables = my_copy_static_variables(src, ctxt);
 
+    /* memory leak */
     dst->refcount = apc_pmemcpy(src->refcount,
                                       sizeof(src->refcount[0]),
                                       ctxt->pool);
