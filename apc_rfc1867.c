@@ -191,10 +191,6 @@ void apc_rfc1867_progress(unsigned int event, void *event_data, void **extra TSR
                 add_assoc_double(track, "rate", RFC1867_DATA(rate));
                 add_assoc_string(track, "filename", RFC1867_DATA(filename), 1);
                 add_assoc_string(track, "name", RFC1867_DATA(name), 1);
-                /* useless info, now that the file has been deleted? */
-                if(RFC1867_DATA(temp_filename)) {
-                    add_assoc_string(track, "temp_filename", RFC1867_DATA(temp_filename), 1);
-                }
                 add_assoc_long(track, "cancel_upload", RFC1867_DATA(cancel_upload));
                 add_assoc_long(track, "done", 1);
                 add_assoc_double(track, "start_time", RFC1867_DATA(start_time));
