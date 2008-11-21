@@ -9,6 +9,7 @@ if (PHP_APC != "no") {
 							 apc_compile.c \
 							 apc_debug.c \
 							 apc_fcntl_win32.c \
+							 apc_iterator.c \
 							 apc_main.c \
 							 apc_shm.c \
 							 apc_sma.c \
