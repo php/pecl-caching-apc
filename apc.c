@@ -137,7 +137,13 @@ static void my_log(int level, const char* fmt, va_list args)
     if (fmt[0] != '\0' && fmt[strlen(fmt)-1] == ':') {
         fprintf(stderr, " %s", strerror(errno));
     }
-    fprintf(stderr, "\n");
+
+    if (zend_is_compiling(TSRMLS_C)) {
+        fprintf(stderr, " in %s on line %d.", zend_get_compiled_filename(TSRMLS_C), zend_get_compiled_lineno(TSRMLS_C)); 
+    } else if (zend_is_executing(TSRMLS_C)) {
+        fprintf(stderr, " in %s on line %d.", zend_get_executed_filename(TSRMLS_C), zend_get_executed_lineno(TSRMLS_C)); 
+    }
+    fprintf(stderr, "\n"); 
 
     if (level == APC_ERROR) {
         exit(2);
