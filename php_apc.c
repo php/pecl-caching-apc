@@ -52,6 +52,7 @@ PHP_FUNCTION(apc_sma_info);
 PHP_FUNCTION(apc_store);
 PHP_FUNCTION(apc_fetch);
 PHP_FUNCTION(apc_delete);
+PHP_FUNCTION(apc_delete_file);
 PHP_FUNCTION(apc_compile_file);
 PHP_FUNCTION(apc_define_constants);
 PHP_FUNCTION(apc_load_constants);
@@ -862,6 +863,57 @@ PHP_FUNCTION(apc_delete) {
 }
 /* }}} */
 
+/* {{{ proto mixed apc_delete_file(mixed keys)
+ *       Deletes the given files from the opcode cache.  
+ *       Accepts a string, array of strings, or APCIterator object. 
+ *       Returns True/False, or for an Array an Array of failed files.
+ */
+PHP_FUNCTION(apc_delete_file) {
+    zval *keys;
+
+    if(!APCG(enabled)) RETURN_FALSE;
+
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &keys) == FAILURE) {
+        return;
+    }
+
+    if (Z_TYPE_P(keys) == IS_STRING) {
+        if (!Z_STRLEN_P(keys)) RETURN_FALSE;
+        if(apc_cache_delete(apc_cache, Z_STRVAL_P(keys), Z_STRLEN_P(keys) + 1) != 1) {
+            RETURN_FALSE;
+        } else {
+            RETURN_TRUE;
+        }
+    } else if (Z_TYPE_P(keys) == IS_ARRAY) {
+        HashTable *hash = Z_ARRVAL_P(keys);
+        HashPosition hpos;
+        zval **hentry;
+        array_init(return_value);
+        zend_hash_internal_pointer_reset_ex(hash, &hpos);
+        while(zend_hash_get_current_data_ex(hash, (void**)&hentry, &hpos) == SUCCESS) {
+            if(Z_TYPE_PP(hentry) != IS_STRING) {
+                apc_wprint("apc_delete_file() expects a string, array of strings, or APCIterator instance.");
+                add_next_index_zval(return_value, *hentry);
+                ZVAL_ADDREF(*hentry);
+            } else if(apc_cache_delete(apc_cache, Z_STRVAL_PP(hentry), Z_STRLEN_PP(hentry) + 1) != 1) {
+                add_next_index_zval(return_value, *hentry);
+                ZVAL_ADDREF(*hentry);
+            }
+            zend_hash_move_forward_ex(hash, &hpos);
+        }
+        return;
+    } else if (Z_TYPE_P(keys) == IS_OBJECT) {
+        if (apc_iterator_delete(keys TSRMLS_CC)) {
+            RETURN_TRUE;
+        } else {
+            RETURN_FALSE;
+        }
+    } else {
+        apc_wprint("apc_delete_file() expects a string, array of strings, or APCIterator instance.");
+    }
+}
+/* }}} */
+
 static void _apc_define_constants(zval *constants, zend_bool case_sensitive TSRMLS_DC) {
     char *const_key;
     unsigned int const_key_len;
@@ -1051,6 +1103,7 @@ function_entry apc_functions[] = {
     PHP_FE(apc_store,               NULL)
     PHP_FE(apc_fetch,               php_apc_fetch_arginfo)
     PHP_FE(apc_delete,              NULL)
+    PHP_FE(apc_delete_file,         NULL)
     PHP_FE(apc_define_constants,    NULL)
     PHP_FE(apc_load_constants,      NULL)
     PHP_FE(apc_compile_file,        NULL)

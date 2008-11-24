@@ -579,7 +579,11 @@ int apc_iterator_delete(zval *zobj TSRMLS_DC) {
     while (iterator->fetch(iterator)) {
         while (iterator->stack_idx < apc_stack_size(iterator->stack)) {
             item = apc_stack_get(iterator->stack, iterator->stack_idx++);
-            apc_cache_user_delete(apc_user_cache, item->key, item->key_len);
+            if (iterator->cache == apc_cache) {
+                apc_cache_delete(apc_cache, item->key, item->key_len);
+            } else {
+                apc_cache_user_delete(apc_user_cache, item->key, item->key_len);
+            }
         }
     }
 

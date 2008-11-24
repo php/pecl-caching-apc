@@ -647,6 +647,59 @@ int apc_cache_user_delete(apc_cache_t* cache, char *strkey, int keylen)
 }
 /* }}} */
 
+/* {{{ apc_cache_delete */
+int apc_cache_delete(apc_cache_t* cache, char *filename, int filename_len)
+{
+    slot_t** slot;
+    time_t t;
+    apc_cache_key_t key;
+
+#if PHP_API_VERSION < 20041225
+#if HAVE_APACHE && defined(APC_PHP4_STAT)
+    t = ((request_rec *)SG(server_context))->request_time;
+#else
+    t = time(0);
+#endif
+#else
+    t = sapi_get_request_time(TSRMLS_C);
+#endif
+
+    /* try to create a cache key; if we fail, give up on caching */
+    if (!apc_cache_make_file_key(&key, filename, PG(include_path), t TSRMLS_CC)) {
+        apc_wprint("Could not stat file %s, unable to delete from cache.", filename);
+        return -1;
+    }
+
+    CACHE_LOCK(cache);
+
+    if(key.type == APC_CACHE_KEY_FILE) slot = &cache->slots[hash(key) % cache->num_slots];
+    else slot = &cache->slots[string_nhash_8(key.data.fpfile.fullpath, key.data.fpfile.fullpath_len) % cache->num_slots];
+
+    while(*slot) {
+      if(key.type == (*slot)->key.type) {
+        if(key.type == APC_CACHE_KEY_FILE) {
+            if(key_equals((*slot)->key.data.file, key.data.file)) {
+                remove_slot(cache, slot);
+                CACHE_UNLOCK(cache);
+                return 1;
+            }
+        } else {   /* APC_CACHE_KEY_FPFILE */
+            if(!memcmp((*slot)->key.data.fpfile.fullpath, key.data.fpfile.fullpath, key.data.fpfile.fullpath_len+1)) {
+                remove_slot(cache, slot);
+                CACHE_UNLOCK(cache);
+                return 1;
+            }
+        }
+      }
+      slot = &(*slot)->next;
+    }
+
+    CACHE_UNLOCK(cache);
+    return 0;
+
+}
+/* }}} */
+
 /* {{{ apc_cache_release */
 void apc_cache_release(apc_cache_t* cache, apc_cache_entry_t* entry)
 {

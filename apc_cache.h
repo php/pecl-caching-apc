@@ -176,8 +176,9 @@ extern apc_cache_entry_t* apc_cache_find(T cache, apc_cache_key_t key, time_t t)
 extern apc_cache_entry_t* apc_cache_user_find(T cache, char* strkey, int keylen, time_t t);
 
 /*
- * apc_cache_user_delete finds an entry in the user cache and deletes it.
+ * apc_cache_delete and apc_cache_user_delete finds an entry in the cache and deletes it.
  */
+extern int apc_cache_delete(apc_cache_t* cache, char *filename, int filename_len);
 extern int apc_cache_user_delete(apc_cache_t* cache, char *strkey, int keylen);
 
 /* apc_cach_fetch_zval takes a zval in the cache and reconstructs a runtime
