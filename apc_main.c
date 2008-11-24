@@ -44,6 +44,7 @@
 #include "SAPI.h"
 #include "php_scandir.h"
 #include "ext/standard/php_var.h"
+#include "ext/standard/md5.h"
 
 /* {{{ module variables */
 
@@ -394,6 +395,34 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
         }
     }
 #endif
+
+    if(APCG(file_md5)) {
+        int n;
+        unsigned char buf[1024];
+        PHP_MD5_CTX context;
+        php_stream *stream;
+        char *filename;
+
+        if(h->opened_path) {
+            filename = h->opened_path;
+        } else {
+            filename = h->filename;
+        }
+        stream = php_stream_open_wrapper(filename, "rb", REPORT_ERRORS | ENFORCE_SAFE_MODE, NULL);
+        if(stream) {
+            PHP_MD5Init(&context);
+            while((n = php_stream_read(stream, (char*)buf, sizeof(buf))) > 0) {
+                PHP_MD5Update(&context, buf, n);
+            }
+            PHP_MD5Final(key.md5, &context);
+            php_stream_close(stream);
+            if(n<0) {
+                apc_wprint("Error while reading '%s' for md5 generation.", filename);
+            }
+        } else {
+            apc_wprint("Unable to open '%s' for md5 generation.", filename);
+        }
+    }
 
     APCG(current_cache) = apc_cache;
     ctxt.pool = apc_pool_create(APC_MEDIUM_POOL, apc_sma_malloc, apc_sma_free);

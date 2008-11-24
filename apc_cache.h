@@ -80,6 +80,7 @@ struct apc_cache_key_t {
     apc_cache_key_data_t data;
     time_t mtime;                 /* the mtime of this cached entry */
     unsigned char type;
+    unsigned char md5[16];        /* md5 hash of the source file */
 };
 /* }}} */
 
@@ -243,6 +244,7 @@ typedef union _apc_cache_link_data_t {
         char *filename;
         dev_t device;
         ino_t inode;
+        unsigned char *md5;
     } file;
     struct {
         char *info;

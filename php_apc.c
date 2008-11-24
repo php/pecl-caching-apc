@@ -40,6 +40,7 @@
 #include "SAPI.h"
 #include "rfc1867.h"
 #include "php_apc.h"
+#include "ext/standard/md5.h"
 
 #if HAVE_SIGACTION
 #include "apc_signal.h"
@@ -195,6 +196,7 @@ STD_PHP_INI_ENTRY("apc.rfc1867_ttl", "3600", PHP_INI_SYSTEM, OnUpdateInt, rfc186
 #endif
 STD_PHP_INI_BOOLEAN("apc.coredump_unmap", "0", PHP_INI_SYSTEM, OnUpdateBool, coredump_unmap, zend_apc_globals, apc_globals)
 STD_PHP_INI_ENTRY("apc.preload_path", (char*)NULL,              PHP_INI_SYSTEM, OnUpdateString,       preload_path,  zend_apc_globals, apc_globals)
+STD_PHP_INI_BOOLEAN("apc.file_md5", "0", PHP_INI_SYSTEM, OnUpdateBool, file_md5,  zend_apc_globals, apc_globals)
 PHP_INI_END()
 
 /* }}} */
@@ -311,6 +313,7 @@ PHP_FUNCTION(apc_cache_info)
     char *cache_type;
     int ct_len;
     zend_bool limited=0;
+    char md5str[33];
 
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|sb", &cache_type, &ct_len, &limited) == FAILURE) {
         return;
@@ -384,6 +387,10 @@ PHP_FUNCTION(apc_cache_info)
             add_assoc_long(link, "device", p->data.file.device);
             add_assoc_long(link, "inode", p->data.file.inode);
             add_assoc_string(link, "type", "file", 1);
+            if(APCG(file_md5)) {
+                make_digest_ex(md5str, p->data.file.md5, 16);
+                add_assoc_string(link, "md5", md5str, 1);
+            }
         } else if(p->type == APC_CACHE_ENTRY_USER) {
             add_assoc_string(link, "info", p->data.user.info, 1);
             add_assoc_long(link, "ttl", (long)p->data.user.ttl);
@@ -414,6 +421,10 @@ PHP_FUNCTION(apc_cache_info)
             add_assoc_long(link, "device", p->data.file.device);
             add_assoc_long(link, "inode", p->data.file.inode);
             add_assoc_string(link, "type", "file", 1);
+            if(APCG(file_md5)) {
+                make_digest_ex(md5str, p->data.file.md5, 16);
+                add_assoc_string(link, "md5", md5str, 1);
+            }
         } else if(p->type == APC_CACHE_ENTRY_USER) {
             add_assoc_string(link, "info", p->data.user.info, 1);
             add_assoc_long(link, "ttl", (long)p->data.user.ttl);

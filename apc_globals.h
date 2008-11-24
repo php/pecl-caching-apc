@@ -106,6 +106,7 @@ ZEND_BEGIN_MODULE_GLOBALS(apc)
     zend_bool coredump_unmap;    /* Trap signals that coredump and unmap shared memory */
     apc_cache_t *current_cache;  /* current cache being modified/read */
     char *preload_path;
+    zend_bool file_md5;           /* record md5 hash of files */
 ZEND_END_MODULE_GLOBALS(apc)
 
 /* (the following declaration is defined in php_apc.c) */

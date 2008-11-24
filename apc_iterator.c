@@ -24,6 +24,8 @@
 #include "apc_cache.h"
 #include "apc_zend.h"
 
+#include "ext/standard/md5.h"
+
 #include "zend_interfaces.h"
 
 zend_class_entry *apc_iterator_ce;
@@ -78,6 +80,7 @@ static void apc_iterator_item_value(slot_t **slot_pp, apc_iterator_item_t *item)
 /* {{{ apc_iterator_item_info */
 static void apc_iterator_item_info(slot_t **slot_pp, apc_iterator_item_t *item) {
     slot_t *slot = *slot_pp;
+    char md5str[33];
 
     ALLOC_INIT_ZVAL(item->info);
     array_init(item->info);
@@ -90,6 +93,10 @@ static void apc_iterator_item_info(slot_t **slot_pp, apc_iterator_item_t *item) 
         add_assoc_long(item->info, "device", slot->key.data.file.device);
         add_assoc_long(item->info, "inode", slot->key.data.file.inode);
         add_assoc_string(item->info, "type", "file", 1);
+        if(slot->key.md5) {
+            make_digest_ex(md5str, slot->key.md5, 16);
+            add_assoc_string(item->info, "md5", md5str, 1);
+        }
     } else if(slot->value->type == APC_CACHE_ENTRY_USER) {
         add_assoc_string(item->info, "info", slot->value->data.user.info, 1);
         add_assoc_long(item->info, "ttl", (long)slot->value->data.user.ttl);

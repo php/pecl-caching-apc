@@ -988,6 +988,12 @@ apc_cache_info_t* apc_cache_info(apc_cache_t* cache, zend_bool limited)
                         link->data.file.filename = apc_xstrdup(p->key.data.fpfile.fullpath, apc_emalloc);
                     }
                     link->type = APC_CACHE_ENTRY_FILE;
+                    if (APCG(file_md5)) {
+                      link->data.file.md5 = emalloc(sizeof(p->key.md5));
+                      memcpy(link->data.file.md5, p->key.md5, 16);
+                    } else {
+                      link->data.file.md5 = NULL;
+                    }
                 } else if(p->value->type == APC_CACHE_ENTRY_USER) {
                     link->data.user.info = apc_xmemcpy(p->value->data.user.info, p->value->data.user.info_len+1, apc_emalloc);
                     link->data.user.ttl = p->value->data.user.ttl;
@@ -1020,6 +1026,12 @@ apc_cache_info_t* apc_cache_info(apc_cache_t* cache, zend_bool limited)
                     link->data.file.filename = apc_xstrdup(p->key.data.fpfile.fullpath, apc_emalloc);
                 }
                 link->type = APC_CACHE_ENTRY_FILE;
+                if (APCG(file_md5)) {
+                  link->data.file.md5 = emalloc(sizeof(p->key.md5));
+                  memcpy(link->data.file.md5, p->key.md5, 16);
+                } else {
+                  link->data.file.md5 = NULL;
+                }
             } else if(p->value->type == APC_CACHE_ENTRY_USER) {
                 link->data.user.info = apc_xmemcpy(p->value->data.user.info, p->value->data.user.info_len+1, apc_emalloc);
                 link->data.user.ttl = p->value->data.user.ttl;
@@ -1050,7 +1062,12 @@ void apc_cache_free_info(apc_cache_info_t* info)
     while (p != NULL) {
         q = p;
         p = p->next;
-        if(q->type == APC_CACHE_ENTRY_FILE) apc_efree(q->data.file.filename);
+        if(q->type == APC_CACHE_ENTRY_FILE) {
+            if(q->data.file.md5) {
+                efree(q->data.file.md5);
+            }
+            apc_efree(q->data.file.filename);
+        }
         else if(q->type == APC_CACHE_ENTRY_USER) apc_efree(q->data.user.info);
         apc_efree(q);
     }
@@ -1058,7 +1075,12 @@ void apc_cache_free_info(apc_cache_info_t* info)
     while (p != NULL) {
         q = p;
         p = p->next;
-        if(q->type == APC_CACHE_ENTRY_FILE) apc_efree(q->data.file.filename);
+        if(q->type == APC_CACHE_ENTRY_FILE) {
+            if(q->data.file.md5) {
+                efree(q->data.file.md5);
+            }
+            apc_efree(q->data.file.filename);
+        }
         else if(q->type == APC_CACHE_ENTRY_USER) apc_efree(q->data.user.info);
         apc_efree(q);
     }
