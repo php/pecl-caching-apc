@@ -853,11 +853,11 @@ PHP_FUNCTION(apc_delete) {
         while(zend_hash_get_current_data_ex(hash, (void**)&hentry, &hpos) == SUCCESS) {
             if(Z_TYPE_PP(hentry) != IS_STRING) {
                 apc_wprint("apc_delete() expects a string, array of strings, or APCIterator instance.");
-            }
-            if(apc_cache_user_delete(apc_user_cache, Z_STRVAL_PP(hentry), Z_STRLEN_PP(hentry) + 1)) {
-                add_next_index_bool(return_value, 1);
-            } else {
-                add_next_index_bool(return_value, 0);
+                add_next_index_zval(return_value, *hentry);
+                ZVAL_ADDREF(*hentry);
+            } else if(apc_cache_user_delete(apc_user_cache, Z_STRVAL_PP(hentry), Z_STRLEN_PP(hentry) + 1) != 1) {
+                add_next_index_zval(return_value, *hentry);
+                ZVAL_ADDREF(*hentry);
             }
             zend_hash_move_forward_ex(hash, &hpos);
         }
