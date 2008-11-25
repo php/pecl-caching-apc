@@ -59,17 +59,26 @@
   <active>yes</active>
  </developer>
  
- <date>2007-12-26</date>
- <version><release>3.0.16</release><api>3.0.0</api></version>
- <stability><release>stable</release><api>stable</api></stability>
+ <date>2008-11-xx</date>
+ <version><release>3.1.1</release><api>3.1.0</api></version>
+ <stability><release>beta</release><api>beta</api></stability>
  <license uri="http://www.php.net/license">PHP License</license>
  <notes>
-* Fix for longstanding cache-full crash (Christian Seiler)
-  http://news.php.net/php.pecl.dev/4951 for the details
-* Added optional shm unmap on a fatal signal feature (Lucas Nealan)
-* Added PTHREAD_MUTEX_ADAPTIVE_NP option pthread locks (Paul Saab)
-* Minor cleanups (Lucas Nealan)
-* Added configure option to enable apc_cache_info('filehits') (Shire)
+- PHP4 compatibilty break
+- apc_pool allocator (Gopal) 
+- doubly-linked sma allocator (Shire)
+- php 5.3 gc compatibility (Gopal)
+- APCIterator for easy access (Shire)
+- apc_delete_file (Shire)
+- apc_inc/apc_dec/apc_cas functions (Shire)
+- apc.canonicalize (Gopal)
+- apc.preload_path (Gopal)
+- apc.rfc1867_ttl  (Shire)
+- apc.file_md5     (Shire)
+- consolidate locking macros (Shire)
+- remove futex/TSRM locks  (Shire)
+- non-blocking semaphore locks  (Shire)
+- zval* object rework (Gopal)
  </notes>
 
  <contents>
@@ -145,13 +154,7 @@
  <dependencies>
    <required>
      <php>
-       <min>4.3.0</min>
-       <exclude>5.0.0</exclude>
-       <exclude>5.0.1</exclude>
-       <exclude>5.0.2</exclude>
-       <exclude>5.0.3</exclude>
-       <exclude>5.0.4</exclude>
-       <exclude>5.0.5</exclude>
+       <min>5.1.0</min>
      </php>
      <pearinstaller>
        <min>1.4.0</min>
@@ -463,7 +466,53 @@ Allow keys used in apc_store/apc_fetch/apc_delete to be binary safe and prevent 
 * ZTS &amp; other compile fixes (Gopal, Edin, Shire)
      </notes>
     </release>
-
+	<release>
+ 	 <version><release>3.0.16</release><api>3.0.0</api></version>
+ 	 <stability><release>stable</release><api>stable</api></stability>
+	 <license uri="http://www.php.net/license">PHP License</license>
+     <date>2008-03-26</date>
+	 <notes>
+* Fix for longstanding cache-full crash (Christian Seiler)
+  http://news.php.net/php.pecl.dev/4951 for the details
+* Added optional shm unmap on a fatal signal feature (Lucas Nealan)
+* Added PTHREAD_MUTEX_ADAPTIVE_NP option pthread locks (Paul Saab)
+* Minor cleanups (Lucas Nealan)
+* Added configure option to enable apc_cache_info('filehits') (Shire)
+	 </notes>
+    </release>
+	<release>
+ 	 <version><release>3.0.17</release><api>3.0.0</api></version>
+ 	 <stability><release>stable</release><api>stable</api></stability>
+	 <license uri="http://www.php.net/license">PHP License</license>
+     <date>2008-03-29</date>
+	 <notes>
+* Crash fixes
+* Fix apc_add() cache expunge bug (Rasmus)
+* Added parameter to apc_fetch to determine success/failure when fetching booleans (shire)
+* Fix misc. memleaks (shire)
+	 </notes>
+    </release>
+	<release>
+ 	 <version><release>3.0.18</release><api>3.0.0</api></version>
+ 	 <stability><release>stable</release><api>stable</api></stability>
+	 <license uri="http://www.php.net/license">PHP License</license>
+     <date>2008-03-29</date>
+	 <notes>
+- Revert apc_expunge_cb bug-fix
+- Misc memleaks
+	 </notes>
+    </release>
+	<release>
+ 	 <version><release>3.0.19</release><api>3.0.0</api></version>
+ 	 <stability><release>stable</release><api>stable</api></stability>
+	 <license uri="http://www.php.net/license">PHP License</license>
+     <date>2008-05-15</date>
+	 <notes>
+- Safe-mode and fast-cgi fixes
+- Fix double-free of builtin_functions
+- php 5.3 fixes
+	 </notes>
+    </release>
  </changelog>
 </package>
 <!--

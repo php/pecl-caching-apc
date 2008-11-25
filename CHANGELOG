@@ -1,3 +1,33 @@
+
+3.1.1 : 2008-11-xx
+
+- PHP4 compatibilty break
+- apc_pool allocator (Gopal) 
+- doubly-linked sma allocator (Shire)
+- php 5.3 gc compatibility (Gopal)
+- APCIterator for easy access (Shire)
+- apc_delete_file (Shire)
+- apc_inc/apc_dec/apc_cas functions (Shire)
+- apc.canonicalize (Gopal)
+- apc.preload_path (Gopal)
+- apc.rfc1867_ttl  (Shire)
+- apc.file_md5     (Shire)
+- consolidate locking macros (Shire)
+- remove futex/TSRM locks  (Shire)
+- non-blocking semaphore locks  (Shire)
+- zval* object rework (Gopal)
+
+3.0.19: 2008-05-14
+- Safe-mode and fast-cgi fixes
+- Fix double-free of builtin_functions
+- php 5.3 fixes
+
+3.0.18: 2008-03-29
+- Revert apc_expunge_cb bug-fix
+- Misc memleaks
+
+3.0.17: 2008-03-26
+- Crash fixes
 - Fix apc_add() cache expunge bug (Rasmus)
 - Added parameter to apc_fetch to determine success/failure when fetching booleans (shire)
 - Fix misc. memleaks (shire)
