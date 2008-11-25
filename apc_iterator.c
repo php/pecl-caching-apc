@@ -88,7 +88,7 @@ static void apc_iterator_item_info(slot_t **slot_pp, apc_iterator_item_t *item) 
         if (slot->key.type == APC_CACHE_KEY_FILE) {
           add_assoc_string(item->info, "filename", slot->value->data.file.filename, 1);
         } else {  /* APC_CACHE_FPFILE */
-          add_assoc_string(item->info, "filename", slot->key.data.fpfile.fullpath, 1);
+          add_assoc_string(item->info, "filename", (char*)slot->key.data.fpfile.fullpath, 1);
         }
         add_assoc_long(item->info, "device", slot->key.data.file.device);
         add_assoc_long(item->info, "inode", slot->key.data.file.inode);
