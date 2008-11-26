@@ -854,10 +854,10 @@ PHP_FUNCTION(apc_delete) {
             if(Z_TYPE_PP(hentry) != IS_STRING) {
                 apc_wprint("apc_delete() expects a string, array of strings, or APCIterator instance.");
                 add_next_index_zval(return_value, *hentry);
-                ZVAL_ADDREF(*hentry);
+                Z_ADDREF_PP(hentry);
             } else if(apc_cache_user_delete(apc_user_cache, Z_STRVAL_PP(hentry), Z_STRLEN_PP(hentry) + 1) != 1) {
                 add_next_index_zval(return_value, *hentry);
-                ZVAL_ADDREF(*hentry);
+                Z_ADDREF_PP(hentry);
             }
             zend_hash_move_forward_ex(hash, &hpos);
         }
@@ -905,10 +905,10 @@ PHP_FUNCTION(apc_delete_file) {
             if(Z_TYPE_PP(hentry) != IS_STRING) {
                 apc_wprint("apc_delete_file() expects a string, array of strings, or APCIterator instance.");
                 add_next_index_zval(return_value, *hentry);
-                ZVAL_ADDREF(*hentry);
+                Z_ADDREF_PP(hentry);
             } else if(apc_cache_delete(apc_cache, Z_STRVAL_PP(hentry), Z_STRLEN_PP(hentry) + 1) != 1) {
                 add_next_index_zval(return_value, *hentry);
-                ZVAL_ADDREF(*hentry);
+                Z_ADDREF_PP(hentry);
             }
             zend_hash_move_forward_ex(hash, &hpos);
         }
