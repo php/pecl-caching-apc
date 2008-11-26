@@ -483,8 +483,7 @@ static zval* data_unserialize(const char *filename)
     php_unserialize_data_t var_hash;
     TSRMLS_FETCH();
 
-    if(VCWD_STAT(filename, &sb) == -1) 
-    {
+    if(VCWD_STAT(filename, &sb) == -1) {
         return NULL;
     }
 
@@ -494,7 +493,14 @@ static zval* data_unserialize(const char *filename)
 
     tmp = contents = malloc(len);
 
-    fread(contents, 1, len, fp);
+	if(!contents) {
+		return NULL;
+	}
+
+    if(fread(contents, 1, len, fp) < 1) {	
+		free(contents);
+		return NULL;
+	}
 
     MAKE_STD_ZVAL(retval);
 

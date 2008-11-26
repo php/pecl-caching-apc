@@ -76,7 +76,10 @@ void *apc_mmap(char *file_mask, size_t size)
          * path you want here.
          */
         if(strstr(file_mask,".shm")) {
-            mktemp(file_mask);
+            if(!mktemp(file_mask)) {
+                apc_eprint("apc_mmap: mktemp on %s failed:", file_mask);
+                return (void *)-1;
+			}
             fd = shm_open(file_mask, O_CREAT|O_RDWR, S_IRUSR|S_IWUSR);
             if(fd == -1) {
                 apc_eprint("apc_mmap: shm_open on %s failed:", file_mask);
