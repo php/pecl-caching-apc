@@ -120,6 +120,8 @@ static void my_log(int level, const char* fmt, va_list args)
     time_t now;
     char* buf;          /* for ctime */
 
+	TSRMLS_FETCH();
+
     fflush(stdout);
 
     if (level < 0)

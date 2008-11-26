@@ -654,15 +654,9 @@ int apc_cache_delete(apc_cache_t* cache, char *filename, int filename_len)
     time_t t;
     apc_cache_key_t key;
 
-#if PHP_API_VERSION < 20041225
-#if HAVE_APACHE && defined(APC_PHP4_STAT)
-    t = ((request_rec *)SG(server_context))->request_time;
-#else
-    t = time(0);
-#endif
-#else
+    TSRMLS_FETCH();
+
     t = sapi_get_request_time(TSRMLS_C);
-#endif
 
     /* try to create a cache key; if we fail, give up on caching */
     if (!apc_cache_make_file_key(&key, filename, PG(include_path), t TSRMLS_CC)) {
@@ -948,6 +942,8 @@ apc_cache_info_t* apc_cache_info(apc_cache_t* cache, zend_bool limited)
     apc_cache_info_t* info;
     slot_t* p;
     int i;
+
+	TSRMLS_FETCH();
 
     if(!cache) return NULL;
 
