@@ -182,6 +182,9 @@ static zval** my_copy_zval_ptr(zval** dst, const zval** src, apc_context_t* ctxt
     CHECK((dst_new = my_copy_zval(*dst, *src, ctxt)));
 
     if(dst_new != *dst) {
+        if(usegc) {
+            FREE_ZVAL(dst[0]);
+        }
         *dst = dst_new;
     }
 
