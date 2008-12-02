@@ -183,6 +183,7 @@ static zval** my_copy_zval_ptr(zval** dst, const zval** src, apc_context_t* ctxt
 
     if(dst_new != *dst) {
         if(usegc) {
+            TSRMLS_FETCH();
             FREE_ZVAL(dst[0]);
         }
         *dst = dst_new;

@@ -867,9 +867,10 @@ apc_cache_entry_t* apc_cache_make_file_entry(const char* filename,
 /* {{{ apc_cache_store_zval */
 zval* apc_cache_store_zval(zval* dst, const zval* src, apc_context_t* ctxt)
 {
-    TSRMLS_FETCH();
     /* Maintain a list of zvals we've copied to properly handle recursive structures */
-    HashTable *old = APCG(copied_zvals);
+    HashTable *old;
+    TSRMLS_FETCH();
+    old = APCG(copied_zvals);
     APCG(copied_zvals) = emalloc(sizeof(HashTable));
     zend_hash_init(APCG(copied_zvals), 0, NULL, NULL, 0);
 
@@ -889,9 +890,11 @@ zval* apc_cache_store_zval(zval* dst, const zval* src, apc_context_t* ctxt)
 /* {{{ apc_cache_fetch_zval */
 zval* apc_cache_fetch_zval(zval* dst, const zval* src, apc_context_t* ctxt)
 {
-    TSRMLS_FETCH();
     /* Maintain a list of zvals we've copied to properly handle recursive structures */
-    HashTable *old = APCG(copied_zvals);
+    HashTable *old;
+    TSRMLS_FETCH();
+
+    old = APCG(copied_zvals);
     APCG(copied_zvals) = emalloc(sizeof(HashTable));
     zend_hash_init(APCG(copied_zvals), 0, NULL, NULL, 0);
 
