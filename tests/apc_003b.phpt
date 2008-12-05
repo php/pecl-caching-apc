@@ -1,9 +1,9 @@
 --TEST--
-APC: apc_store/fetch with objects (php pre-5.3)
+APC: apc_store/fetch with objects (php 5.3)
 --SKIPIF--
 <?php
     require_once(dirname(__FILE__) . '/skipif.inc'); 
-    if(version_compare(zend_version(), '2.3.0') >= 0) {
+    if(version_compare(zend_version(), '2.3.0') < 0) {
 		echo "skip\n";
 	}
 ?>
@@ -73,13 +73,13 @@ object(foo)#%d (1) {
   bool(true)
 }
 object(baz)#%d (6) {
-  ["pri:private"]=>
+  ["pri":"baz":private]=>
   string(3) "baz"
   ["pub"]=>
   string(3) "bar"
-  ["pro:protected"]=>
+  ["pro":protected]=>
   string(3) "bar"
-  ["pri:private"]=>
+  ["pri":"bar":private]=>
   string(3) "bar"
   ["bar"]=>
   bool(true)
@@ -87,13 +87,13 @@ object(baz)#%d (6) {
   bool(true)
 }
 object(baz)#%d (6) {
-  ["pri:private"]=>
+  ["pri":"baz":private]=>
   string(3) "baz"
   ["pub"]=>
   string(3) "bar"
-  ["pro:protected"]=>
+  ["pro":protected]=>
   string(3) "bar"
-  ["pri:private"]=>
+  ["pri":"bar":private]=>
   string(3) "mod"
   ["bar"]=>
   bool(true)
@@ -101,13 +101,13 @@ object(baz)#%d (6) {
   bool(true)
 }
 object(baz)#%d (6) {
-  ["pri:private"]=>
+  ["pri":"baz":private]=>
   string(3) "baz"
   ["pub"]=>
   string(3) "bar"
-  ["pro:protected"]=>
+  ["pro":protected]=>
   string(3) "bar"
-  ["pri:private"]=>
+  ["pri":"bar":private]=>
   string(3) "mod"
   ["bar"]=>
   bool(true)
