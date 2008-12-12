@@ -160,7 +160,7 @@
 
  <extsrcrelease>
    <configureoption name="enable-apc-filehits"  default="no"  prompt="Enable per request file info about files used from the APC cache"/>
-   <configureoption name="enable-spinlocks"     default="no"  prompt="Enable spin locks (EXPERIMENTAL)"/>
+   <configureoption name="enable-apc-spinlocks" default="no"  prompt="Enable spin locks (EXPERIMENTAL)"/>
  </extsrcrelease>
 
  <changelog>
