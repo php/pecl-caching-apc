@@ -59,7 +59,7 @@
   <active>yes</active>
  </developer>
  
- <date>2008-11-xx</date>
+ <date>2008-12-12</date>
  <version><release>3.1.1</release><api>3.1.0</api></version>
  <stability><release>beta</release><api>beta</api></stability>
  <license uri="http://www.php.net/license">PHP License</license>
@@ -100,8 +100,6 @@
     <file role="src" name="apc_debug.h" />
     <file role="src" name="apc_fcntl.c" />
     <file role="src" name="apc_fcntl.h" />
-    <file role="src" name="apc_futex.c" />
-    <file role="src" name="apc_futex.h" />
     <file role="src" name="apc_globals.h" />
     <file role="src" name="apc_lock.h" />
     <file role="src" name="apc_main.c" />
@@ -138,15 +136,6 @@
      <file role="test" name="apc_002.phpt" />
      <file role="test" name="apc_003.phpt" />
      <file role="test" name="skipif.inc" />
-    </dir>
-    <dir name="arch">
-     <file role="src" name="atomic.h" />
-     <dir name="i386">
-      <file role="src" name="atomic.h" />
-     </dir>
-     <dir name="x86_64">
-      <file role="src" name="atomic.h" />
-     </dir>
     </dir>
    </dir>
  </contents>
