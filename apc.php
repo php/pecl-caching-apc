@@ -61,7 +61,7 @@ function defaults($d,$v) {
 
 // rewrite $PHP_SELF to block XSS attacks
 //
-$PHP_SELF= isset($_SERVER['PHP_SELF']) ? htmlentities(strip_tags($_SERVER['PHP_SELF'],''), ENT_QUOTES) : '';
+$PHP_SELF= isset($_SERVER['PHP_SELF']) ? htmlentities(strip_tags($_SERVER['PHP_SELF'],''), ENT_QUOTES, 'UTF-8') : '';
 $time = time();
 $host = getenv('HOSTNAME');
 if($host) { $host = '('.$host.')'; }
@@ -1091,7 +1091,7 @@ EOB;
 		}
 		if (!$AUTHENTICATED) {
 			// hide all path entries if not logged in
-			$list[$k.$entry[$fieldname]]=preg_replace('/^.*(\\/|\\\\)/','<i>&lt;hidden&gt;</i>/',$entry);
+			$list[$k.$entry[$fieldname]]=preg_replace('/^.*(\\/|\\\\)/','*hidden*/',$entry);
 		} else {
 			$list[$k.$entry[$fieldname]]=$entry;
 		}
@@ -1110,9 +1110,10 @@ EOB;
 		$i=0;
 		foreach($list as $k => $entry) {
       if(!$MYREQUEST['SEARCH'] || preg_match($MYREQUEST['SEARCH'], $entry[$fieldname]) != 0) {  
+        $field_value = htmlentities(strip_tags($entry[$fieldname],''), ENT_QUOTES, 'UTF-8');
         echo
           '<tr class=tr-',$i%2,'>',
-          "<td class=td-0><a href=\"$MY_SELF&OB=",$MYREQUEST['OB'],"&SH=",md5($entry[$fieldkey]),"\">",$entry[$fieldname],'</a></td>',
+          "<td class=td-0><a href=\"$MY_SELF&OB=",$MYREQUEST['OB'],"&SH=",md5($entry[$fieldkey]),"\">",$field_value,'</a></td>',
           '<td class="td-n center">',$entry['num_hits'],'</td>',
           '<td class="td-n right">',$entry['mem_size'],'</td>',
           '<td class="td-n center">',date(DATE_FORMAT,$entry['access_time']),'</td>',
