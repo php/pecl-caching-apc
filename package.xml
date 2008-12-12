@@ -60,25 +60,11 @@
  </developer>
  
  <date>2008-12-12</date>
- <version><release>3.1.1</release><api>3.1.0</api></version>
+ <version><release>3.1.2</release><api>3.1.0</api></version>
  <stability><release>beta</release><api>beta</api></stability>
  <license uri="http://www.php.net/license">PHP License</license>
  <notes>
-- PHP4 compatibilty break
-- apc_pool allocator (Gopal) 
-- doubly-linked sma allocator (Shire)
-- php 5.3 gc compatibility (Gopal)
-- APCIterator for easy access (Shire)
-- apc_delete_file (Shire)
-- apc_inc/apc_dec/apc_cas functions (Shire)
-- apc.canonicalize (Gopal)
-- apc.preload_path (Gopal)
-- apc.rfc1867_ttl  (Shire)
-- apc.file_md5     (Shire)
-- consolidate locking macros (Shire)
-- remove futex/TSRM locks  (Shire)
-- non-blocking semaphore locks  (Shire)
-- zval* object rework (Gopal)
+- pecl package.xml/build fixes (bjori)
  </notes>
 
  <contents>
@@ -139,6 +125,20 @@
      <file role="test" name="apc_001.phpt" />
      <file role="test" name="apc_002.phpt" />
      <file role="test" name="apc_003.phpt" />
+     <file role="test" name="apc_003b.phpt" />
+     <file role="test" name="apc_004.phpt" />
+     <file role="test" name="apc_005.phpt" />
+     <file role="test" name="apc_006.phpt" />
+     <file role="test" name="apc_007.phpt" />
+     <file role="test" name="apc_008.phpt" />
+     <file role="test" name="apc_009.phpt" />
+     <file role="test" name="iterator_001.phpt" />
+     <file role="test" name="iterator_002.phpt" />
+     <file role="test" name="iterator_003.phpt" />
+     <file role="test" name="iterator_004.phpt" />
+     <file role="test" name="iterator_005.phpt" />
+     <file role="test" name="iterator_006.phpt" />
+     <file role="test" name="iterator_007.phpt" />
      <file role="test" name="skipif.inc" />
     </dir>
    </dir>
@@ -159,7 +159,8 @@
  <providesextension>apc</providesextension>
 
  <extsrcrelease>
-   <configureoption name="with-apxs" default="yes" prompt="Use apxs to set compile flags (if using APC with Apache)?"/>
+   <configureoption name="enable-apc-filehits"  default="no"  prompt="Enable per request file info about files used from the APC cache"/>
+   <configureoption name="enable-spinlocks"     default="no"  prompt="Enable spin locks (EXPERIMENTAL)"/>
  </extsrcrelease>
 
  <changelog>
@@ -505,6 +506,29 @@ Allow keys used in apc_store/apc_fetch/apc_delete to be binary safe and prevent 
 - Fix double-free of builtin_functions
 - php 5.3 fixes
 	 </notes>
+    </release>
+  <release>
+   <version><release>3.1.1</release><api>3.1.0</api></version>
+   <stability><release>beta</release><api>beta</api></stability>
+   <license uri="http://www.php.net/license">PHP License</license>
+     <date>2008-12-12</date>
+  <notes>
+- PHP4 compatibilty break
+- apc_pool allocator (Gopal) 
+- doubly-linked sma allocator (Shire)
+- php 5.3 gc compatibility (Gopal)
+- APCIterator for easy access (Shire)
+- apc_delete_file (Shire)
+- apc_inc/apc_dec/apc_cas functions (Shire)
+- apc.canonicalize (Gopal)
+- apc.preload_path (Gopal)
+- apc.rfc1867_ttl  (Shire)
+- apc.file_md5     (Shire)
+- consolidate locking macros (Shire)
+- remove futex/TSRM locks  (Shire)
+- non-blocking semaphore locks  (Shire)
+- zval* object rework (Gopal)
+  </notes>
     </release>
  </changelog>
 </package>
