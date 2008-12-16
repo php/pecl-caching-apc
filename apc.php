@@ -63,8 +63,11 @@ function defaults($d,$v) {
 //
 $PHP_SELF= isset($_SERVER['PHP_SELF']) ? htmlentities(strip_tags($_SERVER['PHP_SELF'],''), ENT_QUOTES, 'UTF-8') : '';
 $time = time();
-$host = getenv('HOSTNAME');
+$host = php_uname('n');
 if($host) { $host = '('.$host.')'; }
+if ($_SERVER['SERVER_ADDR']) {
+  $host .= ' ('.$_SERVER['SERVER_ADDR'].')';
+}
 
 // operation constants
 define('OB_HOST_STATS',1);
