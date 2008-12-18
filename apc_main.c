@@ -428,6 +428,10 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
     ctxt.pool = apc_pool_create(APC_MEDIUM_POOL, apc_sma_malloc, apc_sma_free);
     ctxt.copy = APC_COPY_IN_OPCODE;
 
+    if(!ctxt.pool) {
+        goto nocache;
+    }
+
     if(!(alloc_op_array = apc_copy_op_array(NULL, op_array, &ctxt TSRMLS_CC))) {
         goto freepool;
     }
@@ -455,6 +459,8 @@ freepool:
         apc_pool_destroy(ctxt.pool);
         ctxt.pool = NULL;
     }
+
+nocache: 
 
     APCG(current_cache) = NULL;
 

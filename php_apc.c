@@ -557,6 +557,7 @@ int _apc_store(char *strkey, int strkey_len, const zval *val, const unsigned int
     apc_cache_key_t key;
     time_t t;
     apc_context_t ctxt={0,};
+    int ret = 1;
 
     t = sapi_get_request_time(TSRMLS_C);
 
@@ -570,6 +571,11 @@ int _apc_store(char *strkey, int strkey_len, const zval *val, const unsigned int
     ctxt.copy = APC_COPY_IN_USER;
     ctxt.force_update = 0;
 
+    if(!ctxt.pool) {
+        ret = 0;
+        goto nocache;
+    }
+
     if (!(entry = apc_cache_make_user_entry(strkey, strkey_len, val, &ctxt, ttl))) {
         goto freepool;
     }
@@ -581,15 +587,16 @@ int _apc_store(char *strkey, int strkey_len, const zval *val, const unsigned int
     if (!apc_cache_user_insert(apc_user_cache, key, entry, &ctxt, t, exclusive TSRMLS_CC)) {
 freepool:
         apc_pool_destroy(ctxt.pool);
-        HANDLE_UNBLOCK_INTERRUPTIONS();
-        return 0;
+        ret = 0;
     }
+
+nocache:
 
     APCG(current_cache) = NULL;
 
     HANDLE_UNBLOCK_INTERRUPTIONS();
 
-    return 1;
+    return ret;
 }
 /* }}} */
 
