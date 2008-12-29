@@ -536,6 +536,10 @@ PHP_FUNCTION(apc_sma_info)
 /* {{{ */
 int _apc_update(char *strkey, int strkey_len, apc_cache_updater_t updater, void* data TSRMLS_DC) 
 {
+	if(!APCG(enabled)) {
+		return 0;
+	}
+
     HANDLE_BLOCK_INTERRUPTIONS();
     APCG(current_cache) = apc_user_cache;
     
