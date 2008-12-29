@@ -368,7 +368,11 @@ typedef struct {
         smart_str_appendc(&match, '|');\
     }\
     smart_str_appendc(&match, '(');\
-    smart_str_appends(&match, pat);\
+    while(*pat) {\
+        if(*pat == '/') smart_str_appendc(&match, '\\');\
+        \
+        smart_str_appendc(&match, *(pat++));\
+    }\
     smart_str_appendc(&match, ')');\
 } while(0)
 
