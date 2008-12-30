@@ -543,7 +543,7 @@ int _apc_update(char *strkey, int strkey_len, apc_cache_updater_t updater, void*
     HANDLE_BLOCK_INTERRUPTIONS();
     APCG(current_cache) = apc_user_cache;
     
-    if (!_apc_cache_user_update(apc_user_cache, strkey, strkey_len, updater, data TSRMLS_CC)) {
+    if (!_apc_cache_user_update(apc_user_cache, strkey, strkey_len + 1, updater, data TSRMLS_CC)) {
         HANDLE_UNBLOCK_INTERRUPTIONS();
         return 0;
     }
