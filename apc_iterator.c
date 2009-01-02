@@ -94,7 +94,7 @@ static void apc_iterator_item_info(slot_t **slot_pp, apc_iterator_item_t *item) 
         add_assoc_long(item->info, "inode", slot->key.data.file.inode);
         add_assoc_string(item->info, "type", "file", 1);
         if(slot->key.md5) {
-            make_digest_ex(md5str, slot->key.md5, 16);
+            make_digest(md5str, slot->key.md5);
             add_assoc_string(item->info, "md5", md5str, 1);
         }
     } else if(slot->value->type == APC_CACHE_ENTRY_USER) {

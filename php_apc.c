@@ -388,7 +388,7 @@ PHP_FUNCTION(apc_cache_info)
             add_assoc_long(link, "inode", p->data.file.inode);
             add_assoc_string(link, "type", "file", 1);
             if(APCG(file_md5)) {
-                make_digest_ex(md5str, p->data.file.md5, 16);
+                make_digest(md5str, p->data.file.md5);
                 add_assoc_string(link, "md5", md5str, 1);
             }
         } else if(p->type == APC_CACHE_ENTRY_USER) {
@@ -422,7 +422,7 @@ PHP_FUNCTION(apc_cache_info)
             add_assoc_long(link, "inode", p->data.file.inode);
             add_assoc_string(link, "type", "file", 1);
             if(APCG(file_md5)) {
-                make_digest_ex(md5str, p->data.file.md5, 16);
+                make_digest(md5str, p->data.file.md5);
                 add_assoc_string(link, "md5", md5str, 1);
             }
         } else if(p->type == APC_CACHE_ENTRY_USER) {
