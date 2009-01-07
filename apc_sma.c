@@ -174,8 +174,8 @@ static void sma_debug_state(void* shmaddr, int canary_check, int verbose) {
 /* }}} */
 #endif
 
-/* {{{ sma_allocate: tries to allocate size bytes in a segment */
-static size_t sma_allocate(void* shmaddr, size_t size)
+/* {{{ sma_allocate: tries to allocate at least size bytes in a segment */
+static size_t sma_allocate(void* shmaddr, size_t size, size_t fragment, size_t *allocated)
 {
     header_t* header;       /* header of shared memory segment */
     block_t* prv;           /* block prior to working block */
@@ -204,7 +204,7 @@ static size_t sma_allocate(void* shmaddr, size_t size)
 #ifdef __APC_SMA_DEBUG__
         CHECK_CANARY(cur);
 #endif
-        /* If it can fit realiszie bytes in cur block, stop searching */
+        /* If it can fit realsize bytes in cur block, stop searching */
         if (cur->size >= realsize) {
             prvnextfit = prv;
             break;
@@ -222,8 +222,9 @@ static size_t sma_allocate(void* shmaddr, size_t size)
     CHECK_CANARY(prv);
     CHECK_CANARY(cur);
 
-    if (cur->size == realsize || (cur->size > realsize && cur->size < (realsize + (MINBLOCKSIZE * 2)))) {
+    if (cur->size == realsize || (cur->size > realsize && cur->size < (realsize + (MINBLOCKSIZE + fragment)))) {
         /* cur is big enough for realsize, but too small to split - unlink it */
+        *(allocated) = cur->size - block_size;
         prv->fnext = cur->fnext;
         BLOCKAT(cur->fnext)->fprev = OFFSET(prv);
         NEXT_SBLOCK(cur)->prev_size = 0;  /* block is alloc'd */
@@ -234,6 +235,7 @@ static size_t sma_allocate(void* shmaddr, size_t size)
 
         oldsize = cur->size;
         cur->size = realsize;
+        *(allocated) = cur->size - block_size;
         nxt = NEXT_SBLOCK(cur);
         nxt->prev_size = 0;                       /* block is alloc'd */
         nxt->size = oldsize - realsize;           /* and fix the size */
@@ -435,8 +437,8 @@ void apc_sma_cleanup()
 }
 /* }}} */
 
-/* {{{ apc_sma_malloc */
-void* apc_sma_malloc(size_t n)
+/* {{{ apc_sma_malloc_ex */
+void* apc_sma_malloc_ex(size_t n, size_t fragment, size_t* allocated)
 {
     size_t off;
     int i;
@@ -445,13 +447,13 @@ void* apc_sma_malloc(size_t n)
     assert(sma_initialized);
     LOCK(((header_t*)sma_shmaddrs[sma_lastseg])->sma_lock);
 
-    off = sma_allocate(sma_shmaddrs[sma_lastseg], n);
+    off = sma_allocate(sma_shmaddrs[sma_lastseg], n, fragment, allocated);
     if(off == -1) { 
         /* retry failed allocation after we expunge */
         UNLOCK(((header_t*)sma_shmaddrs[sma_lastseg])->sma_lock);
         APCG(current_cache)->expunge_cb(APCG(current_cache), n);
         LOCK(((header_t*)sma_shmaddrs[sma_lastseg])->sma_lock);
-        off = sma_allocate(sma_shmaddrs[sma_lastseg], n);
+        off = sma_allocate(sma_shmaddrs[sma_lastseg], n, fragment, allocated);
     }
     if (off != -1) {
         void* p = (void *)(((char *)(sma_shmaddrs[sma_lastseg])) + off);
@@ -468,13 +470,13 @@ void* apc_sma_malloc(size_t n)
             continue;
         }
         LOCK(((header_t*)sma_shmaddrs[i])->sma_lock);
-        off = sma_allocate(sma_shmaddrs[i], n);
+        off = sma_allocate(sma_shmaddrs[i], n, fragment, allocated);
         if(off == -1) { 
             /* retry failed allocation after we expunge */
             UNLOCK(((header_t*)sma_shmaddrs[i])->sma_lock);
             APCG(current_cache)->expunge_cb(APCG(current_cache), n);
             LOCK(((header_t*)sma_shmaddrs[i])->sma_lock);
-            off = sma_allocate(sma_shmaddrs[sma_lastseg], n);
+            off = sma_allocate(sma_shmaddrs[sma_lastseg], n, fragment, allocated);
         }
         if (off != -1) {
             void* p = (void *)(((char *)(sma_shmaddrs[i])) + off);
@@ -489,6 +491,16 @@ void* apc_sma_malloc(size_t n)
     }
 
     return NULL;
+}
+/* }}} */
+
+/* {{{ apc_sma_malloc */
+void* apc_sma_malloc(size_t n)
+{
+    size_t allocated;
+    void *p = apc_sma_malloc_ex(n, 60*MINBLOCKSIZE, &allocated);
+
+    return p;
 }
 /* }}} */
 

@@ -39,6 +39,7 @@
 extern void apc_sma_init(int numseg, size_t segsize, char *mmap_file_mask);
 extern void apc_sma_cleanup();
 extern void* apc_sma_malloc(size_t size);
+extern void* apc_sma_malloc_ex(size_t size, size_t fragment, size_t* allocated);
 extern void* apc_sma_realloc(void* p, size_t size);
 extern char* apc_sma_strdup(const char *s);
 extern void apc_sma_free(void* p);
