@@ -82,6 +82,15 @@ struct apc_cache_key_t {
     unsigned char type;
     unsigned char md5[16];        /* md5 hash of the source file */
 };
+
+
+typedef struct apc_keyid_t apc_keyid_t;
+
+struct apc_keyid_t {
+    unsigned int h;
+    unsigned int keylen;
+    time_t mtime;
+};
 /* }}} */
 
 /* {{{ struct definition: apc_cache_entry_t */
@@ -314,6 +323,7 @@ struct cache_header_t {
     zend_bool busy;             /* Flag to tell clients when we are busy cleaning the cache */
     int num_entries;            /* Statistic on the number of entries */
     size_t mem_size;            /* Statistic on the memory size used by this cache */
+    apc_keyid_t lastkey;        /* the key that is being inserted (user cache) */
 };
 /* }}} */
 

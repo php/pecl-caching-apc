@@ -434,18 +434,40 @@ int apc_cache_insert(apc_cache_t* cache,
 int apc_cache_user_insert(apc_cache_t* cache, apc_cache_key_t key, apc_cache_entry_t* value, apc_context_t* ctxt, time_t t, int exclusive TSRMLS_DC)
 {
     slot_t** slot;
-
+    unsigned int keylen = key.data.user.identifier_len+1;
+    unsigned int h = string_nhash_8(key.data.user.identifier, keylen);
+    apc_keyid_t *lastkey = &cache->header->lastkey;
+    
     if (!value) {
         return 0;
     }
+    
+    if(apc_cache_busy(cache)) {
+        /* cache cleanup in progress, do not wait */ 
+        return 0;
+    }
+
+    /* unlocked reads, but we're not shooting for 100% success with this */
+    if(lastkey->h == h && keylen == lastkey->keylen) {
+        if(lastkey->mtime == t) {
+            /* potential cache slam */
+            apc_wprint("Potential cache slam averted for key '%s'", key.data.user.identifier);
+            return 0;
+        }
+    }
 
     CACHE_LOCK(cache);
-    process_pending_removals(cache);
 
-    slot = &cache->slots[string_nhash_8(key.data.user.identifier, key.data.user.identifier_len+1) % cache->num_slots];
+    lastkey->h = h;
+    lastkey->keylen = keylen;
+    lastkey->mtime = t;
+
+    process_pending_removals(cache);
+    
+    slot = &cache->slots[h % cache->num_slots];
 
     while (*slot) {
-        if (!memcmp((*slot)->key.data.user.identifier, key.data.user.identifier, key.data.user.identifier_len+1)) {
+        if (!memcmp((*slot)->key.data.user.identifier, key.data.user.identifier, keylen)) {
             /* 
              * At this point we have found the user cache entry.  If we are doing 
              * an exclusive insert (apc_add) we are going to bail right away if
@@ -455,8 +477,7 @@ int apc_cache_user_insert(apc_cache_t* cache, apc_cache_key_t key, apc_cache_ent
             if(exclusive && (  !(*slot)->value->data.user.ttl ||
                               ( (*slot)->value->data.user.ttl && ((*slot)->creation_time + (*slot)->value->data.user.ttl) >= t ) 
                             ) ) {
-                CACHE_UNLOCK(cache);
-                return 0;
+                goto fail;
             }
             remove_slot(cache, slot);
             break;
@@ -477,18 +498,25 @@ int apc_cache_user_insert(apc_cache_t* cache, apc_cache_key_t key, apc_cache_ent
     }
 
     if ((*slot = make_slot(key, value, *slot, t)) == NULL) {
-        CACHE_UNLOCK(cache);
-        return 0;
-    }
-
+        goto fail;
+    } 
+    
     value->mem_size = ctxt->pool->size;
     cache->header->mem_size += ctxt->pool->size;
 
     cache->header->num_entries++;
     cache->header->num_inserts++;
 
+    memset(lastkey, 0, sizeof(apc_keyid_t));
     CACHE_UNLOCK(cache);
+
     return 1;
+
+fail:
+    memset(lastkey, 0, sizeof(apc_keyid_t));
+    CACHE_UNLOCK(cache);
+
+    return 0;
 }
 /* }}} */
 
