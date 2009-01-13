@@ -77,12 +77,16 @@ void apc_shm_destroy(int shmid)
     shmctl(shmid, IPC_RMID, 0);
 }
 
-void* apc_shm_attach(int shmid)
+apc_segment_t apc_shm_attach(int shmid)
 {
-    void* shmaddr;  /* the shared memory address */
+    apc_segment_t segment; /* shm segment */
 
-    if ((long)(shmaddr = shmat(shmid, 0, 0)) == -1) {
+    if ((long)(segment.shmaddr = shmat(shmid, 0, 0)) == -1) {
         apc_eprint("apc_shm_attach: shmat failed:");
+    }
+    
+    if ((long)(segment.roaddr = shmat(shmid, 0, SHM_RDONLY)) == -1) {
+        segment.roaddr = NULL;
     }
 
     /*
@@ -90,12 +94,16 @@ void* apc_shm_attach(int shmid)
      * segment won't disappear until all processes have detached from it.
      */
     apc_shm_destroy(shmid);
-    return shmaddr;
+    return segment;
 }
 
-void apc_shm_detach(void* shmaddr)
+void apc_shm_detach(apc_segment_t* segment)
 {
-    if (shmdt(shmaddr) < 0) {
+    if (shmdt(segment->shmaddr) < 0) {
+        apc_eprint("apc_shm_detach: shmdt failed:");
+    }
+
+    if (segment->roaddr && shmdt(segment->roaddr) < 0) {
         apc_eprint("apc_shm_detach: shmdt failed:");
     }
 }

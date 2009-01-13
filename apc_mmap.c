@@ -28,6 +28,7 @@
 /* $Id$ */
 
 #include "apc.h"
+#include "apc_mmap.h"
 
 #if APC_MMAP
 
@@ -51,20 +52,32 @@
 # define MAP_ANON MAP_ANONYMOUS
 #endif
 
-void *apc_mmap(char *file_mask, size_t size)
+apc_segment_t apc_mmap(char *file_mask, size_t size)
 {
-    void* shmaddr;  /* the shared memory address */
+    apc_segment_t segment; 
+    void *shmaddr;
+
+    int fd = -1;
+    int flags = MAP_SHARED | MAP_NOSYNC;
+    int remap = 1;
 
     /* If no filename was provided, do an anonymous mmap */
     if(!file_mask || (file_mask && !strlen(file_mask))) {
 #if !defined(MAP_ANON)
         apc_eprint("Anonymous mmap does not apear to be available on this system (MAP_ANON/MAP_ANONYMOUS).  Please see the apc.mmap_file_mask INI option.");
 #else
-        shmaddr = (void *)mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANON, -1, 0);
+        fd = -1;
+        flags = MAP_SHARED | MAP_ANON;
+        remap = 0;
 #endif
-    } else {
-        int fd;
-
+    } else if(!strcmp(file_mask,"/dev/zero")) { 
+        fd = open("/dev/zero", O_RDWR, S_IRUSR | S_IWUSR);
+        if(fd == -1) {
+            apc_eprint("apc_mmap: open on /dev/zero failed:");
+            goto error;
+        }
+        remap = 0; /* cannot remap */
+    } else if(strstr(file_mask,".shm")) {
         /*
          * If the filemask contains .shm we try to do a POSIX-compliant shared memory
          * backed mmap which should avoid synchs on some platforms.  At least on
@@ -75,66 +88,70 @@ void *apc_mmap(char *file_mask, size_t size)
          * On FreeBSD these are mapped onto the regular filesystem so you can put whatever
          * path you want here.
          */
-        if(strstr(file_mask,".shm")) {
-            if(!mktemp(file_mask)) {
-                apc_eprint("apc_mmap: mktemp on %s failed:", file_mask);
-                return (void *)-1;
-			}
-            fd = shm_open(file_mask, O_CREAT|O_RDWR, S_IRUSR|S_IWUSR);
-            if(fd == -1) {
-                apc_eprint("apc_mmap: shm_open on %s failed:", file_mask);
-                return (void *)-1;
-            }
-            if (ftruncate(fd, size) < 0) {
-                close(fd);
-                shm_unlink(file_mask);
-                apc_eprint("apc_mmap: ftruncate failed:");
-                return (void *)-1;
-            }
-            shmaddr = (void *)mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+        if(!mktemp(file_mask)) {
+            apc_eprint("apc_mmap: mktemp on %s failed:", file_mask);
+            goto error;
+        }
+        fd = shm_open(file_mask, O_CREAT|O_RDWR, S_IRUSR|S_IWUSR);
+        if(fd == -1) {
+            apc_eprint("apc_mmap: shm_open on %s failed:", file_mask);
+            goto error;
+        }
+        if (ftruncate(fd, size) < 0) {
+            close(fd);
             shm_unlink(file_mask);
-            close(fd);
+            apc_eprint("apc_mmap: ftruncate failed:");
+            goto error;
         }
-        /*
-         * Support anonymous mmap through the /dev/zero interface as well
-         */
-        else if(!strcmp(file_mask,"/dev/zero")) {
-            fd = open("/dev/zero", O_RDWR, S_IRUSR | S_IWUSR);
-            if(fd == -1) {
-                apc_eprint("apc_mmap: open on /dev/zero failed:");
-                return (void *)-1;
-            }
-            shmaddr = (void *)mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-            close(fd);
-        }
+        shm_unlink(file_mask);
+    } else {
         /*
          * Otherwise we do a normal filesystem mmap
          */
-        else {
-            fd = mkstemp(file_mask);
-            if(fd == -1) {
-                apc_eprint("apc_mmap: mkstemp on %s failed:", file_mask);
-                return (void *)-1;
-            }
-            if (ftruncate(fd, size) < 0) {
-                close(fd);
-                unlink(file_mask);
-                apc_eprint("apc_mmap: ftruncate failed:");
-            }
-            shmaddr = (void *)mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_NOSYNC, fd, 0);
+        fd = mkstemp(file_mask);
+        if(fd == -1) {
+            apc_eprint("apc_mmap: mkstemp on %s failed:", file_mask);
+            goto error;
+        }
+        if (ftruncate(fd, size) < 0) {
             close(fd);
             unlink(file_mask);
+            apc_eprint("apc_mmap: ftruncate failed:");
+            goto error;
         }
+        unlink(file_mask);
     }
-    if((long)shmaddr == -1) {
+
+    segment.shmaddr = (void *)mmap(NULL, size, PROT_READ | PROT_WRITE, flags, fd, 0);
+    
+    if(remap) {
+        segment.roaddr = (void *)mmap(NULL, size, PROT_READ, flags, fd, 0);
+    } else {
+        segment.roaddr = NULL;
+    }
+
+    if((long)segment.shmaddr == -1) {
         apc_eprint("apc_mmap: mmap failed:");
     }
-    return shmaddr;
+
+    if(fd != -1) close(fd);
+    
+    return segment;
+
+error:
+
+    segment.shmaddr = (void*)-1;
+    segment.roaddr = NULL;
+    return segment;
 }
 
-void apc_unmap(void* shmaddr, size_t size)
+void apc_unmap(apc_segment_t *segment)
 {
-    if (munmap(shmaddr, size) < 0) {
+    if (munmap(segment->shmaddr, segment->size) < 0) {
+        apc_wprint("apc_unmap: munmap failed:");
+    }
+
+    if (segment->roaddr && munmap(segment->roaddr, segment->size) < 0) {
         apc_wprint("apc_unmap: munmap failed:");
     }
 }

@@ -2,7 +2,7 @@
   +----------------------------------------------------------------------+
   | APC                                                                  |
   +----------------------------------------------------------------------+
-  | Copyright (c) 2006-2008 The PHP Group                                |
+  | Copyright (c) 2006-2009 The PHP Group                                |
   +----------------------------------------------------------------------+
   | This source file is subject to version 3.01 of the PHP license,      |
   | that is bundled with this package in the file LICENSE, and is        |
@@ -12,7 +12,7 @@
   | obtain it through the world-wide-web, please send a note to          |
   | license@php.net so we can mail you a copy immediately.               |
   +----------------------------------------------------------------------+
-  | Authors: Daniel Cowgill <dcowgill@communityconnect.com>              |
+  | Authors: Gopal V <gopalv@php.net> 
   +----------------------------------------------------------------------+
 
    This software was contributed to PHP by Community Connect Inc. in 2002
@@ -27,22 +27,20 @@
 
 /* $Id$ */
 
-#ifndef APC_SHM_H
-#define APC_SHM_H
+#ifndef APC_MMAP_H
+#define APC_MMAP_H
 
-#include <sys/types.h>
-#ifdef PHP_WIN32
-#include <time.h>
-#endif
+#include <limits.h>
 
+#include "apc.h"
 #include "apc_sma.h"
 
-/* Wrapper functions for unix shared memory */
+/* Wrapper functions for shared memory mapped files */
 
-extern int apc_shm_create(const char* name, int proj, size_t size);
-extern void apc_shm_destroy(int shmid);
-extern apc_segment_t apc_shm_attach(int shmid);
-extern void apc_shm_detach(apc_segment_t* segment);
+#if APC_MMAP
+apc_segment_t apc_mmap(char *file_mask, size_t size);
+void apc_unmap(apc_segment_t* segment);
+#endif
 
 #endif
 

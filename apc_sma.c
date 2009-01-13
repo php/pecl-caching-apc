@@ -34,11 +34,9 @@
 #include "apc_lock.h"
 #include "apc_shm.h"
 #include "apc_cache.h"
+
 #include <limits.h>
-#if APC_MMAP
-void *apc_mmap(char *file_mask, size_t size);
-void apc_unmap(void* shmaddr, size_t size);
-#endif
+#include "apc_mmap.h"
 
 #ifdef HAVE_VALGRIND_MEMCHECK_H
 #include <valgrind/memcheck.h>
@@ -49,8 +47,7 @@ enum { DEFAULT_NUMSEG=1, DEFAULT_SEGSIZE=30*1024*1024 };
 static int sma_initialized = 0;     /* true if the sma has been initialized */
 static unsigned int sma_numseg;     /* number of shm segments to allow */
 static size_t sma_segsize;          /* size of each shm segment */
-static size_t* sma_segments;        /* array of shm segment ids */
-static void** sma_shmaddrs;         /* array of shm segment addresses */
+static apc_segment_t* sma_segments; /* array of shm segments */
 static int sma_lastseg = 0;         /* index of MRU segment */
 
 typedef struct header_t header_t;
@@ -62,6 +59,10 @@ struct header_t {
     size_t adist[30];
 #endif
 };
+
+#define SMA_HDR(i)  ((header_t*)((sma_segments[i]).shmaddr))
+#define SMA_ADDR(i) ((char*)(SMA_HDR(i)))
+#define SMA_LCK(i)  ((SMA_HDR(i))->sma_lock)
 
 
 /* do not enable for threaded http servers */
@@ -175,9 +176,9 @@ static void sma_debug_state(void* shmaddr, int canary_check, int verbose) {
 #endif
 
 /* {{{ sma_allocate: tries to allocate at least size bytes in a segment */
-static size_t sma_allocate(void* shmaddr, size_t size, size_t fragment, size_t *allocated)
+static size_t sma_allocate(header_t* header, size_t size, size_t fragment, size_t *allocated)
 {
-    header_t* header;       /* header of shared memory segment */
+    void* shmaddr;          /* header of shared memory segment */
     block_t* prv;           /* block prior to working block */
     block_t* cur;           /* working block in list */
     block_t* prvnextfit;    /* block before next fit */
@@ -190,7 +191,8 @@ static size_t sma_allocate(void* shmaddr, size_t size, size_t fragment, size_t *
      * First, insure that the segment contains at least realsize free bytes,
      * even if they are not contiguous.
      */
-    header = (header_t*) shmaddr;
+    shmaddr = header;
+
     if (header->avail < realsize) {
         return -1;
     }
@@ -357,8 +359,7 @@ void apc_sma_init(int numseg, size_t segsize, char *mmap_file_mask)
 
     sma_segsize = segsize > 0 ? segsize : DEFAULT_SEGSIZE;
 
-    sma_segments = (size_t*) apc_emalloc(sma_numseg*sizeof(size_t));
-    sma_shmaddrs = (void**) apc_emalloc(sma_numseg*sizeof(void*));
+    sma_segments = (apc_segment_t*) apc_emalloc(sma_numseg*sizeof(apc_segment_t));
 
     for (i = 0; i < sma_numseg; i++) {
         header_t*   header;
@@ -366,14 +367,15 @@ void apc_sma_init(int numseg, size_t segsize, char *mmap_file_mask)
         void*       shmaddr;
 
 #if APC_MMAP
-        sma_segments[i] = sma_segsize;
-        sma_shmaddrs[i] = apc_mmap(mmap_file_mask, sma_segsize);
+        sma_segments[i] = apc_mmap(mmap_file_mask, sma_segsize);
         if(sma_numseg != 1) memcpy(&mmap_file_mask[strlen(mmap_file_mask)-6], "XXXXXX", 6);
 #else
-        sma_segments[i] = apc_shm_create(NULL, i, sma_segsize);
-        sma_shmaddrs[i] = apc_shm_attach(sma_segments[i]);
+        sma_segments[i] = apc_shm_attach(apc_shm_create(NULL, i, sma_segsize));
 #endif
-        shmaddr = sma_shmaddrs[i];
+        
+        sma_segments[i].size = sma_segsize;
+
+        shmaddr = sma_segments[i].shmaddr;
 
         header = (header_t*) shmaddr;
         apc_lck_create(NULL, 0, 1, header->sma_lock);
@@ -424,16 +426,15 @@ void apc_sma_cleanup()
     assert(sma_initialized);
 
     for (i = 0; i < sma_numseg; i++) {
-        apc_lck_destroy(((header_t*)sma_shmaddrs[i])->sma_lock);
+        apc_lck_destroy(SMA_LCK(i));
 #if APC_MMAP
-        apc_unmap(sma_shmaddrs[i], sma_segments[i]);
+        apc_unmap(&sma_segments[i]);
 #else
-        apc_shm_detach(sma_shmaddrs[i]);
+        apc_shm_detach(&sma_segments[i]);
 #endif
     }
     sma_initialized = 0;
     apc_efree(sma_segments);
-    apc_efree(sma_shmaddrs);
 }
 /* }}} */
 
@@ -445,49 +446,52 @@ void* apc_sma_malloc_ex(size_t n, size_t fragment, size_t* allocated)
 
     TSRMLS_FETCH();
     assert(sma_initialized);
-    LOCK(((header_t*)sma_shmaddrs[sma_lastseg])->sma_lock);
+    LOCK(SMA_LCK(sma_lastseg));
 
-    off = sma_allocate(sma_shmaddrs[sma_lastseg], n, fragment, allocated);
+    off = sma_allocate(SMA_HDR(sma_lastseg), n, fragment, allocated);
+
     if(off == -1) { 
         /* retry failed allocation after we expunge */
-        UNLOCK(((header_t*)sma_shmaddrs[sma_lastseg])->sma_lock);
+        UNLOCK(SMA_LCK(sma_lastseg));
         APCG(current_cache)->expunge_cb(APCG(current_cache), n);
-        LOCK(((header_t*)sma_shmaddrs[sma_lastseg])->sma_lock);
-        off = sma_allocate(sma_shmaddrs[sma_lastseg], n, fragment, allocated);
+        LOCK(SMA_LCK(sma_lastseg));
+        off = sma_allocate(SMA_HDR(sma_lastseg), n, fragment, allocated);
     }
+
     if (off != -1) {
-        void* p = (void *)(((char *)(sma_shmaddrs[sma_lastseg])) + off);
-        UNLOCK(((header_t*)sma_shmaddrs[sma_lastseg])->sma_lock);
+        void* p = (void *)(SMA_ADDR(sma_lastseg) + off);
+        UNLOCK(SMA_LCK(sma_lastseg));
 #ifdef VALGRIND_MALLOCLIKE_BLOCK
         VALGRIND_MALLOCLIKE_BLOCK(p, n, 0, 0);
 #endif
         return p;
     }
-    UNLOCK(((header_t*)sma_shmaddrs[sma_lastseg])->sma_lock);
+    
+    UNLOCK(SMA_LCK(sma_lastseg));
 
     for (i = 0; i < sma_numseg; i++) {
         if (i == sma_lastseg) {
             continue;
         }
-        LOCK(((header_t*)sma_shmaddrs[i])->sma_lock);
-        off = sma_allocate(sma_shmaddrs[i], n, fragment, allocated);
+        LOCK(SMA_LCK(i));
+        off = sma_allocate(SMA_HDR(i), n, fragment, allocated);
         if(off == -1) { 
             /* retry failed allocation after we expunge */
-            UNLOCK(((header_t*)sma_shmaddrs[i])->sma_lock);
+            UNLOCK(SMA_LCK(i));
             APCG(current_cache)->expunge_cb(APCG(current_cache), n);
-            LOCK(((header_t*)sma_shmaddrs[i])->sma_lock);
-            off = sma_allocate(sma_shmaddrs[sma_lastseg], n, fragment, allocated);
+            LOCK(SMA_LCK(i));
+            off = sma_allocate(SMA_HDR(i), n, fragment, allocated);
         }
         if (off != -1) {
-            void* p = (void *)(((char *)(sma_shmaddrs[i])) + off);
-            UNLOCK(((header_t*)sma_shmaddrs[i])->sma_lock);
+            void* p = (void *)(SMA_ADDR(i) + off);
+            UNLOCK(SMA_LCK(i));
             sma_lastseg = i;
 #ifdef VALGRIND_MALLOCLIKE_BLOCK
             VALGRIND_MALLOCLIKE_BLOCK(p, n, 0, 0);
 #endif
             return p;
         }
-        UNLOCK(((header_t*)sma_shmaddrs[i])->sma_lock);
+        UNLOCK(SMA_LCK(i));
     }
 
     return NULL;
@@ -498,7 +502,7 @@ void* apc_sma_malloc_ex(size_t n, size_t fragment, size_t* allocated)
 void* apc_sma_malloc(size_t n)
 {
     size_t allocated;
-    void *p = apc_sma_malloc_ex(n, 60*MINBLOCKSIZE, &allocated);
+    void *p = apc_sma_malloc_ex(n, MINBLOCKSIZE, &allocated);
 
     return p;
 }
@@ -543,11 +547,11 @@ void apc_sma_free(void* p)
 
     
     for (i = 0; i < sma_numseg; i++) {
-        offset = (size_t)((char *)p - (char *)(sma_shmaddrs[i]));
-        if (p >= sma_shmaddrs[i] && offset < sma_segsize) {
-            LOCK(((header_t*)sma_shmaddrs[i])->sma_lock);
-            d_size = sma_deallocate(sma_shmaddrs[i], offset);
-            UNLOCK(((header_t*)sma_shmaddrs[i])->sma_lock);
+        offset = (size_t)((char *)p - SMA_ADDR(i));
+        if (p >= (void*)SMA_ADDR(i) && offset < sma_segsize) {
+            LOCK(SMA_LCK(i));
+            d_size = sma_deallocate(SMA_HDR(i), offset);
+            UNLOCK(SMA_LCK(i));
 #ifdef VALGRIND_FREELIKE_BLOCK
             VALGRIND_FREELIKE_BLOCK(p, 0);
 #endif
@@ -585,8 +589,8 @@ apc_sma_info_t* apc_sma_info(zend_bool limited)
 
     /* For each segment */
     for (i = 0; i < sma_numseg; i++) {
-        RDLOCK(((header_t*)sma_shmaddrs[i])->sma_lock);
-        shmaddr = sma_shmaddrs[i];
+        RDLOCK(SMA_LCK(i));
+        shmaddr = SMA_ADDR(i);
         prv = BLOCKAT(ALIGNWORD(sizeof(header_t)));
 
         link = &info->list[i];
@@ -612,7 +616,7 @@ apc_sma_info_t* apc_sma_info(zend_bool limited)
 #endif
 
         }
-        UNLOCK(((header_t*)sma_shmaddrs[i])->sma_lock);
+        UNLOCK(SMA_LCK(i));
     }
 
     return info;
@@ -644,7 +648,7 @@ size_t apc_sma_get_avail_mem()
     int i;
 
     for (i = 0; i < sma_numseg; i++) {
-        header_t* header = (header_t*) sma_shmaddrs[i];
+        header_t* header = SMA_HDR(i);
         avail_mem += header->avail;
     }
     return avail_mem;

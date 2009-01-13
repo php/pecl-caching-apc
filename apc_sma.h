@@ -36,6 +36,14 @@
 
 /* Simple shared memory allocator */
 
+typedef struct _apc_segment_t apc_segment_t;
+
+struct _apc_segment_t {
+    size_t size;
+    void* shmaddr;
+    void* roaddr;
+};
+
 extern void apc_sma_init(int numseg, size_t segsize, char *mmap_file_mask);
 extern void apc_sma_cleanup();
 extern void* apc_sma_malloc(size_t size);
