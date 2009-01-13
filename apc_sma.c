@@ -541,10 +541,11 @@ void apc_sma_free(void* p)
 
     assert(sma_initialized);
 
+    
     for (i = 0; i < sma_numseg; i++) {
-        LOCK(((header_t*)sma_shmaddrs[i])->sma_lock);
         offset = (size_t)((char *)p - (char *)(sma_shmaddrs[i]));
         if (p >= sma_shmaddrs[i] && offset < sma_segsize) {
+            LOCK(((header_t*)sma_shmaddrs[i])->sma_lock);
             d_size = sma_deallocate(sma_shmaddrs[i], offset);
             UNLOCK(((header_t*)sma_shmaddrs[i])->sma_lock);
 #ifdef VALGRIND_FREELIKE_BLOCK
@@ -552,7 +553,6 @@ void apc_sma_free(void* p)
 #endif
             return;
         }
-        UNLOCK(((header_t*)sma_shmaddrs[i])->sma_lock);
     }
 
     apc_eprint("apc_sma_free: could not locate address %p", p);
