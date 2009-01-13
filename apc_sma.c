@@ -62,6 +62,7 @@ struct header_t {
 
 #define SMA_HDR(i)  ((header_t*)((sma_segments[i]).shmaddr))
 #define SMA_ADDR(i) ((char*)(SMA_HDR(i)))
+#define SMA_RO(i)   ((char*)(sma_segments[i]).roaddr)
 #define SMA_LCK(i)  ((SMA_HDR(i))->sma_lock)
 
 
@@ -562,6 +563,66 @@ void apc_sma_free(void* p)
     apc_eprint("apc_sma_free: could not locate address %p", p);
 }
 /* }}} */
+
+#ifdef APC_MEMPROTECT
+/* {{{ */
+void* _apc_sma_protect(void *p)
+{
+    int i;
+    size_t offset;
+
+    if (p == NULL) {
+        return NULL;
+    }
+
+    if(SMA_RO(sma_lastseg) == NULL) return p;
+
+    offset = (size_t)((char *)p - SMA_ADDR(sma_lastseg));
+
+    if(p >= (void*)SMA_ADDR(sma_lastseg) && offset < sma_segsize) {
+        return SMA_RO(sma_lastseg) + offset;
+    }
+
+    for (i = 0; i < sma_numseg; i++) {
+        offset = (size_t)((char *)p - SMA_ADDR(i));
+        if (p >= (void*)SMA_ADDR(i) && offset < sma_segsize) {
+            return SMA_RO(i) + offset;
+        }
+    }
+
+    return NULL;
+}
+/* }}} */
+
+/* {{{ */
+void* _apc_sma_unprotect(void *p)
+{
+    int i;
+    size_t offset;
+
+    if (p == NULL) {
+        return NULL;
+    }
+
+    if(SMA_RO(sma_lastseg) == NULL) return p;
+
+    offset = (size_t)((char *)p - SMA_RO(sma_lastseg));
+
+    if(p >= (void*)SMA_RO(sma_lastseg) && offset < sma_segsize) {
+        return SMA_ADDR(sma_lastseg) + offset;
+    }
+
+    for (i = 0; i < sma_numseg; i++) {
+        offset = (size_t)((char *)p - SMA_RO(i));
+        if (p >= (void*)SMA_RO(i) && offset < sma_segsize) {
+            return SMA_ADDR(i) + offset;
+        }
+    }
+
+    return NULL;
+}
+/* }}} */
+#endif
 
 /* {{{ apc_sma_info */
 apc_sma_info_t* apc_sma_info(zend_bool limited)
