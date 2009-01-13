@@ -123,12 +123,14 @@ apc_segment_t apc_mmap(char *file_mask, size_t size)
     }
 
     segment.shmaddr = (void *)mmap(NULL, size, PROT_READ | PROT_WRITE, flags, fd, 0);
-    
+
+#ifdef APC_MEMPROTECT
     if(remap) {
         segment.roaddr = (void *)mmap(NULL, size, PROT_READ, flags, fd, 0);
     } else {
         segment.roaddr = NULL;
     }
+#endif
 
     if((long)segment.shmaddr == -1) {
         apc_eprint("apc_mmap: mmap failed:");
@@ -141,7 +143,9 @@ apc_segment_t apc_mmap(char *file_mask, size_t size)
 error:
 
     segment.shmaddr = (void*)-1;
+#ifdef APC_MEMPROTECT
     segment.roaddr = NULL;
+#endif
     return segment;
 }
 
@@ -151,9 +155,12 @@ void apc_unmap(apc_segment_t *segment)
         apc_wprint("apc_unmap: munmap failed:");
     }
 
+#ifdef APC_MEMPROTECT
     if (segment->roaddr && munmap(segment->roaddr, segment->size) < 0) {
         apc_wprint("apc_unmap: munmap failed:");
     }
+#endif
+
 }
 
 #endif

@@ -41,7 +41,9 @@ typedef struct _apc_segment_t apc_segment_t;
 struct _apc_segment_t {
     size_t size;
     void* shmaddr;
+#ifdef APC_MEMPROTECT
     void* roaddr;
+#endif
 };
 
 extern void apc_sma_init(int numseg, size_t segsize, char *mmap_file_mask);
@@ -53,6 +55,19 @@ extern char* apc_sma_strdup(const char *s);
 extern void apc_sma_free(void* p);
 #if ALLOC_DISTRIBUTION 
 extern size_t *apc_sma_get_alloc_distribution();
+#endif
+
+#if APC_MEMPROTECT
+extern void* _apc_sma_protect(void *p);
+extern void* _apc_sma_unprotect(void *p);
+
+#define apc_sma_protect(p)   _apc_sma_protect(p)
+#define apc_sma_unprotect(p) _apc_sma_unprotect(p)
+#else
+
+#define apc_sma_protect(p)   /* nothing */
+#define apc_sma_unprotect(p) /* nothing */
+
 #endif
 
 /* {{{ struct definition: apc_sma_link_t */

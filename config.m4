@@ -43,7 +43,6 @@ AC_ARG_ENABLE(apc-sem,
   AC_MSG_RESULT(no)
 ])
 
-
 AC_MSG_CHECKING(Checking whether we should use pthread mutex locking)
 AC_ARG_ENABLE(apc-pthreadmutex,
 [  --disable-apc-pthreadmutex
@@ -119,6 +118,20 @@ AC_ARG_ENABLE(apc-spinlocks,
   AC_MSG_RESULT(no)
 ])
 
+AC_MSG_CHECKING(Checking whether we should enable memory protection)
+AC_ARG_ENABLE(memory-protection,
+[  --enable-memory-protection
+                          Enable mmap/shm memory protection],
+[
+  PHP_APC_MEMPROTECT=$enableval
+  AC_MSG_RESULT($enableval)
+], [
+  PHP_APC_MEMPROTECT=no
+  AC_MSG_RESULT(no)
+])
+
+
+
 if test "$PHP_APC" != "no"; then
   test "$PHP_APC_MMAP" != "no" && AC_DEFINE(APC_MMAP, 1, [ ])
   test "$PHP_APC_FILEHITS" != "no" && AC_DEFINE(APC_FILEHITS, 1, [ ])
@@ -131,6 +144,10 @@ if test "$PHP_APC" != "no"; then
 		AC_DEFINE(APC_PTHREADMUTEX_LOCKS, 1, [ ])
 	else 
 		AC_DEFINE(APC_FCNTL_LOCKS, 1, [ ])
+	fi
+  
+  	if test "$PHP_APC_MEMPROTECT" != "no"; then
+		AC_DEFINE(APC_MEMPROTECT, 1, [ shm/mmap memory protection ])
 	fi
 
   AC_CHECK_FUNCS(sigaction)

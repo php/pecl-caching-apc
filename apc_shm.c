@@ -84,10 +84,14 @@ apc_segment_t apc_shm_attach(int shmid)
     if ((long)(segment.shmaddr = shmat(shmid, 0, 0)) == -1) {
         apc_eprint("apc_shm_attach: shmat failed:");
     }
+
+#ifdef APC_MEMPROTECT
     
     if ((long)(segment.roaddr = shmat(shmid, 0, SHM_RDONLY)) == -1) {
         segment.roaddr = NULL;
     }
+
+#endif
 
     /*
      * We set the shmid for removal immediately after attaching to it. The
@@ -103,9 +107,11 @@ void apc_shm_detach(apc_segment_t* segment)
         apc_eprint("apc_shm_detach: shmdt failed:");
     }
 
+#ifdef APC_MEMPROTECT
     if (segment->roaddr && shmdt(segment->roaddr) < 0) {
         apc_eprint("apc_shm_detach: shmdt failed:");
     }
+#endif
 }
 
 /*
