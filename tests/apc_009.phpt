@@ -10,35 +10,85 @@ report_memleaks=0
 --FILE--
 <?php
 
-apc_compile_file('apc_009.php');
-check_file();
-apc_delete_file('apc_009.php');
-check_file();
+$files = array( 'apc_009.php',
+                'apc_009-1.php',
+                'apc_009-2.php',
+                'nofile.php',
+              );
 
-apc_compile_file('apc_009.php');
-apc_delete_file(array('apc_009.php'));
-check_file();
+file_put_contents('apc_009-1.php', '<? echo "test file";');
+file_put_contents('apc_009-2.php', '<? syntaxerrorhere!');
 
-apc_compile_file('apc_009.php');
-$it = new APCIterator('file', '/apc_009.php/');
+apc_compile_file($files[0]);
+check_file($files[0]);
+apc_delete_file($files[0]);
+check_file($files[0]);
+
+apc_compile_file($files[0]);
+apc_delete_file(array($files[0]));
+check_file($files[0]);
+
+apc_compile_file($files[0]);
+$it = new APCIterator('file', '/'.$files[0].'/');
 apc_delete_file($it);
-check_file();
+check_file($files[0]);
 
-function check_file() {
+var_dump(apc_compile_file(array($files[0], $files[1])));
+check_file(array($files[0], $files[1]));
+
+var_dump(apc_compile_file($files));
+check_file($files);
+
+function check_file($files) {
+
+  if (!is_array($files)) {
+    $files = array($files);
+  }
+
   $info = apc_cache_info('file');
-  if (isset($info['cache_list'][0])) {
-    echo "Found File\n";
-  } else {
-    echo "File Not Found\n";
+
+  foreach ($files as $file) {
+    $match = 0;
+    foreach($info['cache_list'] as $cached_file) {
+      if (stristr($cached_file['filename'], $file)) $match = 1;
+    }
+    if ($match) {
+      echo "$file Found File\n";
+    } else {
+      echo "$file Not Found\n";
+    }
   }
 }
 
 ?>
 ===DONE===
 <?php exit(0); ?>
+--CLEAN--
+<?php
+unlink('apc_009-1.php');
+unlink('apc_009-2.php');
+?>
 --EXPECTF--
-Found File
-File Not Found
-File Not Found
-File Not Found
+apc_009.php Found File
+apc_009.php Not Found
+apc_009.php Not Found
+apc_009.php Not Found
+array(0) {
+}
+apc_009.php Found File
+apc_009-1.php Found File
+
+Parse error: syntax error, unexpected '!' in %s/apc_009-2.php on line 1
+[%s] [apc-warning] Error compiling apc_009-2.php in apc_compile_file.
+[%s] [apc-warning] Error compiling nofile.php in apc_compile_file.
+array(2) {
+  ["apc_009-2.php"]=>
+  int(-1)
+  ["nofile.php"]=>
+  int(-1)
+}
+apc_009.php Found File
+apc_009-1.php Found File
+apc_009-2.php Not Found
+nofile.php Not Found
 ===DONE===

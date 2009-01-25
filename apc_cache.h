@@ -170,6 +170,9 @@ extern int apc_cache_insert(T cache, apc_cache_key_t key,
 extern int apc_cache_user_insert(T cache, apc_cache_key_t key,
                             apc_cache_entry_t* value, apc_context_t* ctxt, time_t t, int exclusive TSRMLS_DC);
 
+extern int *apc_cache_insert_mult(apc_cache_t* cache, apc_cache_key_t* keys,
+                            apc_cache_entry_t** values, apc_context_t *ctxt, time_t t, int num_entries);
+
 /*
  * apc_cache_find searches for a cache entry by filename, and returns a
  * pointer to the entry if found, NULL otherwise.
@@ -239,6 +242,10 @@ extern apc_cache_entry_t* apc_cache_make_file_entry(const char* filename,
                                                     apc_function_t* functions,
                                                     apc_class_t* classes,
                                                     apc_context_t* ctxt);
+
+
+zend_bool apc_compile_cache_entry(apc_cache_key_t key, zend_file_handle* h, int type, time_t t, zend_op_array** op_array_pp, apc_cache_entry_t** cache_entry_pp TSRMLS_DC);
+
 /*
  * apc_cache_make_user_entry creates an apc_cache_entry_t object given an info string
  * and the zval to be stored.

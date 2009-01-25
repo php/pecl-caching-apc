@@ -264,6 +264,94 @@ default_compile:
 }
 /* }}} */
 
+/* {{{ apc_compile_cache_entry  */
+zend_bool apc_compile_cache_entry(apc_cache_key_t key, zend_file_handle* h, int type, time_t t, zend_op_array** op_array_pp, apc_cache_entry_t** cache_entry_pp TSRMLS_DC) {
+    int num_functions, num_classes;
+    apc_function_t* alloc_functions;
+    zend_op_array* alloc_op_array;
+    apc_class_t* alloc_classes;
+    char *path;
+    zend_op_array* op_array;
+    apc_cache_entry_t* cache_entry;
+    apc_context_t ctxt;
+
+    /* remember how many functions and classes existed before compilation */
+    num_functions = zend_hash_num_elements(CG(function_table));
+    num_classes   = zend_hash_num_elements(CG(class_table));
+
+    /* compile the file using the default compile function */
+    op_array = old_compile_file(h, type TSRMLS_CC);
+    if (op_array == NULL) {
+        return FAILURE;
+    }
+
+    ctxt.pool = apc_pool_create(APC_MEDIUM_POOL, apc_sma_malloc, apc_sma_free);
+    ctxt.copy = APC_COPY_IN_OPCODE;
+
+    if(APCG(file_md5)) {
+        int n;
+        unsigned char buf[1024];
+        PHP_MD5_CTX context;
+        php_stream *stream;
+        char *filename;
+
+        if(h->opened_path) {
+            filename = h->opened_path;
+        } else {
+            filename = h->filename;
+        }
+        stream = php_stream_open_wrapper(filename, "rb", REPORT_ERRORS | ENFORCE_SAFE_MODE, NULL);
+        if(stream) {
+            PHP_MD5Init(&context);
+            while((n = php_stream_read(stream, (char*)buf, sizeof(buf))) > 0) {
+                PHP_MD5Update(&context, buf, n);
+            }
+            PHP_MD5Final(key.md5, &context);
+            php_stream_close(stream);
+            if(n<0) {
+                apc_wprint("Error while reading '%s' for md5 generation.", filename);
+            }
+        } else {
+            apc_wprint("Unable to open '%s' for md5 generation.", filename);
+        }
+    }
+
+    if(!(alloc_op_array = apc_copy_op_array(NULL, op_array, &ctxt TSRMLS_CC))) {
+        goto freepool;
+    }
+
+    if(!(alloc_functions = apc_copy_new_functions(num_functions, &ctxt TSRMLS_CC))) {
+        goto freepool;
+    }
+    if(!(alloc_classes = apc_copy_new_classes(op_array, num_classes, &ctxt TSRMLS_CC))) {
+        goto freepool;
+    }
+
+    path = h->opened_path;
+    if(!path) path=h->filename;
+
+#ifdef __DEBUG_APC__
+    fprintf(stderr,"2. h->opened_path=[%s]  h->filename=[%s]\n", h->opened_path?h->opened_path:"null",h->filename);
+#endif
+
+    if(!(cache_entry = apc_cache_make_file_entry(path, alloc_op_array, alloc_functions, alloc_classes, &ctxt))) {
+        goto freepool;
+    }
+
+    *op_array_pp = op_array;
+    *cache_entry_pp = cache_entry;
+
+    return SUCCESS;
+
+freepool:
+    apc_pool_destroy(ctxt.pool);
+    ctxt.pool = NULL;
+
+    return FAILURE;
+
+}
+/* }}} */
+
 /* {{{ my_compile_file
    Overrides zend_compile_file */
 static zend_op_array* my_compile_file(zend_file_handle* h,
@@ -271,13 +359,8 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
 {
     apc_cache_key_t key;
     apc_cache_entry_t* cache_entry;
-    zend_op_array* op_array;
-    int num_functions, num_classes, ret;
-    zend_op_array* alloc_op_array;
-    apc_function_t* alloc_functions;
-    apc_class_t* alloc_classes;
+    zend_op_array* op_array = NULL;
     time_t t;
-    char *path;
     apc_context_t ctxt = {0,};
 
     if (!APCG(enabled) || apc_cache_busy(apc_cache)) {
@@ -285,14 +368,16 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
     }
 
     /* check our regular expression filters */
-    if (APCG(filters) && apc_compiled_filters) {
-        int ret = apc_regex_match_array(apc_compiled_filters, h->filename);
+    if (APCG(filters) && apc_compiled_filters && h->opened_path) {
+        int ret = apc_regex_match_array(apc_compiled_filters, h->opened_path);
+
         if(ret == APC_NEGATIVE_MATCH || (ret != APC_POSITIVE_MATCH && !APCG(cache_by_default))) {
             return old_compile_file(h, type TSRMLS_CC);
         }
     } else if(!APCG(cache_by_default)) {
         return old_compile_file(h, type TSRMLS_CC);
     }
+    APCG(current_cache) = apc_cache;
 
 
     t = sapi_get_request_time(TSRMLS_C);
@@ -346,25 +431,6 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
         /* TODO: check what happens with EG(included_files) */
     }
 
-    /* remember how many functions and classes existed before compilation */
-    num_functions = zend_hash_num_elements(CG(function_table));
-    num_classes   = zend_hash_num_elements(CG(class_table));
-
-    /* compile the file using the default compile function */
-    op_array = old_compile_file(h, type TSRMLS_CC);
-    if (op_array == NULL) {
-        return NULL;
-    }
-
-    /* check our regular expression filters */
-    if (APCG(filters) && apc_compiled_filters && h->opened_path) {
-        int ret = apc_regex_match_array(apc_compiled_filters, h->opened_path);
-        if(ret == APC_NEGATIVE_MATCH || (ret != APC_POSITIVE_MATCH && !APCG(cache_by_default))) {
-            /* never cache, never find */
-            return op_array;
-        }
-    }
-
     /* Make sure the mtime reflects the files last known mtime in the case of fpstat==0 */
     if(key.type == APC_CACHE_KEY_FPFILE) {
         apc_fileinfo_t fileinfo;
@@ -391,76 +457,19 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
     if(APCG(write_lock)) {
         if(!apc_cache_write_lock(apc_cache)) {
             HANDLE_UNBLOCK_INTERRUPTIONS();
-            return op_array;
+            return old_compile_file(h, type TSRMLS_CC);
         }
     }
 #endif
 
-    if(APCG(file_md5)) {
-        int n;
-        unsigned char buf[1024];
-        PHP_MD5_CTX context;
-        php_stream *stream;
-        char *filename;
-
-        if(h->opened_path) {
-            filename = h->opened_path;
-        } else {
-            filename = h->filename;
-        }
-        stream = php_stream_open_wrapper(filename, "rb", REPORT_ERRORS | ENFORCE_SAFE_MODE, NULL);
-        if(stream) {
-            PHP_MD5Init(&context);
-            while((n = php_stream_read(stream, (char*)buf, sizeof(buf))) > 0) {
-                PHP_MD5Update(&context, buf, n);
-            }
-            PHP_MD5Final(key.md5, &context);
-            php_stream_close(stream);
-            if(n<0) {
-                apc_wprint("Error while reading '%s' for md5 generation.", filename);
-            }
-        } else {
-            apc_wprint("Unable to open '%s' for md5 generation.", filename);
+    if (apc_compile_cache_entry(key, h, type, t, &op_array, &cache_entry TSRMLS_CC) == SUCCESS) {
+        ctxt.pool = cache_entry->pool;
+        ctxt.copy = APC_COPY_IN_OPCODE;
+        if (apc_cache_insert(apc_cache, key, cache_entry, &ctxt, t) != 1) {
+            apc_pool_destroy(ctxt.pool);
+            ctxt.pool = NULL;
         }
     }
-
-    APCG(current_cache) = apc_cache;
-    ctxt.pool = apc_pool_create(APC_MEDIUM_POOL, apc_sma_malloc, apc_sma_free);
-    ctxt.copy = APC_COPY_IN_OPCODE;
-
-    if(!ctxt.pool) {
-        goto nocache;
-    }
-
-    if(!(alloc_op_array = apc_copy_op_array(NULL, op_array, &ctxt TSRMLS_CC))) {
-        goto freepool;
-    }
-
-    if(!(alloc_functions = apc_copy_new_functions(num_functions, &ctxt TSRMLS_CC))) {
-        goto freepool;
-    }
-    if(!(alloc_classes = apc_copy_new_classes(op_array, num_classes, &ctxt TSRMLS_CC))) {
-        goto freepool;
-    }
-
-    path = h->opened_path;
-    if(!path) path=h->filename;
-
-#ifdef __DEBUG_APC__
-    fprintf(stderr,"2. h->opened_path=[%s]  h->filename=[%s]\n", h->opened_path?h->opened_path:"null",h->filename);
-#endif
-
-    if(!(cache_entry = apc_cache_make_file_entry(path, alloc_op_array, alloc_functions, alloc_classes, &ctxt))) {
-        goto freepool;
-    }
-
-    if ((ret = apc_cache_insert(apc_cache, key, cache_entry, &ctxt, t)) != 1) {
-freepool:
-        apc_pool_destroy(ctxt.pool);
-        ctxt.pool = NULL;
-    }
-
-nocache: 
 
     APCG(current_cache) = NULL;
 

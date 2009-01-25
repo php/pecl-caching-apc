@@ -364,7 +364,7 @@ static void apc_cache_expunge(apc_cache_t* cache, size_t size)
 /* }}} */
 
 /* {{{ apc_cache_insert */
-int apc_cache_insert(apc_cache_t* cache,
+static inline int _apc_cache_insert(apc_cache_t* cache,
                      apc_cache_key_t key,
                      apc_cache_entry_t* value,
                      apc_context_t* ctxt,
@@ -380,7 +380,6 @@ int apc_cache_insert(apc_cache_t* cache,
     fprintf(stderr,"Inserting [%s]\n", value->data.file.filename);
 #endif
 
-    CACHE_LOCK(cache);
     process_pending_removals(cache);
 
     if(key.type == APC_CACHE_KEY_FILE) slot = &cache->slots[hash(key) % cache->num_slots];
@@ -395,14 +394,13 @@ int apc_cache_insert(apc_cache_t* cache,
                     remove_slot(cache, slot);
                     break;
                 }
-                CACHE_UNLOCK(cache);
                 return 0;
             } else if(cache->ttl && (*slot)->access_time < (t - cache->ttl)) {
                 remove_slot(cache, slot);
                 continue;
             }
         } else {   /* APC_CACHE_KEY_FPFILE */
-                if(!memcmp((*slot)->key.data.fpfile.fullpath, key.data.fpfile.fullpath, key.data.fpfile.fullpath_len+1)) {
+            if(!memcmp((*slot)->key.data.fpfile.fullpath, key.data.fpfile.fullpath, key.data.fpfile.fullpath_len+1)) {
                 /* Hrm.. it's already here, remove it and insert new one */
                 remove_slot(cache, slot);
                 break;
@@ -416,7 +414,6 @@ int apc_cache_insert(apc_cache_t* cache,
     }
 
     if ((*slot = make_slot(key, value, *slot, t)) == NULL) {
-        CACHE_UNLOCK(cache);
         return -1;
     }
 
@@ -425,10 +422,38 @@ int apc_cache_insert(apc_cache_t* cache,
     cache->header->num_entries++;
     cache->header->num_inserts++;
 
-    CACHE_UNLOCK(cache);
     return 1;
 }
 /* }}} */
+
+/* {{{ apc_cache_insert */
+int apc_cache_insert(apc_cache_t* cache, apc_cache_key_t key, apc_cache_entry_t* value, apc_context_t *ctxt, time_t t)
+{
+    int rval;
+    CACHE_LOCK(cache);
+    rval = _apc_cache_insert(cache, key, value, ctxt, t);
+    CACHE_UNLOCK(cache);
+    return rval;
+}
+/* }}} */
+
+/* {{{ apc_cache_insert */
+int *apc_cache_insert_mult(apc_cache_t* cache, apc_cache_key_t* keys, apc_cache_entry_t** values, apc_context_t *ctxt, time_t t, int num_entries)
+{
+    int *rval;
+    int i;
+
+    rval = emalloc(sizeof(int) * num_entries);
+    CACHE_LOCK(cache);
+    for (i=0; i < num_entries; i++) {
+        ctxt->pool = values[i]->pool;
+        rval[i] = _apc_cache_insert(cache, keys[i], values[i], ctxt, t);
+    }
+    CACHE_UNLOCK(cache);
+    return rval;
+}
+/* }}} */
+
 
 /* {{{ apc_cache_user_insert */
 int apc_cache_user_insert(apc_cache_t* cache, apc_cache_key_t key, apc_cache_entry_t* value, apc_context_t* ctxt, time_t t, int exclusive TSRMLS_DC)
@@ -812,7 +837,7 @@ int apc_cache_make_file_key(apc_cache_key_t* key,
      * tiny safety is easier than educating the world.  This is now
      * configurable, but the default is still 2 seconds.
      */
-    if(APCG(file_update_protection) && (t - fileinfo.st_buf.sb.st_mtime < APCG(file_update_protection))) { 
+    if(APCG(file_update_protection) && (t - fileinfo.st_buf.sb.st_mtime < APCG(file_update_protection)) && !APCG(force_file_update)) {
 #ifdef __DEBUG_APC__
         fprintf(stderr,"File is too new %s (%d - %d) - bailing\n",filename,t,fileinfo.st_buf.sb.st_mtime);
 #endif

@@ -1027,28 +1027,40 @@ PHP_FUNCTION(apc_load_constants) {
 }
 /* }}} */
 
-/* {{{ proto boolean apc_compile_file(string filename)
+/* {{{ proto mixed apc_compile_file(mixed filenames [, bool atomic])
  */
 PHP_FUNCTION(apc_compile_file) {
-    char *filename;
-    int filename_len;
+    zval *file;
     zend_file_handle file_handle;
     zend_op_array *op_array;
     char** filters = NULL;
     zend_bool cache_by_default = 1;
     HashTable cg_function_table, cg_class_table;
     HashTable *cg_orig_function_table, *cg_orig_class_table, *eg_orig_function_table, *eg_orig_class_table;
+    apc_cache_entry_t** cache_entries;
+    apc_cache_key_t* keys;
+    zend_op_array **op_arrays;
+    time_t t;
+    zval **hentry;
+    HashPosition hpos;
+    int i=0, c=0;
+    int *rval=NULL;
+    int count=0;
+    zend_bool atomic=1;
+    apc_context_t ctxt = {0,};
 
     if(!APCG(enabled)) RETURN_FALSE;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &filename, &filename_len) == FAILURE) {
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z|b", &file, &atomic) == FAILURE) {
         return;
     }
 
-    if(!filename) RETURN_FALSE;
+    if (Z_TYPE_P(file) != IS_ARRAY && Z_TYPE_P(file) != IS_STRING) {
+        apc_wprint("apc_compile_file argument must be a string or an array of strings");
+        RETURN_FALSE;
+    }
 
     /* reset filters and cache_by_default */
-
     filters = APCG(filters);
     APCG(filters) = NULL;
 
@@ -1068,17 +1080,128 @@ PHP_FUNCTION(apc_compile_file) {
     EG(class_table) = CG(class_table);
     APCG(force_file_update) = 1;
 
-    /* Compile the file, loading it into the cache */
-    file_handle.type = ZEND_HANDLE_FILENAME;
-    file_handle.filename = filename;
-    file_handle.free_filename = 0;
-    file_handle.opened_path = NULL;
-    zend_try {
-        op_array = zend_compile_file(&file_handle, ZEND_INCLUDE TSRMLS_CC);
-    } zend_catch {
-        apc_wprint("Error compiling %s in apc_compile_file.", filename);
-        op_array = NULL;
-    } zend_end_try();
+    /* Compile the file(s), loading it into the cache */
+    if (Z_TYPE_P(file) == IS_STRING) {
+        file_handle.type = ZEND_HANDLE_FILENAME;
+        file_handle.filename = Z_STRVAL_P(file);
+        file_handle.free_filename = 0;
+        file_handle.opened_path = NULL;
+
+        zend_try {
+            op_array = zend_compile_file(&file_handle, ZEND_INCLUDE TSRMLS_CC);
+        } zend_catch {
+            apc_wprint("Error compiling %s in apc_compile_file.", file_handle.filename);
+            op_array = NULL;
+        } zend_end_try();
+        if(op_array != NULL) {
+            /* Free up everything */
+            destroy_op_array(op_array TSRMLS_CC);
+            efree(op_array);
+            RETVAL_TRUE;
+        } else {
+            RETVAL_FALSE;
+        }
+        zend_destroy_file_handle(&file_handle TSRMLS_CC);
+
+    } else { /* IS_ARRAY */
+
+        array_init(return_value);
+
+#if PHP_API_VERSION < 20041225
+#if HAVE_APACHE && defined(APC_PHP4_STAT)
+        t = ((request_rec *)SG(server_context))->request_time;
+#else
+        t = time(0);
+#endif
+#else
+        t = sapi_get_request_time(TSRMLS_C);
+#endif
+
+        op_arrays = ecalloc(Z_ARRVAL_P(file)->nNumOfElements, sizeof(zend_op_array*));
+        cache_entries = ecalloc(Z_ARRVAL_P(file)->nNumOfElements, sizeof(apc_cache_entry_t*));
+        keys = ecalloc(Z_ARRVAL_P(file)->nNumOfElements, sizeof(apc_cache_key_t));
+        zend_hash_internal_pointer_reset_ex(Z_ARRVAL_P(file), &hpos);
+        while(zend_hash_get_current_data_ex(Z_ARRVAL_P(file), (void**)&hentry, &hpos) == SUCCESS) {
+            if (Z_TYPE_PP(hentry) != IS_STRING) {
+                apc_wprint("apc_compile_file array values must be strings, aborting.");
+                break;
+            }
+            file_handle.type = ZEND_HANDLE_FILENAME;
+            file_handle.filename = Z_STRVAL_PP(hentry);
+            file_handle.free_filename = 0;
+            file_handle.opened_path = NULL;
+
+            if (!apc_cache_make_file_key(&(keys[i]), file_handle.filename, PG(include_path), t TSRMLS_CC)) {
+                add_assoc_long(return_value, Z_STRVAL_PP(hentry), -1);  /* -1: compilation error */
+                apc_wprint("Error compiling %s in apc_compile_file.", file_handle.filename);
+                break;
+            }
+
+            if (keys[i].type == APC_CACHE_KEY_FPFILE) {
+                keys[i].data.fpfile.fullpath = estrndup(keys[i].data.fpfile.fullpath, keys[i].data.fpfile.fullpath_len);
+            } else if (keys[i].type == APC_CACHE_KEY_USER) {
+                keys[i].data.user.identifier = estrndup(keys[i].data.user.identifier, keys[i].data.user.identifier_len);
+            }
+
+            zend_try {
+                if (apc_compile_cache_entry(keys[i], &file_handle, ZEND_INCLUDE, t, &op_arrays[i], &cache_entries[i] TSRMLS_CC) != SUCCESS) {
+                    apc_wprint("Error compiling %s in apc_compile_file.", file_handle.filename);
+                    op_arrays[i] = NULL;
+                }
+            } zend_catch {
+                op_arrays[i] = NULL;
+                add_assoc_long(return_value, Z_STRVAL_PP(hentry), -1);  /* -1: compilation error */
+                apc_wprint("Error compiling %s in apc_compile_file.", file_handle.filename);
+            } zend_end_try();
+
+            zend_destroy_file_handle(&file_handle TSRMLS_CC);
+            if(op_arrays[i] != NULL) {
+                count++;
+            }
+
+            /* clean out the function/class tables */
+            zend_hash_clean(&cg_function_table);
+            zend_hash_clean(&cg_class_table);
+
+            zend_hash_move_forward_ex(Z_ARRVAL_P(file), &hpos);
+            i++;
+        }
+
+        /* atomically update the cache if no errors or not atomic */
+        ctxt.copy = APC_COPY_IN_OPCODE;
+        ctxt.force_update = 1;
+        if (count == i || !atomic) {
+            rval = apc_cache_insert_mult(apc_cache, keys, cache_entries, &ctxt, t, i);
+        }
+
+        zend_hash_internal_pointer_reset_ex(Z_ARRVAL_P(file), &hpos);
+        for(c=0; c < i; c++) {
+            zend_hash_get_current_data_ex(Z_ARRVAL_P(file), (void**)&hentry, &hpos);
+            if (rval && rval[c] != 1) {
+                add_assoc_long(return_value, Z_STRVAL_PP(hentry), -2);  /* -2: input or cache insertion error */
+                if (cache_entries[c]) {
+                    apc_pool_destroy(cache_entries[c]->pool);
+                }
+            }
+            if (op_arrays[c]) {
+                destroy_op_array(op_arrays[c] TSRMLS_CC);
+                efree(op_arrays[c]);
+            }
+            if (keys[i].type == APC_CACHE_KEY_FPFILE) {
+                efree((void*)keys[i].data.fpfile.fullpath);
+            } else if (keys[i].type == APC_CACHE_KEY_USER) {
+                efree((void*)keys[i].data.user.identifier);
+            }
+            zend_hash_move_forward_ex(Z_ARRVAL_P(file), &hpos);
+        }
+        efree(op_arrays);
+        efree(keys);
+        efree(cache_entries);
+        if (rval) {
+            efree(rval);
+        }
+
+    }
 
     /* Return class/function tables to previous states, destroy temp tables */
     APCG(force_file_update) = 0;
@@ -1093,14 +1216,6 @@ PHP_FUNCTION(apc_compile_file) {
     APCG(filters) = filters;
     APCG(cache_by_default) = cache_by_default;
 
-    if(op_array == NULL) { RETURN_FALSE; }
-
-    /* Free up everything */
-    zend_destroy_file_handle(&file_handle TSRMLS_CC);
-    destroy_op_array(op_array TSRMLS_CC);
-    efree(op_array);
-
-    RETURN_TRUE;
 }
 /* }}} */
 
