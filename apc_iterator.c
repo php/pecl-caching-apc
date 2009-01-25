@@ -31,13 +31,17 @@
 zend_class_entry *apc_iterator_ce;
 zend_object_handlers apc_iterator_object_handlers;
 
-/* {{{ apc_iterator_item_key */
-static void apc_iterator_item_key(slot_t **slot_pp, apc_iterator_item_t *item) {
+
+/* {{{ apc_iterator_item */
+static apc_iterator_item_t* apc_iterator_item_ctor(apc_iterator_t *iterator, slot_t **slot_pp) {
+    zval *zvalue;
+    char md5str[33];
     slot_t *slot = *slot_pp;
+    apc_context_t ctxt = {0, };
+    apc_iterator_item_t *item = ecalloc(1, sizeof(apc_iterator_item_t));
 
     if (slot->key.type == APC_CACHE_KEY_FILE) {
-        item->key = estrdup(slot->value->data.file.filename);
-        item->key_len = strlen(item->key);
+        item->key_len = zend_spprintf(&item->key, 0, "%ld %ld", slot->key.data.file.device, slot->key.data.file.inode);
     } else if (slot->key.type == APC_CACHE_KEY_USER) {
         item->key = estrndup((char*)slot->key.data.user.identifier, slot->key.data.user.identifier_len);
         item->key_len = slot->key.data.user.identifier_len;
@@ -47,91 +51,82 @@ static void apc_iterator_item_key(slot_t **slot_pp, apc_iterator_item_t *item) {
     } else {
         apc_eprint("Internal error, invalid entry type.");
     }
-    item->info = NULL;
 
-    return;
-}
-/* }}} */
+    ALLOC_INIT_ZVAL(item->value);
+    array_init(item->value);
 
-/* {{{ apc_iterator_item_value */
-static void apc_iterator_item_value(slot_t **slot_pp, apc_iterator_item_t *item) {
-    slot_t *slot = *slot_pp;
-    zval *zvalue;
-    apc_context_t ctxt = {0, };
-
-    ctxt.pool = apc_pool_create(APC_UNPOOL, apc_php_malloc, apc_php_free);
-    ctxt.copy = APC_COPY_OUT_USER;
-
-    MAKE_STD_ZVAL(zvalue);
-    if(slot->value->type == APC_CACHE_ENTRY_FILE) {
-        ZVAL_NULL(zvalue);
-    } else if(slot->value->type == APC_CACHE_ENTRY_USER) {
-        apc_cache_fetch_zval(zvalue, slot->value->data.user.val, &ctxt);
-    }
-
-    item->value = zvalue;
-    apc_pool_destroy(ctxt.pool);
-
-    return;
-
-}
-/* }}} */
-
-/* {{{ apc_iterator_item_info */
-static void apc_iterator_item_info(slot_t **slot_pp, apc_iterator_item_t *item) {
-    slot_t *slot = *slot_pp;
-    char md5str[33];
-
-    ALLOC_INIT_ZVAL(item->info);
-    array_init(item->info);
-    if(slot->value->type == APC_CACHE_ENTRY_FILE) {
-        if (slot->key.type == APC_CACHE_KEY_FILE) {
-          add_assoc_string(item->info, "filename", slot->value->data.file.filename, 1);
-        } else {  /* APC_CACHE_FPFILE */
-          add_assoc_string(item->info, "filename", (char*)slot->key.data.fpfile.fullpath, 1);
+    if (APC_ITER_TYPE & iterator->format) {
+        if(slot->value->type == APC_CACHE_ENTRY_FILE) {
+            add_assoc_string(item->value, "type", "file", 1);
+        } else if(slot->value->type == APC_CACHE_ENTRY_USER) {
+            add_assoc_string(item->value, "type", "user", 1);
         }
-        add_assoc_long(item->info, "device", slot->key.data.file.device);
-        add_assoc_long(item->info, "inode", slot->key.data.file.inode);
-        add_assoc_string(item->info, "type", "file", 1);
-        if(slot->key.md5) {
-            make_digest(md5str, slot->key.md5);
-            add_assoc_string(item->info, "md5", md5str, 1);
+    }
+    if (APC_ITER_FILENAME & iterator->format) {
+        if(slot->value->type == APC_CACHE_ENTRY_FILE) {
+            if (slot->key.type == APC_CACHE_KEY_FILE) {
+              add_assoc_string(item->value, "filename", slot->value->data.file.filename, 1);
+            } else {  /* APC_CACHE_FPFILE */
+              add_assoc_string(item->value, "filename", slot->key.data.fpfile.fullpath, 1);
+            }
         }
-    } else if(slot->value->type == APC_CACHE_ENTRY_USER) {
-        add_assoc_string(item->info, "info", slot->value->data.user.info, 1);
-        add_assoc_long(item->info, "ttl", (long)slot->value->data.user.ttl);
-        add_assoc_string(item->info, "type", "user", 1);
     }
-    add_assoc_long(item->info, "num_hits", slot->num_hits);
-    add_assoc_long(item->info, "mtime", slot->key.mtime);
-    add_assoc_long(item->info, "creation_time", slot->creation_time);
-    add_assoc_long(item->info, "deletion_time", slot->deletion_time);
-    add_assoc_long(item->info, "access_time", slot->access_time);
-    add_assoc_long(item->info, "ref_count", slot->value->ref_count);
-    add_assoc_long(item->info, "mem_size", slot->value->mem_size);
-    if (item->value) {
-        add_assoc_zval(item->info, "value", item->value);
-        Z_ADDREF_P(item->value);
+    if (APC_ITER_DEVICE & iterator->format) {
+        if(slot->value->type == APC_CACHE_ENTRY_FILE) {
+            add_assoc_long(item->value, "device", slot->key.data.file.device);
+        }
     }
-
-    return;
-}
-/* }}} */
-
-/* {{{ apc_iterator_item */
-static apc_iterator_item_t* apc_iterator_item_ctor(apc_iterator_t *iterator, slot_t **slot_pp) {
-    apc_iterator_item_t *item = ecalloc(1, sizeof(apc_iterator_item_t));
-
-    if ((iterator->format & APC_ITER_KEY) == APC_ITER_KEY) {
-        apc_iterator_item_key(slot_pp, item);
+    if (APC_ITER_INODE & iterator->format) {
+        if(slot->value->type == APC_CACHE_ENTRY_FILE) {
+            add_assoc_long(item->value, "inode", slot->key.data.file.inode);
+        }
     }
-
-    if ((iterator->format & APC_ITER_VALUE) == APC_ITER_VALUE) {
-        apc_iterator_item_value(slot_pp, item);
+    if (APC_ITER_KEY & iterator->format) {
+        add_assoc_stringl(item->value, "key", item->key, item->key_len, 1);
     }
+    if (APC_ITER_VALUE & iterator->format) {
+        if(slot->value->type == APC_CACHE_ENTRY_USER) {
 
-    if ((iterator->format & APC_ITER_INFO) == APC_ITER_INFO) {
-        apc_iterator_item_info(slot_pp, item);
+            ctxt.pool = apc_pool_create(APC_UNPOOL, apc_php_malloc, apc_php_free);
+            ctxt.copy = APC_COPY_OUT_USER;
+
+            MAKE_STD_ZVAL(zvalue);
+            apc_cache_fetch_zval(zvalue, slot->value->data.user.val, &ctxt);
+            apc_pool_destroy(ctxt.pool);
+            add_assoc_zval(item->value, "value", zvalue);
+        }
+    }
+    if (APC_ITER_MD5 & iterator->format) {
+        if(slot->value->type == APC_CACHE_ENTRY_FILE) {
+            if(slot->key.md5) {
+                make_digest_ex(md5str, slot->key.md5, 16);
+                add_assoc_string(item->value, "md5", md5str, 1);
+            }
+        }
+    }
+    if (APC_ITER_NUM_HITS & iterator->format) {
+        add_assoc_long(item->value, "num_hits", slot->num_hits);
+    }
+    if (APC_ITER_MTIME & iterator->format) {
+        add_assoc_long(item->value, "mtime", slot->key.mtime);
+    }
+    if (APC_ITER_CTIME & iterator->format) {
+        add_assoc_long(item->value, "creation_time", slot->creation_time);
+    }
+    if (APC_ITER_DTIME & iterator->format) {
+        add_assoc_long(item->value, "deletion_time", slot->deletion_time);
+    }
+    if (APC_ITER_ATIME & iterator->format) {
+        add_assoc_long(item->value, "access_time", slot->access_time);
+    }
+    if (APC_ITER_REFCOUNT & iterator->format) {
+        add_assoc_long(item->value, "ref_count", slot->value->ref_count);
+    }
+    if (APC_ITER_MEM_SIZE & iterator->format) {
+        add_assoc_long(item->value, "mem_size", slot->value->mem_size);
+    }
+    if (APC_ITER_TTL & iterator->format) {
+        add_assoc_long(item->value, "ttl", slot->value->data.user.ttl);
     }
 
     return item;
@@ -151,9 +146,6 @@ static void apc_iterator_item_dtor(apc_iterator_item_t *item) {
     if (item->key) {
         efree(item->key);
     }
-    if (item->info) {
-        zval_ptr_dtor(&item->info);
-    }
     if (item->value) {
         zval_ptr_dtor(&item->value);
     }
@@ -172,8 +164,13 @@ static void apc_iterator_destroy(void *object, zend_object_handle handle TSRMLS_
     while (apc_stack_size(iterator->stack) > 0) {
         apc_iterator_item_dtor(apc_stack_pop(iterator->stack));
     }
-    if (iterator->regex)
+    if (iterator->regex) {
         efree(iterator->regex);
+    }
+    if (iterator->search_hash) {
+        zend_hash_destroy(iterator->search_hash);
+        efree(iterator->search_hash);
+    }
     iterator->initialized = 0;
 
 }
@@ -204,11 +201,30 @@ static zend_object_value apc_iterator_create(zend_class_entry *ce TSRMLS_DC) {
 }
 /* }}} */
 
+/* {{{ apc_iterator_search_match
+ *       Verify if the key matches oru search parameters
+ */
+static int apc_iterator_search_match(apc_iterator_t *iterator, char *key, int key_len) {
+#ifdef ITERATOR_PCRE
+    if (iterator->regex) {
+        return (pcre_exec(iterator->re, NULL, key, strlen(key), 0, 0, NULL, 0) >= 0);
+    }
+#endif
+            
+    if (iterator->search_hash) {
+        return zend_hash_exists(iterator->search_hash, key, key_len+1);
+    }
+
+    return 1; /* we didn't have any search criteria */
+}
+/* }}} */
+
 /* {{{ apc_iterator_fetch_active */
 static int apc_iterator_fetch_active(apc_iterator_t *iterator) {
     int count=0;
     slot_t **slot;
     char *key;
+    int key_len;
     apc_iterator_item_t *item;
 
     while (apc_stack_size(iterator->stack) > 0) {
@@ -220,23 +236,21 @@ static int apc_iterator_fetch_active(apc_iterator_t *iterator) {
         slot = &iterator->cache->slots[iterator->slot_idx];
         while(*slot) {
             if ((*slot)->key.type == APC_CACHE_KEY_FILE) {
-                key = (*slot)->value->data.file.filename;
+                key_len = zend_spprintf(&key, 0, "%ld %ld", (*slot)->key.data.file.device, (*slot)->key.data.file.inode);
             } else if ((*slot)->key.type == APC_CACHE_KEY_USER) {
                 key = (char*)(*slot)->key.data.user.identifier;
+                key_len = (*slot)->key.data.user.identifier_len;
             } else if ((*slot)->key.type == APC_CACHE_KEY_FPFILE) {
                 key = (char*)(*slot)->key.data.fpfile.fullpath;
+                key_len = (*slot)->key.data.fpfile.fullpath_len;
             }
-#ifdef ITERATOR_PCRE
-            if (!iterator->regex || pcre_exec(iterator->re, NULL, key, strlen(key), 0, 0, NULL, 0) >= 0) {
-#endif
+            if (apc_iterator_search_match(iterator, key, key_len)) {
                 count++;
                 item = apc_iterator_item_ctor(iterator, slot);
                 if (item) {
                     apc_stack_push(iterator->stack, item);
                 }
-#ifdef ITERATOR_PCRE
             }
-#endif
             slot = &(*slot)->next;
         }
         iterator->slot_idx++;
@@ -252,6 +266,7 @@ static int apc_iterator_fetch_deleted(apc_iterator_t *iterator) {
     int count=0;
     slot_t **slot;
     char *key;
+    int key_len;
     apc_iterator_item_t *item;
 
     CACHE_LOCK(iterator->cache);
@@ -263,23 +278,21 @@ static int apc_iterator_fetch_deleted(apc_iterator_t *iterator) {
     count = 0;
     while ((*slot) && count < iterator->chunk_size) {
         if ((*slot)->key.type == APC_CACHE_KEY_FILE) {
-            key = (*slot)->value->data.file.filename;
+            key_len = zend_spprintf(&key, 0, "%ld %ld", (*slot)->key.data.file.device, (*slot)->key.data.file.inode);
         } else if ((*slot)->key.type == APC_CACHE_KEY_USER) {
             key = (char*)(*slot)->key.data.user.identifier;
+            key_len = (*slot)->key.data.user.identifier_len;
         } else if ((*slot)->key.type == APC_CACHE_KEY_FPFILE) {
             key = (char*)(*slot)->key.data.fpfile.fullpath;
+            key_len = (*slot)->key.data.fpfile.fullpath_len;
         }
-#ifdef ITERATOR_PCRE
-        if (!iterator->regex || pcre_exec(iterator->re, NULL, key, strlen(key), 0, 0, NULL, 0) >= 0) {
-#endif
+        if (apc_iterator_search_match(iterator, key, key_len)) {
             count++;
             item = apc_iterator_item_ctor(iterator, slot);
             if (item) {
                 apc_stack_push(iterator->stack, item);
             }
-#ifdef ITERATOR_PCRE
         }
-#endif
         slot = &(*slot)->next;
     }
     CACHE_UNLOCK(iterator->cache);
@@ -294,36 +307,35 @@ static void apc_iterator_totals(apc_iterator_t *iterator) {
     slot_t **slot;
     int i;
     char *key;
+    int key_len;
 
     CACHE_LOCK(iterator->cache);
     for (i=0; i < iterator->cache->num_slots; i++) {
         slot = &iterator->cache->slots[i];
         while((*slot)) {
             if ((*slot)->key.type == APC_CACHE_KEY_FILE) {
-                key = (*slot)->value->data.file.filename;
+                key_len = zend_spprintf(&key, 0, "%ld %ld", (*slot)->key.data.file.device, (*slot)->key.data.file.inode);
             } else if ((*slot)->key.type == APC_CACHE_KEY_USER) {
                 key = (char*)(*slot)->key.data.user.identifier;
+                key_len = (*slot)->key.data.user.identifier_len;
             } else if ((*slot)->key.type == APC_CACHE_KEY_FPFILE) {
                 key = (char*)(*slot)->key.data.fpfile.fullpath;
+                key_len = (*slot)->key.data.fpfile.fullpath_len;
             }
-#ifdef ITERATOR_PCRE
-            if (!iterator->regex || pcre_exec(iterator->re, NULL, key, strlen(key), 0, 0, NULL, 0) >= 0) {
-#endif
+            if (apc_iterator_search_match(iterator, key, key_len)) {
                 iterator->size += (*slot)->value->mem_size;
                 iterator->hits += (*slot)->num_hits;
                 iterator->count++;
             }
             slot = &(*slot)->next;
-#ifdef ITERATOR_PCRE
         }
-#endif
     }
     CACHE_UNLOCK(iterator->cache);
     iterator->totals_flag = 1;
 }
 /* }}} */
 
-/* {{{ proto object APCIterator::__costruct(string cache [, string regex [, long format [, long chunk_size [, long list ]]]]) */
+/* {{{ proto object APCIterator::__costruct(string cache [, mixed search [, long format [, long chunk_size [, long list ]]]]) */
 PHP_METHOD(apc_iterator, __construct) {
     zval *object = getThis();
     apc_iterator_t *iterator = (apc_iterator_t*)zend_object_store_get_object(object TSRMLS_CC);
@@ -331,11 +343,10 @@ PHP_METHOD(apc_iterator, __construct) {
     int cachetype_len;
     long format = APC_ITER_ALL;
     long chunk_size=0;
-    char *regex = NULL;
-    int regex_len = 0;
+    zval *search = NULL;
     long list = APC_LIST_ACTIVE;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|slll", &cachetype, &cachetype_len, &regex, &regex_len, &format, &chunk_size, &list) == FAILURE) {
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|zlll", &cachetype, &cachetype_len, &search, &format, &chunk_size, &list) == FAILURE) {
         return;
     }
 
@@ -372,21 +383,24 @@ PHP_METHOD(apc_iterator, __construct) {
     iterator->count = 0;
     iterator->size = 0;
     iterator->hits = 0;
-    if (regex_len) {
+    iterator->regex = NULL;
+    iterator->regex_len = 0;
+    iterator->search_hash = NULL;
+    if (search && Z_TYPE_P(search) == IS_STRING && Z_STRLEN_P(search)) {
 #ifdef ITERATOR_PCRE
-        iterator->regex = estrndup(regex, regex_len);
-        iterator->regex_len = regex_len;
-        iterator->re = pcre_get_compiled_regex(regex, NULL, NULL TSRMLS_CC);
+        iterator->regex = estrndup(Z_STRVAL_P(search), Z_STRLEN_P(search));
+        iterator->regex_len = Z_STRLEN_P(search);
+        iterator->re = pcre_get_compiled_regex(Z_STRVAL_P(search), NULL, NULL TSRMLS_CC);
 
         if(!iterator->re) {
-            apc_eprint("Could not compile regular expression: %s", regex);
+            apc_eprint("Could not compile regular expression: %s", Z_STRVAL_P(search));
         }
 #else
         apc_eprint("Regular expressions support is not enabled, please enable PCRE for APCIterator regex support");
 #endif
-    } else {
-        iterator->regex = NULL;
-        iterator->regex_len = 0;
+    } else if (search && Z_TYPE_P(search) == IS_ARRAY) {
+        Z_ADDREF_P(search);
+        iterator->search_hash = apc_flip_hash(Z_ARRVAL_P(search));
     }
     iterator->initialized = 1;
 }
@@ -437,13 +451,7 @@ PHP_METHOD(apc_iterator, current) {
         iterator->fetch(iterator);
     }
     item = apc_stack_get(iterator->stack, iterator->stack_idx);
-    if (item->info) {
-        RETURN_ZVAL(item->info, 1, 0);
-    } else if (item->value) {
-        RETURN_ZVAL(item->value, 1, 0);
-    } else {
-        RETURN_NULL();
-    }
+    RETURN_ZVAL(item->value, 1, 0);
 }
 /* }}} */
 
@@ -555,9 +563,22 @@ int apc_iterator_init(int module_number TSRMLS_DC) {
     zend_register_long_constant("APC_LIST_ACTIVE", sizeof("APC_LIST_ACTIVE"), APC_LIST_ACTIVE, CONST_PERSISTENT | CONST_CS, module_number TSRMLS_CC);
     zend_register_long_constant("APC_LIST_DELETED", sizeof("APC_LIST_DELETED"), APC_LIST_DELETED, CONST_PERSISTENT | CONST_CS, module_number TSRMLS_CC);
 
+    zend_register_long_constant("APC_ITER_TYPE", sizeof("APC_ITER_TYPE"), APC_ITER_TYPE, CONST_PERSISTENT | CONST_CS, module_number TSRMLS_CC);
     zend_register_long_constant("APC_ITER_KEY", sizeof("APC_ITER_KEY"), APC_ITER_KEY, CONST_PERSISTENT | CONST_CS, module_number TSRMLS_CC);
+    zend_register_long_constant("APC_ITER_FILENAME", sizeof("APC_ITER_FILENAME"), APC_ITER_FILENAME, CONST_PERSISTENT | CONST_CS, module_number TSRMLS_CC);
+    zend_register_long_constant("APC_ITER_DEVICE", sizeof("APC_ITER_DEVICE"), APC_ITER_DEVICE, CONST_PERSISTENT | CONST_CS, module_number TSRMLS_CC);
+    zend_register_long_constant("APC_ITER_INODE", sizeof("APC_ITER_INODE"), APC_ITER_INODE, CONST_PERSISTENT | CONST_CS, module_number TSRMLS_CC);
     zend_register_long_constant("APC_ITER_VALUE", sizeof("APC_ITER_VALUE"), APC_ITER_VALUE, CONST_PERSISTENT | CONST_CS, module_number TSRMLS_CC);
-    zend_register_long_constant("APC_ITER_INFO", sizeof("APC_ITER_INFO"), APC_ITER_INFO, CONST_PERSISTENT | CONST_CS, module_number TSRMLS_CC);
+    zend_register_long_constant("APC_ITER_MD5", sizeof("APC_ITER_MD5"), APC_ITER_MD5, CONST_PERSISTENT | CONST_CS, module_number TSRMLS_CC);
+    zend_register_long_constant("APC_ITER_NUM_HITS", sizeof("APC_ITER_NUM_HITS"), APC_ITER_NUM_HITS, CONST_PERSISTENT | CONST_CS, module_number TSRMLS_CC);
+    zend_register_long_constant("APC_ITER_MTIME", sizeof("APC_ITER_MTIME"), APC_ITER_MTIME, CONST_PERSISTENT | CONST_CS, module_number TSRMLS_CC);
+    zend_register_long_constant("APC_ITER_CTIME", sizeof("APC_ITER_CTIME"), APC_ITER_CTIME, CONST_PERSISTENT | CONST_CS, module_number TSRMLS_CC);
+    zend_register_long_constant("APC_ITER_DTIME", sizeof("APC_ITER_DTIME"), APC_ITER_DTIME, CONST_PERSISTENT | CONST_CS, module_number TSRMLS_CC);
+    zend_register_long_constant("APC_ITER_ATIME", sizeof("APC_ITER_ATIME"), APC_ITER_ATIME, CONST_PERSISTENT | CONST_CS, module_number TSRMLS_CC);
+    zend_register_long_constant("APC_ITER_REFCOUNT", sizeof("APC_ITER_REFCOUNT"), APC_ITER_REFCOUNT, CONST_PERSISTENT | CONST_CS, module_number TSRMLS_CC);
+    zend_register_long_constant("APC_ITER_MEM_SIZE", sizeof("APC_ITER_MEM_SIZE"), APC_ITER_MEM_SIZE, CONST_PERSISTENT | CONST_CS, module_number TSRMLS_CC);
+    zend_register_long_constant("APC_ITER_TTL", sizeof("APC_ITER_TTL"), APC_ITER_TTL, CONST_PERSISTENT | CONST_CS, module_number TSRMLS_CC);
+    zend_register_long_constant("APC_ITER_NONE", sizeof("APC_ITER_NONE"), APC_ITER_NONE, CONST_PERSISTENT | CONST_CS, module_number TSRMLS_CC);
     zend_register_long_constant("APC_ITER_ALL", sizeof("APC_ITER_ALL"), APC_ITER_ALL, CONST_PERSISTENT | CONST_CS, module_number TSRMLS_CC);
 
     memcpy(&apc_iterator_object_handlers, zend_get_std_object_handlers(), sizeof(zend_object_handlers));

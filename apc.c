@@ -587,6 +587,38 @@ static unsigned long crc32gen(int n)
 
 /* }}} */
 
+
+/* {{{ apc_flip_hash() */
+HashTable* apc_flip_hash(HashTable *hash) {
+    zval **entry, *data;
+    HashTable *new_hash;
+    HashPosition pos;
+
+    if(hash == NULL) return hash;
+
+    MAKE_STD_ZVAL(data);
+    ZVAL_LONG(data, 1);
+    
+    new_hash = emalloc(sizeof(HashTable));
+    zend_hash_init(new_hash, hash->nTableSize, NULL, ZVAL_PTR_DTOR, 0);
+
+    zend_hash_internal_pointer_reset_ex(hash, &pos);
+    while (zend_hash_get_current_data_ex(hash, (void **)&entry, &pos) == SUCCESS) {
+        if(Z_TYPE_PP(entry) == IS_STRING) {
+            zend_hash_update(new_hash, Z_STRVAL_PP(entry), Z_STRLEN_PP(entry) +1, &data, sizeof(data), NULL);
+        } else {
+            zend_hash_index_update(new_hash, Z_LVAL_PP(entry), &data, sizeof(data), NULL);
+        }
+        ZVAL_ADDREF(data);
+        zend_hash_move_forward_ex(hash, &pos);
+    }
+    efree(data);
+
+    return new_hash;
+}
+/* }}} */
+
+
 /*
  * Local variables:
  * tab-width: 4

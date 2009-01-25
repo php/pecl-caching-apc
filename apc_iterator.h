@@ -25,6 +25,8 @@
 #include "apc.h"
 #include "apc_stack.h"
 
+#include "zend_exceptions.h"
+
 #if HAVE_PCRE || HAVE_BUNDLED_PCRE
 #define ITERATOR_PCRE 1
 #include "ext/pcre/php_pcre.h"
@@ -39,10 +41,24 @@
 #define APC_LIST_ACTIVE   0x1
 #define APC_LIST_DELETED  0x2
 
-#define APC_ITER_KEY    0x01
-#define APC_ITER_VALUE  0x02
-#define APC_ITER_INFO   0x04
-#define APC_ITER_ALL    (APC_ITER_KEY | APC_ITER_VALUE | APC_ITER_INFO)
+#define APC_ITER_TYPE       (1L << 0) 
+#define APC_ITER_KEY        (1L << 1) 
+#define APC_ITER_FILENAME   (1L << 2) 
+#define APC_ITER_DEVICE     (1L << 3) 
+#define APC_ITER_INODE      (1L << 4) 
+#define APC_ITER_VALUE      (1L << 5) 
+#define APC_ITER_MD5        (1L << 6) 
+#define APC_ITER_NUM_HITS   (1L << 7) 
+#define APC_ITER_MTIME      (1L << 8) 
+#define APC_ITER_CTIME      (1L << 9) 
+#define APC_ITER_DTIME      (1L << 10) 
+#define APC_ITER_ATIME      (1L << 11) 
+#define APC_ITER_REFCOUNT   (1L << 12) 
+#define APC_ITER_MEM_SIZE   (1L << 13) 
+#define APC_ITER_TTL        (1L << 14)
+
+#define APC_ITER_NONE       (0x00000000L)
+#define APC_ITER_ALL        (0xffffffffL)
 
 typedef void* (*apc_iterator_item_cb_t)(slot_t **slot);
 
@@ -64,6 +80,7 @@ typedef struct _apc_iterator_t {
 #endif
     char *regex;             /* original regex expression or NULL */
     int regex_len;           /* regex length */
+    HashTable *search_hash;  /* hash of keys to iterate over */
     long key_idx;            /* incrementing index for numerical keys */
     short int totals_flag;   /* flag if totals have been calculated */
     long hits;               /* hit total */
@@ -76,7 +93,6 @@ typedef struct _apc_iterator_t {
 typedef struct _apc_iterator_item_t {
     char *key;              /* string key */
     long key_len;           /* strlen of key */
-    zval *info;             /* array of entry info */
     zval *value;
 } apc_iterator_item_t;
 /* }}} */
