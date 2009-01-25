@@ -55,7 +55,6 @@
 apc_segment_t apc_mmap(char *file_mask, size_t size)
 {
     apc_segment_t segment; 
-    void *shmaddr;
 
     int fd = -1;
     int flags = MAP_SHARED | MAP_NOSYNC;
