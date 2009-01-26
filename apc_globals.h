@@ -107,6 +107,9 @@ ZEND_BEGIN_MODULE_GLOBALS(apc)
     apc_cache_t *current_cache;  /* current cache being modified/read */
     char *preload_path;
     zend_bool file_md5;           /* record md5 hash of files */
+    void *apc_bd_alloc_ptr;      /* bindump alloc() ptr */
+    void *apc_bd_alloc_ubptr;    /* bindump alloc() upper bound ptr */
+    HashTable apc_bd_alloc_list; /* bindump alloc() ptr list */
 ZEND_END_MODULE_GLOBALS(apc)
 
 /* (the following declaration is defined in php_apc.c) */

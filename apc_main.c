@@ -97,7 +97,6 @@ static int install_class(apc_class_t cl, apc_context_t* ctxt TSRMLS_DC)
     int status;
     zend_class_entry** allocated_ce = NULL;
 
-
     /* Special case for mangled names. Mangled names are unique to a file.
      * There is no way two classes with the same mangled name will occur,
      * unless a file is included twice. And if in case, a file is included

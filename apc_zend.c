@@ -40,70 +40,7 @@ void apc_php_free(void* p)
     efree(p);
 }
 
-#ifndef ZEND_VM_KIND_CALL /* Not currently defined by any ZE version */
-# define ZEND_VM_KIND_CALL  1
-#endif
-
-#ifndef ZEND_VM_KIND /* Indicates PHP < 5.1 */
-# define ZEND_VM_KIND   ZEND_VM_KIND_CALL
-#endif
-
-#if defined(ZEND_ENGINE_2) && (ZEND_VM_KIND == ZEND_VM_KIND_CALL)
-# define APC_OPCODE_OVERRIDE
-#endif
-
 #ifdef APC_OPCODE_OVERRIDE
-
-#ifdef ZEND_ENGINE_2_1
-/* Taken from Zend/zend_vm_execute.h */
-#define _CONST_CODE  0
-#define _TMP_CODE    1
-#define _VAR_CODE    2
-#define _UNUSED_CODE 3
-#define _CV_CODE     4
-static inline int _apc_opcode_handler_decode(zend_op *opline)
-{
-    static const int apc_vm_decode[] = {
-        _UNUSED_CODE, /* 0              */
-        _CONST_CODE,  /* 1 = IS_CONST   */
-        _TMP_CODE,    /* 2 = IS_TMP_VAR */
-        _UNUSED_CODE, /* 3              */
-        _VAR_CODE,    /* 4 = IS_VAR     */
-        _UNUSED_CODE, /* 5              */
-        _UNUSED_CODE, /* 6              */
-        _UNUSED_CODE, /* 7              */
-        _UNUSED_CODE, /* 8 = IS_UNUSED  */
-        _UNUSED_CODE, /* 9              */
-        _UNUSED_CODE, /* 10             */
-        _UNUSED_CODE, /* 11             */
-        _UNUSED_CODE, /* 12             */
-        _UNUSED_CODE, /* 13             */
-        _UNUSED_CODE, /* 14             */
-        _UNUSED_CODE, /* 15             */
-        _CV_CODE      /* 16 = IS_CV     */
-    };
-    return (opline->opcode * 25) + (apc_vm_decode[opline->op1.op_type] * 5) + apc_vm_decode[opline->op2.op_type];
-}
-
-# define APC_ZEND_OPLINE                    zend_op *opline = execute_data->opline;
-# define APC_OPCODE_HANDLER_DECODE(opline)  _apc_opcode_handler_decode(opline)
-# if PHP_MAJOR_VERSION >= 6
-#  define APC_OPCODE_HANDLER_COUNT          ((25 * 152) + 1)
-# else
-#  define APC_OPCODE_HANDLER_COUNT          ((25 * 151) + 1)
-# endif
-# define APC_REPLACE_OPCODE(opname)         { int i; for(i = 0; i < 25; i++) if (zend_opcode_handlers[(opname*25) + i]) zend_opcode_handlers[(opname*25) + i] = apc_op_##opname; }
-
-#else /* ZE2.0 */
-# define APC_ZEND_ONLINE
-# define APC_OPCODE_HANDLER_DECODE(opline)  (opline->opcode)
-# define APC_OPCODE_HANDLER_COUNT           512
-# define APC_REPLACE_OPCODE(opname)         zend_opcode_handlers[opname] = apc_op_##opname;
-#endif
-
-#ifndef ZEND_FASTCALL  /* Added in ZE2.3.0 */
-#define ZEND_FASTCALL
-#endif
 
 static opcode_handler_t *apc_original_opcode_handlers;
 static opcode_handler_t apc_opcode_handlers[APC_OPCODE_HANDLER_COUNT];

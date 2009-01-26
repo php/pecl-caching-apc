@@ -549,6 +549,12 @@ static zend_arg_info* my_copy_arg_info(zend_arg_info* dst, const zend_arg_info* 
 }
 /* }}} */
 
+/* {{{ apc_copy_class_entry */
+zend_class_entry* apc_copy_class_entry(zend_class_entry* dst, zend_class_entry* src, apc_context_t* ctxt)
+{
+    return my_copy_class_entry(dst, src, ctxt);
+}
+
 /* {{{ my_copy_class_entry */
 static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_entry* src, apc_context_t* ctxt)
 {
@@ -606,6 +612,7 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
     /* these will either be set inside my_fixup_hashtable or 
      * they will be copied out from parent inside zend_do_inheritance 
      */
+    dst->parent = NULL;
     dst->constructor =  NULL;
     dst->destructor = NULL;
     dst->clone = NULL;
@@ -1067,6 +1074,7 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_con
     return dst;
 }
 /* }}} */
+
 
 /* {{{ apc_copy_new_functions */
 apc_function_t* apc_copy_new_functions(int old_count, apc_context_t* ctxt TSRMLS_DC)

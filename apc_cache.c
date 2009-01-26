@@ -31,7 +31,6 @@
 /* $Id$ */
 
 #include "apc_cache.h"
-#include "apc_lock.h"
 #include "apc_sma.h"
 #include "apc_main.h"
 #include "apc_globals.h"
