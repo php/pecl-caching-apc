@@ -604,41 +604,66 @@ nocache:
 }
 /* }}} */
 
-/* {{{ proto int apc_store(string key, mixed var [, long ttl ])
+/* {{{ apc_store_helper(INTERNAL_FUNCTION_PARAMETERS, const int exclusive)
  */
-PHP_FUNCTION(apc_store) {
-    zval *val;
-    char *strkey;
-    int strkey_len;
+static void apc_store_helper(INTERNAL_FUNCTION_PARAMETERS, const int exclusive)
+{
+    zval *key = NULL;
+    zval *val = NULL;
     long ttl = 0L;
+    HashTable *hash;
+    HashPosition hpos;
+    zval **hentry;
+    char *hkey=NULL;
+    uint hkey_len;
+    ulong hkey_idx;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sz|l", &strkey, &strkey_len, &val, &ttl) == FAILURE) {
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z|zl", &key, &val, &ttl) == FAILURE) {
         return;
     }
 
-    if(!strkey_len) RETURN_FALSE;
+    if (!key) RETURN_FALSE;
 
-    if(_apc_store(strkey, strkey_len, val, (unsigned int)ttl, 0 TSRMLS_CC)) RETURN_TRUE;
+    if (Z_TYPE_P(key) == IS_ARRAY) {
+        hash = Z_ARRVAL_P(key);
+        array_init(return_value);
+        zend_hash_internal_pointer_reset_ex(hash, &hpos);
+        while(zend_hash_get_current_data_ex(hash, (void**)&hentry, &hpos) == SUCCESS) {
+            zend_hash_get_current_key_ex(hash, &hkey, &hkey_len, &hkey_idx, 0, &hpos);
+            if (hkey) {
+                if(!_apc_store(hkey, hkey_len, *hentry, (unsigned int)ttl, exclusive TSRMLS_CC)) {
+                    add_assoc_long_ex(return_value, hkey, hkey_len, -1);  /* -1: insertion error */
+                }
+                hkey = NULL;
+            } else {
+                add_index_long(return_value, hkey_idx, -1);  /* -1: insertion error */
+            }
+            zend_hash_move_forward_ex(hash, &hpos);
+        }
+        return;
+    } else if (Z_TYPE_P(key) == IS_STRING) {
+        if (!val) RETURN_FALSE;
+        if(_apc_store(Z_STRVAL_P(key), Z_STRLEN_P(key), val, (unsigned int)ttl, exclusive TSRMLS_CC))
+            RETURN_TRUE;
+    } else {
+        apc_wprint("apc_store expects key parameter to be a string or an array of key/value pairs.");
+    }
+
     RETURN_FALSE;
 }
 /* }}} */
 
-/* {{{ proto int apc_add(string key, mixed var [, long ttl ])
+/* {{{ proto int apc_store(mixed key, mixed var [, long ttl ])
+ */
+PHP_FUNCTION(apc_store) {
+    apc_store_helper(INTERNAL_FUNCTION_PARAM_PASSTHRU, 0);
+}
+/* }}} */
+
+/* {{{ proto int apc_add(mixed key, mixed var [, long ttl ])
  */
 PHP_FUNCTION(apc_add) {
-    zval *val;
-    char *strkey;
-    int strkey_len;
-    long ttl = 0L;
-
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sz|l", &strkey, &strkey_len, &val, &ttl) == FAILURE) {
-        return;
-    }
-
-    if(!strkey_len) RETURN_FALSE;
-
-    if(_apc_store(strkey, strkey_len, val, (unsigned int)ttl, 1 TSRMLS_CC)) RETURN_TRUE;
-    RETURN_FALSE;
+    apc_store_helper(INTERNAL_FUNCTION_PARAM_PASSTHRU, 1);
 }
 /* }}} */
 
