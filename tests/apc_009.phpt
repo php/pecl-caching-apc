@@ -29,7 +29,7 @@ apc_delete_file(array($files[0]));
 check_file($files[0]);
 
 apc_compile_file($files[0]);
-$it = new APCIterator('file', '/'.$files[0].'/');
+$it = new APCIterator('file');
 apc_delete_file($it);
 check_file($files[0]);
 

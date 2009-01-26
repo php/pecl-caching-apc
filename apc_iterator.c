@@ -41,10 +41,13 @@ static apc_iterator_item_t* apc_iterator_item_ctor(apc_iterator_t *iterator, slo
     apc_iterator_item_t *item = ecalloc(1, sizeof(apc_iterator_item_t));
 
     if (slot->key.type == APC_CACHE_KEY_FILE) {
+        /* keys should be unique and with stat=1 we could have multiple files with the same name, so use '<device> <inode>' instead */
         item->key_len = zend_spprintf(&item->key, 0, "%ld %ld", slot->key.data.file.device, slot->key.data.file.inode);
+        item->filename_key = estrdup(slot->value->data.file.filename);
     } else if (slot->key.type == APC_CACHE_KEY_USER) {
         item->key = estrndup((char*)slot->key.data.user.identifier, slot->key.data.user.identifier_len);
         item->key_len = slot->key.data.user.identifier_len;
+        item->filename_key = item->key; 
     } else if (slot->key.type == APC_CACHE_KEY_FPFILE) {
         item->key = estrndup((char*)slot->key.data.fpfile.fullpath, slot->key.data.fpfile.fullpath_len);
         item->key_len = slot->key.data.fpfile.fullpath_len;
@@ -143,6 +146,9 @@ static zend_object_value apc_iterator_clone(zval *zobject TSRMLS_DC) {
 
 /* {{{ apc_iterator_item_dtor */
 static void apc_iterator_item_dtor(apc_iterator_item_t *item) {
+    if (item->filename_key && item->filename_key != item->key) {
+        efree(item->filename_key);
+    }
     if (item->key) {
         efree(item->key);
     }
@@ -236,7 +242,8 @@ static int apc_iterator_fetch_active(apc_iterator_t *iterator) {
         slot = &iterator->cache->slots[iterator->slot_idx];
         while(*slot) {
             if ((*slot)->key.type == APC_CACHE_KEY_FILE) {
-                key_len = zend_spprintf(&key, 0, "%ld %ld", (*slot)->key.data.file.device, (*slot)->key.data.file.inode);
+                key = estrdup((*slot)->value->data.file.filename);
+                key_len = strlen(key);
             } else if ((*slot)->key.type == APC_CACHE_KEY_USER) {
                 key = (char*)(*slot)->key.data.user.identifier;
                 key_len = (*slot)->key.data.user.identifier_len;
@@ -278,7 +285,8 @@ static int apc_iterator_fetch_deleted(apc_iterator_t *iterator) {
     count = 0;
     while ((*slot) && count < iterator->chunk_size) {
         if ((*slot)->key.type == APC_CACHE_KEY_FILE) {
-            key_len = zend_spprintf(&key, 0, "%ld %ld", (*slot)->key.data.file.device, (*slot)->key.data.file.inode);
+            key = estrdup((*slot)->value->data.file.filename);
+            key_len = strlen(key);
         } else if ((*slot)->key.type == APC_CACHE_KEY_USER) {
             key = (char*)(*slot)->key.data.user.identifier;
             key_len = (*slot)->key.data.user.identifier_len;
@@ -314,7 +322,8 @@ static void apc_iterator_totals(apc_iterator_t *iterator) {
         slot = &iterator->cache->slots[i];
         while((*slot)) {
             if ((*slot)->key.type == APC_CACHE_KEY_FILE) {
-                key_len = zend_spprintf(&key, 0, "%ld %ld", (*slot)->key.data.file.device, (*slot)->key.data.file.inode);
+                key = estrdup((*slot)->value->data.file.filename);
+                key_len = strlen(key);
             } else if ((*slot)->key.type == APC_CACHE_KEY_USER) {
                 key = (char*)(*slot)->key.data.user.identifier;
                 key_len = (*slot)->key.data.user.identifier_len;
@@ -608,7 +617,7 @@ int apc_iterator_delete(zval *zobj TSRMLS_DC) {
         while (iterator->stack_idx < apc_stack_size(iterator->stack)) {
             item = apc_stack_get(iterator->stack, iterator->stack_idx++);
             if (iterator->cache == apc_cache) {
-                apc_cache_delete(apc_cache, item->key, item->key_len+1);
+                apc_cache_delete(apc_cache, item->filename_key, strlen(item->filename_key)+1);
             } else {
                 apc_cache_user_delete(apc_user_cache, item->key, item->key_len+1);
             }

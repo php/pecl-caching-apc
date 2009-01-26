@@ -93,6 +93,7 @@ typedef struct _apc_iterator_t {
 typedef struct _apc_iterator_item_t {
     char *key;              /* string key */
     long key_len;           /* strlen of key */
+    char *filename_key;     /* filename key used for deletion */
     zval *value;
 } apc_iterator_item_t;
 /* }}} */

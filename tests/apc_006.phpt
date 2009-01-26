@@ -6,6 +6,7 @@ APC: apc_store/fetch reference test
 apc.enabled=1
 apc.enable_cli=1
 apc.file_update_protection=0
+report_memleaks=0
 --FILE--
 <?php
 
