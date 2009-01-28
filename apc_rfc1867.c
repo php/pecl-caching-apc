@@ -71,7 +71,7 @@ static double my_time() {
 #define RFC1867_DATA(name) \
                 ((request_data)->name)
 
-void apc_rfc1867_progress(unsigned int event, void *event_data, void **extra TSRMLS_DC) {
+int apc_rfc1867_progress(unsigned int event, void *event_data, void **extra TSRMLS_DC) {
     apc_rfc1867_data *request_data = &APCG(rfc1867_data);
     zval *track = NULL;
 
@@ -199,6 +199,8 @@ void apc_rfc1867_progress(unsigned int event, void *event_data, void **extra TSR
             }
             break;
     }
+
+    return SUCCESS;
 }
 
 #endif
