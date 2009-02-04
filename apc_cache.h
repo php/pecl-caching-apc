@@ -274,7 +274,7 @@ typedef struct apc_cache_link_t apc_cache_link_t;
 struct apc_cache_link_t {
     apc_cache_link_data_t data;
     unsigned char type;
-    int num_hits;
+    unsigned long num_hits;
     time_t mtime;
     time_t creation_time;
     time_t deletion_time;
@@ -289,15 +289,15 @@ struct apc_cache_link_t {
 typedef struct apc_cache_info_t apc_cache_info_t;
 struct apc_cache_info_t {
     int num_slots;
-    int num_hits;
-    int num_misses;
+    unsigned long num_hits;
+    unsigned long num_misses;
+    unsigned long num_inserts;
+    unsigned long expunges;
     int ttl;
     apc_cache_link_t* list;
     apc_cache_link_t* deleted_list;
     time_t start_time;
-    int expunges;
     int num_entries;
-    int num_inserts;
     size_t mem_size;
 };
 /* }}} */
@@ -308,7 +308,7 @@ struct slot_t {
     apc_cache_key_t key;        /* slot key */
     apc_cache_entry_t* value;   /* slot value */
     slot_t* next;               /* next slot in linked list */
-    int num_hits;               /* number of hits to this bucket */
+    unsigned long num_hits;     /* number of hits to this bucket */
     time_t creation_time;       /* time slot was initialized */
     time_t deletion_time;       /* time slot was removed from cache */
     time_t access_time;         /* time slot was last accessed */
@@ -321,12 +321,12 @@ typedef struct cache_header_t cache_header_t;
 struct cache_header_t {
     apc_lck_t lock;             /* read/write lock (exclusive blocking cache lock) */
     apc_lck_t wrlock;           /* write lock (non-blocking used to prevent cache slams) */
-    int num_hits;               /* total successful hits in cache */
-    int num_misses;             /* total unsuccessful hits in cache */
-    int num_inserts;            /* total successful inserts in cache */
+    unsigned long num_hits;     /* total successful hits in cache */
+    unsigned long num_misses;   /* total unsuccessful hits in cache */
+    unsigned long num_inserts;  /* total successful inserts in cache */
+    unsigned long expunges;     /* total number of expunges */
     slot_t* deleted_list;       /* linked list of to-be-deleted slots */
     time_t start_time;          /* time the above counters were reset */
-    int expunges;               /* total number of expunges */
     zend_bool busy;             /* Flag to tell clients when we are busy cleaning the cache */
     int num_entries;            /* Statistic on the number of entries */
     size_t mem_size;            /* Statistic on the memory size used by this cache */

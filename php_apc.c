@@ -355,13 +355,15 @@ PHP_FUNCTION(apc_cache_info)
     array_init(return_value);
     add_assoc_long(return_value, "num_slots", info->num_slots);
     add_assoc_long(return_value, "ttl", info->ttl);
-    add_assoc_long(return_value, "num_hits", info->num_hits);
-    add_assoc_long(return_value, "num_misses", info->num_misses);
+
+    add_assoc_double(return_value, "num_hits", (double)info->num_hits);
+    add_assoc_double(return_value, "num_misses", (double)info->num_misses);
+    add_assoc_double(return_value, "num_inserts", (double)info->num_inserts);
+    add_assoc_double(return_value, "expunges", (double)info->expunges);
+    
     add_assoc_long(return_value, "start_time", info->start_time);
-    add_assoc_long(return_value, "expunges", info->expunges);
     add_assoc_long(return_value, "mem_size", info->mem_size);
     add_assoc_long(return_value, "num_entries", info->num_entries);
-    add_assoc_long(return_value, "num_inserts", info->num_inserts);
 #ifdef MULTIPART_EVENT_FORMDATA
     add_assoc_long(return_value, "file_upload_progress", 1);
 #else
@@ -409,13 +411,17 @@ PHP_FUNCTION(apc_cache_info)
             add_assoc_long(link, "ttl", (long)p->data.user.ttl);
             add_assoc_string(link, "type", "user", 1);
         }
-        add_assoc_long(link, "num_hits", p->num_hits);
+
+        add_assoc_double(link, "num_hits", (double)p->num_hits);
+        
         add_assoc_long(link, "mtime", p->mtime);
         add_assoc_long(link, "creation_time", p->creation_time);
         add_assoc_long(link, "deletion_time", p->deletion_time);
         add_assoc_long(link, "access_time", p->access_time);
         add_assoc_long(link, "ref_count", p->ref_count);
         add_assoc_long(link, "mem_size", p->mem_size);
+        
+
         add_next_index_zval(list, link);
     }
     add_assoc_zval(return_value, "cache_list", list);
@@ -443,7 +449,9 @@ PHP_FUNCTION(apc_cache_info)
             add_assoc_long(link, "ttl", (long)p->data.user.ttl);
             add_assoc_string(link, "type", "user", 1);
         }
-        add_assoc_long(link, "num_hits", p->num_hits);
+        
+        add_assoc_double(link, "num_hits", (double)p->num_hits);
+        
         add_assoc_long(link, "mtime", p->mtime);
         add_assoc_long(link, "creation_time", p->creation_time);
         add_assoc_long(link, "deletion_time", p->deletion_time);
