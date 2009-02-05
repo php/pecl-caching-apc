@@ -1474,6 +1474,47 @@ void apc_free_class_entry_after_execution(zend_class_entry* src)
 }
 /* }}} */
 
+/* {{{ apc_file_halt_offset */
+long apc_file_halt_offset(const char *filename)
+{
+    zend_constant *c;
+    char *name;
+    int len;
+    char haltoff[] = "__COMPILER_HALT_OFFSET__";
+    long value = -1;
+
+    zend_mangle_property_name(&name, &len, haltoff, sizeof(haltoff) - 1, filename, strlen(filename), 0);
+    
+    if (zend_hash_find(EG(zend_constants), name, len+1, (void **) &c) == SUCCESS) {
+        value = Z_LVAL(c->value);
+    }
+    
+    pefree(name, 0);
+
+    return value;
+}
+/* }}} */
+
+/* {{{ apc_do_halt_compiler_register */
+void apc_do_halt_compiler_register(const char *filename, long halt_offset TSRMLS_DC)
+{
+    char *name;
+    char haltoff[] = "__COMPILER_HALT_OFFSET__";
+    int len, clen;
+   
+    if(halt_offset > 0) {
+        
+        zend_mangle_property_name(&name, &len, haltoff, sizeof(haltoff) - 1, 
+                                    filename, strlen(filename), 0);
+        
+        zend_register_long_constant(name, len+1, halt_offset, CONST_CS, 0 TSRMLS_CC);
+
+        pefree(name, 0);
+    }
+}
+/* }}} */
+
+
 
 /* {{{ my_fixup_function */
 static void my_fixup_function(Bucket *p, zend_class_entry *src, zend_class_entry *dst)
@@ -1706,6 +1747,7 @@ apc_optimize_function_t apc_register_optimizer(apc_optimize_function_t optimizer
     APCG(apc_optimize_function) = optimizer;
     return old_optimizer;
 }
+/* }}} */
 
 /*
  * Local variables:

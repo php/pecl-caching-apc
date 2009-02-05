@@ -100,6 +100,7 @@ typedef union _apc_cache_entry_value_t {
         zend_op_array* op_array;    /* op_array allocated in shared memory */
         apc_function_t* functions;  /* array of apc_function_t's */
         apc_class_t* classes;       /* array of apc_class_t's */
+        long halt_offset;           /* value of __COMPILER_HALT_OFFSET__ for the file */
     } file;
     struct {
         char *info;

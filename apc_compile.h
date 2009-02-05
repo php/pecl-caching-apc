@@ -124,6 +124,12 @@ extern void apc_free_class_entry_after_execution(zend_class_entry* src);
 typedef zend_op_array* (*apc_optimize_function_t) (zend_op_array* TSRMLS_DC);
 extern apc_optimize_function_t apc_register_optimizer(apc_optimize_function_t optimizer TSRMLS_DC);
 
+/*
+ * To handle __COMPILER_HALT_OFFSET__
+ */
+long apc_file_halt_offset(const char* filename);
+void apc_do_halt_compiler_register(const char *filename, long halt_offset TSRMLS_DC);
+
 #endif
 
 /*

@@ -908,6 +908,9 @@ apc_cache_entry_t* apc_cache_make_file_entry(const char* filename,
     entry->data.file.op_array  = op_array;
     entry->data.file.functions = functions;
     entry->data.file.classes   = classes;
+
+    entry->data.file.halt_offset = apc_file_halt_offset(filename);
+
     entry->type = APC_CACHE_ENTRY_FILE;
     entry->ref_count = 0;
     entry->mem_size = 0;

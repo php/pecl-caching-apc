@@ -228,6 +228,8 @@ static zend_op_array* cached_compile(zend_file_handle* h,
         }
     }
 
+    apc_do_halt_compiler_register(cache_entry->data.file.filename, cache_entry->data.file.halt_offset TSRMLS_CC);
+
 
     return apc_copy_op_array_for_execution(NULL, cache_entry->data.file.op_array, ctxt TSRMLS_CC);
 
