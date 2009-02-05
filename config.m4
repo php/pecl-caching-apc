@@ -146,7 +146,7 @@ if test "$PHP_APC" != "no"; then
 		AC_DEFINE(APC_FCNTL_LOCKS, 1, [ ])
 	fi
   
-  	if test "$PHP_APC_MEMPROTECT" != "no"; then
+	if test "$PHP_APC_MEMPROTECT" != "no"; then
 		AC_DEFINE(APC_MEMPROTECT, 1, [ shm/mmap memory protection ])
 	fi
 
