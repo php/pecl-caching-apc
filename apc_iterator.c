@@ -42,7 +42,7 @@ static apc_iterator_item_t* apc_iterator_item_ctor(apc_iterator_t *iterator, slo
 
     if (slot->key.type == APC_CACHE_KEY_FILE) {
         /* keys should be unique and with stat=1 we could have multiple files with the same name, so use '<device> <inode>' instead */
-        item->key_len = zend_spprintf(&item->key, 0, "%ld %ld", slot->key.data.file.device, slot->key.data.file.inode);
+        item->key_len = spprintf(&item->key, 0, "%ld %ld", slot->key.data.file.device, slot->key.data.file.inode);
         item->filename_key = estrdup(slot->value->data.file.filename);
     } else if (slot->key.type == APC_CACHE_KEY_USER) {
         item->key = estrndup((char*)slot->key.data.user.identifier, slot->key.data.user.identifier_len);
