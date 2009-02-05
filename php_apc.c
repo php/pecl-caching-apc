@@ -1233,10 +1233,10 @@ PHP_FUNCTION(apc_compile_file) {
                 destroy_op_array(op_arrays[c] TSRMLS_CC);
                 efree(op_arrays[c]);
             }
-            if (keys[i].type == APC_CACHE_KEY_FPFILE) {
-                efree((void*)keys[i].data.fpfile.fullpath);
-            } else if (keys[i].type == APC_CACHE_KEY_USER) {
-                efree((void*)keys[i].data.user.identifier);
+            if (keys[c].type == APC_CACHE_KEY_FPFILE) {
+                efree((void*)keys[c].data.fpfile.fullpath);
+            } else if (keys[c].type == APC_CACHE_KEY_USER) {
+                efree((void*)keys[c].data.user.identifier);
             }
             zend_hash_move_forward_ex(Z_ARRVAL_P(file), &hpos);
         }
