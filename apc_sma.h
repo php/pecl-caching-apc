@@ -57,18 +57,8 @@ extern void apc_sma_free(void* p);
 extern size_t *apc_sma_get_alloc_distribution();
 #endif
 
-#if APC_MEMPROTECT
-extern void* _apc_sma_protect(void *p);
-extern void* _apc_sma_unprotect(void *p);
-
-#define apc_sma_protect(p)   _apc_sma_protect(p)
-#define apc_sma_unprotect(p) _apc_sma_unprotect(p)
-#else
-
-#define apc_sma_protect(p)   /* nothing */
-#define apc_sma_unprotect(p) /* nothing */
-
-#endif
+extern void* apc_sma_protect(void *p);
+extern void* apc_sma_unprotect(void *p);
 
 /* {{{ struct definition: apc_sma_link_t */
 typedef struct apc_sma_link_t apc_sma_link_t;

@@ -37,20 +37,24 @@
 
 
 /* {{{ forward references */
-static apc_pool* apc_unpool_create(apc_pool_type type, apc_malloc_t, apc_free_t);
-static apc_pool* apc_realpool_create(apc_pool_type type, apc_malloc_t, apc_free_t);
+static apc_pool* apc_unpool_create(apc_pool_type type, apc_malloc_t, apc_free_t, apc_protect_t, apc_unprotect_t);
+static apc_pool* apc_realpool_create(apc_pool_type type, apc_malloc_t, apc_free_t, apc_protect_t, apc_unprotect_t);
 /* }}} */
 
 /* {{{ apc_pool_create */
 apc_pool* apc_pool_create(apc_pool_type pool_type, 
                             apc_malloc_t allocate, 
-                            apc_free_t deallocate)
+                            apc_free_t deallocate,
+                            apc_protect_t protect,
+                            apc_unprotect_t unprotect)
 {
     if(pool_type == APC_UNPOOL) {
-        return apc_unpool_create(pool_type, allocate, deallocate);
+        return apc_unpool_create(pool_type, allocate, deallocate,
+                                            protect, unprotect );
     }
 
-    return apc_realpool_create(pool_type, allocate, deallocate);
+    return apc_realpool_create(pool_type, allocate, deallocate, 
+                                          protect,  unprotect );
 }
 /* }}} */
 
@@ -100,7 +104,8 @@ static void apc_unpool_cleanup(apc_pool* pool)
 }
 
 static apc_pool* apc_unpool_create(apc_pool_type type, 
-                    apc_malloc_t allocate, apc_free_t deallocate)
+                    apc_malloc_t allocate, apc_free_t deallocate,
+                    apc_protect_t protect, apc_unprotect_t unprotect)
 {
     apc_unpool* upool = allocate(sizeof(apc_unpool));
 
@@ -111,6 +116,9 @@ static apc_pool* apc_unpool_create(apc_pool_type type,
     upool->parent.type = type;
     upool->parent.allocate = allocate;
     upool->parent.deallocate = deallocate;
+
+    upool->parent.protect = protect;
+    upool->parent.unprotect = unprotect;
 
     upool->parent.palloc = apc_unpool_alloc;
     upool->parent.pfree  = apc_unpool_free;
@@ -380,7 +388,8 @@ static void apc_realpool_cleanup(apc_pool *pool)
 }
 
 /* {{{ apc_realpool_create */
-static apc_pool* apc_realpool_create(apc_pool_type type, apc_malloc_t allocate, apc_free_t deallocate)
+static apc_pool* apc_realpool_create(apc_pool_type type, apc_malloc_t allocate, apc_free_t deallocate, 
+                                                         apc_protect_t protect, apc_unprotect_t unprotect)
 {
 
     size_t dsize = 0;
@@ -418,6 +427,9 @@ static apc_pool* apc_realpool_create(apc_pool_type type, apc_malloc_t allocate, 
 
     rpool->parent.palloc = apc_realpool_alloc;
     rpool->parent.pfree  = apc_realpool_free;
+
+    rpool->parent.protect = protect;
+    rpool->parent.unprotect = unprotect;
 
     rpool->parent.cleanup = apc_realpool_cleanup;
 

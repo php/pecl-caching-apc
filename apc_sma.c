@@ -567,7 +567,7 @@ void apc_sma_free(void* p)
 
 #ifdef APC_MEMPROTECT
 /* {{{ */
-void* _apc_sma_protect(void *p)
+void* apc_sma_protect(void *p)
 {
     int i;
     size_t offset;
@@ -596,7 +596,7 @@ void* _apc_sma_protect(void *p)
 /* }}} */
 
 /* {{{ */
-void* _apc_sma_unprotect(void *p)
+void* apc_sma_unprotect(void *p)
 {
     int i;
     size_t offset;
@@ -622,6 +622,11 @@ void* _apc_sma_unprotect(void *p)
 
     return NULL;
 }
+/* }}} */
+#else
+/* {{{ */
+void* apc_sma_protect(void *p) { return p; }
+void* apc_sma_unprotect(void *p) { return p; }
 /* }}} */
 #endif
 

@@ -592,7 +592,7 @@ int _apc_store(char *strkey, int strkey_len, const zval *val, const unsigned int
 
     APCG(current_cache) = apc_user_cache;
 
-    ctxt.pool = apc_pool_create(APC_SMALL_POOL, apc_sma_malloc, apc_sma_free);
+    ctxt.pool = apc_pool_create(APC_SMALL_POOL, apc_sma_malloc, apc_sma_free, apc_sma_protect, apc_sma_unprotect);
     ctxt.copy = APC_COPY_IN_USER;
     ctxt.force_update = 0;
 
@@ -819,7 +819,7 @@ PHP_FUNCTION(apc_fetch) {
         return;
     }
 
-    ctxt.pool = apc_pool_create(APC_UNPOOL, apc_php_malloc, apc_php_free);
+    ctxt.pool = apc_pool_create(APC_UNPOOL, apc_php_malloc, apc_php_free, NULL, NULL);
     ctxt.copy = APC_COPY_OUT_USER;
     ctxt.force_update = 0;
 

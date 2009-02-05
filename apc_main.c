@@ -284,7 +284,8 @@ zend_bool apc_compile_cache_entry(apc_cache_key_t key, zend_file_handle* h, int 
         return FAILURE;
     }
 
-    ctxt.pool = apc_pool_create(APC_MEDIUM_POOL, apc_sma_malloc, apc_sma_free);
+    ctxt.pool = apc_pool_create(APC_MEDIUM_POOL, apc_sma_malloc, apc_sma_free, 
+                                                 apc_sma_protect, apc_sma_unprotect);
     ctxt.copy = APC_COPY_IN_OPCODE;
 
     if(APCG(file_md5)) {
@@ -403,7 +404,8 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
     if (cache_entry != NULL) {
         int dummy = 1;
 
-        ctxt.pool = apc_pool_create(APC_UNPOOL, apc_php_malloc, apc_php_free);
+        ctxt.pool = apc_pool_create(APC_UNPOOL, apc_php_malloc, apc_php_free,
+                                                apc_sma_protect, apc_sma_unprotect);
         ctxt.copy = APC_COPY_OUT_OPCODE;
 
         if (h->opened_path == NULL) {

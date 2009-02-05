@@ -54,6 +54,9 @@ typedef void  (*apc_pcleanup_t)(apc_pool *pool);
 typedef void* (*apc_palloc_t)(apc_pool *pool, size_t size);
 typedef void  (*apc_pfree_t) (apc_pool *pool, void* p);
 
+typedef void* (*apc_protect_t)  (void *p);
+typedef void* (*apc_unprotect_t)(void *p);
+
 struct _apc_pool {
     apc_pool_type   type;
 
@@ -62,6 +65,9 @@ struct _apc_pool {
 
     apc_palloc_t    palloc;
     apc_pfree_t     pfree;
+
+	apc_protect_t   protect;
+	apc_unprotect_t unprotect;
 
     apc_pcleanup_t  cleanup;
 
@@ -74,11 +80,19 @@ struct _apc_pool {
 #define apc_pool_alloc(pool, size) ((pool)->palloc((pool), (size)))
 #define apc_pool_free (pool, ptr)  ((pool)->pfree((pool), (ptr)))
 
+#define apc_pool_protect (pool, ptr)  (pool->protect ? \
+										(pool)->protect((ptr)) : (ptr))
+
+#define apc_pool_unprotect (pool, ptr)  (pool->unprotect ? \
+											(pool)->unprotect((ptr)) : (ptr))
+
 extern void apc_pool_init();
 
 extern apc_pool* apc_pool_create(apc_pool_type pool_type,
                             apc_malloc_t allocate,
-                            apc_free_t deallocate);
+                            apc_free_t deallocate,
+							apc_protect_t protect,
+							apc_unprotect_t unprotect);
 
 extern void apc_pool_destroy(apc_pool* pool);
 

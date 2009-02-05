@@ -90,7 +90,7 @@ static apc_iterator_item_t* apc_iterator_item_ctor(apc_iterator_t *iterator, slo
     if (APC_ITER_VALUE & iterator->format) {
         if(slot->value->type == APC_CACHE_ENTRY_USER) {
 
-            ctxt.pool = apc_pool_create(APC_UNPOOL, apc_php_malloc, apc_php_free);
+            ctxt.pool = apc_pool_create(APC_UNPOOL, apc_php_malloc, apc_php_free, NULL, NULL);
             ctxt.copy = APC_COPY_OUT_USER;
 
             MAKE_STD_ZVAL(zvalue);
