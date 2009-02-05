@@ -658,7 +658,7 @@ apc_bd_t* apc_bin_dump(HashTable *files, HashTable *user_vars TSRMLS_DC) {
     bd->size = size;
     pool_ptr = emalloc(sizeof(apc_pool));
     apc_bd_alloc_ex(pool_ptr, sizeof(apc_pool));
-    ctxt.pool = apc_pool_create(APC_UNPOOL, apc_bd_alloc, apc_bd_free);  /* ideally the pool wouldn't be alloc'd as part of this */
+    ctxt.pool = apc_pool_create(APC_UNPOOL, apc_bd_alloc, apc_bd_free, NULL, NULL);  /* ideally the pool wouldn't be alloc'd as part of this */
     ctxt.copy = APC_COPY_IN_USER;  /* avoid stupid ALLOC_ZVAL calls here, hack */
     apc_bd_alloc_ex( (void*)((long)bd + sizeof(apc_bd_t)), bd->size - sizeof(apc_bd_t) -1);
     bd->num_entries = count;
@@ -815,7 +815,7 @@ int apc_bin_load(apc_bd_t *bd, int flags TSRMLS_DC) {
 #endif
 
     for(i = 0; i < bd->num_entries; i++) {
-        ctxt.pool = apc_pool_create(APC_SMALL_POOL, apc_sma_malloc, apc_sma_free);
+        ctxt.pool = apc_pool_create(APC_SMALL_POOL, apc_sma_malloc, apc_sma_free, apc_sma_protect, apc_sma_unprotect);
         ep = &bd->entries[i];
         switch (ep->type) {
             case APC_CACHE_KEY_FILE:
