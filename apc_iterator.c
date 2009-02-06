@@ -42,7 +42,7 @@ static apc_iterator_item_t* apc_iterator_item_ctor(apc_iterator_t *iterator, slo
 
     if (slot->key.type == APC_CACHE_KEY_FILE) {
         /* keys should be unique and with stat=1 we could have multiple files with the same name, so use '<device> <inode>' instead */
-        item->key_len = spprintf(&item->key, 0, "%ld %ld", slot->key.data.file.device, slot->key.data.file.inode);
+        item->key_len = spprintf(&item->key, 0, "%ld %ld", (ulong)slot->key.data.file.device, (ulong)slot->key.data.file.inode);
         item->filename_key = estrdup(slot->value->data.file.filename);
     } else if (slot->key.type == APC_CACHE_KEY_USER) {
         item->key = estrndup((char*)slot->key.data.user.identifier, slot->key.data.user.identifier_len);
@@ -70,7 +70,7 @@ static apc_iterator_item_t* apc_iterator_item_ctor(apc_iterator_t *iterator, slo
             if (slot->key.type == APC_CACHE_KEY_FILE) {
               add_assoc_string(item->value, "filename", slot->value->data.file.filename, 1);
             } else {  /* APC_CACHE_FPFILE */
-              add_assoc_string(item->value, "filename", slot->key.data.fpfile.fullpath, 1);
+              add_assoc_string(item->value, "filename", (char*)slot->key.data.fpfile.fullpath, 1);
             }
         }
     }

@@ -25,8 +25,6 @@
 #include "apc.h"
 #include "apc_stack.h"
 
-#include "zend_exceptions.h"
-
 #if HAVE_PCRE || HAVE_BUNDLED_PCRE
 #define ITERATOR_PCRE 1
 #include "ext/pcre/php_pcre.h"
