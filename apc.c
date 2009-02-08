@@ -32,6 +32,7 @@
 /* $Id$ */
 
 #include "apc.h"
+#include "apc_zend.h"
 #include "php.h"
 
 #if HAVE_PCRE || HAVE_BUNDLED_PCRE
@@ -609,7 +610,7 @@ HashTable* apc_flip_hash(HashTable *hash) {
         } else {
             zend_hash_index_update(new_hash, Z_LVAL_PP(entry), &data, sizeof(data), NULL);
         }
-        ZVAL_ADDREF(data);
+        Z_ADDREF_P(data);
         zend_hash_move_forward_ex(hash, &pos);
     }
     efree(data);
