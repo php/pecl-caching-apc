@@ -100,8 +100,8 @@ static void apc_swizzle_hashtable(apc_bd_t *bd, zend_llist *ll, HashTable *ht, a
 static void apc_swizzle_zval(apc_bd_t *bd, zend_llist *ll, zval *zv TSRMLS_DC);
 static void apc_swizzle_op_array(apc_bd_t *bd, zend_llist *ll, zend_op_array *op_array TSRMLS_DC);
 static void apc_swizzle_property_info(apc_bd_t *bd, zend_llist *ll, zend_property_info *pi TSRMLS_DC);
-static void apc_swizzle_function_entry(apc_bd_t *bd, zend_llist *ll, zend_function_entry *fe TSRMLS_DC);
-static void apc_swizzle_arg_info_array(apc_bd_t *bd, zend_llist *ll, zend_arg_info* arg_info_array, uint num_args TSRMLS_DC);
+static void apc_swizzle_function_entry(apc_bd_t *bd, zend_llist *ll, const zend_function_entry *fe TSRMLS_DC);
+static void apc_swizzle_arg_info_array(apc_bd_t *bd, zend_llist *ll, const zend_arg_info* arg_info_array, uint num_args TSRMLS_DC);
 
 static apc_bd_t* apc_swizzle_bd(apc_bd_t* bd, zend_llist *ll TSRMLS_DC);
 static int apc_unswizzle_bd(apc_bd_t *bd, int flags TSRMLS_DC);
@@ -332,7 +332,7 @@ static void apc_swizzle_property_info(apc_bd_t *bd, zend_llist *ll, zend_propert
 
 
 /* {{{ apc_swizzle_function_entry */
-static void apc_swizzle_function_entry(apc_bd_t *bd, zend_llist *ll, zend_function_entry *fe TSRMLS_DC) {
+static void apc_swizzle_function_entry(apc_bd_t *bd, zend_llist *ll, const zend_function_entry *fe TSRMLS_DC) {
     apc_swizzle_ptr(bd, ll, &fe->fname);
     apc_swizzle_arg_info_array(bd, ll, fe->arg_info, fe->num_args TSRMLS_CC);
     apc_swizzle_ptr(bd, ll, &fe->arg_info);
@@ -340,7 +340,7 @@ static void apc_swizzle_function_entry(apc_bd_t *bd, zend_llist *ll, zend_functi
 
 
 /* {{{ apc_swizzle_arg_info_array */
-static void apc_swizzle_arg_info_array(apc_bd_t *bd, zend_llist *ll, zend_arg_info* arg_info_array, uint num_args TSRMLS_DC) {
+static void apc_swizzle_arg_info_array(apc_bd_t *bd, zend_llist *ll, const zend_arg_info* arg_info_array, uint num_args TSRMLS_DC) {
 
     int i;
 
