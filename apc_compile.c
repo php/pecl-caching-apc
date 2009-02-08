@@ -1500,7 +1500,7 @@ void apc_do_halt_compiler_register(const char *filename, long halt_offset TSRMLS
 {
     char *name;
     char haltoff[] = "__COMPILER_HALT_OFFSET__";
-    int len, clen;
+    int len;
    
     if(halt_offset > 0) {
         
