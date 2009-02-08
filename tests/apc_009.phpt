@@ -79,8 +79,8 @@ apc_009.php Found File
 apc_009-1.php Found File
 
 Parse error: syntax error, unexpected '!' in %s/apc_009-2.php on line 1
-[%s] [apc-warning] Error compiling apc_009-2.php in apc_compile_file.
-[%s] [apc-warning] Error compiling nofile.php in apc_compile_file.
+[%s] [apc-warning] Error compiling apc_009-2.php in apc_compile_file. %s
+[%s] [apc-warning] Error compiling nofile.php in apc_compile_file. %s
 array(2) {
   ["apc_009-2.php"]=>
   int(-1)

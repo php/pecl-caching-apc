@@ -1094,6 +1094,7 @@ PHP_FUNCTION(apc_compile_file) {
     int count=0;
     zend_bool atomic=1;
     apc_context_t ctxt = {0,};
+    zend_execute_data *orig_current_execute_data;
 
     if(!APCG(enabled)) RETURN_FALSE;
 
@@ -1133,9 +1134,13 @@ PHP_FUNCTION(apc_compile_file) {
         file_handle.free_filename = 0;
         file_handle.opened_path = NULL;
 
+        orig_current_execute_data = EG(current_execute_data);
         zend_try {
             op_array = zend_compile_file(&file_handle, ZEND_INCLUDE TSRMLS_CC);
         } zend_catch {
+            EG(current_execute_data) = orig_current_execute_data;
+            EG(in_execution) = 1;
+            CG(unclean_shutdown) = 0;
             apc_wprint("Error compiling %s in apc_compile_file.", file_handle.filename);
             op_array = NULL;
         } zend_end_try();
@@ -1189,12 +1194,16 @@ PHP_FUNCTION(apc_compile_file) {
                 keys[i].data.user.identifier = estrndup(keys[i].data.user.identifier, keys[i].data.user.identifier_len);
             }
 
+            orig_current_execute_data = EG(current_execute_data);
             zend_try {
                 if (apc_compile_cache_entry(keys[i], &file_handle, ZEND_INCLUDE, t, &op_arrays[i], &cache_entries[i] TSRMLS_CC) != SUCCESS) {
                     apc_wprint("Error compiling %s in apc_compile_file.", file_handle.filename);
                     op_arrays[i] = NULL;
                 }
             } zend_catch {
+                EG(current_execute_data) = orig_current_execute_data;
+                EG(in_execution) = 1;
+                CG(unclean_shutdown) = 0;
                 op_arrays[i] = NULL;
                 add_assoc_long(return_value, Z_STRVAL_PP(hentry), -1);  /* -1: compilation error */
                 apc_wprint("Error compiling %s in apc_compile_file.", file_handle.filename);
