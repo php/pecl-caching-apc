@@ -364,6 +364,7 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
     zend_op_array* op_array = NULL;
     time_t t;
     apc_context_t ctxt = {0,};
+    int bailout=0;
 
     if (!APCG(enabled) || apc_cache_busy(apc_cache)) {
         return old_compile_file(h, type TSRMLS_CC);
@@ -465,14 +466,18 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
     }
 #endif
 
-    if (apc_compile_cache_entry(key, h, type, t, &op_array, &cache_entry TSRMLS_CC) == SUCCESS) {
-        ctxt.pool = cache_entry->pool;
-        ctxt.copy = APC_COPY_IN_OPCODE;
-        if (apc_cache_insert(apc_cache, key, cache_entry, &ctxt, t) != 1) {
-            apc_pool_destroy(ctxt.pool);
-            ctxt.pool = NULL;
+    zend_try {
+        if (apc_compile_cache_entry(key, h, type, t, &op_array, &cache_entry TSRMLS_CC) == SUCCESS) {
+            ctxt.pool = cache_entry->pool;
+            ctxt.copy = APC_COPY_IN_OPCODE;
+            if (apc_cache_insert(apc_cache, key, cache_entry, &ctxt, t) != 1) {
+                apc_pool_destroy(ctxt.pool);
+                ctxt.pool = NULL;
+            }
         }
-    }
+    } zend_catch {
+        bailout=1; /* in the event of a bailout, ensure we don't create a dead-lock */
+    } zend_end_try();
 
     APCG(current_cache) = NULL;
 
@@ -482,6 +487,8 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
     }
 #endif
     HANDLE_UNBLOCK_INTERRUPTIONS();
+
+    if (bailout) zend_bailout();
 
     return op_array;
 }
