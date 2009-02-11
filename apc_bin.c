@@ -122,7 +122,7 @@ static void apc_bd_free(void *ptr) {
     if(zend_hash_index_find(&APCG(apc_bd_alloc_list), (ulong)ptr, (void**)&size) == FAILURE) {
         apc_eprint("apc_bd_free could not free pointer (not found in list: %x)", ptr);
     }
-    APCG(apc_bd_alloc_ptr) -= *size;
+    (unsigned char *)APCG(apc_bd_alloc_ptr) -= *size;
     zend_hash_index_del(&APCG(apc_bd_alloc_list), (ulong)ptr);
 } /* }}} */
 
@@ -140,14 +140,14 @@ static void *apc_bd_alloc_ex(void *ptr_new, size_t size) {
     rval = APCG(apc_bd_alloc_ptr);
     if(ptr_new != NULL) {  /* reset ptrs */
       APCG(apc_bd_alloc_ptr) = ptr_new;
-      APCG(apc_bd_alloc_ubptr) = (void*)(ptr_new + size);
+      APCG(apc_bd_alloc_ubptr) = (void*)((unsigned char *) ptr_new + size);
     } else {  /* alloc block */
-      APCG(apc_bd_alloc_ptr) += size;
+      (unsigned char *) APCG(apc_bd_alloc_ptr) += size;
 #if APC_BINDUMP_DEBUG
       apc_nprint("apc_bd_alloc: rval: 0x%x  ptr: 0x%x  ubptr: 0x%x  size: %d", rval, APCG(apc_bd_alloc_ptr), APCG(apc_bd_alloc_ubptr), size);
 #endif
       if(APCG(apc_bd_alloc_ptr) > APCG(apc_bd_alloc_ubptr)) {
-          apc_eprint("Exceeded bounds check in apc_bd_alloc_ex by %d bytes.", APCG(apc_bd_alloc_ptr) - APCG(apc_bd_alloc_ubptr));
+          apc_eprint("Exceeded bounds check in apc_bd_alloc_ex by %d bytes.", (unsigned char *) APCG(apc_bd_alloc_ptr) - (unsigned char *) APCG(apc_bd_alloc_ubptr));
       }
       zend_hash_index_update(&APCG(apc_bd_alloc_list), (ulong)rval, &size, sizeof(size_t), NULL);
     }
@@ -463,7 +463,7 @@ static apc_bd_t* apc_swizzle_bd(apc_bd_t* bd, zend_llist *ll TSRMLS_DC) {
     if(count > 0) {
         bd = erealloc(bd, bd->size + (count * sizeof(void**)));
         bd->num_swizzled_ptrs = count;
-        bd->swizzled_ptrs = (void***)((void*)bd + bd->size -2);   /* extra -1 for null termination */
+        bd->swizzled_ptrs = (void***)((unsigned char *)bd + bd->size -2);   /* extra -1 for null termination */
         bd->size += count * sizeof(void**);
         memcpy(bd->swizzled_ptrs, ptr_list, count * sizeof(void**));
         SWIZZLE(bd, bd->swizzled_ptrs);
