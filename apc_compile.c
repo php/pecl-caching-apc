@@ -1482,6 +1482,7 @@ long apc_file_halt_offset(const char *filename)
     int len;
     char haltoff[] = "__COMPILER_HALT_OFFSET__";
     long value = -1;
+    TSRMLS_FETCH();
 
     zend_mangle_property_name(&name, &len, haltoff, sizeof(haltoff) - 1, filename, strlen(filename), 0);
     
