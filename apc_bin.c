@@ -122,7 +122,7 @@ static void apc_bd_free(void *ptr) {
     if(zend_hash_index_find(&APCG(apc_bd_alloc_list), (ulong)ptr, (void**)&size) == FAILURE) {
         apc_eprint("apc_bd_free could not free pointer (not found in list: %x)", ptr);
     }
-    (unsigned char *)APCG(apc_bd_alloc_ptr) -= *size;
+    APCG(apc_bd_alloc_ptr) = (void*)((size_t)APCG(apc_bd_alloc_ptr) - *size);
     zend_hash_index_del(&APCG(apc_bd_alloc_list), (ulong)ptr);
 } /* }}} */
 
@@ -142,7 +142,7 @@ static void *apc_bd_alloc_ex(void *ptr_new, size_t size) {
       APCG(apc_bd_alloc_ptr) = ptr_new;
       APCG(apc_bd_alloc_ubptr) = (void*)((unsigned char *) ptr_new + size);
     } else {  /* alloc block */
-      (unsigned char *) APCG(apc_bd_alloc_ptr) += size;
+      APCG(apc_bd_alloc_ptr) = (void*)((size_t)APCG(apc_bd_alloc_ptr) + size);
 #if APC_BINDUMP_DEBUG
       apc_nprint("apc_bd_alloc: rval: 0x%x  ptr: 0x%x  ubptr: 0x%x  size: %d", rval, APCG(apc_bd_alloc_ptr), APCG(apc_bd_alloc_ubptr), size);
 #endif
