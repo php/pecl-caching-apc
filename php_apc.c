@@ -734,7 +734,7 @@ PHP_FUNCTION(apc_inc) {
 }
 /* }}} */
 
-/* {{{ proto long apc_dec(string key [, long step [, long &success]])
+/* {{{ proto long apc_dec(string key [, long step [, bool &success]])
  */
 PHP_FUNCTION(apc_dec) {
     char *strkey;
