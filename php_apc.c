@@ -651,7 +651,8 @@ static void apc_store_helper(INTERNAL_FUNCTION_PARAMETERS, const int exclusive)
         while(zend_hash_get_current_data_ex(hash, (void**)&hentry, &hpos) == SUCCESS) {
             zend_hash_get_current_key_ex(hash, &hkey, &hkey_len, &hkey_idx, 0, &hpos);
             if (hkey) {
-                if(!_apc_store(hkey, hkey_len, *hentry, (unsigned int)ttl, exclusive TSRMLS_CC)) {
+                /* hkey_len - 1 for consistency, because it includes '\0', while Z_STRLEN_P() doesn't */
+                if(!_apc_store(hkey, hkey_len - 1, *hentry, (unsigned int)ttl, exclusive TSRMLS_CC)) {
                     add_assoc_long_ex(return_value, hkey, hkey_len, -1);  /* -1: insertion error */
                 }
                 hkey = NULL;
