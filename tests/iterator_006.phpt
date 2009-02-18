@@ -61,37 +61,7 @@ function print_it($it, $idx) {
 --EXPECTF--
 IT #0
 ============================
-string(4) "key8"
-array(1) {
-  ["type"]=>
-  string(4) "user"
-}
-string(4) "key2"
-array(1) {
-  ["type"]=>
-  string(4) "user"
-}
 string(4) "key0"
-array(1) {
-  ["type"]=>
-  string(4) "user"
-}
-string(4) "key6"
-array(1) {
-  ["type"]=>
-  string(4) "user"
-}
-string(4) "key4"
-array(1) {
-  ["type"]=>
-  string(4) "user"
-}
-string(4) "key9"
-array(1) {
-  ["type"]=>
-  string(4) "user"
-}
-string(4) "key3"
 array(1) {
   ["type"]=>
   string(4) "user"
@@ -101,12 +71,42 @@ array(1) {
   ["type"]=>
   string(4) "user"
 }
-string(4) "key7"
+string(4) "key2"
+array(1) {
+  ["type"]=>
+  string(4) "user"
+}
+string(4) "key3"
+array(1) {
+  ["type"]=>
+  string(4) "user"
+}
+string(4) "key4"
 array(1) {
   ["type"]=>
   string(4) "user"
 }
 string(4) "key5"
+array(1) {
+  ["type"]=>
+  string(4) "user"
+}
+string(4) "key6"
+array(1) {
+  ["type"]=>
+  string(4) "user"
+}
+string(4) "key7"
+array(1) {
+  ["type"]=>
+  string(4) "user"
+}
+string(4) "key8"
+array(1) {
+  ["type"]=>
+  string(4) "user"
+}
+string(4) "key9"
 array(1) {
   ["type"]=>
   string(4) "user"
@@ -120,55 +120,55 @@ array(1) {
 
 IT #1
 ============================
-string(4) "key8"
-array(1) {
-  ["key"]=>
-  string(4) "key8"
-}
-string(4) "key2"
-array(1) {
-  ["key"]=>
-  string(4) "key2"
-}
 string(4) "key0"
 array(1) {
   ["key"]=>
   string(4) "key0"
-}
-string(4) "key6"
-array(1) {
-  ["key"]=>
-  string(4) "key6"
-}
-string(4) "key4"
-array(1) {
-  ["key"]=>
-  string(4) "key4"
-}
-string(4) "key9"
-array(1) {
-  ["key"]=>
-  string(4) "key9"
-}
-string(4) "key3"
-array(1) {
-  ["key"]=>
-  string(4) "key3"
 }
 string(4) "key1"
 array(1) {
   ["key"]=>
   string(4) "key1"
 }
-string(4) "key7"
+string(4) "key2"
 array(1) {
   ["key"]=>
-  string(4) "key7"
+  string(4) "key2"
+}
+string(4) "key3"
+array(1) {
+  ["key"]=>
+  string(4) "key3"
+}
+string(4) "key4"
+array(1) {
+  ["key"]=>
+  string(4) "key4"
 }
 string(4) "key5"
 array(1) {
   ["key"]=>
   string(4) "key5"
+}
+string(4) "key6"
+array(1) {
+  ["key"]=>
+  string(4) "key6"
+}
+string(4) "key7"
+array(1) {
+  ["key"]=>
+  string(4) "key7"
+}
+string(4) "key8"
+array(1) {
+  ["key"]=>
+  string(4) "key8"
+}
+string(4) "key9"
+array(1) {
+  ["key"]=>
+  string(4) "key9"
 }
 string(5) "key10"
 array(1) {
@@ -179,34 +179,34 @@ array(1) {
 
 IT #2
 ============================
-string(4) "key8"
-array(0) {
-}
-string(4) "key2"
-array(0) {
-}
 string(4) "key0"
-array(0) {
-}
-string(4) "key6"
-array(0) {
-}
-string(4) "key4"
-array(0) {
-}
-string(4) "key9"
-array(0) {
-}
-string(4) "key3"
 array(0) {
 }
 string(4) "key1"
 array(0) {
 }
-string(4) "key7"
+string(4) "key2"
+array(0) {
+}
+string(4) "key3"
+array(0) {
+}
+string(4) "key4"
 array(0) {
 }
 string(4) "key5"
+array(0) {
+}
+string(4) "key6"
+array(0) {
+}
+string(4) "key7"
+array(0) {
+}
+string(4) "key8"
+array(0) {
+}
+string(4) "key9"
 array(0) {
 }
 string(5) "key10"
@@ -216,34 +216,34 @@ array(0) {
 
 IT #3
 ============================
-string(4) "key8"
-array(0) {
-}
-string(4) "key2"
-array(0) {
-}
 string(4) "key0"
-array(0) {
-}
-string(4) "key6"
-array(0) {
-}
-string(4) "key4"
-array(0) {
-}
-string(4) "key9"
-array(0) {
-}
-string(4) "key3"
 array(0) {
 }
 string(4) "key1"
 array(0) {
 }
-string(4) "key7"
+string(4) "key2"
+array(0) {
+}
+string(4) "key3"
+array(0) {
+}
+string(4) "key4"
 array(0) {
 }
 string(4) "key5"
+array(0) {
+}
+string(4) "key6"
+array(0) {
+}
+string(4) "key7"
+array(0) {
+}
+string(4) "key8"
+array(0) {
+}
+string(4) "key9"
 array(0) {
 }
 string(5) "key10"
@@ -253,34 +253,34 @@ array(0) {
 
 IT #4
 ============================
-string(4) "key8"
-array(0) {
-}
-string(4) "key2"
-array(0) {
-}
 string(4) "key0"
-array(0) {
-}
-string(4) "key6"
-array(0) {
-}
-string(4) "key4"
-array(0) {
-}
-string(4) "key9"
-array(0) {
-}
-string(4) "key3"
 array(0) {
 }
 string(4) "key1"
 array(0) {
 }
-string(4) "key7"
+string(4) "key2"
+array(0) {
+}
+string(4) "key3"
+array(0) {
+}
+string(4) "key4"
 array(0) {
 }
 string(4) "key5"
+array(0) {
+}
+string(4) "key6"
+array(0) {
+}
+string(4) "key7"
+array(0) {
+}
+string(4) "key8"
+array(0) {
+}
+string(4) "key9"
 array(0) {
 }
 string(5) "key10"
@@ -290,55 +290,55 @@ array(0) {
 
 IT #5
 ============================
-string(4) "key8"
-array(1) {
-  ["value"]=>
-  string(6) "value8"
-}
-string(4) "key2"
-array(1) {
-  ["value"]=>
-  string(6) "value2"
-}
 string(4) "key0"
 array(1) {
   ["value"]=>
   string(6) "value0"
-}
-string(4) "key6"
-array(1) {
-  ["value"]=>
-  string(6) "value6"
-}
-string(4) "key4"
-array(1) {
-  ["value"]=>
-  string(6) "value4"
-}
-string(4) "key9"
-array(1) {
-  ["value"]=>
-  string(6) "value9"
-}
-string(4) "key3"
-array(1) {
-  ["value"]=>
-  string(6) "value3"
 }
 string(4) "key1"
 array(1) {
   ["value"]=>
   string(6) "value1"
 }
-string(4) "key7"
+string(4) "key2"
 array(1) {
   ["value"]=>
-  string(6) "value7"
+  string(6) "value2"
+}
+string(4) "key3"
+array(1) {
+  ["value"]=>
+  string(6) "value3"
+}
+string(4) "key4"
+array(1) {
+  ["value"]=>
+  string(6) "value4"
 }
 string(4) "key5"
 array(1) {
   ["value"]=>
   string(6) "value5"
+}
+string(4) "key6"
+array(1) {
+  ["value"]=>
+  string(6) "value6"
+}
+string(4) "key7"
+array(1) {
+  ["value"]=>
+  string(6) "value7"
+}
+string(4) "key8"
+array(1) {
+  ["value"]=>
+  string(6) "value8"
+}
+string(4) "key9"
+array(1) {
+  ["value"]=>
+  string(6) "value9"
 }
 string(5) "key10"
 array(1) {
@@ -349,34 +349,34 @@ array(1) {
 
 IT #6
 ============================
-string(4) "key8"
-array(0) {
-}
-string(4) "key2"
-array(0) {
-}
 string(4) "key0"
-array(0) {
-}
-string(4) "key6"
-array(0) {
-}
-string(4) "key4"
-array(0) {
-}
-string(4) "key9"
-array(0) {
-}
-string(4) "key3"
 array(0) {
 }
 string(4) "key1"
 array(0) {
 }
-string(4) "key7"
+string(4) "key2"
+array(0) {
+}
+string(4) "key3"
+array(0) {
+}
+string(4) "key4"
 array(0) {
 }
 string(4) "key5"
+array(0) {
+}
+string(4) "key6"
+array(0) {
+}
+string(4) "key7"
+array(0) {
+}
+string(4) "key8"
+array(0) {
+}
+string(4) "key9"
 array(0) {
 }
 string(5) "key10"
@@ -386,37 +386,7 @@ array(0) {
 
 IT #7
 ============================
-string(4) "key8"
-array(1) {
-  ["num_hits"]=>
-  int(0)
-}
-string(4) "key2"
-array(1) {
-  ["num_hits"]=>
-  int(0)
-}
 string(4) "key0"
-array(1) {
-  ["num_hits"]=>
-  int(0)
-}
-string(4) "key6"
-array(1) {
-  ["num_hits"]=>
-  int(0)
-}
-string(4) "key4"
-array(1) {
-  ["num_hits"]=>
-  int(0)
-}
-string(4) "key9"
-array(1) {
-  ["num_hits"]=>
-  int(0)
-}
-string(4) "key3"
 array(1) {
   ["num_hits"]=>
   int(0)
@@ -426,12 +396,42 @@ array(1) {
   ["num_hits"]=>
   int(0)
 }
-string(4) "key7"
+string(4) "key2"
+array(1) {
+  ["num_hits"]=>
+  int(0)
+}
+string(4) "key3"
+array(1) {
+  ["num_hits"]=>
+  int(0)
+}
+string(4) "key4"
 array(1) {
   ["num_hits"]=>
   int(0)
 }
 string(4) "key5"
+array(1) {
+  ["num_hits"]=>
+  int(0)
+}
+string(4) "key6"
+array(1) {
+  ["num_hits"]=>
+  int(0)
+}
+string(4) "key7"
+array(1) {
+  ["num_hits"]=>
+  int(0)
+}
+string(4) "key8"
+array(1) {
+  ["num_hits"]=>
+  int(0)
+}
+string(4) "key9"
 array(1) {
   ["num_hits"]=>
   int(0)
@@ -445,37 +445,7 @@ array(1) {
 
 IT #8
 ============================
-string(4) "key8"
-array(1) {
-  ["mtime"]=>
-  int(%d)
-}
-string(4) "key2"
-array(1) {
-  ["mtime"]=>
-  int(%d)
-}
 string(4) "key0"
-array(1) {
-  ["mtime"]=>
-  int(%d)
-}
-string(4) "key6"
-array(1) {
-  ["mtime"]=>
-  int(%d)
-}
-string(4) "key4"
-array(1) {
-  ["mtime"]=>
-  int(%d)
-}
-string(4) "key9"
-array(1) {
-  ["mtime"]=>
-  int(%d)
-}
-string(4) "key3"
 array(1) {
   ["mtime"]=>
   int(%d)
@@ -485,12 +455,42 @@ array(1) {
   ["mtime"]=>
   int(%d)
 }
-string(4) "key7"
+string(4) "key2"
+array(1) {
+  ["mtime"]=>
+  int(%d)
+}
+string(4) "key3"
+array(1) {
+  ["mtime"]=>
+  int(%d)
+}
+string(4) "key4"
 array(1) {
   ["mtime"]=>
   int(%d)
 }
 string(4) "key5"
+array(1) {
+  ["mtime"]=>
+  int(%d)
+}
+string(4) "key6"
+array(1) {
+  ["mtime"]=>
+  int(%d)
+}
+string(4) "key7"
+array(1) {
+  ["mtime"]=>
+  int(%d)
+}
+string(4) "key8"
+array(1) {
+  ["mtime"]=>
+  int(%d)
+}
+string(4) "key9"
 array(1) {
   ["mtime"]=>
   int(%d)
@@ -504,37 +504,7 @@ array(1) {
 
 IT #9
 ============================
-string(4) "key8"
-array(1) {
-  ["creation_time"]=>
-  int(%d)
-}
-string(4) "key2"
-array(1) {
-  ["creation_time"]=>
-  int(%d)
-}
 string(4) "key0"
-array(1) {
-  ["creation_time"]=>
-  int(%d)
-}
-string(4) "key6"
-array(1) {
-  ["creation_time"]=>
-  int(%d)
-}
-string(4) "key4"
-array(1) {
-  ["creation_time"]=>
-  int(%d)
-}
-string(4) "key9"
-array(1) {
-  ["creation_time"]=>
-  int(%d)
-}
-string(4) "key3"
 array(1) {
   ["creation_time"]=>
   int(%d)
@@ -544,12 +514,42 @@ array(1) {
   ["creation_time"]=>
   int(%d)
 }
-string(4) "key7"
+string(4) "key2"
+array(1) {
+  ["creation_time"]=>
+  int(%d)
+}
+string(4) "key3"
+array(1) {
+  ["creation_time"]=>
+  int(%d)
+}
+string(4) "key4"
 array(1) {
   ["creation_time"]=>
   int(%d)
 }
 string(4) "key5"
+array(1) {
+  ["creation_time"]=>
+  int(%d)
+}
+string(4) "key6"
+array(1) {
+  ["creation_time"]=>
+  int(%d)
+}
+string(4) "key7"
+array(1) {
+  ["creation_time"]=>
+  int(%d)
+}
+string(4) "key8"
+array(1) {
+  ["creation_time"]=>
+  int(%d)
+}
+string(4) "key9"
 array(1) {
   ["creation_time"]=>
   int(%d)
@@ -563,37 +563,7 @@ array(1) {
 
 IT #10
 ============================
-string(4) "key8"
-array(1) {
-  ["deletion_time"]=>
-  int(0)
-}
-string(4) "key2"
-array(1) {
-  ["deletion_time"]=>
-  int(0)
-}
 string(4) "key0"
-array(1) {
-  ["deletion_time"]=>
-  int(0)
-}
-string(4) "key6"
-array(1) {
-  ["deletion_time"]=>
-  int(0)
-}
-string(4) "key4"
-array(1) {
-  ["deletion_time"]=>
-  int(0)
-}
-string(4) "key9"
-array(1) {
-  ["deletion_time"]=>
-  int(0)
-}
-string(4) "key3"
 array(1) {
   ["deletion_time"]=>
   int(0)
@@ -603,12 +573,42 @@ array(1) {
   ["deletion_time"]=>
   int(0)
 }
-string(4) "key7"
+string(4) "key2"
+array(1) {
+  ["deletion_time"]=>
+  int(0)
+}
+string(4) "key3"
+array(1) {
+  ["deletion_time"]=>
+  int(0)
+}
+string(4) "key4"
 array(1) {
   ["deletion_time"]=>
   int(0)
 }
 string(4) "key5"
+array(1) {
+  ["deletion_time"]=>
+  int(0)
+}
+string(4) "key6"
+array(1) {
+  ["deletion_time"]=>
+  int(0)
+}
+string(4) "key7"
+array(1) {
+  ["deletion_time"]=>
+  int(0)
+}
+string(4) "key8"
+array(1) {
+  ["deletion_time"]=>
+  int(0)
+}
+string(4) "key9"
 array(1) {
   ["deletion_time"]=>
   int(0)
@@ -622,37 +622,7 @@ array(1) {
 
 IT #11
 ============================
-string(4) "key8"
-array(1) {
-  ["access_time"]=>
-  int(%d)
-}
-string(4) "key2"
-array(1) {
-  ["access_time"]=>
-  int(%d)
-}
 string(4) "key0"
-array(1) {
-  ["access_time"]=>
-  int(%d)
-}
-string(4) "key6"
-array(1) {
-  ["access_time"]=>
-  int(%d)
-}
-string(4) "key4"
-array(1) {
-  ["access_time"]=>
-  int(%d)
-}
-string(4) "key9"
-array(1) {
-  ["access_time"]=>
-  int(%d)
-}
-string(4) "key3"
 array(1) {
   ["access_time"]=>
   int(%d)
@@ -662,12 +632,42 @@ array(1) {
   ["access_time"]=>
   int(%d)
 }
-string(4) "key7"
+string(4) "key2"
+array(1) {
+  ["access_time"]=>
+  int(%d)
+}
+string(4) "key3"
+array(1) {
+  ["access_time"]=>
+  int(%d)
+}
+string(4) "key4"
 array(1) {
   ["access_time"]=>
   int(%d)
 }
 string(4) "key5"
+array(1) {
+  ["access_time"]=>
+  int(%d)
+}
+string(4) "key6"
+array(1) {
+  ["access_time"]=>
+  int(%d)
+}
+string(4) "key7"
+array(1) {
+  ["access_time"]=>
+  int(%d)
+}
+string(4) "key8"
+array(1) {
+  ["access_time"]=>
+  int(%d)
+}
+string(4) "key9"
 array(1) {
   ["access_time"]=>
   int(%d)
@@ -681,37 +681,7 @@ array(1) {
 
 IT #12
 ============================
-string(4) "key8"
-array(1) {
-  ["ref_count"]=>
-  int(0)
-}
-string(4) "key2"
-array(1) {
-  ["ref_count"]=>
-  int(0)
-}
 string(4) "key0"
-array(1) {
-  ["ref_count"]=>
-  int(0)
-}
-string(4) "key6"
-array(1) {
-  ["ref_count"]=>
-  int(0)
-}
-string(4) "key4"
-array(1) {
-  ["ref_count"]=>
-  int(0)
-}
-string(4) "key9"
-array(1) {
-  ["ref_count"]=>
-  int(0)
-}
-string(4) "key3"
 array(1) {
   ["ref_count"]=>
   int(0)
@@ -721,12 +691,42 @@ array(1) {
   ["ref_count"]=>
   int(0)
 }
-string(4) "key7"
+string(4) "key2"
+array(1) {
+  ["ref_count"]=>
+  int(0)
+}
+string(4) "key3"
+array(1) {
+  ["ref_count"]=>
+  int(0)
+}
+string(4) "key4"
 array(1) {
   ["ref_count"]=>
   int(0)
 }
 string(4) "key5"
+array(1) {
+  ["ref_count"]=>
+  int(0)
+}
+string(4) "key6"
+array(1) {
+  ["ref_count"]=>
+  int(0)
+}
+string(4) "key7"
+array(1) {
+  ["ref_count"]=>
+  int(0)
+}
+string(4) "key8"
+array(1) {
+  ["ref_count"]=>
+  int(0)
+}
+string(4) "key9"
 array(1) {
   ["ref_count"]=>
   int(0)
@@ -740,37 +740,7 @@ array(1) {
 
 IT #13
 ============================
-string(4) "key8"
-array(1) {
-  ["mem_size"]=>
-  int(%d)
-}
-string(4) "key2"
-array(1) {
-  ["mem_size"]=>
-  int(%d)
-}
 string(4) "key0"
-array(1) {
-  ["mem_size"]=>
-  int(%d)
-}
-string(4) "key6"
-array(1) {
-  ["mem_size"]=>
-  int(%d)
-}
-string(4) "key4"
-array(1) {
-  ["mem_size"]=>
-  int(%d)
-}
-string(4) "key9"
-array(1) {
-  ["mem_size"]=>
-  int(%d)
-}
-string(4) "key3"
 array(1) {
   ["mem_size"]=>
   int(%d)
@@ -780,12 +750,42 @@ array(1) {
   ["mem_size"]=>
   int(%d)
 }
+string(4) "key2"
+array(1) {
+  ["mem_size"]=>
+  int(%d)
+}
+string(4) "key3"
+array(1) {
+  ["mem_size"]=>
+  int(%d)
+}
+string(4) "key4"
+array(1) {
+  ["mem_size"]=>
+  int(580)
+}
+string(4) "key5"
+array(1) {
+  ["mem_size"]=>
+  int(%d)
+}
+string(4) "key6"
+array(1) {
+  ["mem_size"]=>
+  int(%d)
+}
 string(4) "key7"
 array(1) {
   ["mem_size"]=>
   int(%d)
 }
-string(4) "key5"
+string(4) "key8"
+array(1) {
+  ["mem_size"]=>
+  int(%d)
+}
+string(4) "key9"
 array(1) {
   ["mem_size"]=>
   int(%d)
@@ -799,37 +799,7 @@ array(1) {
 
 IT #14
 ============================
-string(4) "key8"
-array(1) {
-  ["ttl"]=>
-  int(0)
-}
-string(4) "key2"
-array(1) {
-  ["ttl"]=>
-  int(0)
-}
 string(4) "key0"
-array(1) {
-  ["ttl"]=>
-  int(0)
-}
-string(4) "key6"
-array(1) {
-  ["ttl"]=>
-  int(0)
-}
-string(4) "key4"
-array(1) {
-  ["ttl"]=>
-  int(0)
-}
-string(4) "key9"
-array(1) {
-  ["ttl"]=>
-  int(0)
-}
-string(4) "key3"
 array(1) {
   ["ttl"]=>
   int(0)
@@ -839,12 +809,42 @@ array(1) {
   ["ttl"]=>
   int(0)
 }
-string(4) "key7"
+string(4) "key2"
+array(1) {
+  ["ttl"]=>
+  int(0)
+}
+string(4) "key3"
+array(1) {
+  ["ttl"]=>
+  int(0)
+}
+string(4) "key4"
 array(1) {
   ["ttl"]=>
   int(0)
 }
 string(4) "key5"
+array(1) {
+  ["ttl"]=>
+  int(0)
+}
+string(4) "key6"
+array(1) {
+  ["ttl"]=>
+  int(0)
+}
+string(4) "key7"
+array(1) {
+  ["ttl"]=>
+  int(0)
+}
+string(4) "key8"
+array(1) {
+  ["ttl"]=>
+  int(0)
+}
+string(4) "key9"
 array(1) {
   ["ttl"]=>
   int(0)
@@ -858,34 +858,34 @@ array(1) {
 
 IT #15
 ============================
-string(4) "key8"
-array(0) {
-}
-string(4) "key2"
-array(0) {
-}
 string(4) "key0"
-array(0) {
-}
-string(4) "key6"
-array(0) {
-}
-string(4) "key4"
-array(0) {
-}
-string(4) "key9"
-array(0) {
-}
-string(4) "key3"
 array(0) {
 }
 string(4) "key1"
 array(0) {
 }
-string(4) "key7"
+string(4) "key2"
+array(0) {
+}
+string(4) "key3"
+array(0) {
+}
+string(4) "key4"
 array(0) {
 }
 string(4) "key5"
+array(0) {
+}
+string(4) "key6"
+array(0) {
+}
+string(4) "key7"
+array(0) {
+}
+string(4) "key8"
+array(0) {
+}
+string(4) "key9"
 array(0) {
 }
 string(5) "key10"
@@ -895,56 +895,6 @@ array(0) {
 
 IT #16
 ============================
-string(4) "key8"
-array(11) {
-  ["type"]=>
-  string(4) "user"
-  ["key"]=>
-  string(4) "key8"
-  ["value"]=>
-  string(6) "value8"
-  ["num_hits"]=>
-  int(0)
-  ["mtime"]=>
-  int(%d)
-  ["creation_time"]=>
-  int(%d)
-  ["deletion_time"]=>
-  int(0)
-  ["access_time"]=>
-  int(%d)
-  ["ref_count"]=>
-  int(0)
-  ["mem_size"]=>
-  int(%d)
-  ["ttl"]=>
-  int(0)
-}
-string(4) "key2"
-array(11) {
-  ["type"]=>
-  string(4) "user"
-  ["key"]=>
-  string(4) "key2"
-  ["value"]=>
-  string(6) "value2"
-  ["num_hits"]=>
-  int(0)
-  ["mtime"]=>
-  int(%d)
-  ["creation_time"]=>
-  int(%d)
-  ["deletion_time"]=>
-  int(0)
-  ["access_time"]=>
-  int(%d)
-  ["ref_count"]=>
-  int(0)
-  ["mem_size"]=>
-  int(%d)
-  ["ttl"]=>
-  int(0)
-}
 string(4) "key0"
 array(11) {
   ["type"]=>
@@ -953,106 +903,6 @@ array(11) {
   string(4) "key0"
   ["value"]=>
   string(6) "value0"
-  ["num_hits"]=>
-  int(0)
-  ["mtime"]=>
-  int(%d)
-  ["creation_time"]=>
-  int(%d)
-  ["deletion_time"]=>
-  int(0)
-  ["access_time"]=>
-  int(%d)
-  ["ref_count"]=>
-  int(0)
-  ["mem_size"]=>
-  int(%d)
-  ["ttl"]=>
-  int(0)
-}
-string(4) "key6"
-array(11) {
-  ["type"]=>
-  string(4) "user"
-  ["key"]=>
-  string(4) "key6"
-  ["value"]=>
-  string(6) "value6"
-  ["num_hits"]=>
-  int(0)
-  ["mtime"]=>
-  int(%d)
-  ["creation_time"]=>
-  int(%d)
-  ["deletion_time"]=>
-  int(0)
-  ["access_time"]=>
-  int(%d)
-  ["ref_count"]=>
-  int(0)
-  ["mem_size"]=>
-  int(%d)
-  ["ttl"]=>
-  int(0)
-}
-string(4) "key4"
-array(11) {
-  ["type"]=>
-  string(4) "user"
-  ["key"]=>
-  string(4) "key4"
-  ["value"]=>
-  string(6) "value4"
-  ["num_hits"]=>
-  int(0)
-  ["mtime"]=>
-  int(%d)
-  ["creation_time"]=>
-  int(%d)
-  ["deletion_time"]=>
-  int(0)
-  ["access_time"]=>
-  int(%d)
-  ["ref_count"]=>
-  int(0)
-  ["mem_size"]=>
-  int(%d)
-  ["ttl"]=>
-  int(0)
-}
-string(4) "key9"
-array(11) {
-  ["type"]=>
-  string(4) "user"
-  ["key"]=>
-  string(4) "key9"
-  ["value"]=>
-  string(6) "value9"
-  ["num_hits"]=>
-  int(0)
-  ["mtime"]=>
-  int(%d)
-  ["creation_time"]=>
-  int(%d)
-  ["deletion_time"]=>
-  int(0)
-  ["access_time"]=>
-  int(%d)
-  ["ref_count"]=>
-  int(0)
-  ["mem_size"]=>
-  int(%d)
-  ["ttl"]=>
-  int(0)
-}
-string(4) "key3"
-array(11) {
-  ["type"]=>
-  string(4) "user"
-  ["key"]=>
-  string(4) "key3"
-  ["value"]=>
-  string(6) "value3"
   ["num_hits"]=>
   int(0)
   ["mtime"]=>
@@ -1095,14 +945,64 @@ array(11) {
   ["ttl"]=>
   int(0)
 }
-string(4) "key7"
+string(4) "key2"
 array(11) {
   ["type"]=>
   string(4) "user"
   ["key"]=>
-  string(4) "key7"
+  string(4) "key2"
   ["value"]=>
-  string(6) "value7"
+  string(6) "value2"
+  ["num_hits"]=>
+  int(0)
+  ["mtime"]=>
+  int(%d)
+  ["creation_time"]=>
+  int(%d)
+  ["deletion_time"]=>
+  int(0)
+  ["access_time"]=>
+  int(%d)
+  ["ref_count"]=>
+  int(0)
+  ["mem_size"]=>
+  int(%d)
+  ["ttl"]=>
+  int(0)
+}
+string(4) "key3"
+array(11) {
+  ["type"]=>
+  string(4) "user"
+  ["key"]=>
+  string(4) "key3"
+  ["value"]=>
+  string(6) "value3"
+  ["num_hits"]=>
+  int(0)
+  ["mtime"]=>
+  int(%d)
+  ["creation_time"]=>
+  int(%d)
+  ["deletion_time"]=>
+  int(0)
+  ["access_time"]=>
+  int(%d)
+  ["ref_count"]=>
+  int(0)
+  ["mem_size"]=>
+  int(%d)
+  ["ttl"]=>
+  int(0)
+}
+string(4) "key4"
+array(11) {
+  ["type"]=>
+  string(4) "user"
+  ["key"]=>
+  string(4) "key4"
+  ["value"]=>
+  string(6) "value4"
   ["num_hits"]=>
   int(0)
   ["mtime"]=>
@@ -1128,6 +1028,106 @@ array(11) {
   string(4) "key5"
   ["value"]=>
   string(6) "value5"
+  ["num_hits"]=>
+  int(0)
+  ["mtime"]=>
+  int(%d)
+  ["creation_time"]=>
+  int(%d)
+  ["deletion_time"]=>
+  int(0)
+  ["access_time"]=>
+  int(%d)
+  ["ref_count"]=>
+  int(0)
+  ["mem_size"]=>
+  int(%d)
+  ["ttl"]=>
+  int(0)
+}
+string(4) "key6"
+array(11) {
+  ["type"]=>
+  string(4) "user"
+  ["key"]=>
+  string(4) "key6"
+  ["value"]=>
+  string(6) "value6"
+  ["num_hits"]=>
+  int(0)
+  ["mtime"]=>
+  int(%d)
+  ["creation_time"]=>
+  int(%d)
+  ["deletion_time"]=>
+  int(0)
+  ["access_time"]=>
+  int(%d)
+  ["ref_count"]=>
+  int(0)
+  ["mem_size"]=>
+  int(%d)
+  ["ttl"]=>
+  int(0)
+}
+string(4) "key7"
+array(11) {
+  ["type"]=>
+  string(4) "user"
+  ["key"]=>
+  string(4) "key7"
+  ["value"]=>
+  string(6) "value7"
+  ["num_hits"]=>
+  int(0)
+  ["mtime"]=>
+  int(%d)
+  ["creation_time"]=>
+  int(%d)
+  ["deletion_time"]=>
+  int(0)
+  ["access_time"]=>
+  int(%d)
+  ["ref_count"]=>
+  int(0)
+  ["mem_size"]=>
+  int(%d)
+  ["ttl"]=>
+  int(0)
+}
+string(4) "key8"
+array(11) {
+  ["type"]=>
+  string(4) "user"
+  ["key"]=>
+  string(4) "key8"
+  ["value"]=>
+  string(6) "value8"
+  ["num_hits"]=>
+  int(0)
+  ["mtime"]=>
+  int(%d)
+  ["creation_time"]=>
+  int(%d)
+  ["deletion_time"]=>
+  int(0)
+  ["access_time"]=>
+  int(%d)
+  ["ref_count"]=>
+  int(0)
+  ["mem_size"]=>
+  int(%d)
+  ["ttl"]=>
+  int(0)
+}
+string(4) "key9"
+array(11) {
+  ["type"]=>
+  string(4) "user"
+  ["key"]=>
+  string(4) "key9"
+  ["value"]=>
+  string(6) "value9"
   ["num_hits"]=>
   int(0)
   ["mtime"]=>
@@ -1174,52 +1174,6 @@ array(11) {
 
 IT #17
 ============================
-string(4) "key8"
-array(10) {
-  ["type"]=>
-  string(4) "user"
-  ["key"]=>
-  string(4) "key8"
-  ["value"]=>
-  string(6) "value8"
-  ["num_hits"]=>
-  int(0)
-  ["mtime"]=>
-  int(%d)
-  ["creation_time"]=>
-  int(%d)
-  ["deletion_time"]=>
-  int(0)
-  ["access_time"]=>
-  int(%d)
-  ["ref_count"]=>
-  int(0)
-  ["mem_size"]=>
-  int(%d)
-}
-string(4) "key2"
-array(10) {
-  ["type"]=>
-  string(4) "user"
-  ["key"]=>
-  string(4) "key2"
-  ["value"]=>
-  string(6) "value2"
-  ["num_hits"]=>
-  int(0)
-  ["mtime"]=>
-  int(%d)
-  ["creation_time"]=>
-  int(%d)
-  ["deletion_time"]=>
-  int(0)
-  ["access_time"]=>
-  int(%d)
-  ["ref_count"]=>
-  int(0)
-  ["mem_size"]=>
-  int(%d)
-}
 string(4) "key0"
 array(10) {
   ["type"]=>
@@ -1228,98 +1182,6 @@ array(10) {
   string(4) "key0"
   ["value"]=>
   string(6) "value0"
-  ["num_hits"]=>
-  int(0)
-  ["mtime"]=>
-  int(%d)
-  ["creation_time"]=>
-  int(%d)
-  ["deletion_time"]=>
-  int(0)
-  ["access_time"]=>
-  int(%d)
-  ["ref_count"]=>
-  int(0)
-  ["mem_size"]=>
-  int(%d)
-}
-string(4) "key6"
-array(10) {
-  ["type"]=>
-  string(4) "user"
-  ["key"]=>
-  string(4) "key6"
-  ["value"]=>
-  string(6) "value6"
-  ["num_hits"]=>
-  int(0)
-  ["mtime"]=>
-  int(%d)
-  ["creation_time"]=>
-  int(%d)
-  ["deletion_time"]=>
-  int(0)
-  ["access_time"]=>
-  int(%d)
-  ["ref_count"]=>
-  int(0)
-  ["mem_size"]=>
-  int(%d)
-}
-string(4) "key4"
-array(10) {
-  ["type"]=>
-  string(4) "user"
-  ["key"]=>
-  string(4) "key4"
-  ["value"]=>
-  string(6) "value4"
-  ["num_hits"]=>
-  int(0)
-  ["mtime"]=>
-  int(%d)
-  ["creation_time"]=>
-  int(%d)
-  ["deletion_time"]=>
-  int(0)
-  ["access_time"]=>
-  int(%d)
-  ["ref_count"]=>
-  int(0)
-  ["mem_size"]=>
-  int(%d)
-}
-string(4) "key9"
-array(10) {
-  ["type"]=>
-  string(4) "user"
-  ["key"]=>
-  string(4) "key9"
-  ["value"]=>
-  string(6) "value9"
-  ["num_hits"]=>
-  int(0)
-  ["mtime"]=>
-  int(%d)
-  ["creation_time"]=>
-  int(%d)
-  ["deletion_time"]=>
-  int(0)
-  ["access_time"]=>
-  int(%d)
-  ["ref_count"]=>
-  int(0)
-  ["mem_size"]=>
-  int(%d)
-}
-string(4) "key3"
-array(10) {
-  ["type"]=>
-  string(4) "user"
-  ["key"]=>
-  string(4) "key3"
-  ["value"]=>
-  string(6) "value3"
   ["num_hits"]=>
   int(0)
   ["mtime"]=>
@@ -1358,14 +1220,60 @@ array(10) {
   ["mem_size"]=>
   int(%d)
 }
-string(4) "key7"
+string(4) "key2"
 array(10) {
   ["type"]=>
   string(4) "user"
   ["key"]=>
-  string(4) "key7"
+  string(4) "key2"
   ["value"]=>
-  string(6) "value7"
+  string(6) "value2"
+  ["num_hits"]=>
+  int(0)
+  ["mtime"]=>
+  int(%d)
+  ["creation_time"]=>
+  int(%d)
+  ["deletion_time"]=>
+  int(0)
+  ["access_time"]=>
+  int(%d)
+  ["ref_count"]=>
+  int(0)
+  ["mem_size"]=>
+  int(%d)
+}
+string(4) "key3"
+array(10) {
+  ["type"]=>
+  string(4) "user"
+  ["key"]=>
+  string(4) "key3"
+  ["value"]=>
+  string(6) "value3"
+  ["num_hits"]=>
+  int(0)
+  ["mtime"]=>
+  int(%d)
+  ["creation_time"]=>
+  int(%d)
+  ["deletion_time"]=>
+  int(0)
+  ["access_time"]=>
+  int(%d)
+  ["ref_count"]=>
+  int(0)
+  ["mem_size"]=>
+  int(%d)
+}
+string(4) "key4"
+array(10) {
+  ["type"]=>
+  string(4) "user"
+  ["key"]=>
+  string(4) "key4"
+  ["value"]=>
+  string(6) "value4"
   ["num_hits"]=>
   int(0)
   ["mtime"]=>
@@ -1389,6 +1297,98 @@ array(10) {
   string(4) "key5"
   ["value"]=>
   string(6) "value5"
+  ["num_hits"]=>
+  int(0)
+  ["mtime"]=>
+  int(%d)
+  ["creation_time"]=>
+  int(%d)
+  ["deletion_time"]=>
+  int(0)
+  ["access_time"]=>
+  int(%d)
+  ["ref_count"]=>
+  int(0)
+  ["mem_size"]=>
+  int(%d)
+}
+string(4) "key6"
+array(10) {
+  ["type"]=>
+  string(4) "user"
+  ["key"]=>
+  string(4) "key6"
+  ["value"]=>
+  string(6) "value6"
+  ["num_hits"]=>
+  int(0)
+  ["mtime"]=>
+  int(%d)
+  ["creation_time"]=>
+  int(%d)
+  ["deletion_time"]=>
+  int(0)
+  ["access_time"]=>
+  int(%d)
+  ["ref_count"]=>
+  int(0)
+  ["mem_size"]=>
+  int(%d)
+}
+string(4) "key7"
+array(10) {
+  ["type"]=>
+  string(4) "user"
+  ["key"]=>
+  string(4) "key7"
+  ["value"]=>
+  string(6) "value7"
+  ["num_hits"]=>
+  int(0)
+  ["mtime"]=>
+  int(%d)
+  ["creation_time"]=>
+  int(%d)
+  ["deletion_time"]=>
+  int(0)
+  ["access_time"]=>
+  int(%d)
+  ["ref_count"]=>
+  int(0)
+  ["mem_size"]=>
+  int(%d)
+}
+string(4) "key8"
+array(10) {
+  ["type"]=>
+  string(4) "user"
+  ["key"]=>
+  string(4) "key8"
+  ["value"]=>
+  string(6) "value8"
+  ["num_hits"]=>
+  int(0)
+  ["mtime"]=>
+  int(%d)
+  ["creation_time"]=>
+  int(%d)
+  ["deletion_time"]=>
+  int(0)
+  ["access_time"]=>
+  int(%d)
+  ["ref_count"]=>
+  int(0)
+  ["mem_size"]=>
+  int(%d)
+}
+string(4) "key9"
+array(10) {
+  ["type"]=>
+  string(4) "user"
+  ["key"]=>
+  string(4) "key9"
+  ["value"]=>
+  string(6) "value9"
   ["num_hits"]=>
   int(0)
   ["mtime"]=>
@@ -1431,64 +1431,10 @@ array(10) {
 
 IT #18
 ============================
-string(4) "key8"
-array(3) {
-  ["key"]=>
-  string(4) "key8"
-  ["num_hits"]=>
-  int(0)
-  ["mem_size"]=>
-  int(%d)
-}
-string(4) "key2"
-array(3) {
-  ["key"]=>
-  string(4) "key2"
-  ["num_hits"]=>
-  int(0)
-  ["mem_size"]=>
-  int(%d)
-}
 string(4) "key0"
 array(3) {
   ["key"]=>
   string(4) "key0"
-  ["num_hits"]=>
-  int(0)
-  ["mem_size"]=>
-  int(%d)
-}
-string(4) "key6"
-array(3) {
-  ["key"]=>
-  string(4) "key6"
-  ["num_hits"]=>
-  int(0)
-  ["mem_size"]=>
-  int(%d)
-}
-string(4) "key4"
-array(3) {
-  ["key"]=>
-  string(4) "key4"
-  ["num_hits"]=>
-  int(0)
-  ["mem_size"]=>
-  int(%d)
-}
-string(4) "key9"
-array(3) {
-  ["key"]=>
-  string(4) "key9"
-  ["num_hits"]=>
-  int(0)
-  ["mem_size"]=>
-  int(%d)
-}
-string(4) "key3"
-array(3) {
-  ["key"]=>
-  string(4) "key3"
   ["num_hits"]=>
   int(0)
   ["mem_size"]=>
@@ -1503,10 +1449,28 @@ array(3) {
   ["mem_size"]=>
   int(%d)
 }
-string(4) "key7"
+string(4) "key2"
 array(3) {
   ["key"]=>
-  string(4) "key7"
+  string(4) "key2"
+  ["num_hits"]=>
+  int(0)
+  ["mem_size"]=>
+  int(%d)
+}
+string(4) "key3"
+array(3) {
+  ["key"]=>
+  string(4) "key3"
+  ["num_hits"]=>
+  int(0)
+  ["mem_size"]=>
+  int(%d)
+}
+string(4) "key4"
+array(3) {
+  ["key"]=>
+  string(4) "key4"
   ["num_hits"]=>
   int(0)
   ["mem_size"]=>
@@ -1516,6 +1480,42 @@ string(4) "key5"
 array(3) {
   ["key"]=>
   string(4) "key5"
+  ["num_hits"]=>
+  int(0)
+  ["mem_size"]=>
+  int(%d)
+}
+string(4) "key6"
+array(3) {
+  ["key"]=>
+  string(4) "key6"
+  ["num_hits"]=>
+  int(0)
+  ["mem_size"]=>
+  int(%d)
+}
+string(4) "key7"
+array(3) {
+  ["key"]=>
+  string(4) "key7"
+  ["num_hits"]=>
+  int(0)
+  ["mem_size"]=>
+  int(%d)
+}
+string(4) "key8"
+array(3) {
+  ["key"]=>
+  string(4) "key8"
+  ["num_hits"]=>
+  int(0)
+  ["mem_size"]=>
+  int(%d)
+}
+string(4) "key9"
+array(3) {
+  ["key"]=>
+  string(4) "key9"
   ["num_hits"]=>
   int(0)
   ["mem_size"]=>
