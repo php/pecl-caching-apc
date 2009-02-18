@@ -83,6 +83,9 @@ extern void apc_zend_init(TSRMLS_D);
 extern void apc_zend_shutdown(TSRMLS_D);
 
 
+/* offset for apc info in op_array->reserved */
+extern int apc_reserved_offset;
+
 #ifndef ZEND_VM_KIND_CALL /* Not currently defined by any ZE version */
 # define ZEND_VM_KIND_CALL  1
 #endif

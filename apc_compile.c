@@ -930,10 +930,10 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_con
     /* deep-copy the opcodes */
     CHECK(dst->opcodes = (zend_op*) apc_pool_alloc(pool, sizeof(zend_op) * src->last));
 
-    if(APCG(reserved_offset) != -1) {
+    if(apc_reserved_offset != -1) {
         /* Insanity alert: the void* pointer is cast into an apc_opflags_t 
          * struct. apc_zend_init() checks to ensure that it fits in a void* */
-        flags = (apc_opflags_t*) & (dst->reserved[APCG(reserved_offset)]);
+        flags = (apc_opflags_t*) & (dst->reserved[apc_reserved_offset]);
         memset(flags, 0, sizeof(apc_opflags_t));
         /* assert(sizeof(apc_opflags_t) < sizeof(dst->reserved)); */
     }
@@ -1226,8 +1226,8 @@ static int my_prepare_op_array_for_execution(zend_op_array* dst, zend_op_array* 
     int i=src->last;
     zend_op *zo;
     zend_op *dzo;
-    apc_opflags_t * flags = APCG(reserved_offset) != -1 ? 
-                                (apc_opflags_t*) & (src->reserved[APCG(reserved_offset)]) : NULL;
+    apc_opflags_t * flags = apc_reserved_offset  != -1 ? 
+                                (apc_opflags_t*) & (src->reserved[apc_reserved_offset]) : NULL;
     int needcopy = flags ? flags->deep_copy : 1;
     /* auto_globals_jit was not in php4 */
     int do_prepare_fetch_global = PG(auto_globals_jit) && (flags == NULL || flags->unknown_global);

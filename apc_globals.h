@@ -97,7 +97,6 @@ ZEND_BEGIN_MODULE_GLOBALS(apc)
     apc_rfc1867_data rfc1867_data;/* Per-request data */
 #endif
     HashTable *copied_zvals;     /* my_copy recursion detection list */
-    int reserved_offset;         /* offset for apc info in op_array->reserved[] */
     zend_bool force_file_update; /* force files to be updated during apc_compile_file */
     char canon_path[MAXPATHLEN]; /* canonical path for key data */
 #if APC_FILEHITS

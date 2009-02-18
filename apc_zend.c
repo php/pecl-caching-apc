@@ -30,6 +30,9 @@
 #include "apc_zend.h"
 #include "apc_globals.h"
 
+/* true global */
+int apc_reserved_offset;
+
 void* apc_php_malloc(size_t n)
 {
     return emalloc(n);
@@ -135,9 +138,9 @@ static int ZEND_FASTCALL apc_op_ZEND_INCLUDE_OR_EVAL(ZEND_OPCODE_HANDLER_ARGS)
         zval_dtor(&tmp_inc_filename);
     }
 
-    if(APCG(reserved_offset) != -1) {
+    if(apc_reserved_offset != -1) {
         /* Insanity alert: look into apc_compile.c for why a void** is cast to a apc_opflags_t* */
-        flags = (apc_opflags_t*) & (execute_data->op_array->reserved[APCG(reserved_offset)]);
+        flags = (apc_opflags_t*) & (execute_data->op_array->reserved[apc_reserved_offset]);
     }
 
     if(flags && flags->deep_copy == 1) {
@@ -157,9 +160,9 @@ static int ZEND_FASTCALL apc_op_ZEND_INCLUDE_OR_EVAL(ZEND_OPCODE_HANDLER_ARGS)
 void apc_zend_init(TSRMLS_D)
 {
     zend_extension dummy_ext;
-    APCG(reserved_offset) = zend_get_resource_handle(&dummy_ext); 
-    assert(APCG(reserved_offset) == dummy_ext.resource_number);
-    assert(APCG(reserved_offset) != -1);
+    apc_reserved_offset = zend_get_resource_handle(&dummy_ext); 
+    assert(apc_reserved_offset == dummy_ext.resource_number);
+    assert(apc_reserved_offset != -1);
     assert(sizeof(apc_opflags_t) <= sizeof(void*));
     if (!APCG(include_once)) {
         /* If we're not overriding the INCLUDE_OR_EVAL handler, then just skip this malarkey */
