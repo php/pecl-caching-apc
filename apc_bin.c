@@ -804,15 +804,7 @@ int apc_bin_load(apc_bd_t *bd, int flags TSRMLS_DC) {
         }
     }
 
-#if PHP_API_VERSION <= 20041225
-#if HAVE_APACHE && defined(APC_PHP4_STAT)
-    t = ((request_rec *)SG(server_context))->request_time;
-#else
-    t = time(0);
-#endif
-#else
     t = sapi_get_request_time(TSRMLS_C);
-#endif
 
     for(i = 0; i < bd->num_entries; i++) {
         ctxt.pool = apc_pool_create(APC_SMALL_POOL, apc_sma_malloc, apc_sma_free, apc_sma_protect, apc_sma_unprotect);
