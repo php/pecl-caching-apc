@@ -54,24 +54,7 @@ static unsigned int hash(apc_cache_key_t key)
 /* }}} */
 
 /* {{{ string_nhash_8 */
-static unsigned int string_nhash_8(const char *s, size_t len)
-{
-    register const unsigned int *iv = (const unsigned int *)s;
-    register unsigned int h = 0;
-    register const unsigned int *e  = (const unsigned int *)(s + len - (len % sizeof(unsigned int)));
-
-    for(;iv<e;iv++) {
-        h += *iv;
-        h = (h << 7) | (h >> ((8*sizeof(unsigned int)) - 7));
-    }
-    s = (const char *)iv;
-    for(len %= sizeof(unsigned int);len;len--) {
-        h += *(s++);
-    }
-    h ^= (h >> 13);
-    h ^= (h >> 7);
-    return h;
-}
+#define string_nhash_8(s,len) (unsigned int)(zend_inline_hash_func(s, len))
 /* }}} */
 
 /* {{{ make_slot */
