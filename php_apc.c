@@ -1109,6 +1109,7 @@ PHP_FUNCTION(apc_compile_file) {
         RETURN_FALSE;
     }
 
+    HANDLE_BLOCK_INTERRUPTIONS();
     APCG(current_cache) = apc_cache;
 
     /* reset filters and cache_by_default */
@@ -1268,6 +1269,7 @@ PHP_FUNCTION(apc_compile_file) {
     APCG(cache_by_default) = cache_by_default;
 
     APCG(current_cache) = NULL;
+    HANDLE_UNBLOCK_INTERRUPTIONS();
 
 }
 /* }}} */
