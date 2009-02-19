@@ -109,6 +109,7 @@ ZEND_BEGIN_MODULE_GLOBALS(apc)
     void *apc_bd_alloc_ptr;      /* bindump alloc() ptr */
     void *apc_bd_alloc_ubptr;    /* bindump alloc() upper bound ptr */
     HashTable apc_bd_alloc_list; /* bindump alloc() ptr list */
+    zend_bool use_request_time;  /* use the SAPI request start time for TTL */
 ZEND_END_MODULE_GLOBALS(apc)
 
 /* (the following declaration is defined in php_apc.c) */

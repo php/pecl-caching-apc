@@ -277,7 +277,7 @@ static void apc_cache_expunge(apc_cache_t* cache, size_t size)
     time_t t;
     TSRMLS_FETCH();
 
-    t = sapi_get_request_time(TSRMLS_C);
+    t = apc_time();
 
     if(!cache) return;
 
@@ -691,7 +691,7 @@ int apc_cache_delete(apc_cache_t* cache, char *filename, int filename_len)
 
     TSRMLS_FETCH();
 
-    t = sapi_get_request_time(TSRMLS_C);
+    t = apc_time();
 
     /* try to create a cache key; if we fail, give up on caching */
     if (!apc_cache_make_file_key(&key, filename, PG(include_path), t TSRMLS_CC)) {

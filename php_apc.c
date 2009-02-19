@@ -101,6 +101,7 @@ static void php_apc_init_globals(zend_apc_globals* apc_globals TSRMLS_DC)
     apc_globals->force_file_update = 0;
     apc_globals->coredump_unmap = 0;
     apc_globals->preload_path = NULL;
+    apc_globals->use_request_time = 1;
 }
 
 static void php_apc_shutdown_globals(zend_apc_globals* apc_globals TSRMLS_DC)
@@ -206,6 +207,7 @@ STD_PHP_INI_ENTRY("apc.rfc1867_ttl", "3600", PHP_INI_SYSTEM, OnUpdateInt, rfc186
 STD_PHP_INI_BOOLEAN("apc.coredump_unmap", "0", PHP_INI_SYSTEM, OnUpdateBool, coredump_unmap, zend_apc_globals, apc_globals)
 STD_PHP_INI_ENTRY("apc.preload_path", (char*)NULL,              PHP_INI_SYSTEM, OnUpdateString,       preload_path,  zend_apc_globals, apc_globals)
 STD_PHP_INI_BOOLEAN("apc.file_md5", "0", PHP_INI_SYSTEM, OnUpdateBool, file_md5,  zend_apc_globals, apc_globals)
+STD_PHP_INI_BOOLEAN("apc.use_request_time", "1", PHP_INI_ALL, OnUpdateBool, use_request_time,  zend_apc_globals, apc_globals)
 PHP_INI_END()
 
 /* }}} */
@@ -583,7 +585,7 @@ int _apc_store(char *strkey, int strkey_len, const zval *val, const unsigned int
     apc_context_t ctxt={0,};
     int ret = 1;
 
-    t = sapi_get_request_time(TSRMLS_C);
+    t = apc_time();
 
     if(!APCG(enabled)) return 0;
 
@@ -823,7 +825,7 @@ PHP_FUNCTION(apc_fetch) {
     ctxt.copy = APC_COPY_OUT_USER;
     ctxt.force_update = 0;
 
-    t = sapi_get_request_time(TSRMLS_C);
+    t = apc_time();
 
     if (success) {
         ZVAL_BOOL(success, 0);
@@ -1059,7 +1061,7 @@ PHP_FUNCTION(apc_load_constants) {
 
     if(!strkey_len) RETURN_FALSE;
 
-    t = sapi_get_request_time(TSRMLS_C);
+    t = apc_time();
 
     entry = apc_cache_user_find(apc_user_cache, strkey, strkey_len + 1, t);
 
@@ -1158,7 +1160,7 @@ PHP_FUNCTION(apc_compile_file) {
 
         array_init(return_value);
 
-        t = sapi_get_request_time(TSRMLS_C);
+        t = apc_time();
 
         op_arrays = ecalloc(Z_ARRVAL_P(file)->nNumOfElements, sizeof(zend_op_array*));
         cache_entries = ecalloc(Z_ARRVAL_P(file)->nNumOfElements, sizeof(apc_cache_entry_t*));

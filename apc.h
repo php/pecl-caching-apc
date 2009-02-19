@@ -111,6 +111,9 @@ extern HashTable* apc_flip_hash(HashTable *hash);
 #define APC_NEGATIVE_MATCH 1
 #define APC_POSITIVE_MATCH 2
 
+#define apc_time() \
+    (APCG(use_request_time) ? sapi_get_request_time(TSRMLS_C) : time(0));
+
 #endif
 
 /*

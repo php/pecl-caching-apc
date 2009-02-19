@@ -383,7 +383,7 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
     APCG(current_cache) = apc_cache;
 
 
-    t = sapi_get_request_time(TSRMLS_C);
+    t = apc_time();
 
 #ifdef __DEBUG_APC__
     fprintf(stderr,"1. h->opened_path=[%s]  h->filename=[%s]\n", h->opened_path?h->opened_path:"null",h->filename);
