@@ -1158,15 +1158,7 @@ PHP_FUNCTION(apc_compile_file) {
 
         array_init(return_value);
 
-#if PHP_API_VERSION < 20041225
-#if HAVE_APACHE && defined(APC_PHP4_STAT)
-        t = ((request_rec *)SG(server_context))->request_time;
-#else
-        t = time(0);
-#endif
-#else
         t = sapi_get_request_time(TSRMLS_C);
-#endif
 
         op_arrays = ecalloc(Z_ARRVAL_P(file)->nNumOfElements, sizeof(zend_op_array*));
         cache_entries = ecalloc(Z_ARRVAL_P(file)->nNumOfElements, sizeof(apc_cache_entry_t*));
