@@ -1109,6 +1109,8 @@ PHP_FUNCTION(apc_compile_file) {
         RETURN_FALSE;
     }
 
+    APCG(current_cache) = apc_cache;
+
     /* reset filters and cache_by_default */
     filters = APCG(filters);
     APCG(filters) = NULL;
@@ -1264,6 +1266,8 @@ PHP_FUNCTION(apc_compile_file) {
     /* Restore global settings */
     APCG(filters) = filters;
     APCG(cache_by_default) = cache_by_default;
+
+    APCG(current_cache) = NULL;
 
 }
 /* }}} */
