@@ -659,6 +659,10 @@ apc_bd_t* apc_bin_dump(HashTable *files, HashTable *user_vars TSRMLS_DC) {
     pool_ptr = emalloc(sizeof(apc_pool));
     apc_bd_alloc_ex(pool_ptr, sizeof(apc_pool));
     ctxt.pool = apc_pool_create(APC_UNPOOL, apc_bd_alloc, apc_bd_free, NULL, NULL);  /* ideally the pool wouldn't be alloc'd as part of this */
+    if (!ctxt.pool) { /* TODO need to cleanup */
+        apc_wprint("Unable to allocate memory for pool.");
+        return NULL;
+    }
     ctxt.copy = APC_COPY_IN_USER;  /* avoid stupid ALLOC_ZVAL calls here, hack */
     apc_bd_alloc_ex( (void*)((long)bd + sizeof(apc_bd_t)), bd->size - sizeof(apc_bd_t) -1);
     bd->num_entries = count;
@@ -808,6 +812,10 @@ int apc_bin_load(apc_bd_t *bd, int flags TSRMLS_DC) {
 
     for(i = 0; i < bd->num_entries; i++) {
         ctxt.pool = apc_pool_create(APC_SMALL_POOL, apc_sma_malloc, apc_sma_free, apc_sma_protect, apc_sma_unprotect);
+        if (!ctxt.pool) { /* TODO need to cleanup previous pools */
+            apc_wprint("Unable to allocate memory for pool.");
+            goto failure;
+        }
         ep = &bd->entries[i];
         switch (ep->type) {
             case APC_CACHE_KEY_FILE:

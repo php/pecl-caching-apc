@@ -594,6 +594,10 @@ int _apc_store(char *strkey, int strkey_len, const zval *val, const unsigned int
     APCG(current_cache) = apc_user_cache;
 
     ctxt.pool = apc_pool_create(APC_SMALL_POOL, apc_sma_malloc, apc_sma_free, apc_sma_protect, apc_sma_unprotect);
+    if (!ctxt.pool) {
+        apc_wprint("Unable to allocate memory for pool.");
+        return 0;
+    }
     ctxt.copy = APC_COPY_IN_USER;
     ctxt.force_update = 0;
 
@@ -821,15 +825,19 @@ PHP_FUNCTION(apc_fetch) {
         return;
     }
 
-    ctxt.pool = apc_pool_create(APC_UNPOOL, apc_php_malloc, apc_php_free, NULL, NULL);
-    ctxt.copy = APC_COPY_OUT_USER;
-    ctxt.force_update = 0;
-
     t = apc_time();
 
     if (success) {
         ZVAL_BOOL(success, 0);
     }
+
+    ctxt.pool = apc_pool_create(APC_UNPOOL, apc_php_malloc, apc_php_free, NULL, NULL);
+    if (!ctxt.pool) {
+        apc_wprint("Unable to allocate memory for pool.");
+        RETURN_FALSE;
+    }
+    ctxt.copy = APC_COPY_OUT_USER;
+    ctxt.force_update = 0;
 
     if(Z_TYPE_P(key) != IS_STRING && Z_TYPE_P(key) != IS_ARRAY) {
         convert_to_string(key);

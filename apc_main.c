@@ -288,6 +288,10 @@ zend_bool apc_compile_cache_entry(apc_cache_key_t key, zend_file_handle* h, int 
 
     ctxt.pool = apc_pool_create(APC_MEDIUM_POOL, apc_sma_malloc, apc_sma_free, 
                                                  apc_sma_protect, apc_sma_unprotect);
+    if (!ctxt.pool) {
+        apc_wprint("Unable to allocate memory for pool.");
+        return FAILURE;
+    }
     ctxt.copy = APC_COPY_IN_OPCODE;
 
     if(APCG(file_md5)) {
@@ -409,6 +413,10 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
 
         ctxt.pool = apc_pool_create(APC_UNPOOL, apc_php_malloc, apc_php_free,
                                                 apc_sma_protect, apc_sma_unprotect);
+        if (!ctxt.pool) {
+            apc_wprint("Unable to allocate memory for pool.");
+            return old_compile_file(h, type TSRMLS_CC);
+        }
         ctxt.copy = APC_COPY_OUT_OPCODE;
 
         if (h->opened_path == NULL) {
