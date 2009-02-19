@@ -471,7 +471,6 @@ void* apc_sma_malloc_ex(size_t n, size_t fragment, size_t* allocated)
     UNLOCK(SMA_LCK(sma_lastseg));
 
     for (i = 0; i < sma_numseg; i++) {
-        LOCK(SMA_LCK(i));
         if (i == sma_lastseg) {
             continue;
         }
