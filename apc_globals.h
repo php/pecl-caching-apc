@@ -110,6 +110,10 @@ ZEND_BEGIN_MODULE_GLOBALS(apc)
     void *apc_bd_alloc_ubptr;    /* bindump alloc() upper bound ptr */
     HashTable apc_bd_alloc_list; /* bindump alloc() ptr list */
     zend_bool use_request_time;  /* use the SAPI request start time for TTL */
+    zend_bool lazy_functions;        /* enable/disable lazy function loading */
+    HashTable *lazy_function_table;  /* lazy function entry table */
+    zend_bool lazy_classes;          /* enable/disable lazy class loading */
+    HashTable *lazy_class_table;     /* lazy class entry table */
 ZEND_END_MODULE_GLOBALS(apc)
 
 /* (the following declaration is defined in php_apc.c) */

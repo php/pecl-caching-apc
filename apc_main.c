@@ -65,21 +65,28 @@ static zend_compile_t* set_compile_hook(zend_compile_t *ptr)
 /* }}} */
 
 /* {{{ install_function */
-static int install_function(apc_function_t fn, apc_context_t* ctxt TSRMLS_DC)
+static int install_function(apc_function_t fn, apc_context_t* ctxt, int lazy TSRMLS_DC)
 {
-    zend_function *func;
     int status;
 
-    func = apc_copy_function_for_execution(fn.function, ctxt);
 
-    status =  zend_hash_add(EG(function_table),
-                      fn.name,
-                      fn.name_len+1,
-                      func,
-                      sizeof(fn.function[0]),
-                      NULL);
-
-    efree(func);
+    if(lazy && fn.name[0] != '\0' && strncmp(fn.name, "__autoload", fn.name_len) != 0) {
+        status = zend_hash_add(APCG(lazy_function_table),
+                              fn.name,
+                              fn.name_len+1,
+                              &fn,
+                              sizeof(apc_function_t),
+                              NULL);
+    } else {
+        zend_function *func = apc_copy_function_for_execution(fn.function, ctxt);
+        status = zend_hash_add(EG(function_table),
+                              fn.name,
+                              fn.name_len+1,
+                              func,
+                              sizeof(fn.function[0]),
+                              NULL);
+        efree(func);
+    }
 
     if (status == FAILURE) {
         /* apc_eprint("Cannot redeclare %s()", fn.name); */
@@ -89,8 +96,31 @@ static int install_function(apc_function_t fn, apc_context_t* ctxt TSRMLS_DC)
 }
 /* }}} */
 
+/* {{{ apc_lookup_function_hook */
+int apc_lookup_function_hook(char *name, int len, zend_function **fe) {
+    apc_function_t *fn;
+    int status = FAILURE;
+    apc_context_t ctxt = {0,};
+
+    ctxt.pool = apc_pool_create(APC_UNPOOL, apc_php_malloc, apc_php_free, apc_sma_protect, apc_sma_unprotect);
+    ctxt.copy = APC_COPY_OUT_OPCODE;
+
+    if(zend_hash_find(APCG(lazy_function_table), name, len+1, (void**)&fn) == SUCCESS) {
+        *fe = apc_copy_function_for_execution(fn->function, &ctxt);
+        status = zend_hash_add(EG(function_table),
+                                  fn->name,
+                                  fn->name_len+1,
+                                  *fe,
+                                  sizeof(zend_function),
+                                  NULL);
+    }
+
+    return status;
+}
+/* }}} */
+
 /* {{{ install_class */
-static int install_class(apc_class_t cl, apc_context_t* ctxt TSRMLS_DC)
+static int install_class(apc_class_t cl, apc_context_t* ctxt, int lazy TSRMLS_DC)
 {
     zend_class_entry* class_entry = cl.class_entry;
     zend_class_entry* parent = NULL;
@@ -109,6 +139,19 @@ static int install_class(apc_class_t cl, apc_context_t* ctxt TSRMLS_DC)
         if(zend_hash_exists(CG(class_table), cl.name, cl.name_len+1)) {
             return SUCCESS;
         }
+    }
+
+    if(lazy && cl.name_len != 0 && cl.name[0] != '\0') {
+        status = zend_hash_add(APCG(lazy_class_table),
+                               cl.name,
+                               cl.name_len+1,
+                               &cl,
+                               sizeof(apc_class_t),
+                               NULL);
+        if(status == FAILURE) {
+            zend_error(E_ERROR, "Cannot redeclare class %s", cl.name);
+        }
+        return status;
     }
 
     /*
@@ -177,6 +220,36 @@ static int install_class(apc_class_t cl, apc_context_t* ctxt TSRMLS_DC)
 }
 /* }}} */
 
+/* {{{ apc_lookup_class_hook */
+int apc_lookup_class_hook(char *name, int len, zend_class_entry ***ce) {
+
+    apc_class_t *cl;
+    apc_context_t ctxt = {0,};
+
+    if(zend_is_compiling(TSRMLS_CC)) { return FAILURE; }
+
+    if(zend_hash_find(APCG(lazy_class_table), name, len+1, (void**)&cl) == FAILURE) {
+        return FAILURE;
+    }
+
+    ctxt.pool = apc_pool_create(APC_UNPOOL, apc_php_malloc, apc_php_free, apc_sma_protect, apc_sma_unprotect);
+    ctxt.copy = APC_COPY_OUT_OPCODE;
+
+    if(install_class(*cl, &ctxt, 0) == FAILURE) {
+        apc_wprint("apc_lookup_class_hook: could not install %s", name);
+        return FAILURE;
+    }
+
+    if(zend_hash_find(EG(class_table), name, len+1, (void**)ce) == FAILURE) {
+        apc_wprint("apc_lookup_class_hook: known error trying to fetch class %s", name);
+        return FAILURE;
+    }
+
+    return SUCCESS;
+
+}
+/* }}} */
+
 /* {{{ uninstall_class */
 static int uninstall_class(apc_class_t cl TSRMLS_DC)
 {
@@ -189,6 +262,59 @@ static int uninstall_class(apc_class_t cl TSRMLS_DC)
         apc_eprint("Cannot delete class %s", cl.name);
     }
     return status;
+}
+/* }}} */
+
+/* {{{ copy_function_name (taken from zend_builtin_functions.c to ensure future compatibility with APC) */
+static int copy_function_name(apc_function_t *pf, int num_args, va_list args, zend_hash_key *hash_key)
+{
+    zval *internal_ar = va_arg(args, zval *),
+         *user_ar     = va_arg(args, zval *);
+    zend_function *func = pf->function;
+
+    if (hash_key->nKeyLength == 0 || hash_key->arKey[0] == 0) {
+        return 0;
+    }
+
+    if (func->type == ZEND_INTERNAL_FUNCTION) {
+        add_next_index_stringl(internal_ar, hash_key->arKey, hash_key->nKeyLength-1, 1);
+    } else if (func->type == ZEND_USER_FUNCTION) {
+        add_next_index_stringl(user_ar, hash_key->arKey, hash_key->nKeyLength-1, 1);
+    }
+
+    return 0;
+}
+
+/* {{{ copy_class_or_interface_name (taken from zend_builtin_functions.c to ensure future compatibility with APC) */
+static int copy_class_or_interface_name(apc_class_t *cl, int num_args, va_list args, zend_hash_key *hash_key)
+{
+    zval *array = va_arg(args, zval *);
+    zend_uint mask = va_arg(args, zend_uint);
+    zend_uint comply = va_arg(args, zend_uint);
+    zend_uint comply_mask = (comply)? mask:0;
+    zend_class_entry *ce  = cl->class_entry;
+
+    if ((hash_key->nKeyLength==0 || hash_key->arKey[0]!=0)
+        && (comply_mask == (ce->ce_flags & mask))) {
+        add_next_index_stringl(array, ce->name, ce->name_length, 1);
+    }
+    return ZEND_HASH_APPLY_KEEP;
+}
+/* }}} */
+
+/* }}} */
+
+/* {{{ apc_defined_function_hook */
+int apc_defined_function_hook(zval *internal, zval *user) {
+  zend_hash_apply_with_arguments(APCG(lazy_function_table), (apply_func_args_t) copy_function_name, 2, internal, user);
+  return 1;
+}
+/* }}} */
+
+/* {{{ apc_declared_class_hook */
+int apc_declared_class_hook(zval *classes, zend_uint mask, zend_uint comply) {
+  zend_hash_apply_with_arguments(APCG(lazy_class_table), (apply_func_args_t) copy_class_or_interface_name, 3, classes, mask, comply);
+  return 1;
 }
 /* }}} */
 
@@ -216,7 +342,7 @@ static zend_op_array* cached_compile(zend_file_handle* h,
 
     if (cache_entry->data.file.classes) {
         for (i = 0; cache_entry->data.file.classes[i].class_entry != NULL; i++) {
-            if(install_class(cache_entry->data.file.classes[i], ctxt TSRMLS_CC) == FAILURE) {
+            if(install_class(cache_entry->data.file.classes[i], ctxt, APCG(lazy_classes) TSRMLS_CC) == FAILURE) {
                 goto default_compile;
             }
         }
@@ -224,7 +350,7 @@ static zend_op_array* cached_compile(zend_file_handle* h,
 
     if (cache_entry->data.file.functions) {
         for (i = 0; cache_entry->data.file.functions[i].function != NULL; i++) {
-            install_function(cache_entry->data.file.functions[i], ctxt TSRMLS_CC);
+            install_function(cache_entry->data.file.functions[i], ctxt, APCG(lazy_functions) TSRMLS_CC);
         }
     }
 
@@ -646,6 +772,22 @@ int apc_module_init(int module_number TSRMLS_DC)
 
     apc_data_preload(TSRMLS_C);
 
+#ifdef PHP_HAVE_LOOKUP_HOOKS
+    if(APCG(lazy_functions)) {
+        zend_set_lookup_function_hook(apc_lookup_function_hook TSRMLS_CC);
+        zend_set_defined_function_hook(apc_defined_function_hook TSRMLS_CC);
+    }
+    if(APCG(lazy_classes)) {
+        zend_set_lookup_class_hook(apc_lookup_class_hook TSRMLS_CC);
+        zend_set_declared_class_hook(apc_declared_class_hook TSRMLS_CC);
+    }
+#else
+    if(APCG(lazy_functions) || APCG(lazy_classes)) {
+        apc_wprint("Lazy function/class loading not available with this version of PHP, please disable APC lazy loading.");
+        APCG(lazy_functions) = APCG(lazy_classes) = 0;
+    }
+#endif
+
     APCG(initialized) = 1;
     return 0;
 }
@@ -710,6 +852,7 @@ int apc_process_shutdown(TSRMLS_D)
 }
 /* }}} */
 
+
 /* {{{ apc_deactivate */
 static void apc_deactivate(TSRMLS_D)
 {
@@ -740,6 +883,7 @@ static void apc_deactivate(TSRMLS_D)
                 }
 
                 zce = *pzce;
+
                 zend_hash_del(EG(class_table),
                     cache_entry->data.file.classes[i].name,
                     cache_entry->data.file.classes[i].name_len+1);
@@ -759,6 +903,15 @@ int apc_request_init(TSRMLS_D)
     apc_stack_clear(APCG(cache_stack));
     APCG(copied_zvals) = NULL;
 
+    if(APCG(lazy_functions)) {
+        APCG(lazy_function_table) = emalloc(sizeof(HashTable));
+        zend_hash_init(APCG(lazy_function_table), 0, NULL, NULL, 0);
+    }
+    if(APCG(lazy_classes)) {
+        APCG(lazy_class_table) = emalloc(sizeof(HashTable));
+        zend_hash_init(APCG(lazy_class_table), 0, NULL, NULL, 0);
+    }
+
 #ifdef APC_FILEHITS
     ALLOC_INIT_ZVAL(APCG(filehits));
     array_init(APCG(filehits));
@@ -769,6 +922,16 @@ int apc_request_init(TSRMLS_D)
 
 int apc_request_shutdown(TSRMLS_D)
 {
+
+    if(APCG(lazy_class_table)) {
+        zend_hash_destroy(APCG(lazy_class_table));
+        efree(APCG(lazy_class_table));
+    }
+    if(APCG(lazy_function_table)) {
+        zend_hash_destroy(APCG(lazy_function_table));
+        efree(APCG(lazy_function_table));
+    }
+
     apc_deactivate(TSRMLS_C);
 
 #ifdef APC_FILEHITS

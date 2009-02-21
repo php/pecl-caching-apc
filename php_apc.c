@@ -102,6 +102,8 @@ static void php_apc_init_globals(zend_apc_globals* apc_globals TSRMLS_DC)
     apc_globals->coredump_unmap = 0;
     apc_globals->preload_path = NULL;
     apc_globals->use_request_time = 1;
+    apc_globals->lazy_class_table = NULL;
+    apc_globals->lazy_function_table = NULL;
 }
 
 static void php_apc_shutdown_globals(zend_apc_globals* apc_globals TSRMLS_DC)
@@ -208,6 +210,8 @@ STD_PHP_INI_BOOLEAN("apc.coredump_unmap", "0", PHP_INI_SYSTEM, OnUpdateBool, cor
 STD_PHP_INI_ENTRY("apc.preload_path", (char*)NULL,              PHP_INI_SYSTEM, OnUpdateString,       preload_path,  zend_apc_globals, apc_globals)
 STD_PHP_INI_BOOLEAN("apc.file_md5", "0", PHP_INI_SYSTEM, OnUpdateBool, file_md5,  zend_apc_globals, apc_globals)
 STD_PHP_INI_BOOLEAN("apc.use_request_time", "1", PHP_INI_ALL, OnUpdateBool, use_request_time,  zend_apc_globals, apc_globals)
+STD_PHP_INI_BOOLEAN("apc.lazy_functions", "0", PHP_INI_SYSTEM, OnUpdateBool, lazy_functions, zend_apc_globals, apc_globals)
+STD_PHP_INI_BOOLEAN("apc.lazy_classes", "0", PHP_INI_SYSTEM, OnUpdateBool, lazy_classes, zend_apc_globals, apc_globals)
 PHP_INI_END()
 
 /* }}} */
