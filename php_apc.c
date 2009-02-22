@@ -1214,6 +1214,7 @@ PHP_FUNCTION(apc_compile_file) {
                 EG(in_execution) = 1;
                 CG(unclean_shutdown) = 0;
                 op_arrays[i] = NULL;
+                cache_entries[i] = NULL;
                 add_assoc_long(return_value, Z_STRVAL_PP(hentry), -1);  /* -1: compilation error */
                 apc_wprint("Error compiling %s in apc_compile_file.", file_handle.filename);
             } zend_end_try();

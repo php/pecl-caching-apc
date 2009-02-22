@@ -428,8 +428,10 @@ int *apc_cache_insert_mult(apc_cache_t* cache, apc_cache_key_t* keys, apc_cache_
     rval = emalloc(sizeof(int) * num_entries);
     CACHE_LOCK(cache);
     for (i=0; i < num_entries; i++) {
-        ctxt->pool = values[i]->pool;
-        rval[i] = _apc_cache_insert(cache, keys[i], values[i], ctxt, t);
+        if (values[i]) {
+            ctxt->pool = values[i]->pool;
+            rval[i] = _apc_cache_insert(cache, keys[i], values[i], ctxt, t);
+        }
     }
     CACHE_UNLOCK(cache);
     return rval;
