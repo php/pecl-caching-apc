@@ -901,7 +901,6 @@ static void apc_deactivate(TSRMLS_D)
 int apc_request_init(TSRMLS_D)
 {
     apc_stack_clear(APCG(cache_stack));
-    APCG(copied_zvals) = NULL;
 
     if(APCG(lazy_functions)) {
         APCG(lazy_function_table) = emalloc(sizeof(HashTable));

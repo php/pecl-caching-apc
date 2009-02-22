@@ -250,8 +250,8 @@ static zval* my_copy_zval(zval* dst, const zval* src, apc_context_t* ctxt)
 
     memcpy(dst, src, sizeof(src[0]));
 
-    if(APCG(copied_zvals)) {
-        if(zend_hash_index_find(APCG(copied_zvals), (ulong)src, (void**)&tmp) == SUCCESS) {
+    if(APCG(copied_zvals).nTableSize) {
+        if(zend_hash_index_find(&APCG(copied_zvals), (ulong)src, (void**)&tmp) == SUCCESS) {
             if(Z_ISREF_P((zval*)src)) {
                 Z_SET_ISREF_PP(tmp);
             }
@@ -259,7 +259,7 @@ static zval* my_copy_zval(zval* dst, const zval* src, apc_context_t* ctxt)
             return *tmp;
         }
 
-        zend_hash_index_update(APCG(copied_zvals), (ulong)src, (void**)&dst, sizeof(zval*), NULL);
+        zend_hash_index_update(&APCG(copied_zvals), (ulong)src, (void**)&dst, sizeof(zval*), NULL);
     }
 
 

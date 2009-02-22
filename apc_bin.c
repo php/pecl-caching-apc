@@ -398,11 +398,11 @@ static void apc_swizzle_hashtable(apc_bd_t *bd, zend_llist *ll, HashTable *ht, a
 /* {{{ apc_swizzle_zval */
 static void apc_swizzle_zval(apc_bd_t *bd, zend_llist *ll, zval *zv TSRMLS_DC) {
 
-    if(APCG(copied_zvals)) {
-        if(zend_hash_index_exists(APCG(copied_zvals), (ulong)zv)) {
+    if(APCG(copied_zvals).nTableSize) {
+        if(zend_hash_index_exists(&APCG(copied_zvals), (ulong)zv)) {
           return;
         }
-        zend_hash_index_update(APCG(copied_zvals), (ulong)zv, (void**)&zv, sizeof(zval*), NULL);
+        zend_hash_index_update(&APCG(copied_zvals), (ulong)zv, (void**)&zv, sizeof(zval*), NULL);
     }
 
     switch(zv->type & ~IS_CONSTANT_INDEX) {
@@ -614,7 +614,6 @@ apc_bd_t* apc_bin_dump(HashTable *files, HashTable *user_vars TSRMLS_DC) {
     apc_bd_t *bd;
     zend_llist ll;
     zend_function *efp, *sfp;
-    HashTable *orig_copied_zvals;
     long size=0;
     apc_context_t ctxt;
     void *pool_ptr;
@@ -669,9 +668,7 @@ apc_bd_t* apc_bin_dump(HashTable *files, HashTable *user_vars TSRMLS_DC) {
     bd->entries = apc_bd_alloc_ex(NULL, sizeof(apc_bd_entry_t) * count);
 
     /* User entries */
-    orig_copied_zvals = APCG(copied_zvals);
-    APCG(copied_zvals) = emalloc(sizeof(HashTable));
-    zend_hash_init(APCG(copied_zvals), 0, NULL, NULL, 0);
+    zend_hash_init(&APCG(copied_zvals), 0, NULL, NULL, 0);
     count = 0;
     for(i=0; i < apc_user_cache->num_slots; i++) {
         sp = apc_user_cache->slots[i];
@@ -687,7 +684,7 @@ apc_bd_t* apc_bin_dump(HashTable *files, HashTable *user_vars TSRMLS_DC) {
 
                 /* swizzle pointers */
                 apc_swizzle_ptr(bd, &ll, &bd->entries[count].val.user.info);
-                zend_hash_clean(APCG(copied_zvals));
+                zend_hash_clean(&APCG(copied_zvals));
                 apc_swizzle_zval(bd, &ll, bd->entries[count].val.user.val TSRMLS_CC);
                 apc_swizzle_ptr(bd, &ll, &bd->entries[count].val.user.val);
 
@@ -695,9 +692,8 @@ apc_bd_t* apc_bin_dump(HashTable *files, HashTable *user_vars TSRMLS_DC) {
             }
         }
     }
-    zend_hash_destroy(APCG(copied_zvals));
-    efree(APCG(copied_zvals));
-    APCG(copied_zvals) = orig_copied_zvals;
+    zend_hash_destroy(&APCG(copied_zvals));
+    APCG(copied_zvals).nTableSize=0;
 
     /* File entries */
     for(i=0; i < apc_cache->num_slots; i++) {

@@ -907,21 +907,18 @@ apc_cache_entry_t* apc_cache_make_file_entry(const char* filename,
 /* {{{ apc_cache_store_zval */
 zval* apc_cache_store_zval(zval* dst, const zval* src, apc_context_t* ctxt)
 {
-    /* Maintain a list of zvals we've copied to properly handle recursive structures */
-    HashTable *old;
     TSRMLS_FETCH();
-    old = APCG(copied_zvals);
-    APCG(copied_zvals) = emalloc(sizeof(HashTable));
-    zend_hash_init(APCG(copied_zvals), 0, NULL, NULL, 0);
 
-    dst = apc_copy_zval(dst, src, ctxt);
-
-    if(APCG(copied_zvals)) {
-        zend_hash_destroy(APCG(copied_zvals));
-        efree(APCG(copied_zvals));
+    if (Z_TYPE_P(src) == IS_ARRAY) {
+        /* Maintain a list of zvals we've copied to properly handle recursive structures */
+        zend_hash_init(&APCG(copied_zvals), 0, NULL, NULL, 0);
+        dst = apc_copy_zval(dst, src, ctxt);
+        zend_hash_destroy(&APCG(copied_zvals));
+        APCG(copied_zvals).nTableSize=0;
+    } else {
+        dst = apc_copy_zval(dst, src, ctxt);
     }
 
-    APCG(copied_zvals) = old;
 
     return dst;
 }
@@ -930,22 +927,18 @@ zval* apc_cache_store_zval(zval* dst, const zval* src, apc_context_t* ctxt)
 /* {{{ apc_cache_fetch_zval */
 zval* apc_cache_fetch_zval(zval* dst, const zval* src, apc_context_t* ctxt)
 {
-    /* Maintain a list of zvals we've copied to properly handle recursive structures */
-    HashTable *old;
     TSRMLS_FETCH();
 
-    old = APCG(copied_zvals);
-    APCG(copied_zvals) = emalloc(sizeof(HashTable));
-    zend_hash_init(APCG(copied_zvals), 0, NULL, NULL, 0);
-
-    dst = apc_copy_zval(dst, src, ctxt);
-
-    if(APCG(copied_zvals)) {
-        zend_hash_destroy(APCG(copied_zvals));
-        efree(APCG(copied_zvals));
+    if (Z_TYPE_P(src) == IS_ARRAY) {
+        /* Maintain a list of zvals we've copied to properly handle recursive structures */
+        zend_hash_init(&APCG(copied_zvals), 0, NULL, NULL, 0);
+        dst = apc_copy_zval(dst, src, ctxt);
+        zend_hash_destroy(&APCG(copied_zvals));
+        APCG(copied_zvals).nTableSize=0;
+    } else {
+        dst = apc_copy_zval(dst, src, ctxt);
     }
 
-    APCG(copied_zvals) = old;
 
     return dst;
 }

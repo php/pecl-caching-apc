@@ -96,7 +96,7 @@ ZEND_BEGIN_MODULE_GLOBALS(apc)
     long rfc1867_ttl;             /* TTL for rfc1867 entries */
     apc_rfc1867_data rfc1867_data;/* Per-request data */
 #endif
-    HashTable *copied_zvals;     /* my_copy recursion detection list */
+    HashTable copied_zvals;      /* my_copy recursion detection list */
     zend_bool force_file_update; /* force files to be updated during apc_compile_file */
     char canon_path[MAXPATHLEN]; /* canonical path for key data */
 #if APC_FILEHITS

@@ -97,7 +97,7 @@ static void php_apc_init_globals(zend_apc_globals* apc_globals TSRMLS_DC)
     apc_globals->rfc1867 = 0;
     memset(&(apc_globals->rfc1867_data), 0, sizeof(apc_rfc1867_data));
 #endif
-    apc_globals->copied_zvals = NULL;
+    memset(&apc_globals->copied_zvals, 0, sizeof(HashTable));
     apc_globals->force_file_update = 0;
     apc_globals->coredump_unmap = 0;
     apc_globals->preload_path = NULL;
