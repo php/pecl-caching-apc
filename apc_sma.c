@@ -451,7 +451,7 @@ void* apc_sma_malloc_ex(size_t n, size_t fragment, size_t* allocated)
 
     off = sma_allocate(SMA_HDR(sma_lastseg), n, fragment, allocated);
 
-    if(off == -1) { 
+    if(off == -1 && APCG(current_cache)) { 
         /* retry failed allocation after we expunge */
         UNLOCK(SMA_LCK(sma_lastseg));
         APCG(current_cache)->expunge_cb(APCG(current_cache), n);
@@ -476,7 +476,7 @@ void* apc_sma_malloc_ex(size_t n, size_t fragment, size_t* allocated)
         }
         LOCK(SMA_LCK(i));
         off = sma_allocate(SMA_HDR(i), n, fragment, allocated);
-        if(off == -1) { 
+        if(off == -1 && APCG(current_cache)) { 
             /* retry failed allocation after we expunge */
             UNLOCK(SMA_LCK(i));
             APCG(current_cache)->expunge_cb(APCG(current_cache), n);
