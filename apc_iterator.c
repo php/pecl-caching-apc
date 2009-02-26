@@ -75,12 +75,12 @@ static apc_iterator_item_t* apc_iterator_item_ctor(apc_iterator_t *iterator, slo
         }
     }
     if (APC_ITER_DEVICE & iterator->format) {
-        if(slot->value->type == APC_CACHE_ENTRY_FILE) {
+        if(slot->key.type == APC_CACHE_KEY_FILE) {
             add_assoc_long(item->value, "device", slot->key.data.file.device);
         }
     }
     if (APC_ITER_INODE & iterator->format) {
-        if(slot->value->type == APC_CACHE_ENTRY_FILE) {
+        if(slot->key.type == APC_CACHE_KEY_FILE) {
             add_assoc_long(item->value, "inode", slot->key.data.file.inode);
         }
     }
@@ -129,7 +129,9 @@ static apc_iterator_item_t* apc_iterator_item_ctor(apc_iterator_t *iterator, slo
         add_assoc_long(item->value, "mem_size", slot->value->mem_size);
     }
     if (APC_ITER_TTL & iterator->format) {
-        add_assoc_long(item->value, "ttl", slot->value->data.user.ttl);
+        if(slot->value->type == APC_CACHE_ENTRY_USER) {
+            add_assoc_long(item->value, "ttl", slot->value->data.user.ttl);
+        }
     }
 
     return item;
