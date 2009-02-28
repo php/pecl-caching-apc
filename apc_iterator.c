@@ -212,18 +212,39 @@ static zend_object_value apc_iterator_create(zend_class_entry *ce TSRMLS_DC) {
 /* {{{ apc_iterator_search_match
  *       Verify if the key matches oru search parameters
  */
-static int apc_iterator_search_match(apc_iterator_t *iterator, char *key, int key_len) {
+static int apc_iterator_search_match(apc_iterator_t *iterator, slot_t **slot) {
+    char *key;
+    int key_len;
+    char *fname_key = NULL;
+    int fname_key_len;
+    int rval = 1;
+
+    if ((*slot)->key.type == APC_CACHE_KEY_FILE) {
+        key = estrdup((*slot)->value->data.file.filename);
+        key_len = strlen(key);
+        fname_key_len = spprintf(&fname_key, 0, "%ld %ld", (*slot)->key.data.file.device, (*slot)->key.data.file.inode);
+    } else if ((*slot)->key.type == APC_CACHE_KEY_USER) {
+        key = (char*)(*slot)->key.data.user.identifier;
+        key_len = (*slot)->key.data.user.identifier_len;
+    } else if ((*slot)->key.type == APC_CACHE_KEY_FPFILE) {
+        key = (char*)(*slot)->key.data.fpfile.fullpath;
+        key_len = (*slot)->key.data.fpfile.fullpath_len;
+    }
+
 #ifdef ITERATOR_PCRE
     if (iterator->regex) {
-        return (pcre_exec(iterator->re, NULL, key, strlen(key), 0, 0, NULL, 0) >= 0);
+        rval = (pcre_exec(iterator->re, NULL, key, strlen(key), 0, 0, NULL, 0) >= 0);
     }
 #endif
             
     if (iterator->search_hash) {
-        return zend_hash_exists(iterator->search_hash, key, key_len+1);
+        rval = zend_hash_exists(iterator->search_hash, key, key_len+1);
+        if (!rval && fname_key) {
+            rval = zend_hash_exists(iterator->search_hash, fname_key, fname_key_len+1);
+        }
     }
 
-    return 1; /* we didn't have any search criteria */
+    return rval;
 }
 /* }}} */
 
@@ -231,8 +252,6 @@ static int apc_iterator_search_match(apc_iterator_t *iterator, char *key, int ke
 static int apc_iterator_fetch_active(apc_iterator_t *iterator) {
     int count=0;
     slot_t **slot;
-    char *key;
-    int key_len;
     apc_iterator_item_t *item;
 
     while (apc_stack_size(iterator->stack) > 0) {
@@ -243,17 +262,7 @@ static int apc_iterator_fetch_active(apc_iterator_t *iterator) {
     while(count <= iterator->chunk_size && iterator->slot_idx < iterator->cache->num_slots) {
         slot = &iterator->cache->slots[iterator->slot_idx];
         while(*slot) {
-            if ((*slot)->key.type == APC_CACHE_KEY_FILE) {
-                key = estrdup((*slot)->value->data.file.filename);
-                key_len = strlen(key);
-            } else if ((*slot)->key.type == APC_CACHE_KEY_USER) {
-                key = (char*)(*slot)->key.data.user.identifier;
-                key_len = (*slot)->key.data.user.identifier_len;
-            } else if ((*slot)->key.type == APC_CACHE_KEY_FPFILE) {
-                key = (char*)(*slot)->key.data.fpfile.fullpath;
-                key_len = (*slot)->key.data.fpfile.fullpath_len;
-            }
-            if (apc_iterator_search_match(iterator, key, key_len)) {
+            if (apc_iterator_search_match(iterator, slot)) {
                 count++;
                 item = apc_iterator_item_ctor(iterator, slot);
                 if (item) {
@@ -274,8 +283,6 @@ static int apc_iterator_fetch_active(apc_iterator_t *iterator) {
 static int apc_iterator_fetch_deleted(apc_iterator_t *iterator) {
     int count=0;
     slot_t **slot;
-    char *key;
-    int key_len;
     apc_iterator_item_t *item;
 
     CACHE_LOCK(iterator->cache);
@@ -286,17 +293,7 @@ static int apc_iterator_fetch_deleted(apc_iterator_t *iterator) {
     }
     count = 0;
     while ((*slot) && count < iterator->chunk_size) {
-        if ((*slot)->key.type == APC_CACHE_KEY_FILE) {
-            key = estrdup((*slot)->value->data.file.filename);
-            key_len = strlen(key);
-        } else if ((*slot)->key.type == APC_CACHE_KEY_USER) {
-            key = (char*)(*slot)->key.data.user.identifier;
-            key_len = (*slot)->key.data.user.identifier_len;
-        } else if ((*slot)->key.type == APC_CACHE_KEY_FPFILE) {
-            key = (char*)(*slot)->key.data.fpfile.fullpath;
-            key_len = (*slot)->key.data.fpfile.fullpath_len;
-        }
-        if (apc_iterator_search_match(iterator, key, key_len)) {
+        if (apc_iterator_search_match(iterator, slot)) {
             count++;
             item = apc_iterator_item_ctor(iterator, slot);
             if (item) {
@@ -316,24 +313,12 @@ static int apc_iterator_fetch_deleted(apc_iterator_t *iterator) {
 static void apc_iterator_totals(apc_iterator_t *iterator) {
     slot_t **slot;
     int i;
-    char *key;
-    int key_len;
 
     CACHE_LOCK(iterator->cache);
     for (i=0; i < iterator->cache->num_slots; i++) {
         slot = &iterator->cache->slots[i];
         while((*slot)) {
-            if ((*slot)->key.type == APC_CACHE_KEY_FILE) {
-                key = estrdup((*slot)->value->data.file.filename);
-                key_len = strlen(key);
-            } else if ((*slot)->key.type == APC_CACHE_KEY_USER) {
-                key = (char*)(*slot)->key.data.user.identifier;
-                key_len = (*slot)->key.data.user.identifier_len;
-            } else if ((*slot)->key.type == APC_CACHE_KEY_FPFILE) {
-                key = (char*)(*slot)->key.data.fpfile.fullpath;
-                key_len = (*slot)->key.data.fpfile.fullpath_len;
-            }
-            if (apc_iterator_search_match(iterator, key, key_len)) {
+            if (apc_iterator_search_match(iterator, slot)) {
                 iterator->size += (*slot)->value->mem_size;
                 iterator->hits += (*slot)->num_hits;
                 iterator->count++;
