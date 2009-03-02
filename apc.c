@@ -36,8 +36,13 @@
 #include "php.h"
 
 #if HAVE_PCRE || HAVE_BUNDLED_PCRE
-#include "ext/pcre/php_pcre.h"
-#include "ext/standard/php_smart_str.h"
+/*  Deal with problem present until php-5.2.2 where php_pcre.h was not installed correctly */
+#   if !HAVE_BUNDLED_PCRE && PHP_MAJOR_VERSION == 5 && (PHP_MINOR_VERSION < 2 || (PHP_MINOR_VERSION == 2 && PHP_RELEASE_VERSION < 2))
+#       include "php_pcre.h"
+#   else
+#       include "ext/pcre/php_pcre.h"
+#   endif
+#   include "ext/standard/php_smart_str.h"
 #endif
 
 #define NELEMS(a) (sizeof(a)/sizeof((a)[0]))
