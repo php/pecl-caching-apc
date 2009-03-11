@@ -392,23 +392,23 @@ default_compile:
 /* }}} */
 
 /* {{{ apc_compile_cache_entry  */
-zend_bool apc_compile_cache_entry(apc_cache_key_t key, zend_file_handle* h, int type, time_t t, zend_op_array** op_array_pp, apc_cache_entry_t** cache_entry_pp TSRMLS_DC) {
+zend_bool apc_compile_cache_entry(apc_cache_key_t key, zend_file_handle* h, int type, time_t t, zend_op_array** op_array, apc_cache_entry_t** cache_entry TSRMLS_DC) {
     int num_functions, num_classes;
     apc_function_t* alloc_functions;
     zend_op_array* alloc_op_array;
     apc_class_t* alloc_classes;
     char *path;
-    zend_op_array* op_array;
-    apc_cache_entry_t* cache_entry;
     apc_context_t ctxt;
 
     /* remember how many functions and classes existed before compilation */
     num_functions = zend_hash_num_elements(CG(function_table));
     num_classes   = zend_hash_num_elements(CG(class_table));
 
-    /* compile the file using the default compile function */
-    op_array = old_compile_file(h, type TSRMLS_CC);
-    if (op_array == NULL) {
+    /* compile the file using the default compile function,  *
+     * we set *op_array here so we return opcodes during     *
+     * a failure.  We should not return prior to this line.  */
+    *op_array = old_compile_file(h, type TSRMLS_CC);
+    if (*op_array == NULL) {
         return FAILURE;
     }
 
@@ -448,14 +448,14 @@ zend_bool apc_compile_cache_entry(apc_cache_key_t key, zend_file_handle* h, int 
         }
     }
 
-    if(!(alloc_op_array = apc_copy_op_array(NULL, op_array, &ctxt TSRMLS_CC))) {
+    if(!(alloc_op_array = apc_copy_op_array(NULL, *op_array, &ctxt TSRMLS_CC))) {
         goto freepool;
     }
 
     if(!(alloc_functions = apc_copy_new_functions(num_functions, &ctxt TSRMLS_CC))) {
         goto freepool;
     }
-    if(!(alloc_classes = apc_copy_new_classes(op_array, num_classes, &ctxt TSRMLS_CC))) {
+    if(!(alloc_classes = apc_copy_new_classes(*op_array, num_classes, &ctxt TSRMLS_CC))) {
         goto freepool;
     }
 
@@ -466,12 +466,9 @@ zend_bool apc_compile_cache_entry(apc_cache_key_t key, zend_file_handle* h, int 
     fprintf(stderr,"2. h->opened_path=[%s]  h->filename=[%s]\n", h->opened_path?h->opened_path:"null",h->filename);
 #endif
 
-    if(!(cache_entry = apc_cache_make_file_entry(path, alloc_op_array, alloc_functions, alloc_classes, &ctxt))) {
+    if(!(*cache_entry = apc_cache_make_file_entry(path, alloc_op_array, alloc_functions, alloc_classes, &ctxt))) {
         goto freepool;
     }
-
-    *op_array_pp = op_array;
-    *cache_entry_pp = cache_entry;
 
     return SUCCESS;
 
