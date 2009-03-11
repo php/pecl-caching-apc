@@ -1109,6 +1109,7 @@ PHP_FUNCTION(apc_compile_file) {
     zend_bool atomic=1;
     apc_context_t ctxt = {0,};
     zend_execute_data *orig_current_execute_data;
+    int atomic_fail;
 
     if(!APCG(enabled)) RETURN_FALSE;
 
@@ -1239,6 +1240,9 @@ PHP_FUNCTION(apc_compile_file) {
         ctxt.force_update = 1;
         if (count == i || !atomic) {
             rval = apc_cache_insert_mult(apc_cache, keys, cache_entries, &ctxt, t, i);
+            atomic_fail = 0;
+        } else {
+            atomic_fail = 1;
         }
 
         zend_hash_internal_pointer_reset_ex(Z_ARRVAL_P(file), &hpos);
@@ -1254,7 +1258,7 @@ PHP_FUNCTION(apc_compile_file) {
                 destroy_op_array(op_arrays[c] TSRMLS_CC);
                 efree(op_arrays[c]);
             }
-            if (cache_entries[c]) {
+            if (atomic_fail && cache_entries[c]) {
                 apc_pool_destroy(cache_entries[c]->pool);
             }
             if (keys[c].type == APC_CACHE_KEY_FPFILE) {
