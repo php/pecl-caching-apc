@@ -33,6 +33,7 @@
 #       include "ext/pcre/php_pcre.h"
 #   endif
 #   include "ext/standard/php_smart_str.h"
+#   define ITERATOR_PCRE 1
 #endif
 
 
