@@ -131,6 +131,17 @@ AC_ARG_ENABLE(memory-protection,
 ])
 
 
+orig_flags=$CFLAGS
+CFLAGS="$INCLUDES $EXTRA_INCLUDES"
+AC_CHECK_DECL(zend_set_lookup_function_hook, 
+[
+	AC_DEFINE(APC_HAVE_LOOKUP_HOOKS, 1, [ ])
+], , [
+	#include "main/php.h"
+	#include "Zend/zend_API.h"
+])
+CFLAGS=$orig_flags
+
 
 if test "$PHP_APC" != "no"; then
   test "$PHP_APC_MMAP" != "no" && AC_DEFINE(APC_MMAP, 1, [ ])
