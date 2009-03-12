@@ -97,7 +97,7 @@ static int install_function(apc_function_t fn, apc_context_t* ctxt, int lazy TSR
 /* }}} */
 
 /* {{{ apc_lookup_function_hook */
-int apc_lookup_function_hook(char *name, int len, zend_function **fe) {
+int apc_lookup_function_hook(char *name, int len, ulong hash, zend_function **fe) {
     apc_function_t *fn;
     int status = FAILURE;
     apc_context_t ctxt = {0,};
@@ -105,7 +105,7 @@ int apc_lookup_function_hook(char *name, int len, zend_function **fe) {
     ctxt.pool = apc_pool_create(APC_UNPOOL, apc_php_malloc, apc_php_free, apc_sma_protect, apc_sma_unprotect);
     ctxt.copy = APC_COPY_OUT_OPCODE;
 
-    if(zend_hash_find(APCG(lazy_function_table), name, len+1, (void**)&fn) == SUCCESS) {
+    if(zend_hash_quick_find(APCG(lazy_function_table), name, len, hash, (void**)&fn) == SUCCESS) {
         *fe = apc_copy_function_for_execution(fn->function, &ctxt);
         status = zend_hash_add(EG(function_table),
                                   fn->name,
@@ -221,14 +221,14 @@ static int install_class(apc_class_t cl, apc_context_t* ctxt, int lazy TSRMLS_DC
 /* }}} */
 
 /* {{{ apc_lookup_class_hook */
-int apc_lookup_class_hook(char *name, int len, zend_class_entry ***ce) {
+int apc_lookup_class_hook(char *name, int len, ulong hash, zend_class_entry ***ce) {
 
     apc_class_t *cl;
     apc_context_t ctxt = {0,};
 
     if(zend_is_compiling(TSRMLS_CC)) { return FAILURE; }
 
-    if(zend_hash_find(APCG(lazy_class_table), name, len+1, (void**)&cl) == FAILURE) {
+    if(zend_hash_quick_find(APCG(lazy_class_table), name, len, hash, (void**)&cl) == FAILURE) {
         return FAILURE;
     }
 
@@ -240,7 +240,7 @@ int apc_lookup_class_hook(char *name, int len, zend_class_entry ***ce) {
         return FAILURE;
     }
 
-    if(zend_hash_find(EG(class_table), name, len+1, (void**)ce) == FAILURE) {
+    if(zend_hash_quick_find(EG(class_table), name, len, hash, (void**)ce) == FAILURE) {
         apc_wprint("apc_lookup_class_hook: known error trying to fetch class %s", name);
         return FAILURE;
     }
