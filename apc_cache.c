@@ -651,6 +651,7 @@ int _apc_cache_user_update(apc_cache_t* cache, char *strkey, int keylen, apc_cac
     while (*slot) {
         if (!memcmp((*slot)->key.data.user.identifier, strkey, keylen)) {
             retval = updater(cache, (*slot)->value, data);
+            (*slot)->key.mtime = apc_time();
             CACHE_UNLOCK(cache);
             return retval;
         }
