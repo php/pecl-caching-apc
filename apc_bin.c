@@ -33,10 +33,7 @@
 #include "ext/standard/md5.h"
 #include "ext/standard/crc32.h"
 
-extern apc_cache_t* apc_cache;
-extern apc_cache_t* apc_user_cache;
-
-extern int _apc_store(char *strkey, int strkey_len, const zval *val, const unsigned int ttl, const int exclusive TSRMLS_DC); /* this is hacky */
+extern int _apc_store(apc_cache_t *cache, char *strkey, int strkey_len, const zval *val, const unsigned int ttl, const int exclusive TSRMLS_DC);  /* this is hacky */
 
 #define APC_BINDUMP_DEBUG 0
 
@@ -605,7 +602,7 @@ static inline void apc_bin_fixup_class_entry(zend_class_entry *ce) {
 /* }}} */
 
 /* {{{ apc_bin_dump */
-apc_bd_t* apc_bin_dump(HashTable *files, HashTable *user_vars TSRMLS_DC) {
+apc_bd_t* apc_bin_dump(apc_cache_t *cache, HashTable *filter TSRMLS_DC) {
 
     int i, fcount;
     slot_t *sp;
@@ -622,25 +619,20 @@ apc_bd_t* apc_bin_dump(HashTable *files, HashTable *user_vars TSRMLS_DC) {
     zend_hash_init(&APCG(apc_bd_alloc_list), 0, NULL, NULL, 0);
 
     /* flip the hash for faster filter checking */
-    files = apc_flip_hash(files);
-    user_vars = apc_flip_hash(user_vars);
+    filter = apc_flip_hash(filter);
 
     /* get size and entry counts */
-    for(i=0; i < apc_user_cache->num_slots; i++) {
-        sp = apc_user_cache->slots[i];
+    for(i=0; i < cache->num_slots; i++) {
+        sp = cache->slots[i];
         for(; sp != NULL; sp = sp->next) {
-            if(apc_bin_checkfilter(user_vars, sp->key.data.user.identifier, sp->key.data.user.identifier_len+1)) {
-                size += sizeof(apc_bd_entry_t*) + sizeof(apc_bd_entry_t);
-                size += sp->value->mem_size - (sizeof(apc_cache_entry_t) - sizeof(apc_cache_entry_value_t));
-                count++;
-            }
-        }
-    }
-    for(i=0; i < apc_cache->num_slots; i++) {
-        sp = apc_cache->slots[i];
-        for(; sp != NULL; sp = sp->next) {
-            if(sp->key.type == APC_CACHE_KEY_FPFILE) {
-                if(apc_bin_checkfilter(files, sp->key.data.fpfile.fullpath, sp->key.data.fpfile.fullpath_len+1)) {
+            if(sp->key.type == APC_CACHE_KEY_USER) {
+                if(apc_bin_checkfilter(filter, sp->key.data.user.identifier, sp->key.data.user.identifier_len+1)) {
+                    size += sizeof(apc_bd_entry_t*) + sizeof(apc_bd_entry_t);
+                    size += sp->value->mem_size - (sizeof(apc_cache_entry_t) - sizeof(apc_cache_entry_value_t));
+                    count++;
+                }
+            } else if(sp->key.type == APC_CACHE_KEY_FPFILE) {
+                if(apc_bin_checkfilter(filter, sp->key.data.fpfile.fullpath, sp->key.data.fpfile.fullpath_len+1)) {
                     size += sizeof(apc_bd_entry_t*) + sizeof(apc_bd_entry_t);
                     size += sp->value->mem_size - (sizeof(apc_cache_entry_t) - sizeof(apc_cache_entry_value_t));
                     count++;
@@ -670,36 +662,29 @@ apc_bd_t* apc_bin_dump(HashTable *files, HashTable *user_vars TSRMLS_DC) {
     /* User entries */
     zend_hash_init(&APCG(copied_zvals), 0, NULL, NULL, 0);
     count = 0;
-    for(i=0; i < apc_user_cache->num_slots; i++) {
-        sp = apc_user_cache->slots[i];
+    for(i=0; i < cache->num_slots; i++) {
+        sp = cache->slots[i];
         for(; sp != NULL; sp = sp->next) {
-            if(apc_bin_checkfilter(user_vars, sp->key.data.user.identifier, sp->key.data.user.identifier_len+1)) {
-                ep = &bd->entries[count];
-                ep->type = sp->value->type;
-                ep->val.user.info = apc_bd_alloc(sp->value->data.user.info_len+1);
-                memcpy(ep->val.user.info, sp->value->data.user.info, sp->value->data.user.info_len+1);
-                ep->val.user.info_len = sp->value->data.user.info_len;
-                ep->val.user.val = apc_copy_zval(NULL, sp->value->data.user.val, &ctxt);
-                ep->val.user.ttl = sp->value->data.user.ttl;
+            if (sp->key.type == APC_CACHE_KEY_USER) {
+                if(apc_bin_checkfilter(filter, sp->key.data.user.identifier, sp->key.data.user.identifier_len+1)) {
+                    ep = &bd->entries[count];
+                    ep->type = sp->value->type;
+                    ep->val.user.info = apc_bd_alloc(sp->value->data.user.info_len+1);
+                    memcpy(ep->val.user.info, sp->value->data.user.info, sp->value->data.user.info_len+1);
+                    ep->val.user.info_len = sp->value->data.user.info_len;
+                    ep->val.user.val = apc_copy_zval(NULL, sp->value->data.user.val, &ctxt);
+                    ep->val.user.ttl = sp->value->data.user.ttl;
 
-                /* swizzle pointers */
-                apc_swizzle_ptr(bd, &ll, &bd->entries[count].val.user.info);
-                zend_hash_clean(&APCG(copied_zvals));
-                apc_swizzle_zval(bd, &ll, bd->entries[count].val.user.val TSRMLS_CC);
-                apc_swizzle_ptr(bd, &ll, &bd->entries[count].val.user.val);
+                    /* swizzle pointers */
+                    apc_swizzle_ptr(bd, &ll, &bd->entries[count].val.user.info);
+                    zend_hash_clean(&APCG(copied_zvals));
+                    apc_swizzle_zval(bd, &ll, bd->entries[count].val.user.val TSRMLS_CC);
+                    apc_swizzle_ptr(bd, &ll, &bd->entries[count].val.user.val);
 
-                count++;
-            }
-        }
-    }
-    zend_hash_destroy(&APCG(copied_zvals));
-    APCG(copied_zvals).nTableSize=0;
-
-    /* File entries */
-    for(i=0; i < apc_cache->num_slots; i++) {
-        for(sp=apc_cache->slots[i]; sp != NULL; sp = sp->next) {
-            if(sp->key.type == APC_CACHE_KEY_FPFILE) {
-                if(apc_bin_checkfilter(files, sp->key.data.fpfile.fullpath, sp->key.data.fpfile.fullpath_len+1)) {
+                    count++;
+                }
+            } else if(sp->key.type == APC_CACHE_KEY_FPFILE) {
+                if(apc_bin_checkfilter(filter, sp->key.data.fpfile.fullpath, sp->key.data.fpfile.fullpath_len+1)) {
                     ep = &bd->entries[count];
                     ep->type = sp->key.type;
                     ep->val.file.filename = apc_bd_alloc(strlen(sp->value->data.file.filename)+1);
@@ -764,19 +749,17 @@ apc_bd_t* apc_bin_dump(HashTable *files, HashTable *user_vars TSRMLS_DC) {
             }
         }
     }
+    zend_hash_destroy(&APCG(copied_zvals));
+    APCG(copied_zvals).nTableSize=0;
 
     /* append swizzle pointer list to bd */
     bd = apc_swizzle_bd(bd, &ll TSRMLS_CC);
     zend_llist_destroy(&ll);
     zend_hash_destroy(&APCG(apc_bd_alloc_list));
 
-    if(files) {
-        zend_hash_destroy(files);
-        efree(files);
-    }
-    if(user_vars) {
-        zend_hash_destroy(user_vars);
-        efree(user_vars);
+    if(filter) {
+        zend_hash_destroy(filter);
+        efree(filter);
     }
 
     efree(pool_ptr);
@@ -786,7 +769,7 @@ apc_bd_t* apc_bin_dump(HashTable *files, HashTable *user_vars TSRMLS_DC) {
 
 
 /* {{{ apc_bin_load */
-int apc_bin_load(apc_bd_t *bd, int flags TSRMLS_DC) {
+int apc_bin_load(apc_cache_t *cache, apc_bd_t *bd, int flags TSRMLS_DC) {
 
     apc_bd_entry_t *ep;
     int i, i2, ret;
@@ -822,8 +805,8 @@ int apc_bin_load(apc_bd_t *bd, int flags TSRMLS_DC) {
 
                 HANDLE_BLOCK_INTERRUPTIONS();
 #if NONBLOCKING_LOCK_AVAILABLE
-                if(APCG(write_lock)) {
-                    if(!apc_cache_write_lock(apc_cache)) {
+                if(cache->write_lock) {
+                    if(!apc_cache_write_lock(cache)) {
                         HANDLE_UNBLOCK_INTERRUPTIONS();
                         return -1;
                     }
@@ -893,19 +876,19 @@ int apc_bin_load(apc_bd_t *bd, int flags TSRMLS_DC) {
                     goto failure;
                 }
 
-                if (!apc_cache_make_file_key(&cache_key, ep->val.file.filename, PG(include_path), t TSRMLS_CC)) {
+                if (!apc_cache_make_file_key(cache, &cache_key, ep->val.file.filename, PG(include_path), t TSRMLS_CC)) {
                     goto failure;
                 }
 
-                if ((ret = apc_cache_insert(apc_cache, cache_key, cache_entry, &ctxt, t)) != 1) {
+                if ((ret = apc_cache_insert(cache, cache_key, cache_entry, &ctxt, t)) != 1) {
                     if(ret==-1) {
                         goto failure;
                     }
                 }
 
 #if NONBLOCKING_LOCK_AVAILABLE
-                if(APCG(write_lock)) {
-                    apc_cache_write_unlock(apc_cache);
+                if(cache->write_lock) {
+                    apc_cache_write_unlock(cache);
                 }
 #endif
                 HANDLE_UNBLOCK_INTERRUPTIONS();
@@ -913,7 +896,7 @@ int apc_bin_load(apc_bd_t *bd, int flags TSRMLS_DC) {
                 break;
             case APC_CACHE_KEY_USER:
                 ctxt.copy = APC_COPY_IN_USER;
-                _apc_store(ep->val.user.info, ep->val.user.info_len, ep->val.user.val, ep->val.user.ttl, 0 TSRMLS_CC);
+                _apc_store(cache, ep->val.user.info, ep->val.user.info_len, ep->val.user.val, ep->val.user.ttl, 0 TSRMLS_CC);
                 break;
             default:
                 break;
@@ -926,8 +909,8 @@ failure:
     apc_pool_destroy(ctxt.pool);
     apc_wprint("Unable to allocate memory for apc binary load/dump functionality.");
 #if NONBLOCKING_LOCK_AVAILABLE
-    if(APCG(write_lock)) {
-        apc_cache_write_unlock(apc_cache);
+    if(cache->write_lock) {
+        apc_cache_write_unlock(cache);
     }
 #endif
     HANDLE_UNBLOCK_INTERRUPTIONS();

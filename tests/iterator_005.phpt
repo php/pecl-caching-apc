@@ -11,12 +11,12 @@ apc.file_update_protection=0
 
 $vals = array();
 $vals2 = array();
-$it = new APCIterator('user', '/key[0-9]0/');
+$it = new APCIterator(APC_CACHE_USER, '/key[0-9]0/');
 for($i = 0; $i < 41; $i++) {
   apc_store("key$i", "value$i");
 }
 apc_delete($it);
-$it2 = new APCIterator('user');
+$it2 = new APCIterator(APC_CACHE_USER);
 foreach($it as $key=>$value) {
   $vals[$key] = $value['key'];
 }

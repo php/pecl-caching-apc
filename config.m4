@@ -7,7 +7,7 @@ PHP_ARG_ENABLE(apc, whether to enable APC support,
 
 AC_MSG_CHECKING(Checking whether we should enable cache request file info)
 AC_ARG_ENABLE(apc-filehits,
-[  --enable-apc-filehits   Enable per request file info about files used from the APC cache (ie: apc_cache_info('filehits')) ],
+[  --enable-apc-filehits   Enable per request file info about files used from the APC cache (ie: apc_filehits()) ],
 [
   PHP_APC_FILEHITS=$enableval
 	AC_MSG_RESULT($enableval)
@@ -18,18 +18,6 @@ AC_ARG_ENABLE(apc-filehits,
 ])
 
 
-
-AC_MSG_CHECKING(Checking whether we should use mmap)
-AC_ARG_ENABLE(apc-mmap,
-[  --disable-apc-mmap
-                          Disable mmap support and use IPC shm instead],
-[
-  PHP_APC_MMAP=$enableval
-  AC_MSG_RESULT($enableval)
-], [
-  PHP_APC_MMAP=yes
-  AC_MSG_RESULT(yes)
-])
 
 AC_MSG_CHECKING(Checking whether we should use semaphore locking instead of fcntl)
 AC_ARG_ENABLE(apc-sem,
@@ -49,12 +37,24 @@ AC_ARG_ENABLE(apc-pthreadmutex,
                           Disable pthread mutex locking ],
 [
   PHP_APC_PTHREADMUTEX=$enableval
-  AC_MSG_RESULT($enableval)
 ],
 [
   PHP_APC_PTHREADMUTEX=yes
   AC_MSG_RESULT(yes)
 ])
+
+AC_MSG_CHECKING(Checking whether we should use Least Recently Used list expunging cache entries)
+AC_ARG_ENABLE(apc-lfu,
+[  --enable-apc-lfu
+                          Enable Least Recently Used (LFU) list for expunging cache entries],
+[
+  PHP_APC_LFU=$enableval
+  AC_MSG_RESULT($enableval)
+], [
+  PHP_APC_LFU=no
+  AC_MSG_RESULT(no)
+])
+
 if test "$PHP_APC_PTHREADMUTEX" != "no"; then
 	orig_LIBS="$LIBS"
 	LIBS="$LIBS -lpthread"
@@ -115,6 +115,17 @@ AC_ARG_ENABLE(apc-spinlocks,
 ],
 [
   PHP_APC_SPINLOCKS=no
+])
+
+AC_MSG_CHECKING(Checking whether we should use Least Frequently Used list expunging cache entries)
+AC_ARG_ENABLE(apc-lfu,
+[  --enable-apc-lfu
+                          Enable Least Frequently Used (LFU) list for expunging cache entries],
+[
+  PHP_APC_LFU=$enableval
+  AC_MSG_RESULT($enableval)
+], [
+  PHP_APC_LFU=no
   AC_MSG_RESULT(no)
 ])
 
@@ -160,6 +171,8 @@ if test "$PHP_APC" != "no"; then
 	if test "$PHP_APC_MEMPROTECT" != "no"; then
 		AC_DEFINE(APC_MEMPROTECT, 1, [ shm/mmap memory protection ])
 	fi
+
+	test "$PHP_APC_LFU"  != "no" && AC_DEFINE(APC_LFU, 1, [ ])
 
   AC_CHECK_FUNCS(sigaction)
   AC_CACHE_CHECK(for union semun, php_cv_semun,

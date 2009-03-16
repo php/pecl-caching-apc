@@ -48,8 +48,8 @@ typedef struct _apc_bd_t {
     void ***swizzled_ptrs;
 } apc_bd_t;
 
-apc_bd_t* apc_bin_dump(HashTable *files, HashTable *user_vars TSRMLS_DC);
-int apc_bin_load(apc_bd_t *bd, int flags TSRMLS_DC);
+apc_bd_t* apc_bin_dump(apc_cache_t *cache, HashTable *filter TSRMLS_DC);
+int apc_bin_load(apc_cache_t *cache, apc_bd_t *bd, int flags TSRMLS_DC);
 
 #endif
 

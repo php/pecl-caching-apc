@@ -60,6 +60,7 @@
 
 #include "php.h"
 #include "main/php_streams.h"
+#include "SAPI.h"
 
 /* log levels constants (see my_log) */
 enum { APC_DBG, APC_NOTICE, APC_WARNING, APC_ERROR };
@@ -113,6 +114,71 @@ extern HashTable* apc_flip_hash(HashTable *hash);
 
 #define apc_time() \
     (APCG(use_request_time) ? sapi_get_request_time(TSRMLS_C) : time(0));
+
+/* APC moving window statistics collection */
+
+typedef struct _apc_stats_t {
+    size_t *window;
+    int size;
+    int pos;
+    time_t last;
+    time_t delta;
+} apc_stats_t;
+
+static inline void apc_stats_init(apc_stats_t *stats, int size, time_t delta, apc_malloc_t my_alloc) {
+    time_t now = sapi_get_request_time(TSRMLS_C);
+    stats->pos = 0;
+    stats->size = size;
+    stats->window = my_alloc(sizeof(size_t) * size);
+    memset(stats->window, 0, sizeof(size_t) * size);
+    stats->last = now;
+    stats->delta = delta;
+}
+
+static inline void apc_stats_clear(apc_stats_t *stats) {
+    stats->window[stats->pos] = 0;
+}
+
+static inline void apc_stats_free(apc_stats_t *stats, apc_free_t my_free) {
+   my_free(stats->window);
+}
+
+static inline void apc_stats_update(apc_stats_t *stats, size_t value) {
+    time_t now = sapi_get_request_time(TSRMLS_C);
+    int npos = ((size_t)(now / stats->delta)) % stats->size;
+
+    /* clear out any lag from the last request till now */
+    while (stats->pos != npos) {
+        stats->pos++;
+        if (stats->pos == stats->size) stats->pos=0;
+        stats->window[stats->pos] = 0;
+    }
+    stats->window[npos] += value;
+}
+
+static inline void apc_stats_copy(apc_stats_t *dst, apc_stats_t *src, apc_malloc_t my_alloc) {
+   apc_stats_update(src, 0);
+   memcpy(dst, src, sizeof(apc_stats_t));
+   dst->window = my_alloc(sizeof(size_t) * src->size);
+   memcpy(dst->window, src->window, sizeof(size_t) * src->size);
+}
+
+
+static inline zval* apc_stats_zval(apc_stats_t *stats) {
+    zval *list;
+    int j;
+
+    ALLOC_INIT_ZVAL(list);
+    array_init(list);
+    for (j = stats->pos + 1; j != stats->pos; j++) {
+        if (j == stats->size) {
+            j = -1;
+        } else {
+            add_next_index_long(list, stats->window[j]);
+        }
+    }
+    return list;
+}
 
 #endif
 

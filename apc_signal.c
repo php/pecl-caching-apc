@@ -53,7 +53,16 @@ static void apc_core_unmap(int signo, siginfo_t *siginfo, void *context);
  */
 static void apc_core_unmap(int signo, siginfo_t *siginfo, void *context) 
 {
-    apc_sma_cleanup();
+    apc_segment_t *sma_cur;
+
+    sma_cur = APCG(sma_segments_head);
+    while(sma_cur) {
+        if (sma_cur->unmap) {
+            apc_sma_cleanup(sma_cur);
+        }
+        sma_cur = sma_cur->next;
+    }
+
     apc_rehandle_signal(signo, siginfo, context);
 
 #if !defined(WIN32) && !defined(NETWARE)

@@ -25,6 +25,8 @@
 #include "apc.h"
 #include "apc_stack.h"
 
+#include "zend_exceptions.h"
+
 #if HAVE_PCRE || HAVE_BUNDLED_PCRE
 /*  Deal with problem present until php-5.2.2 where php_pcre.h was not installed correctly */
 #   if !HAVE_BUNDLED_PCRE && PHP_MAJOR_VERSION == 5 && (PHP_MINOR_VERSION < 2 || (PHP_MINOR_VERSION == 2 && PHP_RELEASE_VERSION < 2))
@@ -43,6 +45,10 @@
 
 #define APC_LIST_ACTIVE   0x1
 #define APC_LIST_DELETED  0x2
+#ifdef APC_LFU
+#   define APC_LIST_LFU   3
+#   define APC_LIST_MFU   4
+#endif
 
 #define APC_ITER_TYPE       (1L << 0) 
 #define APC_ITER_KEY        (1L << 1) 
@@ -62,9 +68,6 @@
 
 #define APC_ITER_NONE       (0x00000000L)
 #define APC_ITER_ALL        (0xffffffffL)
-
-typedef void* (*apc_iterator_item_cb_t)(slot_t **slot);
-
 
 /* {{{ apc_iterator_t */
 typedef struct _apc_iterator_t {
@@ -100,7 +103,6 @@ typedef struct _apc_iterator_item_t {
     zval *value;
 } apc_iterator_item_t;
 /* }}} */
-
 
 extern int apc_iterator_init(int module_number TSRMLS_DC);
 extern int apc_iterator_delete(zval *zobj TSRMLS_DC);

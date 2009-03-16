@@ -34,9 +34,9 @@
 #include "apc_lock.h"
 #include "apc_shm.h"
 #include "apc_cache.h"
+#include "apc_mmap.h"
 
 #include <limits.h>
-#include "apc_mmap.h"
 
 #ifdef HAVE_VALGRIND_MEMCHECK_H
 #include <valgrind/memcheck.h>
@@ -44,17 +44,18 @@
 
 enum { DEFAULT_NUMSEG=1, DEFAULT_SEGSIZE=30*1024*1024 };
 
-static int sma_initialized = 0;     /* true if the sma has been initialized */
-static unsigned int sma_numseg;     /* number of shm segments to allow */
-static size_t sma_segsize;          /* size of each shm segment */
-static apc_segment_t* sma_segments; /* array of shm segments */
-static int sma_lastseg = 0;         /* index of MRU segment */
+#define SMA_MAPSIZE 256
 
 typedef struct sma_header_t sma_header_t;
 struct sma_header_t {
     apc_lck_t sma_lock;     /* segment lock, MUST BE ALIGNED for futex locks */
     size_t segsize;         /* size of entire segment */
     size_t avail;           /* bytes available (not necessarily contiguous) */
+    size_t mapratio;        /* ratio of bytes to map index */
+    size_t fragmap[SMA_MAPSIZE];    /* free fragment stats map */
+    size_t num_frags;
+    size_t freemap[SMA_MAPSIZE][2];     /* free avg size stats map [0] = avg, [1] = counter */
+    size_t allocmap[SMA_MAPSIZE][2];    /* alloc avg size stats map [0] = avg, [1] = counter */
 #if ALLOC_DISTRIBUTION
     size_t adist[30];
 #endif
@@ -94,11 +95,11 @@ struct block_t {
 };
 
 /* The macros BLOCKAT and OFFSET are used for convenience throughout this
- * module. Both assume the presence of a variable shmaddr that points to the
+ * module. Both assume the presence of a variable segment->shmaddr that points to the
  * beginning of the shared memory segment in question. */
 
-#define BLOCKAT(offset) ((block_t*)((char *)shmaddr + offset))
-#define OFFSET(block) ((size_t)(((char*)block) - (char*)shmaddr))
+#define BLOCKAT(offset) ((block_t*)((char *)segment->shmaddr + offset))
+#define OFFSET(block) ((size_t)(((char*)block) - (char*)segment->shmaddr))
 
 /* macros for getting the next or previous sequential block */
 #define NEXT_SBLOCK(block) ((block_t*)((char*)block + block->size))
@@ -121,11 +122,11 @@ struct block_t {
 /* }}} */
 
 #if 0
-/* {{{ sma_debug_state(apc_sma_segment_t *segment, int canary_check, int verbose)
+/* {{{ sma_debug_state(apc_segment_t *segment, int canary_check, int verbose)
  *        useful for debuging state of memory blocks and free list, and sanity checking
  */
-static void sma_debug_state(void* shmaddr, int canary_check, int verbose) {
-    sma_header_t *header = (sma_header_t*)shmaddr;
+static void sma_debug_state(apc_segment_t *segment, int canary_check, int verbose) {
+    sma_header_t *header = (sma_header_t*)segment->shmaddr;
     block_t *cur = BLOCKAT(ALIGNWORD(sizeof(sma_header_t)));
     block_t *prv = NULL;
     size_t avail;
@@ -176,10 +177,10 @@ static void sma_debug_state(void* shmaddr, int canary_check, int verbose) {
 /* }}} */
 #endif
 
-/* {{{ sma_allocate: tries to allocate at least size bytes in a segment */
-static size_t sma_allocate(sma_header_t* header, size_t size, size_t fragment, size_t *allocated)
+/* {{{ sma_allocate: tries to allocate size bytes in a segment */
+static size_t sma_allocate(apc_segment_t *segment, size_t size, size_t fragment, size_t *allocated)
 {
-    void* shmaddr;          /* header of shared memory segment */
+    sma_header_t* header;   /* header of shared memory segment */
     block_t* prv;           /* block prior to working block */
     block_t* cur;           /* working block in list */
     block_t* prvnextfit;    /* block before next fit */
@@ -192,8 +193,7 @@ static size_t sma_allocate(sma_header_t* header, size_t size, size_t fragment, s
      * First, insure that the segment contains at least realsize free bytes,
      * even if they are not contiguous.
      */
-    shmaddr = header;
-
+    header = (sma_header_t*) segment->shmaddr;
     if (header->avail < realsize) {
         return -1;
     }
@@ -231,6 +231,15 @@ static size_t sma_allocate(sma_header_t* header, size_t size, size_t fragment, s
         prv->fnext = cur->fnext;
         BLOCKAT(cur->fnext)->fprev = OFFSET(prv);
         NEXT_SBLOCK(cur)->prev_size = 0;  /* block is alloc'd */
+        {
+            int i,j;
+            i = (OFFSET(cur) / header->mapratio) % SMA_MAPSIZE;
+            j = ((OFFSET(cur) + cur->size) / header->mapratio) % SMA_MAPSIZE;
+            for (; i <= j; i++) {
+                header->fragmap[i]--;
+            }
+            header->num_frags--;
+        }
     } else {
         /* nextfit is too big; split it into two smaller blocks */
         block_t* nxt;      /* the new block (chopped part of cur) */
@@ -253,8 +262,18 @@ static size_t sma_allocate(sma_header_t* header, size_t size, size_t fragment, s
 #ifdef __APC_SMA_DEBUG__
         nxt->id = -1;
 #endif
+        {
+            int i,j,k;
+            i = (OFFSET(cur) / header->mapratio) % SMA_MAPSIZE;
+            j = ((OFFSET(cur) + cur->size) / header->mapratio) % SMA_MAPSIZE;
+            k = ((OFFSET(cur) + cur->size +1) / header->mapratio) % SMA_MAPSIZE;
+            if (j+1 == k) {
+                for (; i <= j; i++) {
+                    header->fragmap[i]--;
+                }
+            }
+        }
     }
-
     cur->fnext = 0;
 
     /* update the block header */
@@ -269,18 +288,29 @@ static size_t sma_allocate(sma_header_t* header, size_t size, size_t fragment, s
     fprintf(stderr, "allocate(realsize=%d,size=%d,id=%d)\n", (int)(size), (int)(cur->size), cur->id);
 #endif
 
+    {
+        int i,j;
+        i = (OFFSET(cur) / header->mapratio) % SMA_MAPSIZE;
+        j = ((OFFSET(cur) + cur->size) / header->mapratio) % SMA_MAPSIZE;
+        for (; i <= j; i++) {
+            header->allocmap[i][0] += cur->size;
+            header->allocmap[i][1]++;
+        }
+    }
+
     return OFFSET(cur) + block_size;
 }
 /* }}} */
 
 /* {{{ sma_deallocate: deallocates the block at the given offset */
-static size_t sma_deallocate(void* shmaddr, size_t offset)
+static size_t sma_deallocate(apc_segment_t *segment, size_t offset)
 {
     sma_header_t* header;   /* header of shared memory segment */
     block_t* cur;       /* the new block to insert */
     block_t* prv;       /* the block before cur */
     block_t* nxt;       /* the block after cur */
     size_t size;        /* size of deallocated block */
+    size_t merged=0;
 
     offset -= ALIGNWORD(sizeof(struct block_t));
     assert(offset >= 0);
@@ -289,7 +319,7 @@ static size_t sma_deallocate(void* shmaddr, size_t offset)
     cur = BLOCKAT(offset);
 
     /* update the block header */
-    header = (sma_header_t*) shmaddr;
+    header = (sma_header_t*) segment->shmaddr;
     header->avail += cur->size;
     size = cur->size;
 
@@ -302,12 +332,18 @@ static size_t sma_deallocate(void* shmaddr, size_t offset)
         prv->size +=cur->size;
         RESET_CANARY(cur);
         cur = prv;
+        merged=1;
     }
 
     nxt = NEXT_SBLOCK(cur);
     if (nxt->fnext != 0) {
         assert(NEXT_SBLOCK(NEXT_SBLOCK(cur))->prev_size == nxt->size);
         /* cur and nxt shared an edge, combine them */
+        if (merged) {
+            merged = OFFSET(nxt) + size;
+        } else {
+            merged = 1;
+        }
         BLOCKAT(nxt->fnext)->fprev = nxt->fprev;
         BLOCKAT(nxt->fprev)->fnext = nxt->fnext;
         cur->size += nxt->size;
@@ -327,115 +363,122 @@ static size_t sma_deallocate(void* shmaddr, size_t offset)
     cur->fprev = OFFSET(prv);
     BLOCKAT(cur->fnext)->fprev = OFFSET(cur);
 
+    if (!merged) {
+        int i,j;
+        i = (OFFSET(cur) / header->mapratio) % SMA_MAPSIZE;
+        j = ((OFFSET(cur) + cur->size) / header->mapratio) % SMA_MAPSIZE;
+        for (; i <= j; i++) {
+            header->fragmap[i]++;
+        }
+        header->num_frags++;
+    } else if (merged > 1) {
+        int i,j;
+        i = ((OFFSET(cur) + cur->size +1) / header->mapratio) % SMA_MAPSIZE;
+        j = (merged / header->mapratio) % SMA_MAPSIZE;
+        if (i == j) {
+            header->fragmap[i]--;
+        }
+        header->num_frags--;
+    }
+
+    {
+        int i,j;
+        i = (OFFSET(cur) / header->mapratio) % SMA_MAPSIZE;
+        j = ((OFFSET(cur) + cur->size) / header->mapratio) % SMA_MAPSIZE;
+        for (; i <= j; i++) {
+            header->freemap[i][0] += size;
+            header->freemap[i][1]++;
+        }
+    }
+
     return size;
 }
 /* }}} */
 
 /* {{{ apc_sma_init */
 
-void apc_sma_init(int numseg, size_t segsize, char *mmap_file_mask)
+void apc_sma_init(apc_segment_t *segment, char *mmap_file_mask)
 {
-    int i;
+    sma_header_t*   header;
+    block_t*    block;
 
-    if (sma_initialized) {
+    assert(segment);
+
+    if (segment->initialized) {
         return;
     }
-    sma_initialized = 1;
+    segment->initialized = 1;
 
-#if APC_MMAP
-    /*
-     * I don't think multiple anonymous mmaps makes any sense
-     * so force sma_numseg to 1 in this case
-     */
-    if(!mmap_file_mask || 
-       (mmap_file_mask && !strlen(mmap_file_mask)) ||
-       (mmap_file_mask && !strcmp(mmap_file_mask, "/dev/zero"))) {
-        sma_numseg = 1;
-    } else {
-        sma_numseg = numseg > 0 ? numseg : DEFAULT_NUMSEG;
+    if (!segment->size) {
+        segment->size = DEFAULT_SEGSIZE;
     }
-#else
-    sma_numseg = numseg > 0 ? numseg : DEFAULT_NUMSEG;
-#endif
 
-    sma_segsize = segsize > 0 ? segsize : DEFAULT_SEGSIZE;
+    if (apc_mmap(segment, mmap_file_mask) == FAILURE) {
+        apc_eprint("Failed to mmap segment.");
+    }
+    if (mmap_file_mask) {
+        memcpy(&mmap_file_mask[strlen(mmap_file_mask)-6], "XXXXXX", 6);
+    }
 
-    sma_segments = (apc_segment_t*) apc_emalloc(sma_numseg*sizeof(apc_segment_t));
-
-    for (i = 0; i < sma_numseg; i++) {
-        sma_header_t*   header;
-        block_t*    block;
-        void*       shmaddr;
-
-#if APC_MMAP
-        sma_segments[i] = apc_mmap(mmap_file_mask, sma_segsize);
-        if(sma_numseg != 1) memcpy(&mmap_file_mask[strlen(mmap_file_mask)-6], "XXXXXX", 6);
-#else
-        sma_segments[i] = apc_shm_attach(apc_shm_create(NULL, i, sma_segsize));
-#endif
-        
-        sma_segments[i].size = sma_segsize;
-
-        shmaddr = sma_segments[i].shmaddr;
-
-        header = (sma_header_t*) shmaddr;
-        apc_lck_create(NULL, 0, 1, header->sma_lock);
-        header->segsize = sma_segsize;
-        header->avail = sma_segsize - ALIGNWORD(sizeof(sma_header_t)) - ALIGNWORD(sizeof(block_t)) - ALIGNWORD(sizeof(block_t));
+    header = (sma_header_t*) segment->shmaddr;
+    apc_lck_create(NULL, 0, 1, header->sma_lock);
+    header->segsize = segment->size;
+    header->avail = segment->size - ALIGNWORD(sizeof(sma_header_t)) - ALIGNWORD(sizeof(block_t)) - ALIGNWORD(sizeof(block_t));
+    {
+        int i;
+        for (i=0; i < SMA_MAPSIZE; i++) header->fragmap[i] = 1;
+        for (i=0; i < SMA_MAPSIZE; i++) header->freemap[i][0] = header->segsize;
+        for (i=0; i < SMA_MAPSIZE; i++) header->freemap[i][1] = 1;
+        for (i=0; i < SMA_MAPSIZE; i++) header->allocmap[i][0] = 0;
+        for (i=0; i < SMA_MAPSIZE; i++) header->allocmap[i][1] = 1;
+        header->mapratio = header->segsize / SMA_MAPSIZE;
+        header->num_frags = 1;
+    }
 #if ALLOC_DISTRIBUTION
-        {
-           int j;
-           for(j=0; j<30; j++) header->adist[j] = 0;
-        }
-#endif
-        block = BLOCKAT(ALIGNWORD(sizeof(sma_header_t)));
-        block->size = 0;
-        block->fnext = ALIGNWORD(sizeof(sma_header_t)) + ALIGNWORD(sizeof(block_t));
-        block->fprev = 0;
-        block->prev_size = 0;
-        SET_CANARY(block);
-#ifdef __APC_SMA_DEBUG__
-        block->id = -1;
-#endif
-        block = BLOCKAT(block->fnext);
-        block->size = header->avail - ALIGNWORD(sizeof(block_t));
-        block->fnext = OFFSET(block) + block->size;
-        block->fprev = ALIGNWORD(sizeof(sma_header_t));
-        block->prev_size = 0;
-        SET_CANARY(block);
-#ifdef __APC_SMA_DEBUG__
-        block->id = -1;
-#endif
-        block = BLOCKAT(block->fnext);
-        block->size = 0;
-        block->fnext = 0;
-        block->fprev =  ALIGNWORD(sizeof(sma_header_t)) + ALIGNWORD(sizeof(block_t));
-        block->prev_size = header->avail - ALIGNWORD(sizeof(block_t));
-        SET_CANARY(block);
-#ifdef __APC_SMA_DEBUG__
-        block->id = -1;
-#endif
+    {
+       int j;
+       for(j=0; j<30; j++) header->adist[j] = 0;
     }
+#endif
+
+    block = BLOCKAT(ALIGNWORD(sizeof(sma_header_t)));
+    block->size = 0;
+    block->fnext = ALIGNWORD(sizeof(sma_header_t)) + ALIGNWORD(sizeof(block_t));
+    block->fprev = 0;
+    block->prev_size = 0;
+    SET_CANARY(block);
+#ifdef __APC_SMA_DEBUG__
+    block->id = -1;
+#endif
+    block = BLOCKAT(block->fnext);
+    block->size = header->avail - ALIGNWORD(sizeof(block_t));
+    block->fnext = OFFSET(block) + block->size;
+    block->fprev = ALIGNWORD(sizeof(sma_header_t));
+    block->prev_size = 0;
+    SET_CANARY(block);
+#ifdef __APC_SMA_DEBUG__
+    block->id = -1;
+#endif
+    block = BLOCKAT(block->fnext);
+    block->size = 0;
+    block->fnext = 0;
+    block->fprev =  ALIGNWORD(sizeof(sma_header_t)) + ALIGNWORD(sizeof(block_t));
+    block->prev_size = header->avail - ALIGNWORD(sizeof(block_t));
+    SET_CANARY(block);
+#ifdef __APC_SMA_DEBUG__
+    block->id = -1;
+#endif
 }
 /* }}} */
 
 /* {{{ apc_sma_cleanup */
-void apc_sma_cleanup()
+void apc_sma_cleanup(apc_segment_t *segment)
 {
-    int i;
+    assert(segment->initialized);
 
-    assert(sma_initialized);
-
-    for (i = 0; i < sma_numseg; i++) {
-        apc_lck_destroy(SMA_LCK(i));
-#if APC_MMAP
-        apc_unmap(&sma_segments[i]);
-#else
-        apc_shm_detach(&sma_segments[i]);
-#endif
-    }
-    sma_initialized = 0;
-    apc_efree(sma_segments);
+    apc_lck_destroy(((sma_header_t*)segment->shmaddr)->sma_lock);
+    apc_unmap(segment);
+    segment->initialized = 0;
 }
 /* }}} */
 
@@ -443,57 +486,31 @@ void apc_sma_cleanup()
 void* apc_sma_malloc_ex(size_t n, size_t fragment, size_t* allocated)
 {
     size_t off;
-    int i;
+    apc_segment_t *segment = APCG(current_cache)->sma_segment;
+    assert(APCG(current_cache));
 
     TSRMLS_FETCH();
-    assert(sma_initialized);
-    LOCK(SMA_LCK(sma_lastseg));
+    assert(segment->initialized);
+    LOCK(((sma_header_t*)segment->shmaddr)->sma_lock);
 
-    off = sma_allocate(SMA_HDR(sma_lastseg), n, fragment, allocated);
-
-    if(off == -1 && APCG(current_cache)) { 
+    off = sma_allocate(segment, n, fragment, allocated);
+    if(off == -1) { 
         /* retry failed allocation after we expunge */
-        UNLOCK(SMA_LCK(sma_lastseg));
+        UNLOCK(((sma_header_t*)segment->shmaddr)->sma_lock);
         APCG(current_cache)->expunge_cb(APCG(current_cache), n);
-        LOCK(SMA_LCK(sma_lastseg));
-        off = sma_allocate(SMA_HDR(sma_lastseg), n, fragment, allocated);
+        LOCK(((sma_header_t*)segment->shmaddr)->sma_lock);
+        off = sma_allocate(segment, n, fragment, allocated);
     }
 
     if (off != -1) {
-        void* p = (void *)(SMA_ADDR(sma_lastseg) + off);
-        UNLOCK(SMA_LCK(sma_lastseg));
+        void* p = (void *)(((char *)(segment->shmaddr)) + off);
+        UNLOCK(((sma_header_t*)segment->shmaddr)->sma_lock);
 #ifdef VALGRIND_MALLOCLIKE_BLOCK
         VALGRIND_MALLOCLIKE_BLOCK(p, n, 0, 0);
 #endif
         return p;
     }
-    
-    UNLOCK(SMA_LCK(sma_lastseg));
-
-    for (i = 0; i < sma_numseg; i++) {
-        if (i == sma_lastseg) {
-            continue;
-        }
-        LOCK(SMA_LCK(i));
-        off = sma_allocate(SMA_HDR(i), n, fragment, allocated);
-        if(off == -1 && APCG(current_cache)) { 
-            /* retry failed allocation after we expunge */
-            UNLOCK(SMA_LCK(i));
-            APCG(current_cache)->expunge_cb(APCG(current_cache), n);
-            LOCK(SMA_LCK(i));
-            off = sma_allocate(SMA_HDR(i), n, fragment, allocated);
-        }
-        if (off != -1) {
-            void* p = (void *)(SMA_ADDR(i) + off);
-            UNLOCK(SMA_LCK(i));
-            sma_lastseg = i;
-#ifdef VALGRIND_MALLOCLIKE_BLOCK
-            VALGRIND_MALLOCLIKE_BLOCK(p, n, 0, 0);
-#endif
-            return p;
-        }
-        UNLOCK(SMA_LCK(i));
-    }
+    UNLOCK(((sma_header_t*)segment->shmaddr)->sma_lock);
 
     return NULL;
 }
@@ -517,48 +534,32 @@ void* apc_sma_realloc(void *p, size_t n)
 }
 /* }}} */
 
-/* {{{ apc_sma_strdup */
-char* apc_sma_strdup(const char* s)
-{
-    void* q;
-    int len;
-
-    if(!s) return NULL;
-
-    len = strlen(s)+1;
-    q = apc_sma_malloc(len);
-    if(!q) return NULL;
-    memcpy(q, s, len);
-    return q;
-}
-/* }}} */
-
 /* {{{ apc_sma_free */
 void apc_sma_free(void* p)
 {
-    int i;
     size_t offset;
     size_t d_size;
+    apc_segment_t *segment = APCG(current_cache)->sma_segment;
+    TSRMLS_FETCH();
+    assert(APCG(current_cache));
 
     if (p == NULL) {
         return;
     }
 
-    assert(sma_initialized);
+    assert(segment->initialized);
 
-    
-    for (i = 0; i < sma_numseg; i++) {
-        offset = (size_t)((char *)p - SMA_ADDR(i));
-        if (p >= (void*)SMA_ADDR(i) && offset < sma_segsize) {
-            LOCK(SMA_LCK(i));
-            d_size = sma_deallocate(SMA_HDR(i), offset);
-            UNLOCK(SMA_LCK(i));
+    offset = (size_t)((char *)p - (char *)(segment->shmaddr));
+    if (p >= segment->shmaddr && offset < segment->size) {
+        LOCK(((sma_header_t*)segment->shmaddr)->sma_lock);
+        d_size = sma_deallocate(segment, offset);
+        UNLOCK(((sma_header_t*)segment->shmaddr)->sma_lock);
 #ifdef VALGRIND_FREELIKE_BLOCK
-            VALGRIND_FREELIKE_BLOCK(p, 0);
+        VALGRIND_FREELIKE_BLOCK(p, 0);
 #endif
-            return;
-        }
+        return;
     }
+    UNLOCK(((sma_header_t*)segment->shmaddr)->sma_lock);
 
     apc_eprint("apc_sma_free: could not locate address %p", p);
 }
@@ -632,57 +633,70 @@ void* apc_sma_unprotect(void *p) { return p; }
 /* {{{ apc_sma_info */
 apc_sma_info_t* apc_sma_info(zend_bool limited)
 {
+    int i;
     apc_sma_info_t* info;
     apc_sma_link_t** link;
-    int i;
-    char* shmaddr;
-    block_t* prv;
-
-    if (!sma_initialized) {
-        return NULL;
-    }
+	block_t* prv;
+    apc_segment_t *segment;
 
     info = (apc_sma_info_t*) apc_emalloc(sizeof(apc_sma_info_t));
-    info->num_seg = sma_numseg;
-    info->seg_size = sma_segsize - (ALIGNWORD(sizeof(sma_header_t)) + ALIGNWORD(sizeof(block_t)) + ALIGNWORD(sizeof(block_t)));
-
-    info->list = apc_emalloc(info->num_seg * sizeof(apc_sma_link_t*));
-    for (i = 0; i < sma_numseg; i++) {
-        info->list[i] = NULL;
-    }
-
-    if(limited) return info;
+    segment = APCG(sma_segments_head);
+    for(i=0; segment; i++) { segment = segment->next; }
+    info->num_seg = i;
+    info->seginfo = apc_emalloc(info->num_seg * sizeof(apc_sma_seginfo_t));
 
     /* For each segment */
-    for (i = 0; i < sma_numseg; i++) {
-        RDLOCK(SMA_LCK(i));
-        shmaddr = SMA_ADDR(i);
-        prv = BLOCKAT(ALIGNWORD(sizeof(sma_header_t)));
+    segment = APCG(sma_segments_head);
+    for(i=0; i < info->num_seg; i++) {
+        if (!segment || !segment->initialized) {
+            return NULL;
+        }
 
-        link = &info->list[i];
+        info->seginfo[i].size = segment->size - (ALIGNWORD(sizeof(sma_header_t)) + ALIGNWORD(sizeof(block_t) + ALIGNWORD(sizeof(block_t))));
+        info->seginfo[i].avail = ((sma_header_t*)segment->shmaddr)->avail;
+        info->seginfo[i].list = NULL;
+        info->seginfo[i].unmap = segment->unmap;
+        memcpy(info->seginfo[i].fragmap, ((sma_header_t*)segment->shmaddr)->fragmap, sizeof(size_t) * SMA_MAPSIZE);
+        info->seginfo[i].num_frags = ((sma_header_t*)segment->shmaddr)->num_frags;
+        memcpy(info->seginfo[i].freemap, ((sma_header_t*)segment->shmaddr)->freemap, sizeof(size_t) * 2 * SMA_MAPSIZE);
+        memcpy(info->seginfo[i].allocmap, ((sma_header_t*)segment->shmaddr)->allocmap, sizeof(size_t) * 2 * SMA_MAPSIZE);
 
-        /* For each block in this segment */
-        while (BLOCKAT(prv->fnext)->fnext != 0) {
-            block_t* cur = BLOCKAT(prv->fnext);
+        if (!limited) {
+            link = &info->seginfo[i].list;
+
+            RDLOCK(((sma_header_t*)segment->shmaddr)->sma_lock);
+            prv = BLOCKAT(ALIGNWORD(sizeof(sma_header_t)));
+
+            /* For each block in this segment */
+            while (prv->fnext != 0) {
+                block_t* cur = BLOCKAT(prv->fnext);
 #ifdef __APC_SMA_DEBUG__
-            CHECK_CANARY(cur);
+                CHECK_CANARY(cur);
 #endif
 
-            *link = apc_emalloc(sizeof(apc_sma_link_t));
-            (*link)->size = cur->size;
-            (*link)->offset = prv->fnext;
-            (*link)->next = NULL;
-            link = &(*link)->next;
+                *link = apc_emalloc(sizeof(apc_sma_link_t));
+                (*link)->size = cur->size;
+                (*link)->offset = prv->fnext;
+                (*link)->next = NULL;
+                link = &(*link)->next;
 
-            prv = cur;
+                prv = cur;
+
+#if ALLOC_DISTRIBUTION
+                sma_header_t* header = (sma_header_t*) segment->shmaddr;
+                memcpy(info->seginfo[i].adist, header->adist, sizeof(size_t) * 30);
+#endif
+
+            }
 
 #if ALLOC_DISTRIBUTION
             sma_header_t* header = (sma_header_t*) segment->shmaddr;
             memcpy(info->seginfo[i].adist, header->adist, sizeof(size_t) * 30);
 #endif
 
+            UNLOCK(((sma_header_t*)segment->shmaddr)->sma_lock);
         }
-        UNLOCK(SMA_LCK(i));
+        segment = segment->next;
     }
 
     return info;
@@ -695,38 +709,17 @@ void apc_sma_free_info(apc_sma_info_t* info)
     int i;
 
     for (i = 0; i < info->num_seg; i++) {
-        apc_sma_link_t* p = info->list[i];
+        apc_sma_link_t* p = info->seginfo[i].list;
         while (p) {
             apc_sma_link_t* q = p;
             p = p->next;
             apc_efree(q);
         }
     }
-    apc_efree(info->list);
+    apc_efree(info->seginfo);
     apc_efree(info);
 }
 /* }}} */
-
-/* {{{ apc_sma_get_avail_mem */
-size_t apc_sma_get_avail_mem()
-{
-    size_t avail_mem = 0;
-    int i;
-
-    for (i = 0; i < sma_numseg; i++) {
-        sma_header_t* header = SMA_HDR(i);
-        avail_mem += header->avail;
-    }
-    return avail_mem;
-}
-/* }}} */
-
-#if ALLOC_DISTRIBUTION
-size_t *apc_sma_get_alloc_distribution(void) {
-    sma_header_t* header = (sma_header_t*) segment->sma_shmaddr;
-    return header->adist;
-}
-#endif
 
 /*
  * Local variables:

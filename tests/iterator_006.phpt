@@ -34,7 +34,7 @@ $formats = array(
 $it_array = array();
 
 foreach ($formats as $idx => $format) {
-  $it_array[$idx] = new APCIterator('user', NULL, $format);
+  $it_array[$idx] = new APCIterator(APC_CACHE_USER, NULL, $format);
 }
 
 for($i = 0; $i < 11; $i++) {

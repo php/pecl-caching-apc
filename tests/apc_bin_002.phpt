@@ -5,9 +5,9 @@ APC: bindump file cache part 1
 --INI--
 apc.enabled=1
 apc.enable_cli=1
-apc.stat=0
-apc.cache_by_default=1
-apc.filters=
+apc.file.stat=0
+apc.file.cache_by_default=1
+apc.file.filters="apc_bin_002.php"
 report_memleaks = Off
 --FILE--
 <?php
@@ -18,12 +18,12 @@ $filename2=dirname(__FILE__).'/apc_bin_002-2.inc';
 
 copy($filename1, $filename);
 apc_compile_file($filename);
-$data = apc_bin_dump(NULL, NULL);
+$data = apc_bin_dump(APC_CACHE_FILE, NULL);
 
-apc_clear_cache();
+apc_clear_cache(APC_CACHE_FILE);
 
 copy($filename2, $filename);
-apc_bin_load($data, APC_BIN_VERIFY_MD5 | APC_BIN_VERIFY_CRC32);
+apc_bin_load($data, APC_BIN_VERIFY_MD5 | APC_BIN_VERIFY_CRC32, APC_CACHE_FILE);
 include($filename);
 
 unlink($filename);

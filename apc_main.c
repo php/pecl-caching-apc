@@ -331,18 +331,19 @@ static int compare_file_handles(void* a, void* b)
 
 /* {{{ cached_compile */
 static zend_op_array* cached_compile(zend_file_handle* h,
-                                        int type,
-                                        apc_context_t* ctxt TSRMLS_DC)
+                                     int type,
+                                     apc_cache_t *cache,
+                                     apc_context_t* ctxt TSRMLS_DC)
 {
     apc_cache_entry_t* cache_entry;
     int i, ii;
 
-    cache_entry = (apc_cache_entry_t*) apc_stack_top(APCG(cache_stack));
+    cache_entry = (apc_cache_entry_t*) apc_stack_top(cache->cache_stack);
     assert(cache_entry != NULL);
 
     if (cache_entry->data.file.classes) {
         for (i = 0; cache_entry->data.file.classes[i].class_entry != NULL; i++) {
-            if(install_class(cache_entry->data.file.classes[i], ctxt, APCG(lazy_classes) TSRMLS_CC) == FAILURE) {
+            if(install_class(cache_entry->data.file.classes[i], ctxt, cache->lazy_classes TSRMLS_CC) == FAILURE) {
                 goto default_compile;
             }
         }
@@ -350,7 +351,7 @@ static zend_op_array* cached_compile(zend_file_handle* h,
 
     if (cache_entry->data.file.functions) {
         for (i = 0; cache_entry->data.file.functions[i].function != NULL; i++) {
-            install_function(cache_entry->data.file.functions[i], ctxt, APCG(lazy_functions) TSRMLS_CC);
+            install_function(cache_entry->data.file.functions[i], ctxt, cache->lazy_functions TSRMLS_CC);
         }
     }
 
@@ -371,9 +372,9 @@ default_compile:
         }
     }
 
-    apc_stack_pop(APCG(cache_stack)); /* pop out cache_entry */
+    apc_stack_pop(cache->cache_stack); /* pop out cache_entry */
 
-    apc_cache_release(apc_cache, cache_entry);
+    apc_cache_release(cache, cache_entry);
 
     /* cannot free up cache data yet, it maybe in use */
 
@@ -392,7 +393,7 @@ default_compile:
 /* }}} */
 
 /* {{{ apc_compile_cache_entry  */
-zend_bool apc_compile_cache_entry(apc_cache_key_t key, zend_file_handle* h, int type, time_t t, zend_op_array** op_array, apc_cache_entry_t** cache_entry TSRMLS_DC) {
+zend_bool apc_compile_cache_entry(apc_cache_t *cache, apc_cache_key_t *key, zend_file_handle* h, int type, time_t t, zend_op_array** op_array, apc_cache_entry_t** cache_entry TSRMLS_DC) {
     int num_functions, num_classes;
     apc_function_t* alloc_functions;
     zend_op_array* alloc_op_array;
@@ -420,7 +421,7 @@ zend_bool apc_compile_cache_entry(apc_cache_key_t key, zend_file_handle* h, int 
     }
     ctxt.copy = APC_COPY_IN_OPCODE;
 
-    if(APCG(file_md5)) {
+    if(cache->md5) {
         int n;
         unsigned char buf[1024];
         PHP_MD5_CTX context;
@@ -438,7 +439,7 @@ zend_bool apc_compile_cache_entry(apc_cache_key_t key, zend_file_handle* h, int 
             while((n = php_stream_read(stream, (char*)buf, sizeof(buf))) > 0) {
                 PHP_MD5Update(&context, buf, n);
             }
-            PHP_MD5Final(key.md5, &context);
+            PHP_MD5Final(key->md5, &context);
             php_stream_close(stream);
             if(n<0) {
                 apc_wprint("Error while reading '%s' for md5 generation.", filename);
@@ -486,28 +487,38 @@ freepool:
 static zend_op_array* my_compile_file(zend_file_handle* h,
                                                int type TSRMLS_DC)
 {
+    apc_cache_t *cache;
     apc_cache_key_t key;
     apc_cache_entry_t* cache_entry;
     zend_op_array* op_array = NULL;
     time_t t;
     apc_context_t ctxt = {0,};
     int bailout=0;
+    int i;
 
-    if (!APCG(enabled) || apc_cache_busy(apc_cache)) {
+    if (!APCG(enabled)) {
         return old_compile_file(h, type TSRMLS_CC);
     }
 
     /* check our regular expression filters */
-    if (APCG(filters) && apc_compiled_filters && h->opened_path) {
-        int ret = apc_regex_match_array(apc_compiled_filters, h->opened_path);
-
-        if(ret == APC_NEGATIVE_MATCH || (ret != APC_POSITIVE_MATCH && !APCG(cache_by_default))) {
-            return old_compile_file(h, type TSRMLS_CC);
+    for(i=0; i < APCG(num_file_caches); i++) {
+        cache = &APCG(file_caches)[i];
+        if (cache->type == APC_CACHE_FILE) {
+            if (cache->filters && cache->compiled_filters && h->opened_path) {
+                int ret = apc_regex_match_array(cache->compiled_filters, h->opened_path);
+                if(ret == APC_POSITIVE_MATCH || (ret == APC_NEGATIVE_MATCH && !cache->cache_by_default)) {
+                    if(apc_cache_busy(cache)) {
+                        return old_compile_file(h, type TSRMLS_CC);
+                    }
+                    break;
+                }
+            } else if(!cache->cache_by_default) {
+                return old_compile_file(h, type TSRMLS_CC);
+            }
         }
-    } else if(!APCG(cache_by_default)) {
-        return old_compile_file(h, type TSRMLS_CC);
     }
-    APCG(current_cache) = apc_cache;
+    if (i > APCG(num_file_caches)) return old_compile_file(h, type TSRMLS_CC);
+    APCG(current_cache) = cache;
 
 
     t = apc_time();
@@ -517,14 +528,13 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
 #endif
 
     /* try to create a cache key; if we fail, give up on caching */
-    if (!apc_cache_make_file_key(&key, h->filename, PG(include_path), t TSRMLS_CC)) {
+    if (!apc_cache_make_file_key(cache, &key, h->filename, PG(include_path), t TSRMLS_CC)) {
         return old_compile_file(h, type TSRMLS_CC);
     }
 
-
     if(!APCG(force_file_update)) {
         /* search for the file in the cache */
-        cache_entry = apc_cache_find(apc_cache, key, t);
+        cache_entry = apc_cache_find(cache, key, t);
         ctxt.force_update = 0;
     } else {
         cache_entry = NULL;
@@ -549,8 +559,8 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
 
         zend_llist_add_element(&CG(open_files), h); /* We leak fds without this hack */
 
-        apc_stack_push(APCG(cache_stack), cache_entry);
-        op_array = cached_compile(h, type, &ctxt TSRMLS_CC);
+        apc_stack_push(cache->cache_stack, cache_entry);
+        op_array = cached_compile(h, type, cache, &ctxt TSRMLS_CC);
         if(op_array) {
 #ifdef APC_FILEHITS
             /* If the file comes from the cache, add it to the global request file list */
@@ -589,8 +599,8 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
     HANDLE_BLOCK_INTERRUPTIONS();
 
 #if NONBLOCKING_LOCK_AVAILABLE
-    if(APCG(write_lock)) {
-        if(!apc_cache_write_lock(apc_cache)) {
+    if(cache->write_lock) {
+        if(!apc_cache_write_lock(cache)) {
             HANDLE_UNBLOCK_INTERRUPTIONS();
             return old_compile_file(h, type TSRMLS_CC);
         }
@@ -598,10 +608,10 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
 #endif
 
     zend_try {
-        if (apc_compile_cache_entry(key, h, type, t, &op_array, &cache_entry TSRMLS_CC) == SUCCESS) {
+        if (apc_compile_cache_entry(cache, &key, h, type, t, &op_array, &cache_entry TSRMLS_CC) == SUCCESS) {
             ctxt.pool = cache_entry->pool;
             ctxt.copy = APC_COPY_IN_OPCODE;
-            if (apc_cache_insert(apc_cache, key, cache_entry, &ctxt, t) != 1) {
+            if (apc_cache_insert(cache, key, cache_entry, &ctxt, t) != 1) {
                 apc_pool_destroy(ctxt.pool);
                 ctxt.pool = NULL;
             }
@@ -613,8 +623,8 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
     APCG(current_cache) = NULL;
 
 #if NONBLOCKING_LOCK_AVAILABLE
-    if(APCG(write_lock)) {
-        apc_cache_write_unlock(apc_cache);
+    if(cache->write_lock) {
+        apc_cache_write_unlock(cache);
     }
 #endif
     HANDLE_UNBLOCK_INTERRUPTIONS();
@@ -748,40 +758,64 @@ void apc_data_preload(TSRMLS_D)
 
 int apc_module_init(int module_number TSRMLS_DC)
 {
-    /* apc initialization */
-#if APC_MMAP
-    apc_sma_init(APCG(shm_segments), APCG(shm_size)*1024*1024, APCG(mmap_file_mask));
-#else
-    apc_sma_init(APCG(shm_segments), APCG(shm_size)*1024*1024, NULL);
+    apc_cache_t *cache;
+    int i;
+    apc_segment_t *seg;
+#ifdef PHP_HAVE_LOOKUP_HOOKS
+    int lazy_functions = 0;
+    int lazy_classes = 0;
 #endif
-    apc_cache = apc_cache_create(APCG(num_files_hint), APCG(gc_ttl), APCG(ttl));
-    apc_user_cache = apc_cache_create(APCG(user_entries_hint), APCG(gc_ttl), APCG(user_ttl));
 
-    apc_compiled_filters = apc_regex_compile_array(APCG(filters) TSRMLS_CC);
+    /* apc initialization */
+    seg = APCG(sma_segments_head);
+    while (seg) {
+        apc_sma_init(seg, APCG(mmap_file_mask));
+        seg = seg->next;
+    }
+    for(i=0; i < APCG(num_file_caches); i++) {
+        cache = &(APCG(file_caches)[i]);
+        APCG(current_cache) = cache;  /* for sma_alloc calls */
+        apc_cache_create(cache);
+        APCG(current_cache) = NULL;
+        zend_register_long_constant(cache->const_name, strlen(cache->const_name)+1, (APC_CACHE_FILE | (i+1)), (CONST_CS | CONST_PERSISTENT), module_number TSRMLS_CC);
+#ifdef PHP_HAVE_LOOKUP_HOOKS
+        if (cache->lazy_functions) { lazy_functions = 1; }
+        if (cache->lazy_classes) { lazy_classes = 1; }
+#else
+        if(cache->lazy_functions || cache->lazy_classes) {
+            apc_wprint("Lazy function/class loading not available with this version of PHP, please disable APC lazy loading.");
+            cache->lazy_functions = cache->lazy_classes = 0;
+        }
+#endif
+    }
+    for(i=0; i < APCG(num_user_caches); i++) {
+        cache = &(APCG(user_caches)[i]);
+        APCG(current_cache) = cache;  /* for sma_alloc calls */
+        apc_cache_create(cache);
+        APCG(current_cache) = NULL;
+        zend_register_long_constant(cache->const_name, strlen(cache->const_name)+1, (APC_CACHE_USER | (i+1)), (CONST_CS | CONST_PERSISTENT), module_number TSRMLS_CC);
+    }
 
     /* override compilation */
     old_compile_file = zend_compile_file;
     zend_compile_file = my_compile_file;
     REGISTER_LONG_CONSTANT("\000apc_magic", (long)&set_compile_hook, CONST_PERSISTENT | CONST_CS);
     REGISTER_LONG_CONSTANT("\000apc_compile_file", (long)&my_compile_file, CONST_PERSISTENT | CONST_CS);
+    REGISTER_LONG_CONSTANT("APC_CACHE_FILE", APC_CACHE_FILE, CONST_PERSISTENT | CONST_CS);
+    REGISTER_LONG_CONSTANT("APC_CACHE_USER", APC_CACHE_USER, CONST_PERSISTENT | CONST_CS);
 
     apc_pool_init();
 
     apc_data_preload(TSRMLS_C);
 
 #ifdef APC_HAVE_LOOKUP_HOOKS
-    if(APCG(lazy_functions)) {
+    if(lazy_functions) {
         zend_set_lookup_function_hook(apc_lookup_function_hook TSRMLS_CC);
         zend_set_defined_function_hook(apc_defined_function_hook TSRMLS_CC);
     }
-    if(APCG(lazy_classes)) {
+    if(lazy_classes) {
         zend_set_lookup_class_hook(apc_lookup_class_hook TSRMLS_CC);
         zend_set_declared_class_hook(apc_declared_class_hook TSRMLS_CC);
-    }
-#else
-    if(APCG(lazy_functions) || APCG(lazy_classes)) {
-        apc_wprint("Lazy function/class loading not available with this version of PHP, please disable APC lazy loading.");
-        APCG(lazy_functions) = APCG(lazy_classes) = 0;
     }
 #endif
 
@@ -791,45 +825,66 @@ int apc_module_init(int module_number TSRMLS_DC)
 
 int apc_module_shutdown(TSRMLS_D)
 {
+    int i;
+    apc_cache_t *cache;
+    apc_segment_t *sma_cur, *sma_prv;
+
     if (!APCG(initialized))
         return 0;
 
     /* restore compilation */
     zend_compile_file = old_compile_file;
 
-    /*
-     * In case we got interrupted by a SIGTERM or something else during execution
-     * we may have cache entries left on the stack that we need to check to make
-     * sure that any functions or classes these may have added to the global function
-     * and class tables are removed before we blow away the memory that hold them.
-     * 
-     * This is merely to remove memory leak warnings - as the process is terminated
-     * immediately after shutdown. The following while loop can be removed without
-     * affecting anything else.
-     */
-    while (apc_stack_size(APCG(cache_stack)) > 0) {
-        int i;
-        apc_cache_entry_t* cache_entry = (apc_cache_entry_t*) apc_stack_pop(APCG(cache_stack));
-        if (cache_entry->data.file.functions) {
-            for (i = 0; cache_entry->data.file.functions[i].function != NULL; i++) {
-                zend_hash_del(EG(function_table),
-                    cache_entry->data.file.functions[i].name,
-                    cache_entry->data.file.functions[i].name_len+1);
+    for(i=0; i < APCG(num_file_caches); i++) {
+        /*
+         * In case we got interrupted by a SIGTERM or something else during execution
+         * we may have cache entries left on the stack that we need to check to make
+         * sure that any functions or classes these may have added to the global function
+         * and class tables are removed before we blow away the memory that hold them.
+         *
+         * This is merely to remove memory leak warnings - as the process is terminated
+         * immediately after shutdown. The following while loop can be removed without
+         * affecting anything else.
+         */
+        cache = &(APCG(file_caches)[i]);
+        while (apc_stack_size(cache->cache_stack) > 0) {
+            int i;
+            apc_cache_entry_t* cache_entry = (apc_cache_entry_t*) apc_stack_pop(cache->cache_stack);
+            if (cache_entry->data.file.functions) {
+                for (i = 0; cache_entry->data.file.functions[i].function != NULL; i++) {
+                    zend_hash_del(EG(function_table),
+                        cache_entry->data.file.functions[i].name,
+                        cache_entry->data.file.functions[i].name_len+1);
+                }
             }
-        }
-        if (cache_entry->data.file.classes) {
-            for (i = 0; cache_entry->data.file.classes[i].class_entry != NULL; i++) {
-                zend_hash_del(EG(class_table),
-                    cache_entry->data.file.classes[i].name,
-                    cache_entry->data.file.classes[i].name_len+1);
+            if (cache_entry->data.file.classes) {
+                for (i = 0; cache_entry->data.file.classes[i].class_entry != NULL; i++) {
+                    zend_hash_del(EG(class_table),
+                        cache_entry->data.file.classes[i].name,
+                        cache_entry->data.file.classes[i].name_len+1);
+                }
             }
+            apc_cache_release(cache, cache_entry);
         }
-        apc_cache_release(apc_cache, cache_entry);
+        apc_cache_destroy(cache);
     }
+    apc_efree(APCG(file_caches));
+    APCG(num_file_caches) = 0;
 
-    apc_cache_destroy(apc_cache);
-    apc_cache_destroy(apc_user_cache);
-    apc_sma_cleanup();
+    for(i=0; i < APCG(num_user_caches); i++) {
+        apc_cache_destroy(&(APCG(user_caches)[i]));
+    }
+    apc_efree(APCG(user_caches));
+    APCG(num_user_caches) = 0;
+
+    sma_cur = APCG(sma_segments_head);
+    while(sma_cur) {
+        apc_sma_cleanup(sma_cur);
+        sma_prv = sma_cur;
+        sma_cur = sma_cur->next;
+        apc_efree(sma_prv);
+    }
+    APCG(sma_segments_head) = 0;
 
     APCG(initialized) = 0;
     return 0;
@@ -853,60 +908,69 @@ int apc_process_shutdown(TSRMLS_D)
 /* {{{ apc_deactivate */
 static void apc_deactivate(TSRMLS_D)
 {
+    apc_cache_t *cache;
+    int i;
+
     /* The execution stack was unwound, which prevented us from decrementing
      * the reference counts on active cache entries in `my_execute`.
      */
-    while (apc_stack_size(APCG(cache_stack)) > 0) {
-        int i;
-        zend_class_entry* zce = NULL;
-        void ** centry = (void*)(&zce);
-        zend_class_entry** pzce = NULL;
+    for(i=0; i < APCG(num_file_caches); i++) {
+        cache = &(APCG(file_caches)[i]);
+        while (apc_stack_size(cache->cache_stack) > 0) {
+            int i;
+            zend_class_entry* zce = NULL;
+            void ** centry = (void*)(&zce);
+            zend_class_entry** pzce = NULL;
 
-        apc_cache_entry_t* cache_entry =
-            (apc_cache_entry_t*) apc_stack_pop(APCG(cache_stack));
+            apc_cache_entry_t* cache_entry =
+                (apc_cache_entry_t*) apc_stack_pop(cache->cache_stack);
 
-        if (cache_entry->data.file.classes) {
-            for (i = 0; cache_entry->data.file.classes[i].class_entry != NULL; i++) {
-                centry = (void**)&pzce; /* a triple indirection to get zend_class_entry*** */
-                if(zend_hash_find(EG(class_table), 
-                    cache_entry->data.file.classes[i].name,
-                    cache_entry->data.file.classes[i].name_len+1,
-                    (void**)centry) == FAILURE)
-                {
-                    /* double inclusion of conditional classes ends up failing 
-                     * this lookup the second time around.
-                     */
-                    continue;
+            if (cache_entry->data.file.classes) {
+                for (i = 0; cache_entry->data.file.classes[i].class_entry != NULL; i++) {
+                    centry = (void**)&pzce; /* a triple indirection to get zend_class_entry*** */
+                    if(zend_hash_find(EG(class_table),
+                        cache_entry->data.file.classes[i].name,
+                        cache_entry->data.file.classes[i].name_len+1,
+                        (void**)centry) == FAILURE)
+                    {
+                        /* double inclusion of conditional classes ends up failing
+                         * this lookup the second time around.
+                         */
+                        continue;
+                    }
+
+                    zce = *pzce;
+                    zend_hash_del(EG(class_table),
+                        cache_entry->data.file.classes[i].name,
+                        cache_entry->data.file.classes[i].name_len+1);
+
+                    apc_free_class_entry_after_execution(zce);
                 }
-
-                zce = *pzce;
-
-                zend_hash_del(EG(class_table),
-                    cache_entry->data.file.classes[i].name,
-                    cache_entry->data.file.classes[i].name_len+1);
-
-                apc_free_class_entry_after_execution(zce);
             }
+            apc_cache_release(cache, cache_entry);
         }
-        apc_cache_release(apc_cache, cache_entry);
     }
 }
 /* }}} */
+
 
 /* {{{ request init and shutdown */
 
 int apc_request_init(TSRMLS_D)
 {
-    apc_stack_clear(APCG(cache_stack));
+    int i;
 
-    if(APCG(lazy_functions)) {
-        APCG(lazy_function_table) = emalloc(sizeof(HashTable));
-        zend_hash_init(APCG(lazy_function_table), 0, NULL, NULL, 0);
+    for(i=0; i < APCG(num_file_caches); i++) {
+        apc_stack_clear((&APCG(file_caches)[i])->cache_stack);
     }
-    if(APCG(lazy_classes)) {
-        APCG(lazy_class_table) = emalloc(sizeof(HashTable));
-        zend_hash_init(APCG(lazy_class_table), 0, NULL, NULL, 0);
-    }
+    APCG(slam_rand) = -1;
+
+    APCG(lazy_function_table) = emalloc(sizeof(HashTable));
+    zend_hash_init(APCG(lazy_function_table), 0, NULL, NULL, 0);
+    APCG(lazy_class_table) = emalloc(sizeof(HashTable));
+    zend_hash_init(APCG(lazy_class_table), 0, NULL, NULL, 0);
+    APCG(default_file_cache) = &APCG(file_caches)[0];
+    APCG(default_user_cache) = &APCG(user_caches)[0];
 
 #ifdef APC_FILEHITS
     ALLOC_INIT_ZVAL(APCG(filehits));

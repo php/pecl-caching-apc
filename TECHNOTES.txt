@@ -225,7 +225,7 @@ form of a quick-start guide to start hacking on APC.
    If there are currently no other slots there, we just create the slot and stick it into
    the array:
 
-     *slot = make_slot(key, value, *slot, t)
+     *slot = make_slot(cache, key, value, slot, t)
 
    If there are other slots already at this position we walk the link list to get to
    the end.  Here is the loop:

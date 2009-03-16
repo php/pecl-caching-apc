@@ -1010,7 +1010,7 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_con
         }
 
 /* This code breaks apc's rule#1 - cache what you compile */
-        if((APCG(fpstat)==0) && APCG(canonicalize)) {
+        if(APCG(current_cache)->fpstat==0 && APCG(canonicalize)) {
             if((zo->opcode == ZEND_INCLUDE_OR_EVAL) && 
                 (zo->op1.op_type == IS_CONST && zo->op1.u.constant.type == IS_STRING)) {
                 /* constant includes */

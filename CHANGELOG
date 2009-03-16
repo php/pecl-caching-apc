@@ -1,3 +1,9 @@
+4.0.0: ??
+
+- Support for multiple caches
+- Least Frequently Used (LFU) support
+- Rewrite of apc.php
+- Time window statistics gathering
 
 3.1.2 : 2008-12-12
 

@@ -30,8 +30,6 @@
 #include "apc.h"
 #include "apc_mmap.h"
 
-#if APC_MMAP
-
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/mman.h>
@@ -52,9 +50,8 @@
 # define MAP_ANON MAP_ANONYMOUS
 #endif
 
-apc_segment_t apc_mmap(char *file_mask, size_t size)
+int apc_mmap(apc_segment_t *segment, char *file_mask)
 {
-    apc_segment_t segment; 
 
     int fd = -1;
     int flags = MAP_SHARED | MAP_NOSYNC;
@@ -96,7 +93,7 @@ apc_segment_t apc_mmap(char *file_mask, size_t size)
             apc_eprint("apc_mmap: shm_open on %s failed:", file_mask);
             goto error;
         }
-        if (ftruncate(fd, size) < 0) {
+        if (ftruncate(fd, segment->size) < 0) {
             close(fd);
             shm_unlink(file_mask);
             apc_eprint("apc_mmap: ftruncate failed:");
@@ -112,7 +109,7 @@ apc_segment_t apc_mmap(char *file_mask, size_t size)
             apc_eprint("apc_mmap: mkstemp on %s failed:", file_mask);
             goto error;
         }
-        if (ftruncate(fd, size) < 0) {
+        if (ftruncate(fd, segment->size) < 0) {
             close(fd);
             unlink(file_mask);
             apc_eprint("apc_mmap: ftruncate failed:");
@@ -121,31 +118,31 @@ apc_segment_t apc_mmap(char *file_mask, size_t size)
         unlink(file_mask);
     }
 
-    segment.shmaddr = (void *)mmap(NULL, size, PROT_READ | PROT_WRITE, flags, fd, 0);
+    segment->shmaddr = (void *)mmap(NULL, segment->size, PROT_READ | PROT_WRITE, flags, fd, 0);
 
 #ifdef APC_MEMPROTECT
     if(remap) {
-        segment.roaddr = (void *)mmap(NULL, size, PROT_READ, flags, fd, 0);
+        segment->roaddr = (void *)mmap(NULL, segment->size, PROT_READ, flags, fd, 0);
     } else {
-        segment.roaddr = NULL;
+        segment->roaddr = NULL;
     }
 #endif
 
-    if((long)segment.shmaddr == -1) {
+    if((long)segment->shmaddr == -1) {
         apc_eprint("apc_mmap: mmap failed:");
     }
 
     if(fd != -1) close(fd);
     
-    return segment;
+    return SUCCESS;
 
 error:
 
-    segment.shmaddr = (void*)-1;
+    segment->shmaddr = (void*)-1;
 #ifdef APC_MEMPROTECT
-    segment.roaddr = NULL;
+    segment->roaddr = NULL;
 #endif
-    return segment;
+    return FAILURE; 
 }
 
 void apc_unmap(apc_segment_t *segment)
@@ -162,7 +159,6 @@ void apc_unmap(apc_segment_t *segment)
 
 }
 
-#endif
 
 /*
  * Local variables:

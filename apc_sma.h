@@ -36,26 +36,18 @@
 
 /* Simple shared memory allocator */
 
-typedef struct _apc_segment_t apc_segment_t;
-
-struct _apc_segment_t {
-    size_t size;
-    void* shmaddr;
+/* {{{ struct definition: apc_sma_shm_segment */
+typedef struct apc_segment_t apc_segment_t;
+struct apc_segment_t {
+	int initialized;    /* true if the sma has been initialized */
+    int unmap;          /* true if we should unmap segment on a segfault */
+	size_t size;        /* size of shm segment */
+	void* shmaddr;      /* shm segment addresses */
 #ifdef APC_MEMPROTECT
     void* roaddr;
 #endif
+    struct apc_segment_t *next;  /* next segment */
 };
-
-extern void apc_sma_init(int numseg, size_t segsize, char *mmap_file_mask);
-extern void apc_sma_cleanup();
-extern void* apc_sma_malloc(size_t size);
-extern void* apc_sma_malloc_ex(size_t size, size_t fragment, size_t* allocated);
-extern void* apc_sma_realloc(void* p, size_t size);
-extern char* apc_sma_strdup(const char *s);
-extern void apc_sma_free(void* p);
-#if ALLOC_DISTRIBUTION 
-extern size_t *apc_sma_get_alloc_distribution();
-#endif
 
 extern void* apc_sma_protect(void *p);
 extern void* apc_sma_unprotect(void *p);
@@ -69,19 +61,44 @@ struct apc_sma_link_t {
 };
 /* }}} */
 
+/* {{{ struct definition: apc_sma_seginfo_t */
+typedef struct apc_sma_seginfo_t apc_sma_seginfo_t;
+struct apc_sma_seginfo_t {
+    int num_seg;            /* number of shared memory segments */
+    size_t size;            /* size of each shared memory segment */
+    size_t avail;           /* avail mem of each shared memory segment */
+    int unmap;              /* unmap the segment on segfault signal ? */
+    apc_sma_link_t* list;   /* list of blocks for this segment */
+    size_t fragmap[256];    /* fragmentation stat map */
+    size_t num_frags;
+    size_t freemap[256][2];    /* fragmentation stat map */
+    size_t allocmap[256][2];    /* fragmentation stat map */
+#if ALLOC_DISTRIBUTION
+    size_t adist[30];
+#endif
+};
+/* }}} */
+
 /* {{{ struct definition: apc_sma_info_t */
 typedef struct apc_sma_info_t apc_sma_info_t;
 struct apc_sma_info_t {
-    int num_seg;            /* number of shared memory segments */
-    long seg_size;           /* size of each shared memory segment */
-    apc_sma_link_t** list;  /* there is one list per segment */
+    int num_seg;                 /* number of shared memory segments */
+    apc_sma_seginfo_t* seginfo;  /* array of per segment info */
 };
 /* }}} */
+
+extern void apc_sma_init(apc_segment_t *segment, char *mmap_file_mask);
+extern void apc_sma_cleanup(apc_segment_t *segment);
+extern void* apc_sma_malloc(size_t size);
+extern void* apc_sma_realloc(void* p, size_t size);
+extern void apc_sma_free(void* p);
+#if ALLOC_DISTRIBUTION
+extern size_t *apc_sma_get_alloc_distribution();
+#endif
 
 extern apc_sma_info_t* apc_sma_info(zend_bool limited);
 extern void apc_sma_free_info(apc_sma_info_t* info);
 
-extern size_t apc_sma_get_avail_mem();
 extern void apc_sma_check_integrity();
 
 /* {{{ ALIGNWORD: pad up x, aligned to the system's word boundary */

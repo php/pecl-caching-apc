@@ -41,6 +41,9 @@
 #include "apc_lock.h"
 #include "apc_pool.h"
 #include "apc_main.h"
+#include "apc_sma.h"
+#include "php_ini.h"
+#include "apc_stack.h"
 
 #define APC_CACHE_ENTRY_FILE   1
 #define APC_CACHE_ENTRY_USER   2
@@ -48,6 +51,13 @@
 #define APC_CACHE_KEY_FILE     1
 #define APC_CACHE_KEY_USER     2
 #define APC_CACHE_KEY_FPFILE   3
+
+#define APC_CACHE_FILE         (1L << ((sizeof(long)*8) -2))
+#define APC_CACHE_USER         (1L << ((sizeof(long)*8) -3))
+#define APC_CACHE_MASK         0xffff
+
+#define APC_CACHE_EXPUNGE_FLUSH  1
+#define APC_CACHE_EXPUNGE_LFU    2
 
 /* {{{ cache locking macros */
 #define CACHE_LOCK(cache)        { LOCK(cache->header->lock);   cache->has_lock = 1; }
@@ -121,10 +131,9 @@ struct apc_cache_entry_t {
 /* }}} */
 
 /*
- * apc_cache_create creates the shared memory compiler cache. This function
- * should be called just once (ideally in the web server parent process, e.g.
- * in apache), otherwise you will end up with multiple caches (which won't
- * necessarily break anything). Returns a pointer to the cache object.
+ * apc_cache_create creates the shared memory compiler cache.
+ *
+ * size_hint, gc_ttl, and ttl in the cache_t structure should be set accordingly.
  *
  * size_hint is a "hint" at the total number of source files that will be
  * cached. It determines the physical size of the hash table. Passing 0 for
@@ -138,7 +147,7 @@ struct apc_cache_entry_t {
  * is needed.  This helps in cleaning up the cache and ensuring that entries 
  * hit frequently stay cached and ones not hit very often eventually disappear.
  */
-extern T apc_cache_create(int size_hint, int gc_ttl, int ttl);
+extern void apc_cache_create(T cache);
 
 /*
  * apc_cache_destroy releases any OS resources associated with a cache object.
@@ -228,7 +237,8 @@ extern void apc_cache_release(T cache, apc_cache_entry_t* entry);
  * caching files with a current mtime which tends to indicate that
  * they are still being written to.
  */
-extern int apc_cache_make_file_key(apc_cache_key_t* key,
+extern int apc_cache_make_file_key(apc_cache_t *cache,
+                                   apc_cache_key_t* key,
                                    const char* filename,
                                    const char* include_path,
                                    time_t t
@@ -245,7 +255,7 @@ extern apc_cache_entry_t* apc_cache_make_file_entry(const char* filename,
                                                     apc_context_t* ctxt);
 
 
-zend_bool apc_compile_cache_entry(apc_cache_key_t key, zend_file_handle* h, int type, time_t t, zend_op_array** op_array_pp, apc_cache_entry_t** cache_entry_pp TSRMLS_DC);
+zend_bool apc_compile_cache_entry(apc_cache_t *cache, apc_cache_key_t *key, zend_file_handle* h, int type, time_t t, zend_op_array** op_array_pp, apc_cache_entry_t** cache_entry_pp TSRMLS_DC);
 
 /*
  * apc_cache_make_user_entry creates an apc_cache_entry_t object given an info string
@@ -289,17 +299,37 @@ struct apc_cache_link_t {
 /* {{{ struct definition: apc_cache_info_t */
 typedef struct apc_cache_info_t apc_cache_info_t;
 struct apc_cache_info_t {
+    long id;
+    char *name;
+    char *const_name;
+    int fpstat;
+    int stat_ctime;
+    int size_hint;
+    int cache_by_default;
+    int file_update_protection;
+    int max_file_size;
+    int write_lock;
     int num_slots;
     unsigned long num_hits;
     unsigned long num_misses;
     unsigned long num_inserts;
+    apc_stats_t hit_stats;
+    apc_stats_t miss_stats;
+    apc_stats_t insert_stats;
     unsigned long expunges;
     int ttl;
     apc_cache_link_t* list;
+#ifdef APC_LFU
+    apc_cache_link_t* lfu_list;
+#endif
     apc_cache_link_t* deleted_list;
     time_t start_time;
     int num_entries;
     size_t mem_size;
+    int expunge_method;
+    int segment_idx;
+    long gc_ttl;
+    int file_upload_progress;
 };
 /* }}} */
 
@@ -313,6 +343,11 @@ struct slot_t {
     time_t creation_time;       /* time slot was initialized */
     time_t deletion_time;       /* time slot was removed from cache */
     time_t access_time;         /* time slot was last accessed */
+#ifdef APC_LFU
+    slot_t* lfu_up;             /* item up the LFU list (more used slot)*/
+    slot_t* lfu_dn;             /* item down the LFU list (less used slot)*/
+    slot_t** prev_ptr;          /* prev slot's next pointer  */
+#endif
 };
 /* }}} */
 
@@ -325,6 +360,9 @@ struct cache_header_t {
     unsigned long num_hits;     /* total successful hits in cache */
     unsigned long num_misses;   /* total unsuccessful hits in cache */
     unsigned long num_inserts;  /* total successful inserts in cache */
+    apc_stats_t hit_stats;      /* hit stats over time */
+    apc_stats_t miss_stats;
+    apc_stats_t insert_stats;
     unsigned long expunges;     /* total number of expunges */
     slot_t* deleted_list;       /* linked list of to-be-deleted slots */
     time_t start_time;          /* time the above counters were reset */
@@ -332,6 +370,10 @@ struct cache_header_t {
     int num_entries;            /* Statistic on the number of entries */
     size_t mem_size;            /* Statistic on the memory size used by this cache */
     apc_keyid_t lastkey;        /* the key that is being inserted (user cache) */
+#ifdef APC_LFU
+    slot_t* lfu_head;           /* Head of the LFU list */
+    slot_t* lfu_tail;           /* Tail of the LFU list */
+#endif
 };
 /* }}} */
 
@@ -339,14 +381,36 @@ typedef void (*apc_expunge_cb_t)(T cache, size_t n);
 
 /* {{{ struct definition: apc_cache_t */
 struct apc_cache_t {
-    void* shmaddr;                /* process (local) address of shared cache */
-    cache_header_t* header;       /* cache header (stored in SHM) */
-    slot_t** slots;               /* array of cache slots (stored in SHM) */
-    int num_slots;                /* number of slots in cache */
-    int gc_ttl;                   /* maximum time on GC list for a slot */
-    int ttl;                      /* if slot is needed and entry's access time is older than this ttl, remove it */
-    apc_expunge_cb_t expunge_cb;  /* cache specific expunge callback to free up sma memory */
-    uint has_lock;                /* flag for possible recursive locks within the same process */
+    long id;                          /* Cache ID */
+    long type;                        /* Cache type (user or file) */
+    char *name;                       /* Cache name given in INI */
+    int name_len;                     /* Cache name length excluding null */
+    char *const_name;                 /* Constant identifier name for the index */
+    zend_ini_entry *ini_entries;      /* INI entries we've allocated to be free'd at shutdown */
+    int segment_idx;                  /* index of the segment this cache uses */
+    apc_segment_t *sma_segment;       /* shared memory structure */
+    void* shmaddr;                    /* process (local) address of shared cache */
+    cache_header_t* header;           /* cache header (stored in SHM) */
+    slot_t** slots;                   /* array of cache slots (stored in SHM) */
+    int num_slots;                    /* number of slots in cache */
+    int expunge_method;               /* expunge method */
+    apc_expunge_cb_t expunge_cb;      /* cache specific expunge callback to free up sma memory */
+    long size_hint;                   /* hashtable size hint */
+    long gc_ttl;                      /* Garbage Collector Time to Live in seconds */
+    long ttl;                         /* Time To Live in seconds for entry */
+    char **filters;                   /* array of regex filters that prevent caching */
+    void *compiled_filters;           /* compiled regex filters */
+    zend_bool cache_by_default;       /* true if files should be cached unless filtered out */
+    long file_update_protection;      /* Age in seconds before a file is eligible to be cached - 0 to disable */
+    long max_file_size;               /* Maximum size of file, in bytes that APC will be allowed to cache */
+    zend_bool fpstat;                 /* true if fullpat includes should be stat'ed */
+    zend_bool stat_ctime;             /* true if ctime in additon to mtime should be checked */
+    zend_bool write_lock;             /* true for a global write lock */
+    apc_stack_t* cache_stack;         /* the stack of cached executable code (file caches only) */
+    uint has_lock;                    /* flag if this cache holds the lock */
+    zend_bool md5;                    /* record md5 hash of files */
+    zend_bool lazy_functions;         /* enable/disable lazy function loading */
+    zend_bool lazy_classes;           /* enable/disable lazy class loading */
 };
 /* }}} */
 
@@ -356,6 +420,7 @@ extern void apc_cache_unlock(apc_cache_t* cache);
 extern zend_bool apc_cache_busy(apc_cache_t* cache);
 extern zend_bool apc_cache_write_lock(apc_cache_t* cache);
 extern void apc_cache_write_unlock(apc_cache_t* cache);
+extern apc_cache_t *apc_get_cache(long id, long type TSRMLS_DC);
 
 /* used by apc_rfc1867 to update data in-place - not to be used elsewhere */
 

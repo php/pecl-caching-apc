@@ -9,7 +9,7 @@ apc.file_update_protection=0
 --FILE--
 <?php
 
-$it = new APCIterator('user');
+$it = new APCIterator(APC_CACHE_USER);
 for($i = 0; $i < 41; $i++) {
   apc_store("key$i", "value$i");
 }

@@ -5,7 +5,7 @@ APC: apc_delete_file test
 --INI--
 apc.enabled=1
 apc.enable_cli=1
-apc.file_update_protection=0
+apc.file.file_update_protection=0
 report_memleaks=0
 --FILE--
 <?php
@@ -29,7 +29,7 @@ apc_delete_file(array($files[0]));
 check_file($files[0]);
 
 apc_compile_file($files[0]);
-$it = new APCIterator('file');
+$it = new APCIterator(APC_CACHE_FILE);
 apc_delete_file($it);
 check_file($files[0]);
 
@@ -45,7 +45,8 @@ function check_file($files) {
     $files = array($files);
   }
 
-  $info = apc_cache_info('file');
+  $info = apc_cache_info(APC_CACHE_FILE);
+  $info = array_shift($info);
 
   foreach ($files as $file) {
     $match = 0;

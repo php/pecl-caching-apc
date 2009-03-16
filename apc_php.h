@@ -47,6 +47,9 @@
 #include "zend_hash.h"
 #include "zend_extensions.h"
 
+#if ZEND_MODULE_API_NO > 20070729
+#define ZEND_ENGINE_3_0
+#endif
 #if ZEND_MODULE_API_NO > 20060613
 #define ZEND_ENGINE_2_3
 #endif
