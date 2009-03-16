@@ -761,7 +761,7 @@ int apc_module_init(int module_number TSRMLS_DC)
     apc_cache_t *cache;
     int i;
     apc_segment_t *seg;
-#ifdef PHP_HAVE_LOOKUP_HOOKS
+#if APC_HAVE_LOOKUP_HOOKS
     int lazy_functions = 0;
     int lazy_classes = 0;
 #endif
@@ -778,7 +778,7 @@ int apc_module_init(int module_number TSRMLS_DC)
         apc_cache_create(cache);
         APCG(current_cache) = NULL;
         zend_register_long_constant(cache->const_name, strlen(cache->const_name)+1, (APC_CACHE_FILE | (i+1)), (CONST_CS | CONST_PERSISTENT), module_number TSRMLS_CC);
-#ifdef PHP_HAVE_LOOKUP_HOOKS
+#if APC_HAVE_LOOKUP_HOOKS
         if (cache->lazy_functions) { lazy_functions = 1; }
         if (cache->lazy_classes) { lazy_classes = 1; }
 #else
