@@ -769,7 +769,7 @@ int apc_module_init(int module_number TSRMLS_DC)
 
     apc_data_preload(TSRMLS_C);
 
-#ifdef APC_HAVE_LOOKUP_HOOKS
+#if APC_HAVE_LOOKUP_HOOKS
     if(APCG(lazy_functions)) {
         zend_set_lookup_function_hook(apc_lookup_function_hook TSRMLS_CC);
         zend_set_defined_function_hook(apc_defined_function_hook TSRMLS_CC);
