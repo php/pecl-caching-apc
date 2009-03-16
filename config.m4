@@ -17,8 +17,6 @@ AC_ARG_ENABLE(apc-filehits,
 	AC_MSG_RESULT(no)
 ])
 
-
-
 AC_MSG_CHECKING(Checking whether we should use mmap)
 AC_ARG_ENABLE(apc-mmap,
 [  --disable-apc-mmap
@@ -150,6 +148,8 @@ if test "$PHP_APC" != "no"; then
 
   AC_CACHE_CHECK(for zend_set_lookup_function_hook, php_cv_zend_set_lookup_function_hook,
   [
+    orig_cflags=$CFLAGS
+    CFLAGS="$INCLUDES $EXTRA_INCLUDES"
     AC_TRY_COMPILE([
 #include "main/php.h"
 #include "Zend/zend_API.h"
@@ -160,6 +160,7 @@ if test "$PHP_APC" != "no"; then
     ],[
       php_cv_zend_set_lookup_function_hook=no
     ])
+    CFLAGS=$orig_cflags
   ])
   if test "$php_cv_zend_set_lookup_function_hook" = "yes"; then
     AC_DEFINE(APC_HAVE_LOOKUP_HOOKS, 1, [ ])
