@@ -130,19 +130,6 @@ AC_ARG_ENABLE(memory-protection,
   AC_MSG_RESULT(no)
 ])
 
-
-orig_flags=$CFLAGS
-CFLAGS="$INCLUDES $EXTRA_INCLUDES"
-AC_CHECK_DECL(zend_set_lookup_function_hook, 
-[
-	AC_DEFINE(APC_HAVE_LOOKUP_HOOKS, 1, [ ])
-], , [
-	#include "main/php.h"
-	#include "Zend/zend_API.h"
-])
-CFLAGS=$orig_flags
-
-
 if test "$PHP_APC" != "no"; then
   test "$PHP_APC_MMAP" != "no" && AC_DEFINE(APC_MMAP, 1, [ ])
   test "$PHP_APC_FILEHITS" != "no" && AC_DEFINE(APC_FILEHITS, 1, [ ])
@@ -160,6 +147,25 @@ if test "$PHP_APC" != "no"; then
 	if test "$PHP_APC_MEMPROTECT" != "no"; then
 		AC_DEFINE(APC_MEMPROTECT, 1, [ shm/mmap memory protection ])
 	fi
+
+  AC_CACHE_CHECK(for zend_set_lookup_function_hook, php_cv_zend_set_lookup_function_hook,
+  [
+    AC_TRY_COMPILE([
+#include "main/php.h"
+#include "Zend/zend_API.h"
+    ], [#ifndef zend_set_lookup_function_hook
+	(void) zend_set_lookup_function_hook;
+#endif], [
+      php_cv_zend_set_lookup_function_hook=yes
+    ],[
+      php_cv_zend_set_lookup_function_hook=no
+    ])
+  ])
+  if test "$php_cv_zend_set_lookup_function_hook" = "yes"; then
+    AC_DEFINE(APC_HAVE_LOOKUP_HOOKS, 1, [ ])
+  else
+    AC_DEFINE(APC_HAVE_LOOKUP_HOOKS, 0, [ ])
+  fi
 
   AC_CHECK_FUNCS(sigaction)
   AC_CACHE_CHECK(for union semun, php_cv_semun,
@@ -193,7 +199,6 @@ if test "$PHP_APC" != "no"; then
     AC_CHECK_HEADER(valgrind/memcheck.h, 
   		[AC_DEFINE([HAVE_VALGRIND_MEMCHECK_H],1, [enable valgrind memchecks])])
   ])
-
 
   apc_sources="apc.c php_apc.c \
                apc_cache.c \
