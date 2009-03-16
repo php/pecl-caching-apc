@@ -17,8 +17,6 @@ AC_ARG_ENABLE(apc-filehits,
 	AC_MSG_RESULT(no)
 ])
 
-
-
 AC_MSG_CHECKING(Checking whether we should use semaphore locking instead of fcntl)
 AC_ARG_ENABLE(apc-sem,
 [  --enable-apc-sem
@@ -37,6 +35,7 @@ AC_ARG_ENABLE(apc-pthreadmutex,
                           Disable pthread mutex locking ],
 [
   PHP_APC_PTHREADMUTEX=$enableval
+  AC_MSG_RESULT($enableval)
 ],
 [
   PHP_APC_PTHREADMUTEX=yes
@@ -115,6 +114,7 @@ AC_ARG_ENABLE(apc-spinlocks,
 ],
 [
   PHP_APC_SPINLOCKS=no
+  AC_MSG_RESULT(no)
 ])
 
 AC_MSG_CHECKING(Checking whether we should use Least Frequently Used list expunging cache entries)
@@ -126,7 +126,7 @@ AC_ARG_ENABLE(apc-lfu,
   AC_MSG_RESULT($enableval)
 ], [
   PHP_APC_LFU=no
-  AC_MSG_RESULT(no)
+   AC_MSG_RESULT(no)
 ])
 
 AC_MSG_CHECKING(Checking whether we should enable memory protection)
@@ -140,19 +140,6 @@ AC_ARG_ENABLE(memory-protection,
   PHP_APC_MEMPROTECT=no
   AC_MSG_RESULT(no)
 ])
-
-
-orig_flags=$CFLAGS
-CFLAGS="$INCLUDES $EXTRA_INCLUDES"
-AC_CHECK_DECL(zend_set_lookup_function_hook, 
-[
-	AC_DEFINE(APC_HAVE_LOOKUP_HOOKS, 1, [ ])
-], , [
-	#include "main/php.h"
-	#include "Zend/zend_API.h"
-])
-CFLAGS=$orig_flags
-
 
 if test "$PHP_APC" != "no"; then
   test "$PHP_APC_MMAP" != "no" && AC_DEFINE(APC_MMAP, 1, [ ])
@@ -173,6 +160,28 @@ if test "$PHP_APC" != "no"; then
 	fi
 
 	test "$PHP_APC_LFU"  != "no" && AC_DEFINE(APC_LFU, 1, [ ])
+
+  AC_CACHE_CHECK(for zend_set_lookup_function_hook, php_cv_zend_set_lookup_function_hook,
+  [
+    orig_cflags=$CFLAGS
+    CFLAGS="$INCLUDES $EXTRA_INCLUDES"
+    AC_TRY_COMPILE([
+#include "main/php.h"
+#include "Zend/zend_API.h"
+    ], [#ifndef zend_set_lookup_function_hook
+	(void) zend_set_lookup_function_hook;
+#endif], [
+      php_cv_zend_set_lookup_function_hook=yes
+    ],[
+      php_cv_zend_set_lookup_function_hook=no
+    ])
+    CFLAGS=$orig_cflags
+  ])
+  if test "$php_cv_zend_set_lookup_function_hook" = "yes"; then
+    AC_DEFINE(APC_HAVE_LOOKUP_HOOKS, 1, [ ])
+  else
+    AC_DEFINE(APC_HAVE_LOOKUP_HOOKS, 0, [ ])
+  fi
 
   AC_CHECK_FUNCS(sigaction)
   AC_CACHE_CHECK(for union semun, php_cv_semun,
@@ -206,7 +215,6 @@ if test "$PHP_APC" != "no"; then
     AC_CHECK_HEADER(valgrind/memcheck.h, 
   		[AC_DEFINE([HAVE_VALGRIND_MEMCHECK_H],1, [enable valgrind memchecks])])
   ])
-
 
   apc_sources="apc.c php_apc.c \
                apc_cache.c \
