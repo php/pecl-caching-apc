@@ -313,8 +313,6 @@ static int apc_iterator_fetch_deleted(apc_iterator_t *iterator) {
 static int apc_iterator_fetch_lfu(apc_iterator_t *iterator) {
     int count=0;
     slot_t **slot;
-    char *key;
-    int key_len;
     apc_iterator_item_t *item;
 
     while (apc_stack_size(iterator->stack) > 0) {
@@ -329,16 +327,7 @@ static int apc_iterator_fetch_lfu(apc_iterator_t *iterator) {
     }
     count = 0;
     while ((*slot)->lfu_up && count < iterator->chunk_size) {
-        if ((*slot)->key.type == APC_CACHE_KEY_FILE) {
-            key_len = zend_spprintf(&key, 0, "%ld %ld", (*slot)->key.data.file.device, (*slot)->key.data.file.inode);
-        } else if ((*slot)->key.type == APC_CACHE_KEY_USER) {
-            key = (char*)(*slot)->key.data.user.identifier;
-            key_len = (*slot)->key.data.user.identifier_len;
-        } else if ((*slot)->key.type == APC_CACHE_KEY_FPFILE) {
-            key = (char*)(*slot)->key.data.fpfile.fullpath;
-            key_len = (*slot)->key.data.fpfile.fullpath_len;
-        }
-        if (apc_iterator_search_match(iterator, key, key_len)) {
+        if (apc_iterator_search_match(iterator, slot)) {
             count++;
             item = apc_iterator_item_ctor(iterator, slot);
             if (item) {
@@ -372,16 +361,7 @@ static int apc_iterator_fetch_mfu(apc_iterator_t *iterator) {
     }
     count = 0;
     while ((*slot)->lfu_dn && count < iterator->chunk_size) {
-        if ((*slot)->key.type == APC_CACHE_KEY_FILE) {
-            key_len = zend_spprintf(&key, 0, "%ld %ld", (*slot)->key.data.file.device, (*slot)->key.data.file.inode);
-        } else if ((*slot)->key.type == APC_CACHE_KEY_USER) {
-            key = (char*)(*slot)->key.data.user.identifier;
-            key_len = (*slot)->key.data.user.identifier_len;
-        } else if ((*slot)->key.type == APC_CACHE_KEY_FPFILE) {
-            key = (char*)(*slot)->key.data.fpfile.fullpath;
-            key_len = (*slot)->key.data.fpfile.fullpath_len;
-        }
-        if (apc_iterator_search_match(iterator, key, key_len)) {
+        if (apc_iterator_search_match(iterator, slot)) {
             count++;
             item = apc_iterator_item_ctor(iterator, slot);
             if (item) {
