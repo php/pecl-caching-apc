@@ -204,7 +204,7 @@ static PHP_INI_MH(OnUpdateFilecaches);
 static PHP_INI_MH(OnUpdateUsercaches);
 
 /* Lifted and modified from Zend/zend_operators.c */
-static long apc_atol(const char *str, int str_len) /* {{{ */
+static size_t apc_atol(const char *str, int str_len) /* {{{ */
 {
 	double retval;
 
@@ -228,7 +228,7 @@ static long apc_atol(const char *str, int str_len) /* {{{ */
 				break;
 		}
 	}
-	return (long)retval;
+	return (size_t)retval;
 }
 /* }}} */
 
@@ -938,7 +938,7 @@ PHP_FUNCTION(apc_cache_info)
         add_assoc_double(cache_value, "num_misses", (double)info[i]->num_misses);
         add_assoc_long(cache_value, "start_time", info[i]->start_time);
         add_assoc_double(cache_value, "expunges", (double)info[i]->expunges);
-        add_assoc_long(cache_value, "mem_size", info[i]->mem_size);
+        add_assoc_double(cache_value, "mem_size", (double)info[i]->mem_size);
         add_assoc_long(cache_value, "num_entries", info[i]->num_entries);
         add_assoc_double(cache_value, "num_inserts", (double)info[i]->num_inserts);
         add_assoc_long(cache_value, "file_upload_progress", info[i]->file_upload_progress);
@@ -1159,8 +1159,8 @@ PHP_FUNCTION(apc_sma_info)
         ALLOC_INIT_ZVAL(seginfo);
         array_init(seginfo);
 
-        add_assoc_long(seginfo, "size", info->seginfo[i].size);
-        add_assoc_long(seginfo, "avail", info->seginfo[i].avail);
+        add_assoc_double(seginfo, "size", (double)info->seginfo[i].size);
+        add_assoc_double(seginfo, "avail", (double)info->seginfo[i].avail);
         add_assoc_bool(seginfo, "unmap", info->seginfo[i].unmap);
 
         ALLOC_INIT_ZVAL(list);
