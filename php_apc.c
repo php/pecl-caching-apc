@@ -367,7 +367,7 @@ PHP_FUNCTION(apc_cache_info)
     add_assoc_double(return_value, "expunges", (double)info->expunges);
     
     add_assoc_long(return_value, "start_time", info->start_time);
-    add_assoc_long(return_value, "mem_size", info->mem_size);
+    add_assoc_double(return_value, "mem_size", (double)info->mem_size);
     add_assoc_long(return_value, "num_entries", info->num_entries);
 #ifdef MULTIPART_EVENT_FORMDATA
     add_assoc_long(return_value, "file_upload_progress", 1);
@@ -512,8 +512,8 @@ PHP_FUNCTION(apc_sma_info)
 
     array_init(return_value);
     add_assoc_long(return_value, "num_seg", info->num_seg);
-    add_assoc_long(return_value, "seg_size", info->seg_size);
-    add_assoc_long(return_value, "avail_mem", apc_sma_get_avail_mem());
+    add_assoc_double(return_value, "seg_size", (double)info->seg_size);
+    add_assoc_double(return_value, "avail_mem", (double)apc_sma_get_avail_mem());
 
     if(limited) {
         apc_sma_free_info(info);

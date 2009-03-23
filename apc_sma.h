@@ -73,7 +73,7 @@ struct apc_sma_link_t {
 typedef struct apc_sma_info_t apc_sma_info_t;
 struct apc_sma_info_t {
     int num_seg;            /* number of shared memory segments */
-    long seg_size;           /* size of each shared memory segment */
+    size_t seg_size;           /* size of each shared memory segment */
     apc_sma_link_t** list;  /* there is one list per segment */
 };
 /* }}} */
