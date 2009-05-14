@@ -1112,8 +1112,8 @@ PHP_FUNCTION(apc_clear_cache)
                 APCG(current_cache) = NULL;
             }
         }
-        RETURN_TRUE;
     }
+    RETURN_TRUE;
 }
 /* }}} */
 
