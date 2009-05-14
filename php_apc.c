@@ -488,6 +488,7 @@ PHP_FUNCTION(apc_clear_cache)
         }
     }
     apc_cache_clear(apc_cache);
+    RETURN_TRUE;
 }
 /* }}} */
 
