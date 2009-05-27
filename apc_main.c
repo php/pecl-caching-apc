@@ -101,6 +101,7 @@ int apc_lookup_function_hook(char *name, int len, ulong hash, zend_function **fe
     apc_function_t *fn;
     int status = FAILURE;
     apc_context_t ctxt = {0,};
+    TSRMLS_FETCH();
 
     ctxt.pool = apc_pool_create(APC_UNPOOL, apc_php_malloc, apc_php_free, apc_sma_protect, apc_sma_unprotect);
     ctxt.copy = APC_COPY_OUT_OPCODE;
@@ -225,8 +226,9 @@ int apc_lookup_class_hook(char *name, int len, ulong hash, zend_class_entry ***c
 
     apc_class_t *cl;
     apc_context_t ctxt = {0,};
+    TSRMLS_FETCH();
 
-    if(zend_is_compiling(TSRMLS_CC)) { return FAILURE; }
+    if(zend_is_compiling(TSRMLS_C)) { return FAILURE; }
 
     if(zend_hash_quick_find(APCG(lazy_class_table), name, len, hash, (void**)&cl) == FAILURE) {
         return FAILURE;
@@ -235,7 +237,7 @@ int apc_lookup_class_hook(char *name, int len, ulong hash, zend_class_entry ***c
     ctxt.pool = apc_pool_create(APC_UNPOOL, apc_php_malloc, apc_php_free, apc_sma_protect, apc_sma_unprotect);
     ctxt.copy = APC_COPY_OUT_OPCODE;
 
-    if(install_class(*cl, &ctxt, 0) == FAILURE) {
+    if(install_class(*cl, &ctxt, 0 TSRMLS_CC) == FAILURE) {
         apc_wprint("apc_lookup_class_hook: could not install %s", name);
         return FAILURE;
     }
@@ -306,6 +308,7 @@ static int copy_class_or_interface_name(apc_class_t *cl, int num_args, va_list a
 
 /* {{{ apc_defined_function_hook */
 int apc_defined_function_hook(zval *internal, zval *user) {
+    TSRMLS_FETCH();
   zend_hash_apply_with_arguments(APCG(lazy_function_table), (apply_func_args_t) copy_function_name, 2, internal, user);
   return 1;
 }
@@ -313,6 +316,7 @@ int apc_defined_function_hook(zval *internal, zval *user) {
 
 /* {{{ apc_declared_class_hook */
 int apc_declared_class_hook(zval *classes, zend_uint mask, zend_uint comply) {
+    TSRMLS_FETCH();
   zend_hash_apply_with_arguments(APCG(lazy_class_table), (apply_func_args_t) copy_class_or_interface_name, 3, classes, mask, comply);
   return 1;
 }
