@@ -92,7 +92,7 @@ static void* apc_unpool_alloc(apc_pool* pool, size_t size)
 
 static void apc_unpool_free(apc_pool* pool, void *ptr)
 {
-    apc_unpool *upool = (apc_unpool*)upool;
+    apc_unpool *upool = (apc_unpool*) pool;
 
     apc_free_t deallocate = upool->parent.deallocate;
 

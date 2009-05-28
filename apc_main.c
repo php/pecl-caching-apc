@@ -268,7 +268,7 @@ static int uninstall_class(apc_class_t cl TSRMLS_DC)
 /* }}} */
 
 /* {{{ copy_function_name (taken from zend_builtin_functions.c to ensure future compatibility with APC) */
-static int copy_function_name(apc_function_t *pf, int num_args, va_list args, zend_hash_key *hash_key)
+static int copy_function_name(apc_function_t *pf TSRMLS_DC, int num_args, va_list args, zend_hash_key *hash_key)
 {
     zval *internal_ar = va_arg(args, zval *),
          *user_ar     = va_arg(args, zval *);
@@ -288,7 +288,7 @@ static int copy_function_name(apc_function_t *pf, int num_args, va_list args, ze
 }
 
 /* {{{ copy_class_or_interface_name (taken from zend_builtin_functions.c to ensure future compatibility with APC) */
-static int copy_class_or_interface_name(apc_class_t *cl, int num_args, va_list args, zend_hash_key *hash_key)
+static int copy_class_or_interface_name(apc_class_t *cl TSRMLS_DC, int num_args, va_list args, zend_hash_key *hash_key)
 {
     zval *array = va_arg(args, zval *);
     zend_uint mask = va_arg(args, zend_uint);
@@ -309,7 +309,7 @@ static int copy_class_or_interface_name(apc_class_t *cl, int num_args, va_list a
 /* {{{ apc_defined_function_hook */
 int apc_defined_function_hook(zval *internal, zval *user) {
     TSRMLS_FETCH();
-  zend_hash_apply_with_arguments(APCG(lazy_function_table), (apply_func_args_t) copy_function_name, 2, internal, user);
+  zend_hash_apply_with_arguments(APCG(lazy_function_table) TSRMLS_CC, (apply_func_args_t) copy_function_name, 2, internal, user);
   return 1;
 }
 /* }}} */
@@ -317,7 +317,7 @@ int apc_defined_function_hook(zval *internal, zval *user) {
 /* {{{ apc_declared_class_hook */
 int apc_declared_class_hook(zval *classes, zend_uint mask, zend_uint comply) {
     TSRMLS_FETCH();
-  zend_hash_apply_with_arguments(APCG(lazy_class_table), (apply_func_args_t) copy_class_or_interface_name, 3, classes, mask, comply);
+  zend_hash_apply_with_arguments(APCG(lazy_class_table) TSRMLS_CC, (apply_func_args_t) copy_class_or_interface_name, 3, classes, mask, comply);
   return 1;
 }
 /* }}} */
