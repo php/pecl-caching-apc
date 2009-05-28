@@ -24,7 +24,7 @@
 #if HAVE_PCRE || HAVE_BUNDLED_PCRE
 
 #if HAVE_BUNDLED_PCRE
-#include "pcrelib/pcre.h"
+#include "ext/pcre/pcrelib/pcre.h"
 #else
 #include "pcre.h"
 #endif
