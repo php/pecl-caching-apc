@@ -611,11 +611,15 @@ int _apc_store(char *strkey, int strkey_len, const zval *val, const unsigned int
         goto nocache;
     }
 
-    if (!(entry = apc_cache_make_user_entry(strkey, strkey_len, val, &ctxt, ttl))) {
+    if (!apc_cache_make_user_key(&key, strkey, strkey_len, t)) {
         goto freepool;
     }
 
-    if (!apc_cache_make_user_key(&key, strkey, strkey_len, t)) {
+    if (apc_cache_is_last_key(apc_user_cache, &key, t)) {
+	    goto freepool;
+    }
+
+    if (!(entry = apc_cache_make_user_entry(strkey, strkey_len, val, &ctxt, ttl))) {
         goto freepool;
     }
 
