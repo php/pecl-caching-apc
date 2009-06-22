@@ -345,8 +345,6 @@ static int apc_iterator_fetch_lfu(apc_iterator_t *iterator) {
 static int apc_iterator_fetch_mfu(apc_iterator_t *iterator) {
     int count=0;
     slot_t **slot;
-    char *key;
-    int key_len;
     apc_iterator_item_t *item;
 
     while (apc_stack_size(iterator->stack) > 0) {
@@ -440,6 +438,8 @@ PHP_METHOD(apc_iterator, __construct) {
 
     iterator->cache = apc_get_cache(cache_id, 0 TSRMLS_CC);
     iterator->slot_idx = 0;
+    iterator->stack_idx = 0;
+    iterator->key_idx = 0;
     iterator->chunk_size = chunk_size == 0 ? APC_DEFAULT_CHUNK_SIZE : chunk_size;
     iterator->stack = apc_stack_create(chunk_size);
     iterator->format = format;
@@ -512,7 +512,9 @@ PHP_METHOD(apc_iterator, current) {
         RETURN_FALSE;
     }
     if (apc_stack_size(iterator->stack) == iterator->stack_idx) {
-        iterator->fetch(iterator);
+        if (iterator->fetch(iterator) == 0) {
+            RETURN_FALSE;
+        }
     }
     item = apc_stack_get(iterator->stack, iterator->stack_idx);
     RETURN_ZVAL(item->value, 1, 0);
@@ -524,8 +526,13 @@ PHP_METHOD(apc_iterator, key) {
     zval *object = getThis();
     apc_iterator_item_t *item;
     apc_iterator_t *iterator = (apc_iterator_t*)zend_object_store_get_object(object TSRMLS_CC);
-    if (iterator->initialized == 0) {
+    if (iterator->initialized == 0 || apc_stack_size(iterator->stack) == 0) {
         RETURN_FALSE;
+    }
+    if (apc_stack_size(iterator->stack) == iterator->stack_idx) {
+        if (iterator->fetch(iterator) == 0) {
+            RETURN_FALSE;
+        }
     }
     item = apc_stack_get(iterator->stack, iterator->stack_idx);
     if (item->key) {
@@ -540,12 +547,12 @@ PHP_METHOD(apc_iterator, key) {
 PHP_METHOD(apc_iterator, next) {
     zval *object = getThis();
     apc_iterator_t *iterator = (apc_iterator_t*)zend_object_store_get_object(object TSRMLS_CC);
-    if (iterator->initialized == 0) {
+    if (iterator->initialized == 0 || apc_stack_size(iterator->stack) == 0) {
         RETURN_FALSE;
     }
     iterator->stack_idx++;
     iterator->key_idx++;
-    return;
+    RETURN_TRUE;
 }
 /* }}} */
 
