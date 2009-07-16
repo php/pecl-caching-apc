@@ -17,12 +17,30 @@
   |          Rasmus Lerdorf <rasmus@php.net>                             |
   |          Ilia Alshanetsky <ilia@prohost.org>                         |
   |          Brian Shire <shire@tekrat.com>                              |
+  |          Lucas Nealan <lucas@php.net>                                |
   +----------------------------------------------------------------------+
 
    All other licensing and usage conditions are those of the PHP Group.
 
  */
 $VERSION='$Id$';
+
+/* Remove limitations on memory for use with large APC data sets */
+ini_set('memory_limit', -1);
+
+/* Use pcntl extension to avoid any Apache timeouts with large APC data sets */
+if (! extension_loaded('pcntl')) {
+  if (ini_get('enable_dl') == 1 && function_exists('dl')) {
+    if (! @dl('pcntl.so')) {
+      error_log('apc.php: failed to load pcntl.so. no apache timeout protection.');
+    }
+  } else {
+    error_log('apc.php: dl not enabled, unable to load pcntl.so. no apache timeout protection');
+  }
+}
+if (function_exists('pcntl_signal')) {
+  pcntl_signal(SIGALRM, SIG_IGN); // replace SIGALRM
+}
 
 /* Use (internal) authentication - best choice if no other 
 *    authentication is available
@@ -345,6 +363,8 @@ function action_browse() {
   $cache_id = intval($_GET['cache'] == '' ? APC_CACHE_FILE | 1 : $_GET['cache']);
   $type = $cache_id & APC_CACHE_FILE ? APC_CACHE_FILE : APC_CACHE_USER;
   $list = isset($_GET['list']) ? $_GET['list'] : APC_LIST_ACTIVE;
+  $export = isset($_GET['export']) ? $_GET['export'] : false;
+
   if (isset($_GET['clear'])) {
       apc_clear_cache($cache_id);
   }
@@ -401,82 +421,112 @@ function action_browse() {
     }
     return;
   }
-  display_header($GLOBALS);
+
+  if (!$export) {
+    display_header($GLOBALS);
+  }
   if (ini_get('magic_quotes_gpc')) {
     $search = stripslashes($search);
   }
-  $search = str_replace('/', '\/', $search);
-  switch ($sort) {
-    case 'key':
-          $iter_flags = APC_ITER_KEY;
-          break;
-    case 'num_hits':
-          $iter_flags = APC_ITER_NUM_HITS;
-          break;
-    case 'mem_size':
-          $iter_flags = APC_ITER_MEM_SIZE;
-          break;
-    case 'ref_count':
-          $iter_flags = APC_ITER_REFCOUNT;
-          break;
-    case 'ttl':
-          $iter_flags = APC_ITER_TTL;
-          break;
-    case 'device':
-          $iter_flags = APC_ITER_DEVICE;
-          break;
-    case 'inode':
-          $iter_flags = APC_ITER_INODE;
-          break;
-    case 'mtime':
-          $iter_flags = APC_ITER_MTIME;
-          break;
-    case 'ctime':
-          $iter_flags = APC_ITER_CTIME;
-          break;
-    case 'dtime':
-          $iter_flags = APC_ITER_DTIME;
-          break;
-    case 'atime':
-          $iter_flags = APC_ITER_ATIME;
-          break;
-    default:
-          $iter_flags = APC_ITER_NONE;
-  }
-  $iterator = new APCIterator($cache_id, '/'.str_replace('/', '\/', $search).'/', $iter_flags, $limit, $list);
 
-  $count = 1;
-  $entries = array();
-  foreach($iterator as $key=>$info) {
-    $entries[$key] = $info[$sort];
-    if ($sort && ($count % $limit == 0)) {
-        if ($rsort) { 
-          arsort($entries);
-        } else {
-          asort($entries);
+  if ($sort || !$export) {
+    switch ($sort) {
+      case 'key':
+            $iter_flags = APC_ITER_KEY;
+            break;
+      case 'num_hits':
+            $iter_flags = APC_ITER_NUM_HITS;
+            break;
+      case 'mem_size':
+            $iter_flags = APC_ITER_MEM_SIZE;
+            break;
+      case 'ref_count':
+            $iter_flags = APC_ITER_REFCOUNT;
+            break;
+      case 'ttl':
+            $iter_flags = APC_ITER_TTL;
+            break;
+      case 'device':
+            $iter_flags = APC_ITER_DEVICE;
+            break;
+      case 'inode':
+            $iter_flags = APC_ITER_INODE;
+            break;
+      case 'mtime':
+            $iter_flags = APC_ITER_MTIME;
+            break;
+      case 'ctime':
+            $iter_flags = APC_ITER_CTIME;
+            break;
+      case 'dtime':
+            $iter_flags = APC_ITER_DTIME;
+            break;
+      case 'atime':
+            $iter_flags = APC_ITER_ATIME;
+            break;
+      default:
+            $iter_flags = APC_ITER_NONE;
+    }
+    $iterator = new APCIterator($cache_id, '/'.str_replace('/', '\/', $search).'/', $iter_flags, 0, $list);
+
+    $count = 1;
+    $entries = array();
+
+    foreach ($iterator as $key=>$info) {
+        $entries[$key] = $info[$sort];
+        if ($sort && ($count % $limit == 0)) {
+            if ($rsort) {
+              arsort($entries);
+            } else {
+              asort($entries);
+            }
+            $entries = array_splice($entries, 0, $limit);
         }
-        $entries = array_splice($entries, 0, $limit);
+        if (!$sort && count($entries) == $limit) break;
+        $count++;
     }
-    if (!$sort && count($entries) == $limit) break;
-    $count++;
+
+    if ($sort) {
+      if ($rsort) {
+        arsort($entries);
+      } else {
+        asort($entries);
+      }
+      $entries = array_splice($entries, 0, $limit);
+    }
   }
 
-  if ($sort) {
-    if ($rsort) { 
-      arsort($entries);
-    } else {
-      asort($entries);
-    }
-    $entries = array_splice($entries, 0, $limit);
+  if (!is_array($entries)) {
+    $iterator_full = new APCIterator($cache_id, NULL, APC_ITER_ALL & ~APC_ITER_VALUE & ~APC_ITER_TYPE, 0, $list);
+  } else {
+    $iterator_full = new APCIterator($cache_id, array_keys($entries),  APC_ITER_ALL & ~APC_ITER_VALUE & ~ APC_ITER_TYPE, 0, $list);
   }
 
-  $iterator_full = new APCIterator($cache_id, array_keys($entries), APC_ITER_ALL, $limit, $list);
-  $entries_full = array();
-  foreach($iterator_full as $key => $value) {
-    $entries_full[$key] = $value;
+  if ($export) {
+    foreach($iterator_full as $info) {
+      echo implode(',', array_keys($info))."\n";
+      break;
+    }
+    $count = 1;
+    foreach ($iterator_full as $info) {
+      if (is_string($info['key'])) $info['key'] = '"'.$info['key'].'"';
+      echo implode(',', $info)."\n";
+      if ($count == $limit) break;
+      $count++;
+    }
+    header("Content-type: application/csv");
+    header("Content-Disposition: attachment; filename=apc.csv");
+    header("Pragma: no-cache");
+    header("Expires: 0");
+    exit;
+  } else {
+    $entries_full = array();
+    foreach ($iterator_full as $key => $value) {
+      $entries_full[$key] = $value;
+    }
+    $entries = array_merge($entries, $entries_full);
   }
-  $entries = array_merge($entries, $entries_full);
-  
+
   $info = apc_cache_info($cache_id, true);
   $totals['search']['count'] = $iterator->getTotalCount();
   $totals['search']['num_hits'] = $iterator->getTotalHits();
@@ -496,12 +546,18 @@ function action_browse() {
     $totals['page']['mem_size'] += $entry['mem_size'];
   }
   $url = '?a='.$action_value.'&rsort='.$rsort.'&cache='.$cache_id.'&search='.$search.'&limit='.$limit;
+
   display_browse($cache_id, $info, $entries, $url, $totals);
+  echo '<br/><a href="'.$url.'&export=1'.'">Export View</a> &#8226; ';
+  echo "<a href='?a=$action_value&cache=$cache_id&limit=-1&export=1'>Export All</a>";
   display_footer();
 }
 
-function display_browse($cache_id, $info, $entries, $url, $totals) { ?>
-  <? global $action_value; ?>
+function display_browse($cache_id, $info, $entries, $url, $totals) {
+
+  global $action_value;
+
+?>
   <div style="position: relative; top: -10px; background: #eaeaff; height: 30px; padding-top: 10px;">
     <form method="GET" action="?">
     <input type='hidden' name='a' value='<?=$action_value?>'/>
@@ -951,23 +1007,23 @@ function action_exports() {
   }
 }
 
-function display_exports($exports) { ?>
-  <? global $action_value; ?>
-    <? $i=0; ?>
-    <? foreach($exports as $key=>$value) { ?>
-      <div><a href="?a=<?=$action_value?>&e=<?=$i?>"><?=$key?></a></div>
-        <? $i++; ?>
-        <? } ?>
+function display_exports($exports) {
+  global $action_value;
+  $i = 0;
+  foreach ($exports as $key=>$value) {
+    ?> <div><a href="?a=<?=$action_value?>&e=<?=$i?>"><?=$key?></a></div> <?
+    $i++;
+  }
+}
 
-        <? }
+function display_exports_raw_apc_cache_info() {
+  display_header($GLOBALS);
+  echo '<pre>';
+  var_dump(apc_cache_info());
+  echo '</pre>';
+  display_footer();
+}
 
-        function display_exports_raw_apc_cache_info() {
-          display_header($GLOBALS);
-          echo '<pre>';
-          var_dump(apc_cache_info());
-          echo '</pre>';
-          display_footer();
-        }
 function display_exports_raw_apc_sma_info() {
   display_header($GLOBALS);
   echo '<pre>';
@@ -1264,19 +1320,18 @@ function display_js() { ?>
   </script>
 <? }
 
-function display_footer() { ?>
-    <?
-      global $apc_start;
-      $apc_stop = microtime(true);
-      $total = $apc_stop - $apc_start;
-    ?>
+function display_footer() {
+  global $apc_start;
+  $apc_stop = microtime(true);
+  $total = $apc_stop - $apc_start;
+?>
     <br/><br/>
     <div style="font-size: 0.8em;">Gen Time: <?=$total?> seconds</div>
     <br/><br/>
     </div>
   </body>
-</html>
-<? }
+</html> <?
+}
 
 
 function bsize($s) {
