@@ -624,6 +624,9 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
 #ifdef ZEND_ENGINE_2_2
     dst->__tostring = NULL;
 #endif
+#ifdef ZEND_ENGINE_2_3
+	dst->__callstatic = NULL;
+#endif
 
     /* unset function proxies */
     dst->serialize_func = NULL;
@@ -1561,6 +1564,9 @@ static void my_fixup_function(Bucket *p, zend_class_entry *src, zend_class_entry
             SET_IF_SAME_NAME(__call);
 #ifdef ZEND_ENGINE_2_2
             SET_IF_SAME_NAME(__tostring);
+#endif
+#ifdef ZEND_ENGINE_2_3
+            SET_IF_SAME_NAME(__callstatic);
 #endif
         }
         zf->common.scope = dst;
