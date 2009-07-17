@@ -964,7 +964,7 @@ int apc_request_init(TSRMLS_D)
     for(i=0; i < APCG(num_file_caches); i++) {
         cache = &APCG(file_caches)[i];
         apc_stack_clear(cache->cache_stack);
-        if (!cache->compiled_filters) {
+        if (!cache->compiled_filters && cache->filters) {
             /* compile regex filters here to avoid race condition between MINIT of PCRE and APC.
              * This should be moved to apc_cache_create() if this race condition between modules is resolved */
             cache->compiled_filters = apc_regex_compile_array(cache->filters);
