@@ -502,8 +502,8 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
     }
 
     /* check our regular expression filters */
-    if (APCG(filters) && apc_compiled_filters && h->opened_path) {
-        int ret = apc_regex_match_array(apc_compiled_filters, h->opened_path);
+    if (APCG(filters) && APCG(compiled_filters) && h->opened_path) {
+        int ret = apc_regex_match_array(APCG(compiled_filters), h->opened_path);
 
         if(ret == APC_NEGATIVE_MATCH || (ret != APC_POSITIVE_MATCH && !APCG(cache_by_default))) {
             return old_compile_file(h, type TSRMLS_CC);
@@ -761,8 +761,6 @@ int apc_module_init(int module_number TSRMLS_DC)
     apc_cache = apc_cache_create(APCG(num_files_hint), APCG(gc_ttl), APCG(ttl));
     apc_user_cache = apc_cache_create(APCG(user_entries_hint), APCG(gc_ttl), APCG(user_ttl));
 
-    apc_compiled_filters = apc_regex_compile_array(APCG(filters) TSRMLS_CC);
-
     /* override compilation */
     old_compile_file = zend_compile_file;
     zend_compile_file = my_compile_file;
@@ -902,6 +900,7 @@ static void apc_deactivate(TSRMLS_D)
 int apc_request_init(TSRMLS_D)
 {
     apc_stack_clear(APCG(cache_stack));
+    APCG(compiled_filters) = apc_regex_compile_array(APCG(filters) TSRMLS_CC);
 
     if(APCG(lazy_functions)) {
         APCG(lazy_function_table) = emalloc(sizeof(HashTable));

@@ -79,11 +79,11 @@ ZEND_DECLARE_MODULE_GLOBALS(apc)
 /* True globals */
 apc_cache_t* apc_cache = NULL;
 apc_cache_t* apc_user_cache = NULL;
-void* apc_compiled_filters = NULL;
 
 static void php_apc_init_globals(zend_apc_globals* apc_globals TSRMLS_DC)
 {
     apc_globals->filters = NULL;
+    apc_globals->compiled_filters = NULL;
     apc_globals->initialized = 0;
     apc_globals->cache_stack = apc_stack_create(0);
     apc_globals->cache_by_default = 1;

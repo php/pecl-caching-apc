@@ -72,6 +72,7 @@ ZEND_BEGIN_MODULE_GLOBALS(apc)
     char *mmap_file_mask;   /* mktemp-style file-mask to pass to mmap */
 #endif
     char** filters;         /* array of regex filters that prevent caching */
+    void* compiled_filters; /* compiled regex filters */
 
     /* module variables */
     zend_bool initialized;       /* true if module was initialized */
