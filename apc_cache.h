@@ -58,6 +58,7 @@
 
 #define APC_CACHE_EXPUNGE_FLUSH  1
 #define APC_CACHE_EXPUNGE_LFU    2
+#define APC_CACHE_EXPUNGE_NONE   3 
 
 /* {{{ cache locking macros */
 #define CACHE_LOCK(cache)        { LOCK(cache->header->lock);   cache->has_lock = 1; }

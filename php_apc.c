@@ -408,6 +408,8 @@ static PHP_INI_MH(OnUpdateCache) /* {{{ */
 #else
                     apc_eprint("LFU expunge method specified, but LFU support not enabled.  (Try recompiling with --enable-apc-lfu.)");
 #endif
+                } else if (!strcasecmp(new_value, "none")) {
+                    *p = APC_CACHE_EXPUNGE_NONE;
                 } else {
                     apc_eprint("Unrecognized expunge method: %s.", new_value);
                 }
@@ -948,6 +950,8 @@ PHP_FUNCTION(apc_cache_info)
         } else if (info[i]->expunge_method == APC_CACHE_EXPUNGE_LFU) {
             add_assoc_string(cache_value, "expunge_method", "LFU", 1);
 #endif
+        } else if (info[i]->expunge_method == APC_CACHE_EXPUNGE_NONE) {
+            add_assoc_string(cache_value, "expunge_method", "NONE", 1);
         }
 
         add_assoc_long(cache_value, "segment_idx", info[i]->segment_idx);

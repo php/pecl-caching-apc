@@ -55,6 +55,7 @@ static void apc_cache_expunge_flush(apc_cache_t* cache, size_t size);
 #ifdef APC_LFU
 static void apc_cache_expunge_lfu(apc_cache_t* cache, size_t size);
 #endif
+static void apc_cache_expunge_none(apc_cache_t* cache, size_t size);
 
 /* {{{ hash */
 static unsigned int hash(apc_cache_key_t key)
@@ -335,6 +336,9 @@ void apc_cache_create(apc_cache_t *cache)
             cache->expunge_cb = apc_cache_expunge_lfu;
             break;
 #endif
+        case APC_CACHE_EXPUNGE_NONE:
+            cache->expunge_cb = apc_cache_expunge_none;
+            break;
         default:
             apc_eprint("Internal error: Unrecognized expunge method.");
     }
@@ -524,6 +528,27 @@ static void apc_cache_expunge_lfu(apc_cache_t* cache, size_t size)
 }
 /* }}} */
 #endif
+
+/* {{{ apc_cache_expunge_lfu */
+static void apc_cache_expunge_none(apc_cache_t* cache, size_t size)
+{
+
+    if(!cache) return;
+
+    CACHE_SAFE_LOCK(cache);
+
+    process_pending_removals(cache);
+    if (cache->header->expunges == 0) {
+        /* Issue a one-time error on our first expunge */
+        apc_wprint("Cache is full with an expunge method of 'none' (further errors will be silenced).");
+    }
+    cache->header->expunges++;
+
+    CACHE_SAFE_UNLOCK(cache);
+
+    return;
+}
+/* }}} */
 
 /* {{{ apc_cache_insert */
 static inline int _apc_cache_insert(apc_cache_t* cache,
