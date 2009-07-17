@@ -959,9 +959,16 @@ static void apc_deactivate(TSRMLS_D)
 int apc_request_init(TSRMLS_D)
 {
     int i;
+    apc_cache_t *cache;
 
     for(i=0; i < APCG(num_file_caches); i++) {
-        apc_stack_clear((&APCG(file_caches)[i])->cache_stack);
+        cache = &APCG(file_caches)[i];
+        apc_stack_clear(cache->cache_stack);
+        if (!cache->compiled_filters) {
+            /* compile regex filters here to avoid race condition between MINIT of PCRE and APC.
+             * This should be moved to apc_cache_create() if this race condition between modules is resolved */
+            cache->compiled_filters = apc_regex_compile_array(cache->filters);
+        }
     }
     APCG(slam_rand) = -1;
 

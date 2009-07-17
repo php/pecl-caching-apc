@@ -339,8 +339,6 @@ void apc_cache_create(apc_cache_t *cache)
             apc_eprint("Internal error: Unrecognized expunge method.");
     }
 
-    cache->compiled_filters = apc_regex_compile_array(cache->filters);
-
 }
 /* }}} */
 
