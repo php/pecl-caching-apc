@@ -900,7 +900,11 @@ static void apc_deactivate(TSRMLS_D)
 int apc_request_init(TSRMLS_D)
 {
     apc_stack_clear(APCG(cache_stack));
-    APCG(compiled_filters) = apc_regex_compile_array(APCG(filters) TSRMLS_CC);
+    if (!APCG(compiled_filters) && APCG(filters)) {
+        /* compile regex filters here to avoid race condition between MINIT of PCRE and APC.
+         * This should be moved to apc_cache_create() if this race condition between modules is resolved */
+        APCG(compiled_filters) = apc_regex_compile_array(APCG(filters) TSRMLS_CC);
+    }
 
     if(APCG(lazy_functions)) {
         APCG(lazy_function_table) = emalloc(sizeof(HashTable));
