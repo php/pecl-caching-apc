@@ -502,7 +502,7 @@ static zend_property_info* my_copy_property_info_for_execution(zend_property_inf
 /* {{{ my_copy_arg_info_array */
 static zend_arg_info* my_copy_arg_info_array(zend_arg_info* dst, const zend_arg_info* src, uint num_args, apc_context_t* ctxt)
 {
-    int i = 0;
+    uint i = 0;
 
 
     if (!dst) {
@@ -558,7 +558,7 @@ zend_class_entry* apc_copy_class_entry(zend_class_entry* dst, zend_class_entry* 
 /* {{{ my_copy_class_entry */
 static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_entry* src, apc_context_t* ctxt)
 {
-    int i = 0;
+    uint i = 0;
     apc_pool* pool = ctxt->pool;
 
     assert(src != NULL);
@@ -852,7 +852,7 @@ zval* apc_copy_zval(zval* dst, const zval* src, apc_context_t* ctxt)
 /* {{{ apc_fixup_op_array_jumps */
 static void apc_fixup_op_array_jumps(zend_op_array *dst, zend_op_array *src )
 {
-    int i;
+    uint i;
 
     for (i=0; i < dst->last; ++i) {
         zend_op *zo = &(dst->opcodes[i]);
@@ -944,7 +944,7 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_con
         /* assert(sizeof(apc_opflags_t) < sizeof(dst->reserved)); */
     }
 
-    for (i = 0; i < src->last; i++) {
+    for (i = 0; (uint) i < src->last; i++) {
         zend_op *zo = &(src->opcodes[i]);
         /* a lot of files are merely constant arrays with no jumps */
         switch (zo->opcode) {

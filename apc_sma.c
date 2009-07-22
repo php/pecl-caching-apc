@@ -45,7 +45,7 @@
 enum { DEFAULT_NUMSEG=1, DEFAULT_SEGSIZE=30*1024*1024 };
 
 static int sma_initialized = 0;     /* true if the sma has been initialized */
-static unsigned int sma_numseg;     /* number of shm segments to allow */
+static uint sma_numseg;     /* number of shm segments to allow */
 static size_t sma_segsize;          /* size of each shm segment */
 static apc_segment_t* sma_segments; /* array of shm segments */
 static int sma_lastseg = 0;         /* index of MRU segment */
@@ -335,7 +335,7 @@ static size_t sma_deallocate(void* shmaddr, size_t offset)
 
 void apc_sma_init(int numseg, size_t segsize, char *mmap_file_mask)
 {
-    int i;
+    uint i;
 
     if (sma_initialized) {
         return;
@@ -422,7 +422,7 @@ void apc_sma_init(int numseg, size_t segsize, char *mmap_file_mask)
 /* {{{ apc_sma_cleanup */
 void apc_sma_cleanup()
 {
-    int i;
+    uint i;
 
     assert(sma_initialized);
 
@@ -443,7 +443,7 @@ void apc_sma_cleanup()
 void* apc_sma_malloc_ex(size_t n, size_t fragment, size_t* allocated)
 {
     size_t off;
-    int i;
+    uint i;
 
     TSRMLS_FETCH();
     assert(sma_initialized);
@@ -536,7 +536,7 @@ char* apc_sma_strdup(const char* s)
 /* {{{ apc_sma_free */
 void apc_sma_free(void* p)
 {
-    int i;
+    uint i;
     size_t offset;
     size_t d_size;
 
@@ -634,7 +634,7 @@ apc_sma_info_t* apc_sma_info(zend_bool limited)
 {
     apc_sma_info_t* info;
     apc_sma_link_t** link;
-    int i;
+    uint i;
     char* shmaddr;
     block_t* prv;
 
@@ -711,7 +711,7 @@ void apc_sma_free_info(apc_sma_info_t* info)
 size_t apc_sma_get_avail_mem()
 {
     size_t avail_mem = 0;
-    int i;
+    uint i;
 
     for (i = 0; i < sma_numseg; i++) {
         sma_header_t* header = SMA_HDR(i);

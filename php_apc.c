@@ -717,8 +717,8 @@ static int inc_updater(apc_cache_t* cache, apc_cache_entry_t* entry, void* data)
     zval* val = entry->data.user.val;
 
     if(Z_TYPE_P(val) == IS_LONG) {
-        val->value.lval += args->step;
-        args->lval = val->value.lval;
+        Z_LVAL_P(val) += args->step;
+        args->lval = Z_LVAL_P(val);
         return 1;
     }
 
@@ -782,8 +782,8 @@ static int cas_updater(apc_cache_t* cache, apc_cache_entry_t* entry, void* data)
     zval* val = entry->data.user.val;
 
     if(Z_TYPE_P(val) == IS_LONG) {
-        if(val->value.lval == old) {
-            val->value.lval = new;
+        if(Z_LVAL_P(val) == old) {
+            Z_LVAL_P(val) = new;
             return 1;
         }
     }

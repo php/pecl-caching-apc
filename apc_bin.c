@@ -36,7 +36,7 @@
 extern apc_cache_t* apc_cache;
 extern apc_cache_t* apc_user_cache;
 
-extern int _apc_store(char *strkey, int strkey_len, const zval *val, const unsigned int ttl, const int exclusive TSRMLS_DC); /* this is hacky */
+extern int _apc_store(char *strkey, int strkey_len, const zval *val, const uint ttl, const int exclusive TSRMLS_DC); /* this is hacky */
 
 #define APC_BINDUMP_DEBUG 0
 
@@ -45,7 +45,7 @@ extern int _apc_store(char *strkey, int strkey_len, const zval *val, const unsig
 
 #define SWIZZLE(bd, ptr)  \
     do { \
-        if((long)bd < (long)ptr && (long)ptr < ((long)bd + bd->size)) { \
+        if((long)bd < (long)ptr && (ulong)ptr < ((long)bd + bd->size)) { \
             printf("SWIZZLE: %x ~> ", ptr); \
             ptr = (void*)((long)(ptr) - (long)(bd)); \
             printf("%x in %s on line %d", ptr, __FILE__, __LINE__); \
@@ -66,9 +66,9 @@ extern int _apc_store(char *strkey, int strkey_len, const zval *val, const unsig
 
 #define SWIZZLE(bd, ptr) \
     do { \
-        if((long)bd < (long)ptr && (long)ptr < ((long)bd + bd->size)) { \
+        if((long)bd < (long)ptr && (ulong)ptr < ((long)bd + bd->size)) { \
             ptr = (void*)((long)(ptr) - (long)(bd)); \
-        } else if((long)ptr > bd->size) { /* not swizzled */ \
+        } else if((ulong)ptr > bd->size) { /* not swizzled */ \
             apc_eprint("pointer to be swizzled is not within allowed memory range! (%x < %x < %x) in %s on %d", (long)bd, ptr, ((long)bd + bd->size), __FILE__, __LINE__); \
         } \
     } while(0);
@@ -159,13 +159,13 @@ static void *apc_bd_alloc_ex(void *ptr_new, size_t size) {
 /* {{{ _apc_swizzle_ptr */
 static void _apc_swizzle_ptr(apc_bd_t *bd, zend_llist *ll, void **ptr, const char* file, int line TSRMLS_DC) {
     if(*ptr) {
-        if((long)bd < (long)*ptr && (long)*ptr < ((long)bd + bd->size)) {
+        if((long)bd < (long)*ptr && (ulong)*ptr < ((long)bd + bd->size)) {
             zend_llist_add_element(ll, &ptr);
 #if APC_BINDUMP_DEBUG
             printf("[%06d] apc_swizzle_ptr: %x -> %x ", zend_llist_count(ll), ptr, *ptr);
             printf(" in %s on line %d \n", file, line);
 #endif
-        } else if((long)ptr > bd->size) {
+        } else if((ulong)ptr > bd->size) {
             apc_eprint("pointer to be swizzled is not within allowed memory range! (%x < %x < %x) in %s on %d", (long)bd, *ptr, ((long)bd + bd->size), file, line); \
         }
     }
@@ -174,7 +174,7 @@ static void _apc_swizzle_ptr(apc_bd_t *bd, zend_llist *ll, void **ptr, const cha
 
 /* {{{ apc_swizzle_op_array */
 static void apc_swizzle_op_array(apc_bd_t *bd, zend_llist *ll, zend_op_array *op_array TSRMLS_DC) {
-    int i;
+    uint i;
 
 #ifdef ZEND_ENGINE_2
     apc_swizzle_arg_info_array(bd, ll, op_array->arg_info, op_array->num_args TSRMLS_CC);
@@ -233,7 +233,7 @@ static void apc_swizzle_op_array(apc_bd_t *bd, zend_llist *ll, zend_op_array *op
 #ifdef ZEND_ENGINE_2_1 /* PHP 5.1 */
     /* vars */
     if(op_array->vars) {
-        for(i=0; i < op_array->last_var; i++) {
+        for(i=0; (signed int) i < op_array->last_var; i++) {
             apc_swizzle_ptr(bd, ll, &op_array->vars[i].name);
         }
         apc_swizzle_ptr(bd, ll, &op_array->vars);
@@ -341,10 +341,9 @@ static void apc_swizzle_function_entry(apc_bd_t *bd, zend_llist *ll, const zend_
 
 /* {{{ apc_swizzle_arg_info_array */
 static void apc_swizzle_arg_info_array(apc_bd_t *bd, zend_llist *ll, const zend_arg_info* arg_info_array, uint num_args TSRMLS_DC) {
-
-    int i;
-
     if(arg_info_array) {
+        uint i;
+
         for(i=0; i < num_args; i++) {
             apc_swizzle_ptr(bd, ll, &arg_info_array[i].name);
             apc_swizzle_ptr(bd, ll, &arg_info_array[i].class_name);
@@ -356,7 +355,7 @@ static void apc_swizzle_arg_info_array(apc_bd_t *bd, zend_llist *ll, const zend_
 
 /* {{{ apc_swizzle_hashtable */
 static void apc_swizzle_hashtable(apc_bd_t *bd, zend_llist *ll, HashTable *ht, apc_swizzle_cb_t swizzle_cb, int is_ptr TSRMLS_DC) {
-    int i;
+    uint i;
     Bucket **bp, **bp_prev;
 
     bp = &ht->pListHead;
@@ -449,7 +448,7 @@ static apc_bd_t* apc_swizzle_bd(apc_bd_t* bd, zend_llist *ll TSRMLS_DC) {
         printf("[%06d] ", i+1);
 #endif
         SWIZZLE(bd, **ptr); /* swizzle ptr */
-        if((long)bd < (long)*ptr && (long)*ptr < ((long)bd + bd->size)) {  /* exclude ptrs that aren't actually included in the ptr list */
+        if((long)bd < (long)*ptr && (ulong)*ptr < ((long)bd + bd->size)) {  /* exclude ptrs that aren't actually included in the ptr list */
 #if APC_BINDUMP_DEBUG
             printf("[------] ");
 #endif
@@ -573,7 +572,7 @@ static int apc_bin_checkfilter(HashTable *filter, const char *key, uint key_len)
 
 /* {{{ apc_bin_fixup_op_array */
 static inline void apc_bin_fixup_op_array(zend_op_array *op_array) {
-    long i;
+    ulong i;
     for (i = 0; i < op_array->last; i++) {
         op_array->opcodes[i].handler = zend_opcode_handlers[APC_OPCODE_HANDLER_DECODE(&op_array->opcodes[i])];
     }
@@ -607,7 +606,8 @@ static inline void apc_bin_fixup_class_entry(zend_class_entry *ce) {
 /* {{{ apc_bin_dump */
 apc_bd_t* apc_bin_dump(HashTable *files, HashTable *user_vars TSRMLS_DC) {
 
-    int i, fcount;
+    int i;
+    uint fcount;
     slot_t *sp;
     apc_bd_entry_t *ep;
     int count=0;
@@ -789,7 +789,8 @@ apc_bd_t* apc_bin_dump(HashTable *files, HashTable *user_vars TSRMLS_DC) {
 int apc_bin_load(apc_bd_t *bd, int flags TSRMLS_DC) {
 
     apc_bd_entry_t *ep;
-    int i, i2, ret;
+    uint i, i2;
+    int ret;
     time_t t;
     zend_op_array *alloc_op_array = NULL;
     apc_function_t *alloc_functions = NULL;

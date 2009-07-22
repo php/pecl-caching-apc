@@ -36,7 +36,7 @@
 #endif
 
 #ifdef MULTIPART_EVENT_FORMDATA
-extern int _apc_store(char *strkey, int strkey_len, const zval *val, const unsigned int ttl, const int exclusive TSRMLS_DC);
+extern int _apc_store(char *strkey, int strkey_len, const zval *val, const uint ttl, const int exclusive TSRMLS_DC);
 extern int _apc_update(char *strkey, int strkey_len, apc_cache_updater_t updater, void* data TSRMLS_DC);
 
 static int update_bytes_processed(apc_cache_t* cache, apc_cache_entry_t* entry, void* data) {
@@ -71,7 +71,7 @@ static double my_time() {
 #define RFC1867_DATA(name) \
                 ((request_data)->name)
 
-int apc_rfc1867_progress(unsigned int event, void *event_data, void **extra TSRMLS_DC) {
+int apc_rfc1867_progress(uint event, void *event_data, void **extra TSRMLS_DC) {
     apc_rfc1867_data *request_data = &APCG(rfc1867_data);
     zval *track = NULL;
 
@@ -90,10 +90,10 @@ int apc_rfc1867_progress(unsigned int event, void *event_data, void **extra TSRM
                 RFC1867_DATA(start_time)        = my_time();
                 RFC1867_DATA(bytes_processed)   = 0;
                 RFC1867_DATA(rate)              = 0;
-                RFC1867_DATA(update_freq)       = APCG(rfc1867_freq);
+                RFC1867_DATA(update_freq)       = (int) APCG(rfc1867_freq);
                 
                 if(RFC1867_DATA(update_freq) < 0) {  // frequency is a percentage, not bytes
-                    RFC1867_DATA(update_freq) = RFC1867_DATA(content_length) * APCG(rfc1867_freq) / 100; 
+                    RFC1867_DATA(update_freq) = (int) (RFC1867_DATA(content_length) * APCG(rfc1867_freq) / 100); 
                 }
             }
             break;
@@ -138,7 +138,7 @@ int apc_rfc1867_progress(unsigned int event, void *event_data, void **extra TSRM
             if(*RFC1867_DATA(tracking_key)) {
                 multipart_event_file_data *data = (multipart_event_file_data *) event_data;
                 RFC1867_DATA(bytes_processed) = data->post_bytes_processed;
-                if(RFC1867_DATA(bytes_processed) - RFC1867_DATA(prev_bytes_processed) > RFC1867_DATA(update_freq)) {
+                if(RFC1867_DATA(bytes_processed) - RFC1867_DATA(prev_bytes_processed) > (uint) RFC1867_DATA(update_freq)) {
                     if(!_apc_update(RFC1867_DATA(tracking_key), RFC1867_DATA(key_length), update_bytes_processed, &RFC1867_DATA(bytes_processed) TSRMLS_CC)) {
                         ALLOC_INIT_ZVAL(track);
                         array_init(track);
