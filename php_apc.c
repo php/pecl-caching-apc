@@ -475,14 +475,14 @@ PHP_FUNCTION(apc_cache_info)
 PHP_FUNCTION(apc_clear_cache)
 {
     char *cache_type;
-    int ct_len;
+    int ct_len = 0;
 
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|s", &cache_type, &ct_len) == FAILURE) {
         return;
     }
 
-    if(ZEND_NUM_ARGS()) {
-        if(!strcasecmp(cache_type,"user")) {
+    if(ct_len) {
+        if(!strcasecmp(cache_type, "user")) {
             apc_cache_clear(apc_user_cache);
             RETURN_TRUE;
         }
@@ -792,7 +792,7 @@ static int cas_updater(apc_cache_t* cache, apc_cache_entry_t* entry, void* data)
 }
 /* }}} */
 
-/* {{{ proto int apc_cas(string key, long old, long new)
+/* {{{ proto int apc_cas(string key, int old, int new)
  */
 PHP_FUNCTION(apc_cas) {
     char *strkey;
@@ -1042,7 +1042,7 @@ static void _apc_define_constants(zval *constants, zend_bool case_sensitive TSRM
     }
 }
 
-/* {{{ proto mixed apc_define_constants(string key, array constants [,bool case-sensitive])
+/* {{{ proto mixed apc_define_constants(string key, array constants [, bool case_sensitive])
  */
 PHP_FUNCTION(apc_define_constants) {
     char *strkey;
@@ -1062,7 +1062,7 @@ PHP_FUNCTION(apc_define_constants) {
     RETURN_FALSE;
 } /* }}} */
 
-/* {{{ proto mixed apc_load_constants(string key [, bool case-sensitive])
+/* {{{ proto mixed apc_load_constants(string key [, bool case_sensitive])
  */
 PHP_FUNCTION(apc_load_constants) {
     char *strkey;
@@ -1301,7 +1301,7 @@ PHP_FUNCTION(apc_compile_file) {
 }
 /* }}} */
 
-/* {{{ proto mixed apc_bin_dump(optional array files, optional array user_vars)
+/* {{{ proto mixed apc_bin_dump([array files [, array user_vars]])
     Returns a binary dump of the given files and user variables from the APC cache.
     A NULL for files or user_vars signals a dump of every entry, while array() will dump nothing.
  */
@@ -1333,7 +1333,7 @@ PHP_FUNCTION(apc_bin_dump) {
     return;
 }
 
-/* {{{ proto mixed apc_bin_dumpfile(array files, array user_vars, string filename, long flags, resource context)
+/* {{{ proto mixed apc_bin_dumpfile(array files, array user_vars, string filename, [int flags [, resource context]])
     Output a binary dump of the given files and user variables from the APC cache to the named file.
  */
 PHP_FUNCTION(apc_bin_dumpfile) {
@@ -1492,39 +1492,129 @@ PHP_FUNCTION(apc_bin_loadfile) {
 /* }}} */
 
 /* {{{ arginfo */
-ZEND_BEGIN_ARG_INFO_EX(php_apc_fetch_arginfo, 0, 0, 1)
+#if (PHP_MAJOR_VERSION >= 6 || (PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION >= 3))
+# define PHP_APC_ARGINFO
+#else
+# define PHP_APC_ARGINFO static
+#endif
+
+PHP_APC_ARGINFO
+ZEND_BEGIN_ARG_INFO_EX(arginfo_apc_store, 0, 0, 2)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_INFO(0, var)
+    ZEND_ARG_INFO(0, ttl)
+ZEND_END_ARG_INFO()
+
+PHP_APC_ARGINFO
+ZEND_BEGIN_ARG_INFO_EX(arginfo_apc_clear_cache, 0, 0, 0)
+    ZEND_ARG_INFO(0, info)
+ZEND_END_ARG_INFO()
+
+PHP_APC_ARGINFO
+ZEND_BEGIN_ARG_INFO_EX(arginfo_apc_cache_info, 0, 0, 0)
+    ZEND_ARG_INFO(0, type)
+    ZEND_ARG_INFO(0, limited)
+ZEND_END_ARG_INFO()
+
+PHP_APC_ARGINFO
+ZEND_BEGIN_ARG_INFO_EX(arginfo_apc_define_constants, 0, 0, 2)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_INFO(0, constants)
+    ZEND_ARG_INFO(0, case_sensitive)
+ZEND_END_ARG_INFO()
+
+PHP_APC_ARGINFO
+ZEND_BEGIN_ARG_INFO(arginfo_apc_delete_file, 0)
+	ZEND_ARG_INFO(0, keys)
+ZEND_END_ARG_INFO()
+
+PHP_APC_ARGINFO
+ZEND_BEGIN_ARG_INFO(arginfo_apc_delete, 0)
+	ZEND_ARG_INFO(0, keys)
+ZEND_END_ARG_INFO()
+
+PHP_APC_ARGINFO
+ZEND_BEGIN_ARG_INFO_EX(arginfo_apc_fetch, 0, 0, 1)
     ZEND_ARG_INFO(0, key)
     ZEND_ARG_INFO(1, success)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO_EX(php_apc_inc_arginfo, 0, 0, 1)
+PHP_APC_ARGINFO
+ZEND_BEGIN_ARG_INFO_EX(arginfo_apc_inc, 0, 0, 1)
     ZEND_ARG_INFO(0, key)
     ZEND_ARG_INFO(0, step)
     ZEND_ARG_INFO(1, success)
+ZEND_END_ARG_INFO()
+
+PHP_APC_ARGINFO
+ZEND_BEGIN_ARG_INFO(arginfo_apc_cas, 0)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_INFO(0, old)
+    ZEND_ARG_INFO(0, new)
+ZEND_END_ARG_INFO()
+
+PHP_APC_ARGINFO
+ZEND_BEGIN_ARG_INFO_EX(arginfo_apc_load_constants, 0, 0, 1)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_INFO(0, case_sensitive)
+ZEND_END_ARG_INFO()
+
+PHP_APC_ARGINFO
+ZEND_BEGIN_ARG_INFO_EX(arginfo_apc_compile_file, 0, 0, 1)
+    ZEND_ARG_INFO(0, filenames)
+    ZEND_ARG_INFO(0, atomic)
+ZEND_END_ARG_INFO()
+
+PHP_APC_ARGINFO
+ZEND_BEGIN_ARG_INFO_EX(arginfo_apc_bin_dump, 0, 0, 0)
+    ZEND_ARG_INFO(0, files)
+    ZEND_ARG_INFO(0, user_vars)
+ZEND_END_ARG_INFO()
+
+PHP_APC_ARGINFO
+ZEND_BEGIN_ARG_INFO_EX(arginfo_apc_bin_dumpfile, 0, 0, 3)
+    ZEND_ARG_INFO(0, files)
+    ZEND_ARG_INFO(0, user_vars)
+    ZEND_ARG_INFO(0, filename)
+    ZEND_ARG_INFO(0, flags)
+    ZEND_ARG_INFO(0, context)
+ZEND_END_ARG_INFO()
+
+PHP_APC_ARGINFO
+ZEND_BEGIN_ARG_INFO_EX(arginfo_apc_bin_load, 0, 0, 1)
+    ZEND_ARG_INFO(0, data)
+    ZEND_ARG_INFO(0, flags)
+ZEND_END_ARG_INFO()
+
+PHP_APC_ARGINFO
+ZEND_BEGIN_ARG_INFO_EX(arginfo_apc_bin_loadfile, 0, 0, 1)
+    ZEND_ARG_INFO(0, filename)
+    ZEND_ARG_INFO(0, context)
+    ZEND_ARG_INFO(0, flags)
 ZEND_END_ARG_INFO()
 /* }}} */
 
 /* {{{ apc_functions[] */
 function_entry apc_functions[] = {
-    PHP_FE(apc_cache_info,          NULL)
-    PHP_FE(apc_clear_cache,         NULL)
-    PHP_FE(apc_sma_info,            NULL)
-    PHP_FE(apc_store,               NULL)
-    PHP_FE(apc_fetch,               php_apc_fetch_arginfo)
-    PHP_FE(apc_delete,              NULL)
-    PHP_FE(apc_delete_file,         NULL)
-    PHP_FE(apc_define_constants,    NULL)
-    PHP_FE(apc_load_constants,      NULL)
-    PHP_FE(apc_compile_file,        NULL)
-    PHP_FE(apc_add,                 NULL)
-    PHP_FE(apc_inc,                 php_apc_inc_arginfo)
-    PHP_FE(apc_dec,                 php_apc_inc_arginfo)
-    PHP_FE(apc_cas,                 NULL)
-    PHP_FE(apc_bin_dump,            NULL)
-    PHP_FE(apc_bin_load,            NULL)
-    PHP_FE(apc_bin_dumpfile,        NULL)
-    PHP_FE(apc_bin_loadfile,        NULL)
-    {NULL,    NULL,                 NULL}
+    PHP_FE(apc_cache_info,          arginfo_apc_cache_info)
+    PHP_FE(apc_clear_cache,         arginfo_apc_clear_cache)
+    PHP_FE(apc_sma_info,            arginfo_apc_clear_cache)
+    PHP_FE(apc_store,               arginfo_apc_store)
+    PHP_FE(apc_fetch,               arginfo_apc_fetch)
+    PHP_FE(apc_delete,              arginfo_apc_delete)
+    PHP_FE(apc_delete_file,         arginfo_apc_delete_file)
+    PHP_FE(apc_define_constants,    arginfo_apc_define_constants)
+    PHP_FE(apc_load_constants,      arginfo_apc_load_constants)
+    PHP_FE(apc_compile_file,        arginfo_apc_compile_file)
+    PHP_FE(apc_add,                 arginfo_apc_store)
+    PHP_FE(apc_inc,                 arginfo_apc_inc)
+    PHP_FE(apc_dec,                 arginfo_apc_inc)
+    PHP_FE(apc_cas,                 arginfo_apc_cas)
+    PHP_FE(apc_bin_dump,            arginfo_apc_bin_dump)
+    PHP_FE(apc_bin_load,            arginfo_apc_bin_load)
+    PHP_FE(apc_bin_dumpfile,        arginfo_apc_bin_dumpfile)
+    PHP_FE(apc_bin_loadfile,        arginfo_apc_bin_loadfile)
+    {NULL, NULL, NULL}
 };
 /* }}} */
 
