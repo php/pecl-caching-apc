@@ -17,7 +17,10 @@ if (PHP_APC != "no") {
 							 apc_rfc1867.c \
 							 apc_zend.c \
 							 apc_pool.c \
-							 apc_bin.c ";
+							 apc_bin.c \
+							 apc_signal.c \
+							 apc_spin.c \
+							 pgsql_s_lock.c";
                
 	EXTENSION('apc', apc_sources);
 	AC_DEFINE('HAVE_APC', 1);
