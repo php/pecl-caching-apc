@@ -140,7 +140,7 @@ static apc_iterator_item_t* apc_iterator_item_ctor(apc_iterator_t *iterator, slo
 
 /* {{{ apc_iterator_clone */
 static zend_object_value apc_iterator_clone(zval *zobject TSRMLS_DC) {
-    zend_object_value value;
+    zend_object_value value = {0};
     apc_eprint("APCIterator object cannot be cloned.");
     return value;
 }
