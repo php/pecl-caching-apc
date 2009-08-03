@@ -265,6 +265,8 @@ void apc_cache_clear(apc_cache_t* cache)
         cache->slots[i] = NULL;
     }
 
+    memset(&cache->header->lastkey, 0, sizeof(apc_keyid_t));
+
     cache->header->busy = 0;
     CACHE_UNLOCK(cache);
 }
