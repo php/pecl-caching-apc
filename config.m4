@@ -5,7 +5,7 @@ dnl
 PHP_ARG_ENABLE(apc, whether to enable APC support,
 [  --enable-apc           Enable APC support])
 
-AC_MSG_CHECKING(Checking whether we should enable cache request file info)
+AC_MSG_CHECKING(whether we should enable cache request file info)
 AC_ARG_ENABLE(apc-filehits,
 [  --enable-apc-filehits   Enable per request file info about files used from the APC cache (ie: apc_cache_info('filehits')) ],
 [
@@ -17,7 +17,7 @@ AC_ARG_ENABLE(apc-filehits,
 	AC_MSG_RESULT(no)
 ])
 
-AC_MSG_CHECKING(Checking whether we should use mmap)
+AC_MSG_CHECKING(whether we should use mmap)
 AC_ARG_ENABLE(apc-mmap,
 [  --disable-apc-mmap
                           Disable mmap support and use IPC shm instead],
@@ -29,7 +29,7 @@ AC_ARG_ENABLE(apc-mmap,
   AC_MSG_RESULT(yes)
 ])
 
-AC_MSG_CHECKING(Checking whether we should use semaphore locking instead of fcntl)
+AC_MSG_CHECKING(whether we should use semaphore locking instead of fcntl)
 AC_ARG_ENABLE(apc-sem,
 [  --enable-apc-sem
                           Enable semaphore locks instead of fcntl],
@@ -41,7 +41,7 @@ AC_ARG_ENABLE(apc-sem,
   AC_MSG_RESULT(no)
 ])
 
-AC_MSG_CHECKING(Checking whether we should use pthread mutex locking)
+AC_MSG_CHECKING(whether we should use pthread mutex locking)
 AC_ARG_ENABLE(apc-pthreadmutex,
 [  --disable-apc-pthreadmutex
                           Disable pthread mutex locking ],
@@ -53,6 +53,7 @@ AC_ARG_ENABLE(apc-pthreadmutex,
   PHP_APC_PTHREADMUTEX=yes
   AC_MSG_RESULT(yes)
 ])
+
 if test "$PHP_APC_PTHREADMUTEX" != "no"; then
 	orig_LIBS="$LIBS"
 	LIBS="$LIBS -lpthread"
@@ -103,7 +104,7 @@ if test "$PHP_APC_PTHREADMUTEX" != "no"; then
 	LIBS="$orig_LIBS"
 fi
 
-AC_MSG_CHECKING(Checking whether we should use spin locks)
+AC_MSG_CHECKING(whether we should use spin locks)
 AC_ARG_ENABLE(apc-spinlocks,
 [  --enable-apc-spinlocks
                           Enable spin locks  EXPERIMENTAL ],
@@ -116,7 +117,7 @@ AC_ARG_ENABLE(apc-spinlocks,
   AC_MSG_RESULT(no)
 ])
 
-AC_MSG_CHECKING(Checking whether we should enable memory protection)
+AC_MSG_CHECKING(whether we should enable memory protection)
 AC_ARG_ENABLE(memory-protection,
 [  --enable-memory-protection
                           Enable mmap/shm memory protection],
