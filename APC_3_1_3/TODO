@@ -1,0 +1,30 @@
+Known Bugs
+ 
+1.   Gallery2 doesn't work with PHP5+APC.  There is something wrong
+     with the way methods are restored in some edge case I haven't
+     been able to figure out yet.
+     To reproduce install gallery2 and click down to an individual photo.
+
+2.   apc_store() probably needs some checks to skip trying to store
+     internal classes.  Something along the lines of:
+
+     if(Z_TYPE_P(val) == IS_OBJECT) {
+        zend_class_entry *ce = Z_OBJCE_P(val);
+        if(ce->type == ZEND_INTERNAL_CLASS) {
+            php_error_docref(NULL TSRMLS_CC, E_WARNING, "Cannot cache internal objects");
+            RETURN_FALSE;
+        }
+     }
+
+     in the apc_store() function in php_apc.c but I am wondering if it needs to do more
+     than that.
+
+Enhancements
+
+1.   Some faster platform-specific locking mechanisms wouldd be nice.  futex support
+     for the 2.6 Linux kernels, and/or x86-specific spinlock support.
+
+2.   The optimizer needs a lot of work.  
+
+3.   Assert() elimination in the optimizer when some debug flag somewhere isn't set.
+
