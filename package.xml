@@ -87,6 +87,8 @@
     <file role="src" name="apc.c" />
     <file role="src" name="apc.dsp" />
     <file role="src" name="apc.h" />
+    <file role="src" name="apc_bin.c" />
+    <file role="src" name="apc_bin.h" />
     <file role="src" name="apc_cache.c" />
     <file role="src" name="apc_cache.h" />
     <file role="src" name="apc_compile.c" />
