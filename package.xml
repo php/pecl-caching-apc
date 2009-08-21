@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8" ?>
+﻿<?xml version="1.0" encoding="UTF-8" ?>
 <package xmlns="http://pear.php.net/dtd/package-2.0" xmlns:tasks="http://pear.php.net/dtd/tasks-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" packagerversion="1.4.7" version="2.0" xsi:schemaLocation="http://pear.php.net/dtd/tasks-1.0 http://pear.php.net/dtd/tasks-1.0.xsd http://pear.php.net/dtd/package-2.0 http://pear.php.net/dtd/package-2.0.xsd">
  <name>APC</name>
  <channel>pecl.php.net</channel>
@@ -59,12 +59,12 @@
   <active>yes</active>
  </developer>
  
- <date>2009-08-14</date>
- <version><release>3.1.3p1</release><api>3.1.0</api></version>
+ <date>2009-08-21</date>
+ <version><release>3.1.4</release><api>3.1.0</api></version>
  <stability><release>beta</release><api>beta</api></stability>
  <license uri="http://www.php.net/license">PHP License</license>
  <notes>
- - fix pecl build / package.xml (Gopal)
+- Fixed pecl bug #16717 (apc_fetch dies after 1 hour, regardless of ttl settings) (Kalle)
  </notes>
 
  <contents>
@@ -571,6 +571,15 @@ Allow keys used in apc_store/apc_fetch/apc_delete to be binary safe and prevent 
 - memprotect framework (Gopal)
 - Win32 build-fixes (Kalle)
   </notes>
+    </release>
+    <release>
+     <version><release>3.1.3p1</release><api>3.1.0</api></version>
+     <stability><release>beta</release><api>beta</api></stability>
+     <license uri="http://www.php.net/license">PHP License</license>
+     <date>2009-08-14</date>
+     <notes>
+- fix pecl build / package.xml (Gopal)
+     </notes>
     </release>
  </changelog>
 </package>
