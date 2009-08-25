@@ -754,9 +754,9 @@ int apc_module_init(int module_number TSRMLS_DC)
 {
     /* apc initialization */
 #if APC_MMAP
-    apc_sma_init(APCG(shm_segments), APCG(shm_size)*1024*1024, APCG(mmap_file_mask));
+    apc_sma_init(APCG(shm_segments), APCG(shm_size), APCG(mmap_file_mask));
 #else
-    apc_sma_init(APCG(shm_segments), APCG(shm_size)*1024*1024, NULL);
+    apc_sma_init(APCG(shm_segments), APCG(shm_size), NULL);
 #endif
     apc_cache = apc_cache_create(APCG(num_files_hint), APCG(gc_ttl), APCG(ttl));
     apc_user_cache = apc_cache_create(APCG(user_entries_hint), APCG(gc_ttl), APCG(user_ttl));

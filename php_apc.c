@@ -152,6 +152,26 @@ static PHP_INI_MH(OnUpdateShmSegments) /* {{{ */
 }
 /* }}} */
 
+static PHP_INI_MH(OnUpdateShmSize) /* {{{ */
+{
+	long s = zend_atol(new_value, new_value_length);
+
+	if(s <= 0) {
+		return FAILURE;
+	}
+
+	if(s < 1048576L) {
+		/* if it's less than 1Mb, they are probably using the old syntax */
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "apc.shm_size now uses M/G suffixes, please update your ini files");
+		s = s * 1048576L;
+	}
+
+	APCG(shm_size) = s;
+
+	return SUCCESS;
+}
+/* }}} */
+
 #ifdef MULTIPART_EVENT_FORMDATA
 static PHP_INI_MH(OnUpdateRfc1867Freq) /* {{{ */
 {
@@ -180,7 +200,7 @@ static PHP_INI_MH(OnUpdateRfc1867Freq) /* {{{ */
 PHP_INI_BEGIN()
 STD_PHP_INI_BOOLEAN("apc.enabled",      "1",    PHP_INI_SYSTEM, OnUpdateBool,              enabled,         zend_apc_globals, apc_globals)
 STD_PHP_INI_ENTRY("apc.shm_segments",   "1",    PHP_INI_SYSTEM, OnUpdateShmSegments,       shm_segments,    zend_apc_globals, apc_globals)
-STD_PHP_INI_ENTRY("apc.shm_size",       "30",   PHP_INI_SYSTEM, OnUpdateInt,            shm_size,        zend_apc_globals, apc_globals)
+STD_PHP_INI_ENTRY("apc.shm_size",       "32M",  PHP_INI_SYSTEM, OnUpdateShmSize,           shm_size,        zend_apc_globals, apc_globals)
 STD_PHP_INI_BOOLEAN("apc.include_once_override", "0", PHP_INI_SYSTEM, OnUpdateBool,     include_once,    zend_apc_globals, apc_globals)
 STD_PHP_INI_ENTRY("apc.num_files_hint", "1000", PHP_INI_SYSTEM, OnUpdateInt,            num_files_hint,  zend_apc_globals, apc_globals)
 STD_PHP_INI_ENTRY("apc.user_entries_hint", "4096", PHP_INI_SYSTEM, OnUpdateInt,          user_entries_hint, zend_apc_globals, apc_globals)
