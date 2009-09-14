@@ -127,6 +127,41 @@ static void php_apc_shutdown_globals(zend_apc_globals* apc_globals TSRMLS_DC)
     /* the rest of the globals are cleaned up in apc_module_shutdown() */
 }
 
+static long apc_atol(const char *str, int str_len)
+{
+#if PHP_MAJOR_VERSION >= 6 || PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION >= 3
+	return zend_atol(str, str_len);
+#else
+	/* Re-implement zend_atol() for 5.2.x */
+	long retval;
+
+	if (!str_len) {
+		str_len = strlen(str);
+	}
+
+	retval = strtol(str, NULL, 0);
+
+	if (str_len > 0) {
+		switch (str[str_len - 1]) {
+			case 'g':
+			case 'G':
+				retval *= 1024;
+				/* break intentionally missing */
+			case 'm':
+			case 'M':
+				retval *= 1024;
+				/* break intentionally missing */
+			case 'k':
+			case 'K':
+				retval *= 1024;
+				break;
+		}
+	}
+
+	return retval;
+#endif
+}
+
 /* }}} */
 
 /* {{{ PHP_INI */
@@ -141,12 +176,12 @@ static PHP_INI_MH(OnUpdate_filters) /* {{{ */
 static PHP_INI_MH(OnUpdateShmSegments) /* {{{ */
 {
 #if APC_MMAP
-    if(atoi(new_value)!=1) {
+    if(zend_atoi(new_value, new_value_length)!=1) {
         php_error_docref(NULL TSRMLS_CC, E_WARNING, "apc.shm_segments setting ignored in MMAP mode");
     }
     APCG(shm_segments) = 1;
 #else
-    APCG(shm_segments) = atoi(new_value);
+    APCG(shm_segments) = zend_atoi(new_value, new_value_length);
 #endif
     return SUCCESS;
 }
@@ -154,7 +189,7 @@ static PHP_INI_MH(OnUpdateShmSegments) /* {{{ */
 
 static PHP_INI_MH(OnUpdateShmSize) /* {{{ */
 {
-	long s = zend_atol(new_value, new_value_length);
+	long s = apc_atol(new_value, new_value_length);
 
 	if(s <= 0) {
 		return FAILURE;
