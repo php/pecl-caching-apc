@@ -101,7 +101,7 @@ ZEND_BEGIN_MODULE_GLOBALS(apc)
     HashTable copied_zvals;      /* my_copy recursion detection list */
     zend_bool force_file_update; /* force files to be updated during apc_compile_file */
     char canon_path[MAXPATHLEN]; /* canonical path for key data */
-#if APC_FILEHITS
+#ifdef APC_FILEHITS
     zval *filehits;              /* Files that came from the cache for this request */
 #endif
     zend_bool coredump_unmap;    /* Trap signals that coredump and unmap shared memory */
