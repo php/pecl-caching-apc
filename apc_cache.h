@@ -356,7 +356,7 @@ extern void apc_cache_unlock(apc_cache_t* cache);
 extern zend_bool apc_cache_busy(apc_cache_t* cache);
 extern zend_bool apc_cache_write_lock(apc_cache_t* cache);
 extern void apc_cache_write_unlock(apc_cache_t* cache);
-extern zend_bool apc_cache_is_last_key(apc_cache_t* cache, apc_cache_key_t* key, time_t t);
+extern zend_bool apc_cache_is_last_key(apc_cache_t* cache, apc_cache_key_t* key, time_t t TSRMLS_DC);
 
 /* used by apc_rfc1867 to update data in-place - not to be used elsewhere */
 
