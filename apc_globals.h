@@ -86,6 +86,7 @@ ZEND_BEGIN_MODULE_GLOBALS(apc)
     zend_bool canonicalize;      /* true if relative paths should be canonicalized in no-stat mode */
     zend_bool stat_ctime;        /* true if ctime in addition to mtime should be checked */
     zend_bool write_lock;        /* true for a global write lock */
+    zend_bool slam_defense;      /* true for user cache slam defense */ 
     zend_bool report_autofilter; /* true for auto-filter warnings */
     zend_bool include_once;      /* Override the ZEND_INCLUDE_OR_EVAL opcode handler to avoid pointless fopen()s [still experimental] */
     apc_optimize_function_t apc_optimize_function;   /* optimizer function callback */

@@ -91,6 +91,7 @@ static void php_apc_init_globals(zend_apc_globals* apc_globals TSRMLS_DC)
     apc_globals->canonicalize = 1;
     apc_globals->stat_ctime = 0;
     apc_globals->write_lock = 1;
+    apc_globals->slam_defense = 1;
     apc_globals->report_autofilter = 0;
     apc_globals->include_once = 0;
     apc_globals->apc_optimize_function = NULL;
@@ -254,6 +255,7 @@ STD_PHP_INI_BOOLEAN("apc.stat", "1",            PHP_INI_SYSTEM, OnUpdateBool,   
 STD_PHP_INI_BOOLEAN("apc.canonicalize", "1",    PHP_INI_SYSTEM, OnUpdateBool,           canonicalize,     zend_apc_globals, apc_globals)
 STD_PHP_INI_BOOLEAN("apc.stat_ctime", "0",      PHP_INI_SYSTEM, OnUpdateBool,           stat_ctime,       zend_apc_globals, apc_globals)
 STD_PHP_INI_BOOLEAN("apc.write_lock", "1",      PHP_INI_SYSTEM, OnUpdateBool,           write_lock,       zend_apc_globals, apc_globals)
+STD_PHP_INI_BOOLEAN("apc.slam_defense", "1",    PHP_INI_SYSTEM, OnUpdateBool,           slam_defense,     zend_apc_globals, apc_globals)
 STD_PHP_INI_BOOLEAN("apc.report_autofilter", "0", PHP_INI_SYSTEM, OnUpdateBool,         report_autofilter,zend_apc_globals, apc_globals)
 #ifdef MULTIPART_EVENT_FORMDATA
 STD_PHP_INI_BOOLEAN("apc.rfc1867", "0", PHP_INI_SYSTEM, OnUpdateBool, rfc1867, zend_apc_globals, apc_globals)
