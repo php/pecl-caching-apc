@@ -13,6 +13,11 @@ ARG_ENABLE('apc-spinlocks', 'Whether to use spin locks', 'no');
 
 if(PHP_APC != 'no')
 {
+	var apc_sources = 	'apc.c php_apc.c apc_cache.c apc_compile.c apc_debug.c ' + 
+				'apc_fcntl_win32.c apc_iterator.c apc_main.c apc_shm.c ' + 
+				'apc_sma.c apc_stack.c apc_rfc1867.c apc_zend.c apc_pool.c ' +
+				'apc_bin.c';
+
 	if(PHP_APC_FILEHITS != 'no')
 	{
 		AC_DEFINE('APC_FILEHITS', '1');
@@ -22,6 +27,8 @@ if(PHP_APC != 'no')
 	{
 		AC_DEFINE('APC_SPIN_LOCKS', '1');
 		ADD_FLAG('CFLAGS_APC', '/DWIN32_ONLY_COMPILER=1');
+
+		apc_sources += ' apc_spin.c pgsql_s_lock.c';
 	}
 	else
 	{
@@ -30,10 +37,5 @@ if(PHP_APC != 'no')
 
 	AC_DEFINE('HAVE_APC', '1');
 
-	EXTENSION('apc', 
-			'apc.c php_apc.c apc_cache.c apc_compile.c apc_debug.c ' + 
-			'apc_fcntl_win32.c apc_iterator.c apc_main.c apc_shm.c ' + 
-			'apc_sma.c apc_stack.c apc_rfc1867.c apc_zend.c apc_pool.c ' +
-			'apc_bin.c apc_spin.c pgsql_s_lock.c'
-			);
+	EXTENSION('apc', apc_sources);
 }
