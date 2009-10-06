@@ -69,21 +69,12 @@ union semun {
 # define UNDO 0
 #endif
 
-int apc_sem_create(const char* pathname, int proj, int initval)
+int apc_sem_create(int proj, int initval)
 {
     int semid;
-    int perms;
+    int perms = 0777;
     union semun arg;
-    key_t key;
-
-    perms = 0777;
-
-    key = IPC_PRIVATE;
-    if (pathname != NULL) {
-        if ((key = ftok(pathname, proj)) < 0) {
-            apc_eprint("apc_sem_create: ftok(%s,%d) failed:", pathname, proj);
-        }
-    }
+    key_t key = IPC_PRIVATE;
 
     if ((semid = semget(key, 1, IPC_CREAT | IPC_EXCL | perms)) >= 0) {
         /* sempahore created for the first time, initialize now */

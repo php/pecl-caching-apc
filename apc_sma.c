@@ -371,7 +371,7 @@ void apc_sma_init(int numseg, size_t segsize, char *mmap_file_mask)
         sma_segments[i] = apc_mmap(mmap_file_mask, sma_segsize);
         if(sma_numseg != 1) memcpy(&mmap_file_mask[strlen(mmap_file_mask)-6], "XXXXXX", 6);
 #else
-        sma_segments[i] = apc_shm_attach(apc_shm_create(NULL, i, sma_segsize));
+        sma_segments[i] = apc_shm_attach(apc_shm_create(i, sma_segsize));
 #endif
         
         sma_segments[i].size = sma_segsize;

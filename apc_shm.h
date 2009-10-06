@@ -39,7 +39,7 @@
 
 /* Wrapper functions for unix shared memory */
 
-extern int apc_shm_create(const char* name, int proj, size_t size);
+extern int apc_shm_create(int proj, size_t size);
 extern void apc_shm_destroy(int shmid);
 extern apc_segment_t apc_shm_attach(int shmid);
 extern void apc_shm_detach(apc_segment_t* segment);

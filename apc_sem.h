@@ -32,7 +32,7 @@
 
 /* Wrapper functions for SysV sempahores */
 
-extern int apc_sem_create(const char* pathname, int proj, int initval);
+extern int apc_sem_create(int proj, int initval);
 extern void apc_sem_destroy(int semid);
 extern void apc_sem_lock(int semid);
 extern int apc_sem_nonblocking_lock(int semid); 

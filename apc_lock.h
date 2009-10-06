@@ -52,7 +52,7 @@
 #define RDLOCK_AVAILABLE 0
 #define NONBLOCKING_LOCK_AVAILABLE 1 
 #define apc_lck_t int
-#define apc_lck_create(a,b,c,d) d=apc_sem_create(NULL,(b),(c))
+#define apc_lck_create(a,b,c,d) d=apc_sem_create((b),(c))
 #define apc_lck_destroy(a)    apc_sem_destroy(a)
 #define apc_lck_lock(a)       apc_sem_lock(a)
 #define apc_lck_nb_lock(a)    apc_sem_nonblocking_lock(a)

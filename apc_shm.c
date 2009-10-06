@@ -47,32 +47,11 @@
 # define SHM_A 0222 /* write permission */
 #endif
 
-#ifdef PHP_WIN32
-/* Simple ftok() implementation for APC */
-key_t ftok(const char *pathname, int proj)
-{
-	struct stat statbuf;
-	key_t key = -1;
-
-	if (stat(pathname, &statbuf) == 0) {
-		key = (((statbuf.st_dev & 0xff) << 16) | ((proj & 0xff) << 24));
-	}
-
-	return key;
-}
-#endif
-
-int apc_shm_create(const char* pathname, int proj, size_t size)
+int apc_shm_create(int proj, size_t size)
 {
     int shmid;			/* shared memory id */
     int oflag;			/* permissions on shm */
-    key_t key = IPC_PRIVATE;	/* shm key returned by ftok */
-
-    if (pathname != NULL) {
-        if ((key = ftok(pathname, proj)) < 0) {
-            apc_eprint("apc_shm_create: ftok failed");
-        }
-    }
+    key_t key = IPC_PRIVATE;	/* shm key */
 
     oflag = IPC_CREAT | SHM_R | SHM_A;
     if ((shmid = shmget(key, size, oflag)) < 0) {
