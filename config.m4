@@ -118,8 +118,8 @@ AC_ARG_ENABLE(apc-spinlocks,
 ])
 
 AC_MSG_CHECKING(whether we should enable memory protection)
-AC_ARG_ENABLE(memory-protection,
-[  --enable-memory-protection
+AC_ARG_ENABLE(apc-memprotect,
+[  --enable-apc-memprotect
                           Enable mmap/shm memory protection],
 [
   PHP_APC_MEMPROTECT=$enableval

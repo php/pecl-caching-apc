@@ -568,7 +568,7 @@ void apc_sma_free(void* p)
 /* {{{ */
 void* apc_sma_protect(void *p)
 {
-    int i;
+    unsigned int i;
     size_t offset;
 
     if (p == NULL) {
@@ -597,7 +597,7 @@ void* apc_sma_protect(void *p)
 /* {{{ */
 void* apc_sma_unprotect(void *p)
 {
-    int i;
+    unsigned int i;
     size_t offset;
 
     if (p == NULL) {

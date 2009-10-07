@@ -5,11 +5,15 @@
 ARG_ENABLE('apc', 'Whether to enable APC support', 'no');
 ARG_ENABLE('apc-filehits', 'Whether to enable cache request file info', 'no');
 ARG_ENABLE('apc-spinlocks', 'Whether to use spin locks', 'no');
+ARG_ENABLE('apc-memprotect', 'Whether to enable memory protection', 'no');
 
 // Not implemented
+//
+// - nonblocking locks, see apc_lock.h
+//
 // ARG_ENABLE('apc-mmap', 'Whether to use mmap support', 'yes');
 // ARG_ENABLE('apc-sem', 'Whether to use semaphore locking instead of fcntl', 'no');
-// ARG_ENABLE('memory-protection', 'Whether to enable memory protection', 'no');
+// ARG_ENABLE('apc-pthreadmutex', 'Whether to use pthread mutex locking', 'no');
 
 if(PHP_APC != 'no')
 {
@@ -20,22 +24,27 @@ if(PHP_APC != 'no')
 
 	if(PHP_APC_FILEHITS != 'no')
 	{
-		AC_DEFINE('APC_FILEHITS', '1');
+		AC_DEFINE('APC_FILEHITS', 1);
+	}
+
+	if(PHP_APC_MEMPROTECT != 'no')
+	{
+		AC_DEFINE('APC_MEMPROTECT', 1);
 	}
 
 	if(PHP_APC_SPINLOCKS != 'no')
 	{
-		AC_DEFINE('APC_SPIN_LOCKS', '1');
+		AC_DEFINE('APC_SPIN_LOCKS', 1);
 		ADD_FLAG('CFLAGS_APC', '/DWIN32_ONLY_COMPILER=1');
 
 		apc_sources += ' apc_spin.c pgsql_s_lock.c';
 	}
 	else
 	{
-		AC_DEFINE('APC_FCNTL_LOCKS', '1');
+		AC_DEFINE('APC_FCNTL_LOCKS', 1);
 	}
 
-	AC_DEFINE('HAVE_APC', '1');
+	AC_DEFINE('HAVE_APC', 1);
 
 	EXTENSION('apc', apc_sources);
 }

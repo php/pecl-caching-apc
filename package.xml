@@ -64,7 +64,8 @@
  <stability><release>beta</release><api>beta</api></stability>
  <license uri="http://www.php.net/license">PHP License</license>
  <notes>
-- Windows builds may now have filehits if enabled (Kalle)
+- Windows builds may now have filehits and memory protection if enabled (Kalle)
+- Renamed the memory protection configure option to --enable-apc-memprotect (Kalle, Shire)
 - Fixed pecl bug #16717 (apc_fetch dies after 1 hour, regardless of ttl settings) (Kalle)
  </notes>
 
