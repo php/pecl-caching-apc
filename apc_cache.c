@@ -281,7 +281,7 @@ static void prevent_garbage_collection(apc_cache_entry_t* entry)
 /* }}} */
 
 /* {{{ apc_cache_create */
-void apc_cache_create(apc_cache_t *cache)
+void apc_cache_create(apc_cache_t *cache TSRMLS_DC)
 {
     int cache_size;
     int num_slots;
@@ -299,11 +299,11 @@ void apc_cache_create(apc_cache_t *cache)
 
     cache->header = (cache_header_t*) cache->shmaddr;
     cache->header->num_hits = 0;
-    apc_stats_init(&cache->header->hit_stats, 360, 10, apc_sma_malloc);
+    apc_stats_init(&cache->header->hit_stats, 360, 10, apc_sma_malloc TSRMLS_CC);
     cache->header->num_misses = 0;
-    apc_stats_init(&cache->header->miss_stats, 360, 10, apc_sma_malloc);
+    apc_stats_init(&cache->header->miss_stats, 360, 10, apc_sma_malloc TSRMLS_CC);
     cache->header->num_inserts = 0;
-    apc_stats_init(&cache->header->insert_stats, 360, 10, apc_sma_malloc);
+    apc_stats_init(&cache->header->insert_stats, 360, 10, apc_sma_malloc TSRMLS_CC);
     cache->header->deleted_list = NULL;
     cache->header->start_time = time(NULL);
     cache->header->expunges = 0;
@@ -555,7 +555,8 @@ static inline int _apc_cache_insert(apc_cache_t* cache,
                      apc_cache_key_t key,
                      apc_cache_entry_t* value,
                      apc_context_t* ctxt,
-                     time_t t)
+                     time_t t 
+		     TSRMLS_DC)
 {
     slot_t** slot;
 
@@ -608,25 +609,25 @@ static inline int _apc_cache_insert(apc_cache_t* cache,
     cache->header->mem_size += ctxt->pool->size;
     cache->header->num_entries++;
     cache->header->num_inserts++;
-    apc_stats_update(&cache->header->insert_stats, 1);
+    apc_stats_update(&cache->header->insert_stats, 1 TSRMLS_CC);
 
     return 1;
 }
 /* }}} */
 
 /* {{{ apc_cache_insert */
-int apc_cache_insert(apc_cache_t* cache, apc_cache_key_t key, apc_cache_entry_t* value, apc_context_t *ctxt, time_t t)
+int apc_cache_insert(apc_cache_t* cache, apc_cache_key_t key, apc_cache_entry_t* value, apc_context_t *ctxt, time_t t TSRMLS_DC)
 {
     int rval;
     CACHE_LOCK(cache);
-    rval = _apc_cache_insert(cache, key, value, ctxt, t);
+    rval = _apc_cache_insert(cache, key, value, ctxt, t TSRMLS_CC);
     CACHE_UNLOCK(cache);
     return rval;
 }
 /* }}} */
 
 /* {{{ apc_cache_insert */
-int *apc_cache_insert_mult(apc_cache_t* cache, apc_cache_key_t* keys, apc_cache_entry_t** values, apc_context_t *ctxt, time_t t, int num_entries)
+int *apc_cache_insert_mult(apc_cache_t* cache, apc_cache_key_t* keys, apc_cache_entry_t** values, apc_context_t *ctxt, time_t t, int num_entries TSRMLS_DC)
 {
     int *rval;
     int i;
@@ -636,7 +637,7 @@ int *apc_cache_insert_mult(apc_cache_t* cache, apc_cache_key_t* keys, apc_cache_
     for (i=0; i < num_entries; i++) {
         if (values[i]) {
             ctxt->pool = values[i]->pool;
-            rval[i] = _apc_cache_insert(cache, keys[i], values[i], ctxt, t);
+            rval[i] = _apc_cache_insert(cache, keys[i], values[i], ctxt, t TSRMLS_CC);
         }
     }
     CACHE_UNLOCK(cache);
@@ -721,7 +722,7 @@ int apc_cache_user_insert(apc_cache_t* cache, apc_cache_key_t key, apc_cache_ent
 
     cache->header->num_entries++;
     cache->header->num_inserts++;
-    apc_stats_update(&cache->header->insert_stats, 1);
+    apc_stats_update(&cache->header->insert_stats, 1 TSRMLS_CC);
 
     memset(lastkey, 0, sizeof(apc_keyid_t));
     CACHE_UNLOCK(cache);
@@ -737,7 +738,7 @@ fail:
 /* }}} */
 
 /* {{{ apc_cache_find_slot */
-slot_t* apc_cache_find_slot(apc_cache_t* cache, apc_cache_key_t key, time_t t)
+slot_t* apc_cache_find_slot(apc_cache_t* cache, apc_cache_key_t key, time_t t TSRMLS_DC)
 {
     slot_t** slot;
     volatile slot_t* retval = NULL;
@@ -753,7 +754,7 @@ slot_t* apc_cache_find_slot(apc_cache_t* cache, apc_cache_key_t key, time_t t)
                 if((*slot)->key.mtime != key.mtime) {
                     remove_slot(cache, slot);
                     cache->header->num_misses++;
-                    apc_stats_update(&cache->header->miss_stats, 1);
+                    apc_stats_update(&cache->header->miss_stats, 1 TSRMLS_CC);
                     CACHE_UNLOCK(cache);
                     return NULL;
                 }
@@ -763,7 +764,7 @@ slot_t* apc_cache_find_slot(apc_cache_t* cache, apc_cache_key_t key, time_t t)
                 prevent_garbage_collection((*slot)->value);
                 apc_cache_adjust_list(cache, *slot);
                 cache->header->num_hits++;
-                apc_stats_update(&cache->header->hit_stats, 1);
+                apc_stats_update(&cache->header->hit_stats, 1 TSRMLS_CC);
                 retval = *slot;
                 CACHE_UNLOCK(cache);
                 return (slot_t*)retval;
@@ -777,7 +778,7 @@ slot_t* apc_cache_find_slot(apc_cache_t* cache, apc_cache_key_t key, time_t t)
                 prevent_garbage_collection((*slot)->value);
                 apc_cache_adjust_list(cache, *slot);
                 cache->header->num_hits++;
-                apc_stats_update(&cache->header->hit_stats, 1);
+                apc_stats_update(&cache->header->hit_stats, 1 TSRMLS_CC);
                 retval = *slot;
                 CACHE_UNLOCK(cache);
                 return (slot_t*)retval;
@@ -787,22 +788,22 @@ slot_t* apc_cache_find_slot(apc_cache_t* cache, apc_cache_key_t key, time_t t)
       slot = &(*slot)->next;
     }
     cache->header->num_misses++;
-    apc_stats_update(&cache->header->miss_stats, 1);
+    apc_stats_update(&cache->header->miss_stats, 1 TSRMLS_CC);
     CACHE_UNLOCK(cache);
     return NULL;
 }
 /* }}} */
 
 /* {{{ apc_cache_find */
-apc_cache_entry_t* apc_cache_find(apc_cache_t* cache, apc_cache_key_t key, time_t t)
+apc_cache_entry_t* apc_cache_find(apc_cache_t* cache, apc_cache_key_t key, time_t t TSRMLS_DC)
 {
-    slot_t * slot = apc_cache_find_slot(cache, key, t);
+    slot_t * slot = apc_cache_find_slot(cache, key, t TSRMLS_CC);
     return (slot) ? slot->value : NULL;
 }
 /* }}} */
 
 /* {{{ apc_cache_user_find */
-apc_cache_entry_t* apc_cache_user_find(apc_cache_t* cache, char *strkey, int keylen, time_t t)
+apc_cache_entry_t* apc_cache_user_find(apc_cache_t* cache, char *strkey, int keylen, time_t t TSRMLS_DC)
 {
     slot_t** slot;
     volatile apc_cache_entry_t* value = NULL;
@@ -823,7 +824,7 @@ apc_cache_entry_t* apc_cache_user_find(apc_cache_t* cache, char *strkey, int key
             if((*slot)->value->data.user.ttl && ((*slot)->creation_time + (*slot)->value->data.user.ttl) < t) {
                 remove_slot(cache, slot);
                 cache->header->num_misses++;
-                apc_stats_update(&cache->header->miss_stats, 1);
+                apc_stats_update(&cache->header->miss_stats, 1 TSRMLS_CC);
                 CACHE_UNLOCK(cache);
                 return NULL;
             }
@@ -835,7 +836,7 @@ apc_cache_entry_t* apc_cache_user_find(apc_cache_t* cache, char *strkey, int key
             apc_cache_adjust_list(cache, *slot);
 
             cache->header->num_hits++;
-            apc_stats_update(&cache->header->hit_stats, 1);
+            apc_stats_update(&cache->header->hit_stats, 1 TSRMLS_CC);
             value = (*slot)->value;
             CACHE_UNLOCK(cache);
             return (apc_cache_entry_t*)value;
@@ -844,7 +845,7 @@ apc_cache_entry_t* apc_cache_user_find(apc_cache_t* cache, char *strkey, int key
     }
  
     cache->header->num_misses++;
-    apc_stats_update(&cache->header->miss_stats, 1);
+    apc_stats_update(&cache->header->miss_stats, 1 TSRMLS_CC);
     CACHE_UNLOCK(cache);
     return NULL;
 }
@@ -1223,9 +1224,9 @@ apc_cache_info_t* apc_cache_info(apc_cache_t* cache, zend_bool limited)
     info->num_slots = cache->num_slots;
     info->ttl = cache->ttl;
     info->num_hits = cache->header->num_hits;
-    apc_stats_copy(&info->hit_stats, &cache->header->hit_stats, apc_emalloc);
+    apc_stats_copy(&info->hit_stats, &cache->header->hit_stats, apc_emalloc TSRMLS_CC);
     info->num_misses = cache->header->num_misses;
-    apc_stats_copy(&info->miss_stats, &cache->header->miss_stats, apc_emalloc);
+    apc_stats_copy(&info->miss_stats, &cache->header->miss_stats, apc_emalloc TSRMLS_CC);
     info->list = NULL;
     info->expunge_method = cache->expunge_method;
     info->segment_idx = cache->segment_idx;
@@ -1239,7 +1240,7 @@ apc_cache_info_t* apc_cache_info(apc_cache_t* cache, zend_bool limited)
     info->mem_size = cache->header->mem_size;
     info->num_entries = cache->header->num_entries;
     info->num_inserts = cache->header->num_inserts;
-    apc_stats_copy(&info->insert_stats, &cache->header->insert_stats, apc_emalloc);
+    apc_stats_copy(&info->insert_stats, &cache->header->insert_stats, apc_emalloc TSRMLS_CC);
 #ifdef MULTIPART_EVENT_FORMDATA
     info->file_upload_progress = (APCG(rfc1867_cache) == cache);
 #else

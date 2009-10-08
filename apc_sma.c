@@ -413,12 +413,14 @@ void apc_sma_init(apc_segment_t *segment, char *mmap_file_mask)
         segment->size = DEFAULT_SEGSIZE;
     }
 
+#if APC_MMAP
     if (apc_mmap(segment, mmap_file_mask) == FAILURE) {
         apc_eprint("Failed to mmap segment.");
     }
     if (mmap_file_mask) {
         memcpy(&mmap_file_mask[strlen(mmap_file_mask)-6], "XXXXXX", 6);
     }
+#endif
 
     header = (sma_header_t*) segment->shmaddr;
     apc_lck_create(NULL, 0, 1, header->sma_lock);
@@ -477,7 +479,11 @@ void apc_sma_cleanup(apc_segment_t *segment)
     assert(segment->initialized);
 
     apc_lck_destroy(((sma_header_t*)segment->shmaddr)->sma_lock);
+
+#if APC_MMAP
     apc_unmap(segment);
+#endif
+
     segment->initialized = 0;
 }
 /* }}} */
@@ -486,11 +492,15 @@ void apc_sma_cleanup(apc_segment_t *segment)
 void* apc_sma_malloc_ex(size_t n, size_t fragment, size_t* allocated)
 {
     size_t off;
-    apc_segment_t *segment = APCG(current_cache)->sma_segment;
-    assert(APCG(current_cache));
+    apc_segment_t *segment;
 
     TSRMLS_FETCH();
+
+    segment = APCG(current_cache)->sma_segment;
+
+    assert(APCG(current_cache));
     assert(segment->initialized);
+
     LOCK(((sma_header_t*)segment->shmaddr)->sma_lock);
 
     off = sma_allocate(segment, n, fragment, allocated);
@@ -539,8 +549,12 @@ void apc_sma_free(void* p)
 {
     size_t offset;
     size_t d_size;
-    apc_segment_t *segment = APCG(current_cache)->sma_segment;
+    apc_segment_t *segment;
+
     TSRMLS_FETCH();
+
+    segment = APCG(current_cache)->sma_segment;
+
     assert(APCG(current_cache));
 
     if (p == NULL) {
@@ -631,7 +645,7 @@ void* apc_sma_unprotect(void *p) { return p; }
 #endif
 
 /* {{{ apc_sma_info */
-apc_sma_info_t* apc_sma_info(zend_bool limited)
+apc_sma_info_t* apc_sma_info(zend_bool limited TSRMLS_DC)
 {
     int i;
     apc_sma_info_t* info;

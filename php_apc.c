@@ -488,7 +488,7 @@ PHP_INI_END()
 /* }}} */
 
 /* {{{ apc_ini_cache_helper */
-static int apc_ini_cache_helper(char *new_value, int new_value_length, long type, zend_ini_entry *orig_entries, int *num_caches, apc_cache_t **caches) {
+static int apc_ini_cache_helper(char *new_value, int new_value_length, long type, zend_ini_entry *orig_entries, int *num_caches, apc_cache_t **caches TSRMLS_DC) {
 
     zend_ini_entry *entries;
     int num_entries, i, c, len;
@@ -546,7 +546,7 @@ static int apc_ini_cache_helper(char *new_value, int new_value_length, long type
         }
         entries[num_entries] = orig_entries[num_entries];
         APCG(current_cache) = cache;  /* for use by ini handlers */
-        zend_register_ini_entries(entries, apc_module_entry.module_number);
+        zend_register_ini_entries(entries, apc_module_entry.module_number TSRMLS_CC);
         APCG(current_cache) = NULL;
         cache->ini_entries = entries;  /* so we can free them in MINIT */
 
@@ -572,7 +572,7 @@ static PHP_INI_MH(OnUpdateFilecaches) /* {{{ */
         apc_eprint("You must specify at least one apc file cache in apc.file_caches.");
         return FAILURE; 
     }
-    return apc_ini_cache_helper(new_value, new_value_length, APC_CACHE_FILE, apc_file_cache_entries, &APCG(num_file_caches), &APCG(file_caches));
+    return apc_ini_cache_helper(new_value, new_value_length, APC_CACHE_FILE, apc_file_cache_entries, &APCG(num_file_caches), &APCG(file_caches) TSRMLS_CC);
 }
 /* }}} */
 
@@ -583,7 +583,7 @@ static PHP_INI_MH(OnUpdateUsercaches) /* {{{ */
         apc_eprint("You must specify at least one apc user cache in apc.user_caches.");
         return FAILURE; 
     }
-    return apc_ini_cache_helper(new_value, new_value_length, APC_CACHE_USER, apc_user_cache_entries, &APCG(num_user_caches), &APCG(user_caches));
+    return apc_ini_cache_helper(new_value, new_value_length, APC_CACHE_USER, apc_user_cache_entries, &APCG(num_user_caches), &APCG(user_caches) TSRMLS_CC);
 }
 /* }}} */
 
@@ -1133,7 +1133,7 @@ PHP_FUNCTION(apc_sma_info)
         return;
     }
 
-    info = apc_sma_info(limited);
+    info = apc_sma_info(limited TSRMLS_CC);
 
     if(!info) {
         php_error_docref(NULL TSRMLS_CC, E_WARNING, "No APC SMA info available.  Perhaps APC is disabled via apc.enabled?");
@@ -1424,7 +1424,7 @@ PHP_FUNCTION(apc_dec) {
 
     args.step = args.step * -1;
 
-    if(_apc_update(apc_get_cache(cache_id, APC_CACHE_USER TSRMLS_CC), strkey, strkey_len, inc_updater, &args)) {
+    if(_apc_update(apc_get_cache(cache_id, APC_CACHE_USER TSRMLS_CC), strkey, strkey_len, inc_updater, &args TSRMLS_CC)) {
         if(success) ZVAL_TRUE(success);
         RETURN_LONG(args.lval);
     }
@@ -1465,7 +1465,7 @@ PHP_FUNCTION(apc_cas) {
         return;
     }
 
-    if(_apc_update(apc_get_cache(cache_id, APC_CACHE_USER TSRMLS_CC), strkey, strkey_len, cas_updater, &vals)) RETURN_TRUE;
+    if(_apc_update(apc_get_cache(cache_id, APC_CACHE_USER TSRMLS_CC), strkey, strkey_len, cas_updater, &vals TSRMLS_CC)) RETURN_TRUE;
     RETURN_FALSE;
 }
 /* }}} */
@@ -1523,7 +1523,7 @@ PHP_FUNCTION(apc_fetch) {
         strkey = Z_STRVAL_P(key);
         strkey_len = Z_STRLEN_P(key);
         if(!strkey_len) RETURN_FALSE;
-        entry = apc_cache_user_find(cache, strkey, strkey_len + 1, t);
+        entry = apc_cache_user_find(cache, strkey, strkey_len + 1, t TSRMLS_CC);
         if(entry) {
             /* deep-copy returned shm zval to emalloc'ed return_value */
             apc_cache_fetch_zval(return_value, entry->data.user.val, &ctxt);
@@ -1541,7 +1541,7 @@ PHP_FUNCTION(apc_fetch) {
                 apc_wprint("apc_fetch() expects a string or array of strings.");
                 goto freepool;
             }
-            entry = apc_cache_user_find(cache, Z_STRVAL_PP(hentry), Z_STRLEN_PP(hentry) + 1, t);
+            entry = apc_cache_user_find(cache, Z_STRVAL_PP(hentry), Z_STRLEN_PP(hentry) + 1, t TSRMLS_CC);
             if(entry) {
                 /* deep-copy returned shm zval to emalloc'ed return_value */
                 MAKE_STD_ZVAL(result_entry);
@@ -1734,7 +1734,7 @@ PHP_FUNCTION(apc_define_constants) {
     RETVAL_FALSE;
     APCG(current_cache) = apc_get_cache(cache_id, APC_CACHE_USER TSRMLS_CC);
     _apc_define_constants(constants, case_sensitive TSRMLS_CC);
-    if(_apc_store(APCG(current_cache), strkey, strkey_len, constants, 0, 0)) RETVAL_TRUE;
+    if(_apc_store(APCG(current_cache), strkey, strkey_len, constants, 0, 0 TSRMLS_CC)) RETVAL_TRUE;
     APCG(current_cache) = NULL;
     return;
 } /* }}} */
@@ -1762,7 +1762,7 @@ PHP_FUNCTION(apc_load_constants) {
     cache=apc_get_cache(cache_id, APC_CACHE_USER TSRMLS_CC);
     APCG(current_cache) = cache;
 
-    entry = apc_cache_user_find(cache, strkey, strkey_len + 1, t);
+    entry = apc_cache_user_find(cache, strkey, strkey_len + 1, t TSRMLS_CC);
 
     if(entry) {
         _apc_define_constants(entry->data.user.val, case_sensitive TSRMLS_CC);
@@ -1931,7 +1931,7 @@ PHP_FUNCTION(apc_compile_file) {
         ctxt.copy = APC_COPY_IN_OPCODE;
         ctxt.force_update = 1;
         if (count == i || !atomic) {
-            rval = apc_cache_insert_mult(cache, keys, cache_entries, &ctxt, t, i);
+            rval = apc_cache_insert_mult(cache, keys, cache_entries, &ctxt, t, i TSRMLS_CC);
             atomic_fail = 0;
         } else {
             atomic_fail = 1;

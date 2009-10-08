@@ -96,7 +96,7 @@ extern void apc_sma_free(void* p);
 extern size_t *apc_sma_get_alloc_distribution();
 #endif
 
-extern apc_sma_info_t* apc_sma_info(zend_bool limited);
+extern apc_sma_info_t* apc_sma_info(zend_bool limited TSRMLS_DC);
 extern void apc_sma_free_info(apc_sma_info_t* info);
 
 extern void apc_sma_check_integrity();

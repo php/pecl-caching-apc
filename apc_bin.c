@@ -880,7 +880,7 @@ int apc_bin_load(apc_cache_t *cache, apc_bd_t *bd, int flags TSRMLS_DC) {
                     goto failure;
                 }
 
-                if ((ret = apc_cache_insert(cache, cache_key, cache_entry, &ctxt, t)) != 1) {
+                if ((ret = apc_cache_insert(cache, cache_key, cache_entry, &ctxt, t TSRMLS_CC)) != 1) {
                     if(ret==-1) {
                         goto failure;
                     }

@@ -97,7 +97,7 @@ static int install_function(apc_function_t fn, apc_context_t* ctxt, int lazy TSR
 /* }}} */
 
 /* {{{ apc_lookup_function_hook */
-int apc_lookup_function_hook(char *name, int len, ulong hash, zend_function **fe) {
+int apc_lookup_function_hook(char *name, int len, ulong hash, zend_function **fe TSRMLS_DC) {
     apc_function_t *fn;
     int status = FAILURE;
     apc_context_t ctxt = {0,};
@@ -221,12 +221,12 @@ static int install_class(apc_class_t cl, apc_context_t* ctxt, int lazy TSRMLS_DC
 /* }}} */
 
 /* {{{ apc_lookup_class_hook */
-int apc_lookup_class_hook(char *name, int len, ulong hash, zend_class_entry ***ce) {
+int apc_lookup_class_hook(char *name, int len, ulong hash, zend_class_entry ***ce TSRMLS_DC) {
 
     apc_class_t *cl;
     apc_context_t ctxt = {0,};
 
-    if(zend_is_compiling(TSRMLS_CC)) { return FAILURE; }
+    if(zend_is_compiling(TSRMLS_C)) { return FAILURE; }
 
     if(zend_hash_quick_find(APCG(lazy_class_table), name, len, hash, (void**)&cl) == FAILURE) {
         return FAILURE;
@@ -235,7 +235,7 @@ int apc_lookup_class_hook(char *name, int len, ulong hash, zend_class_entry ***c
     ctxt.pool = apc_pool_create(APC_UNPOOL, apc_php_malloc, apc_php_free, apc_sma_protect, apc_sma_unprotect);
     ctxt.copy = APC_COPY_OUT_OPCODE;
 
-    if(install_class(*cl, &ctxt, 0) == FAILURE) {
+    if(install_class(*cl, &ctxt, 0 TSRMLS_CC) == FAILURE) {
         apc_wprint("apc_lookup_class_hook: could not install %s", name);
         return FAILURE;
     }
@@ -266,7 +266,7 @@ static int uninstall_class(apc_class_t cl TSRMLS_DC)
 /* }}} */
 
 /* {{{ copy_function_name (taken from zend_builtin_functions.c to ensure future compatibility with APC) */
-static int copy_function_name(apc_function_t *pf, int num_args, va_list args, zend_hash_key *hash_key)
+static int copy_function_name(apc_function_t *pf TSRMLS_DC, int num_args, va_list args, zend_hash_key *hash_key)
 {
     zval *internal_ar = va_arg(args, zval *),
          *user_ar     = va_arg(args, zval *);
@@ -286,7 +286,7 @@ static int copy_function_name(apc_function_t *pf, int num_args, va_list args, ze
 }
 
 /* {{{ copy_class_or_interface_name (taken from zend_builtin_functions.c to ensure future compatibility with APC) */
-static int copy_class_or_interface_name(apc_class_t *cl, int num_args, va_list args, zend_hash_key *hash_key)
+static int copy_class_or_interface_name(apc_class_t *cl TSRMLS_DC, int num_args, va_list args, zend_hash_key *hash_key)
 {
     zval *array = va_arg(args, zval *);
     zend_uint mask = va_arg(args, zend_uint);
@@ -305,15 +305,15 @@ static int copy_class_or_interface_name(apc_class_t *cl, int num_args, va_list a
 /* }}} */
 
 /* {{{ apc_defined_function_hook */
-int apc_defined_function_hook(zval *internal, zval *user) {
-  zend_hash_apply_with_arguments(APCG(lazy_function_table), (apply_func_args_t) copy_function_name, 2, internal, user);
+int apc_defined_function_hook(zval *internal, zval *user TSRMLS_DC) {
+  zend_hash_apply_with_arguments(APCG(lazy_function_table) TSRMLS_CC, (apply_func_args_t) copy_function_name, 2, internal, user);
   return 1;
 }
 /* }}} */
 
 /* {{{ apc_declared_class_hook */
-int apc_declared_class_hook(zval *classes, zend_uint mask, zend_uint comply) {
-  zend_hash_apply_with_arguments(APCG(lazy_class_table), (apply_func_args_t) copy_class_or_interface_name, 3, classes, mask, comply);
+int apc_declared_class_hook(zval *classes, zend_uint mask, zend_uint comply TSRMLS_DC) {
+  zend_hash_apply_with_arguments(APCG(lazy_class_table) TSRMLS_CC, (apply_func_args_t) copy_class_or_interface_name, 3, classes, mask, comply);
   return 1;
 }
 /* }}} */
@@ -534,7 +534,7 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
 
     if(!APCG(force_file_update)) {
         /* search for the file in the cache */
-        cache_entry = apc_cache_find(cache, key, t);
+        cache_entry = apc_cache_find(cache, key, t TSRMLS_CC);
         ctxt.force_update = 0;
     } else {
         cache_entry = NULL;
@@ -611,7 +611,7 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
         if (apc_compile_cache_entry(cache, &key, h, type, t, &op_array, &cache_entry TSRMLS_CC) == SUCCESS) {
             ctxt.pool = cache_entry->pool;
             ctxt.copy = APC_COPY_IN_OPCODE;
-            if (apc_cache_insert(cache, key, cache_entry, &ctxt, t) != 1) {
+            if (apc_cache_insert(cache, key, cache_entry, &ctxt, t TSRMLS_CC) != 1) {
                 apc_pool_destroy(ctxt.pool);
                 ctxt.pool = NULL;
             }
@@ -775,7 +775,7 @@ int apc_module_init(int module_number TSRMLS_DC)
     for(i=0; i < APCG(num_file_caches); i++) {
         cache = &(APCG(file_caches)[i]);
         APCG(current_cache) = cache;  /* for sma_alloc calls */
-        apc_cache_create(cache);
+        apc_cache_create(cache TSRMLS_CC);
         APCG(current_cache) = NULL;
         zend_register_long_constant(cache->const_name, strlen(cache->const_name)+1, (APC_CACHE_FILE | (i+1)), (CONST_CS | CONST_PERSISTENT), module_number TSRMLS_CC);
 #if APC_HAVE_LOOKUP_HOOKS
@@ -791,7 +791,7 @@ int apc_module_init(int module_number TSRMLS_DC)
     for(i=0; i < APCG(num_user_caches); i++) {
         cache = &(APCG(user_caches)[i]);
         APCG(current_cache) = cache;  /* for sma_alloc calls */
-        apc_cache_create(cache);
+        apc_cache_create(cache TSRMLS_CC);
         APCG(current_cache) = NULL;
         zend_register_long_constant(cache->const_name, strlen(cache->const_name)+1, (APC_CACHE_USER | (i+1)), (CONST_CS | CONST_PERSISTENT), module_number TSRMLS_CC);
     }
@@ -967,7 +967,7 @@ int apc_request_init(TSRMLS_D)
         if (!cache->compiled_filters && cache->filters) {
             /* compile regex filters here to avoid race condition between MINIT of PCRE and APC.
              * This should be moved to apc_cache_create() if this race condition between modules is resolved */
-            cache->compiled_filters = apc_regex_compile_array(cache->filters);
+            cache->compiled_filters = apc_regex_compile_array(cache->filters TSRMLS_CC);
         }
     }
     APCG(slam_rand) = -1;

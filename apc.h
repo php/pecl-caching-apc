@@ -125,7 +125,7 @@ typedef struct _apc_stats_t {
     time_t delta;
 } apc_stats_t;
 
-static inline void apc_stats_init(apc_stats_t *stats, int size, time_t delta, apc_malloc_t my_alloc) {
+static inline void apc_stats_init(apc_stats_t *stats, int size, time_t delta, apc_malloc_t my_alloc TSRMLS_DC) {
     time_t now = sapi_get_request_time(TSRMLS_C);
     stats->pos = 0;
     stats->size = size;
@@ -143,7 +143,7 @@ static inline void apc_stats_free(apc_stats_t *stats, apc_free_t my_free) {
    my_free(stats->window);
 }
 
-static inline void apc_stats_update(apc_stats_t *stats, size_t value) {
+static inline void apc_stats_update(apc_stats_t *stats, size_t value TSRMLS_DC) {
     time_t now = sapi_get_request_time(TSRMLS_C);
     int npos = ((size_t)(now / stats->delta)) % stats->size;
 
@@ -156,8 +156,8 @@ static inline void apc_stats_update(apc_stats_t *stats, size_t value) {
     stats->window[npos] += value;
 }
 
-static inline void apc_stats_copy(apc_stats_t *dst, apc_stats_t *src, apc_malloc_t my_alloc) {
-   apc_stats_update(src, 0);
+static inline void apc_stats_copy(apc_stats_t *dst, apc_stats_t *src, apc_malloc_t my_alloc TSRMLS_DC) {
+   apc_stats_update(src, 0 TSRMLS_CC);
    memcpy(dst, src, sizeof(apc_stats_t));
    dst->window = my_alloc(sizeof(size_t) * src->size);
    memcpy(dst->window, src->window, sizeof(size_t) * src->size);
