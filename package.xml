@@ -76,7 +76,6 @@
     <file role="doc" name="TODO" />
     <file role="doc" name="TECHNOTES.txt" />
     <file role="src" name="apc.c" />
-    <file role="src" name="apc.dsp" />
     <file role="src" name="apc.h" />
     <file role="src" name="apc_cache.c" />
     <file role="src" name="apc_cache.h" />
