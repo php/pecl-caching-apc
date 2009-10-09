@@ -663,6 +663,10 @@ int apc_cache_user_insert(apc_cache_t* cache, apc_cache_key_t key, apc_cache_ent
         return 0;
     }
 
+    if(!APCG(slam_defense)) {  
+        return 0;  
+    } 
+
     /* unlocked reads, but we're not shooting for 100% success with this */
     if(lastkey->h == h && keylen == lastkey->keylen) {
         if(lastkey->mtime == t) {

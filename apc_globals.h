@@ -68,6 +68,7 @@ ZEND_BEGIN_MODULE_GLOBALS(apc)
     zend_bool initialized;       /* true if module was initialized */
     zend_bool enable_cli;        /* Flag to override turning APC off for CLI */
     zend_bool canonicalize;      /* true if relative paths should be canonicalized in no-stat mode */
+    zend_bool slam_defense;      /* true for user cache slam defense */
     long slam_rand;              /* A place to store the slam rand value for the request */
     zend_bool report_autofilter; /* true for auto-filter warnings */
     zend_bool include_once;      /* Override the ZEND_INCLUDE_OR_EVAL opcode handler to avoid pointless fopen()s [still experimental] */

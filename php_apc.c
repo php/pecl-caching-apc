@@ -133,6 +133,7 @@ static void php_apc_init_globals(zend_apc_globals* apc_globals TSRMLS_DC)
 {
     apc_globals->initialized = 0;
     apc_globals->canonicalize = 1;
+    apc_globals->slam_defense = 1;
     apc_globals->report_autofilter = 0;
     apc_globals->apc_optimize_function = NULL;
     apc_globals->mmap_file_mask = NULL;
@@ -469,6 +470,7 @@ STD_PHP_INI_ENTRY("apc.coredump_unmap", "",    PHP_INI_SYSTEM, OnUpdateUnmap,   
 STD_PHP_INI_ENTRY("apc.file_caches",    "File", PHP_INI_SYSTEM, OnUpdateFilecaches,   default_file_cache, zend_apc_globals, apc_globals)
 STD_PHP_INI_ENTRY("apc.user_caches",    "User", PHP_INI_SYSTEM, OnUpdateUsercaches,   default_user_cache, zend_apc_globals, apc_globals)
 STD_PHP_INI_BOOLEAN("apc.canonicalize", "1",    PHP_INI_SYSTEM, OnUpdateBool,           canonicalize,     zend_apc_globals, apc_globals)
+STD_PHP_INI_BOOLEAN("apc.slam_defense", "1",    PHP_INI_SYSTEM, OnUpdateBool,           slam_defense,     zend_apc_globals, apc_globals)
 STD_PHP_INI_BOOLEAN(    "apc.include_once_override", "0",    PHP_INI_SYSTEM, OnUpdateBool,     include_once,        zend_apc_globals, apc_globals)
 STD_PHP_INI_BOOLEAN(    "apc.report_autofilter",     "0",    PHP_INI_SYSTEM, OnUpdateBool,     report_autofilter,   zend_apc_globals, apc_globals)
 STD_PHP_INI_ENTRY(      "apc.mmap_file_mask",        NULL,   PHP_INI_SYSTEM, OnUpdateString,   mmap_file_mask,      zend_apc_globals, apc_globals)
