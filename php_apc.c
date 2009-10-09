@@ -289,7 +289,7 @@ static PHP_INI_MH(OnUpdateRfc1867Cache) /* {{{ */
 /* {{{ OnUpdateSegments */
 static PHP_INI_MH(OnUpdateSegments)
 {
-    char *tmp, *cur, *next;
+    char *tmp, *cur;
     size_t size;
     apc_segment_t *seg=NULL, *prev_seg=NULL;
     int len;
@@ -299,9 +299,9 @@ static PHP_INI_MH(OnUpdateSegments)
     }
 
     /* ',' separated list of segment sizes */
-    cur = next = tmp = estrndup(new_value, new_value_length+1);
-    while (next) {
-        cur = strsep(&next, ",");
+    cur = tmp = estrndup(new_value, new_value_length+1);
+    cur = strtok(tmp, ",");
+    while (cur) {
         len = strlen(cur);
         while (len > 0 && cur[len-1] == ' ') { len--; }
         size = apc_atol(cur, len);
@@ -320,6 +320,7 @@ static PHP_INI_MH(OnUpdateSegments)
             prev_seg->next = seg;
         }
         prev_seg = seg;
+        cur = strtok(NULL, ",");
     }
     efree(tmp);
 
@@ -330,7 +331,7 @@ static PHP_INI_MH(OnUpdateSegments)
 /* {{{ OnUpdateUnmap */
 static PHP_INI_MH(OnUpdateUnmap)
 {
-    char *tmp, *cur, *next;
+    char *tmp, *cur;
     int id, len, c;
     apc_segment_t *cur_seg;
 
@@ -341,9 +342,9 @@ static PHP_INI_MH(OnUpdateUnmap)
     APCG(coredump_unmap) = 1;
 
     /* ',' separated list of segment ids */
-    cur = next = tmp = estrndup(new_value, new_value_length+1);
-    while (next) {
-        cur = strsep(&next, ",");
+    cur = tmp = estrndup(new_value, new_value_length+1);
+    cur = strtok(tmp, ",");
+    while (cur) {
         len = strlen(cur);
         while (len > 0 && cur[len-1] == ' ') { len--; }
         id = zend_atoi(cur, len);
@@ -362,6 +363,7 @@ static PHP_INI_MH(OnUpdateUnmap)
             apc_eprint("Invalid index %d in apc.coredump_unmap ini.", id);
             return FAILURE;
         }
+        cur = strtok(NULL, ",");
     }
     efree(tmp);
 
@@ -500,7 +502,7 @@ static int apc_ini_cache_helper(char *new_value, int new_value_length, long type
     int num_entries, i, c, len;
     char *name;
     apc_cache_t *cache;
-    char *tmp, *cur, *next;
+    char *tmp, *cur;
     apc_segment_t *seg;
 
     /* ',' separated list of caches */
@@ -510,15 +512,16 @@ static int apc_ini_cache_helper(char *new_value, int new_value_length, long type
             (*num_caches)++;
     }
     *caches = apc_emalloc( sizeof(apc_cache_t) * (*num_caches) );
-    cur = next = tmp = estrndup(new_value, new_value_length+1);
+    cur = tmp = estrndup(new_value, new_value_length+1);
+    cur = strtok(tmp, ",");
     i = 0;
-    while (next) {
-        cur = strsep(&next, ",");
+    while (cur) {
         len = strlen(cur);
         while (len > 0 && cur[len-1] == ' ') { len--; }
         while (cur && cur[0] == ' ') { cur++; len--; }
         php_apc_cache_init(&(*caches)[i], cur, len, type | (i+1));
         i++;
+        cur = strtok(NULL, ",");
     }
     efree(tmp);
 
