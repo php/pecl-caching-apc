@@ -1721,16 +1721,6 @@ static int my_check_copy_static_member(Bucket* p, va_list args)
         (zend_hash_find(&src->properties_info, member_name,
                         strlen(member_name)+1, (void**)&child_info) == SUCCESS))
     {
-        if(child_info->flags & ZEND_ACC_STATIC &&
-            (parent_info->flags & ZEND_ACC_PROTECTED &&
-            child_info->flags & ZEND_ACC_PUBLIC))
-        {
-            /* Do not copy into static_members. zend_do_inheritance
-             * will automatically insert a NULL value.
-             * TODO: decrement refcount or fixup when copying out for exec ?
-             */ 
-            return 0;
-        }
         if(ht == &(src->default_static_members))
         {
             parent_ht = &parent->default_static_members;
