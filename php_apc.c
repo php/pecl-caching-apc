@@ -52,6 +52,10 @@
 #include "apc_signal.h"
 #endif
 
+#ifndef zend_parse_parameters_none
+# define zend_parse_parameters_none() zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "")
+#endif
+
 /* {{{ PHP_FUNCTION declarations */
 PHP_FUNCTION(apc_cache_info);
 #ifdef APC_FILEHITS
@@ -843,16 +847,13 @@ static PHP_RSHUTDOWN_FUNCTION(apc)
 #ifdef APC_FILEHITS
 PHP_FUNCTION(apc_filehits)
 {
-    long cache_id = 0;
-    long limited = 0;
-
-    if(!APCG(initialized)) {
-        php_error_docref(NULL TSRMLS_CC, E_WARNING, "No APC info available.  Perhaps APC is not enabled? Check apc.enabled in your ini file");
-        RETURN_FALSE;
+    if (zend_parse_parameters_none() == FAILURE) {
+        return;
     }
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|lb", &cache_id, &limited) == FAILURE) {
-        return;
+    if (!APCG(initialized)) {
+        php_error_docref(NULL TSRMLS_CC, E_WARNING, "No APC info available.  Perhaps APC is not enabled? Check apc.enabled in your ini file");
+        RETURN_FALSE;
     }
 
     RETURN_ZVAL(APCG(filehits), 1, 0);
@@ -2192,15 +2193,114 @@ PHP_FUNCTION(apc_bin_loadfile) {
 /* }}} */
 
 /* {{{ arginfo */
-ZEND_BEGIN_ARG_INFO_EX(php_apc_fetch_arginfo, 0, 0, 1)
+#if (PHP_MAJOR_VERSION >= 6 || (PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION >= 3))
+# define PHP_APC_ARGINFO
+#else
+# define PHP_APC_ARGINFO static
+#endif
+
+PHP_APC_ARGINFO
+ZEND_BEGIN_ARG_INFO_EX(arginfo_apc_store, 0, 0, 2)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_INFO(0, var)
+    ZEND_ARG_INFO(0, ttl)
+ZEND_END_ARG_INFO()
+
+PHP_APC_ARGINFO
+ZEND_BEGIN_ARG_INFO_EX(arginfo_apc_filehits, 0, 0, 0)
+ZEND_END_ARG_INFO()
+
+PHP_APC_ARGINFO
+ZEND_BEGIN_ARG_INFO_EX(arginfo_apc_clear_cache, 0, 0, 0)
+    ZEND_ARG_INFO(0, info)
+ZEND_END_ARG_INFO()
+
+PHP_APC_ARGINFO
+ZEND_BEGIN_ARG_INFO_EX(arginfo_apc_cache_info, 0, 0, 0)
+    ZEND_ARG_INFO(0, type)
+    ZEND_ARG_INFO(0, limited)
+ZEND_END_ARG_INFO()
+
+PHP_APC_ARGINFO
+ZEND_BEGIN_ARG_INFO_EX(arginfo_apc_define_constants, 0, 0, 2)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_INFO(0, constants)
+    ZEND_ARG_INFO(0, case_sensitive)
+ZEND_END_ARG_INFO()
+
+PHP_APC_ARGINFO
+ZEND_BEGIN_ARG_INFO(arginfo_apc_delete_file, 0)
+	ZEND_ARG_INFO(0, keys)
+ZEND_END_ARG_INFO()
+
+PHP_APC_ARGINFO
+ZEND_BEGIN_ARG_INFO(arginfo_apc_delete, 0)
+	ZEND_ARG_INFO(0, keys)
+ZEND_END_ARG_INFO()
+
+PHP_APC_ARGINFO
+ZEND_BEGIN_ARG_INFO_EX(arginfo_apc_fetch, 0, 0, 1)
     ZEND_ARG_INFO(0, key)
     ZEND_ARG_INFO(1, success)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO_EX(php_apc_inc_arginfo, 0, 0, 1)
+PHP_APC_ARGINFO
+ZEND_BEGIN_ARG_INFO_EX(arginfo_apc_inc, 0, 0, 1)
     ZEND_ARG_INFO(0, key)
     ZEND_ARG_INFO(0, step)
     ZEND_ARG_INFO(1, success)
+ZEND_END_ARG_INFO()
+
+PHP_APC_ARGINFO
+ZEND_BEGIN_ARG_INFO(arginfo_apc_cas, 0)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_INFO(0, old)
+    ZEND_ARG_INFO(0, new)
+ZEND_END_ARG_INFO()
+
+PHP_APC_ARGINFO
+ZEND_BEGIN_ARG_INFO_EX(arginfo_apc_load_constants, 0, 0, 1)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_INFO(0, case_sensitive)
+ZEND_END_ARG_INFO()
+
+PHP_APC_ARGINFO
+ZEND_BEGIN_ARG_INFO_EX(arginfo_apc_compile_file, 0, 0, 1)
+    ZEND_ARG_INFO(0, filenames)
+    ZEND_ARG_INFO(0, atomic)
+ZEND_END_ARG_INFO()
+
+PHP_APC_ARGINFO
+ZEND_BEGIN_ARG_INFO_EX(arginfo_apc_bin_dump, 0, 0, 0)
+    ZEND_ARG_INFO(0, files)
+    ZEND_ARG_INFO(0, user_vars)
+ZEND_END_ARG_INFO()
+
+PHP_APC_ARGINFO
+ZEND_BEGIN_ARG_INFO_EX(arginfo_apc_bin_dumpfile, 0, 0, 3)
+    ZEND_ARG_INFO(0, files)
+    ZEND_ARG_INFO(0, user_vars)
+    ZEND_ARG_INFO(0, filename)
+    ZEND_ARG_INFO(0, flags)
+    ZEND_ARG_INFO(0, context)
+ZEND_END_ARG_INFO()
+
+PHP_APC_ARGINFO
+ZEND_BEGIN_ARG_INFO_EX(arginfo_apc_bin_load, 0, 0, 1)
+    ZEND_ARG_INFO(0, data)
+    ZEND_ARG_INFO(0, flags)
+ZEND_END_ARG_INFO()
+
+PHP_APC_ARGINFO
+ZEND_BEGIN_ARG_INFO_EX(arginfo_apc_bin_loadfile, 0, 0, 1)
+    ZEND_ARG_INFO(0, filename)
+    ZEND_ARG_INFO(0, context)
+    ZEND_ARG_INFO(0, flags)
+ZEND_END_ARG_INFO()
+
+PHP_APC_ARGINFO
+ZEND_BEGIN_ARG_INFO_EX(arginfo_apc_default_cache, 0, 0, 1)
+    ZEND_ARG_INFO(0, cache_id)
 ZEND_END_ARG_INFO()
 /* }}} */
 
@@ -2227,28 +2327,28 @@ PHP_FUNCTION(apc_default_cache) {
 
 /* {{{ apc_functions[] */
 function_entry apc_functions[] = {
-    PHP_FE(apc_cache_info,          NULL)
+    PHP_FE(apc_cache_info,          arginfo_apc_cache_info)
 #ifdef APC_FILEHITS
-    PHP_FE(apc_filehits,            NULL)
+    PHP_FE(apc_filehits,            arginfo_apc_filehits)
 #endif
-    PHP_FE(apc_clear_cache,         NULL)
-    PHP_FE(apc_sma_info,            NULL)
-    PHP_FE(apc_store,               NULL)
-    PHP_FE(apc_fetch,               php_apc_fetch_arginfo)
-    PHP_FE(apc_delete,              NULL)
-    PHP_FE(apc_delete_file,         NULL)
-    PHP_FE(apc_define_constants,    NULL)
-    PHP_FE(apc_load_constants,      NULL)
-    PHP_FE(apc_compile_file,        NULL)
-    PHP_FE(apc_add,                 NULL)
-    PHP_FE(apc_inc,                 php_apc_inc_arginfo)
-    PHP_FE(apc_dec,                 php_apc_inc_arginfo)
-    PHP_FE(apc_cas,                 NULL)
-    PHP_FE(apc_bin_dump,            NULL)
-    PHP_FE(apc_bin_load,            NULL)
-    PHP_FE(apc_bin_dumpfile,        NULL)
-    PHP_FE(apc_bin_loadfile,        NULL)
-    PHP_FE(apc_default_cache,       NULL)
+    PHP_FE(apc_clear_cache,         arginfo_apc_clear_cache)
+    PHP_FE(apc_sma_info,            arginfo_apc_clear_cache)
+    PHP_FE(apc_store,               arginfo_apc_store)
+    PHP_FE(apc_fetch,               arginfo_apc_fetch)
+    PHP_FE(apc_delete,              arginfo_apc_delete)
+    PHP_FE(apc_delete_file,         arginfo_apc_delete_file)
+    PHP_FE(apc_define_constants,    arginfo_apc_define_constants)
+    PHP_FE(apc_load_constants,      arginfo_apc_load_constants)
+    PHP_FE(apc_compile_file,        arginfo_apc_compile_file)
+    PHP_FE(apc_add,                 arginfo_apc_store)
+    PHP_FE(apc_inc,                 arginfo_apc_inc)
+    PHP_FE(apc_dec,                 arginfo_apc_inc)
+    PHP_FE(apc_cas,                 arginfo_apc_cas)
+    PHP_FE(apc_bin_dump,            arginfo_apc_bin_dump)
+    PHP_FE(apc_bin_load,            arginfo_apc_bin_load)
+    PHP_FE(apc_bin_dumpfile,        arginfo_apc_bin_dumpfile)
+    PHP_FE(apc_bin_loadfile,        arginfo_apc_bin_loadfile)
+    PHP_FE(apc_default_cache,       arginfo_apc_default_cache)
     {NULL,    NULL,                 NULL}
 };
 /* }}} */

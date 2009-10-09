@@ -12,7 +12,7 @@
   | obtain it through the world-wide-web, please send a note to          |
   | license@php.net so we can mail you a copy immediately.               |
   +----------------------------------------------------------------------+
-  | Authors: Brian Shire <shire@.php.net>                                |
+  | Authors: Brian Shire <shire@php.net>                                 |
   +----------------------------------------------------------------------+
 
  */
@@ -27,6 +27,10 @@
 #include "ext/standard/md5.h"
 
 #include "zend_interfaces.h"
+
+#ifndef zend_parse_parameters_none
+# define zend_parse_parameters_none() zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "")
+#endif
 
 zend_class_entry *apc_iterator_ce;
 zend_object_handlers apc_iterator_object_handlers;
@@ -140,7 +144,7 @@ static apc_iterator_item_t* apc_iterator_item_ctor(apc_iterator_t *iterator, slo
 
 /* {{{ apc_iterator_clone */
 static zend_object_value apc_iterator_clone(zval *zobject TSRMLS_DC) {
-    zend_object_value value;
+    zend_object_value value = {0};
     apc_eprint("APCIterator object cannot be cloned.");
     return value;
 }
@@ -411,8 +415,12 @@ PHP_METHOD(apc_iterator, __construct) {
         return;
     }
 
+    if (!APCG(enabled)) {
+        apc_eprint("APC must be enabled to use APCIterator.");
+    }
+
     if (chunk_size < 0) {
-        apc_eprint("APCIterator chunk size must be greater than 0.");
+        apc_eprint("APCIterator chunk size must be 0 or greater.");
         return;
     }
 
@@ -472,8 +480,11 @@ PHP_METHOD(apc_iterator, __construct) {
 
 /* {{{ proto APCIterator::rewind() */
 PHP_METHOD(apc_iterator, rewind) {
-    zval *object = getThis();
-    apc_iterator_t *iterator = (apc_iterator_t*)zend_object_store_get_object(object TSRMLS_CC);
+    apc_iterator_t *iterator = (apc_iterator_t*)zend_object_store_get_object(getThis() TSRMLS_CC);
+
+    if (zend_parse_parameters_none() == FAILURE) {
+        return;
+    }
 
     if (iterator->initialized == 0) {
         RETURN_FALSE;
@@ -488,8 +499,11 @@ PHP_METHOD(apc_iterator, rewind) {
 
 /* {{{ proto boolean APCIterator::valid() */
 PHP_METHOD(apc_iterator, valid) {
-    zval *object = getThis();
-    apc_iterator_t *iterator = (apc_iterator_t*)zend_object_store_get_object(object TSRMLS_CC);
+    apc_iterator_t *iterator = (apc_iterator_t*)zend_object_store_get_object(getThis() TSRMLS_CC);
+
+    if (zend_parse_parameters_none() == FAILURE) {
+        return;
+    }
 
     if (iterator->initialized == 0) {
         RETURN_FALSE;
@@ -505,17 +519,23 @@ PHP_METHOD(apc_iterator, valid) {
 
 /* {{{ proto mixed APCIterator::current() */
 PHP_METHOD(apc_iterator, current) {
-    zval *object = getThis();
     apc_iterator_item_t *item;
-    apc_iterator_t *iterator = (apc_iterator_t*)zend_object_store_get_object(object TSRMLS_CC);
+    apc_iterator_t *iterator = (apc_iterator_t*)zend_object_store_get_object(getThis() TSRMLS_CC);
+
+    if (zend_parse_parameters_none() == FAILURE) {
+        return;
+    }
+
     if (iterator->initialized == 0) {
         RETURN_FALSE;
     }
+
     if (apc_stack_size(iterator->stack) == iterator->stack_idx) {
         if (iterator->fetch(iterator) == 0) {
             RETURN_FALSE;
         }
     }
+
     item = apc_stack_get(iterator->stack, iterator->stack_idx);
     RETURN_ZVAL(item->value, 1, 0);
 }
@@ -523,18 +543,25 @@ PHP_METHOD(apc_iterator, current) {
 
 /* {{{ proto string APCIterator::key() */
 PHP_METHOD(apc_iterator, key) {
-    zval *object = getThis();
     apc_iterator_item_t *item;
-    apc_iterator_t *iterator = (apc_iterator_t*)zend_object_store_get_object(object TSRMLS_CC);
+    apc_iterator_t *iterator = (apc_iterator_t*)zend_object_store_get_object(getThis() TSRMLS_CC);
+
+    if (zend_parse_parameters_none() == FAILURE) {
+        return;
+    }
+
     if (iterator->initialized == 0 || apc_stack_size(iterator->stack) == 0) {
         RETURN_FALSE;
     }
+
     if (apc_stack_size(iterator->stack) == iterator->stack_idx) {
         if (iterator->fetch(iterator) == 0) {
             RETURN_FALSE;
         }
     }
+
     item = apc_stack_get(iterator->stack, iterator->stack_idx);
+
     if (item->key) {
         RETURN_STRINGL(item->key, item->key_len, 1);
     } else {
@@ -545,21 +572,30 @@ PHP_METHOD(apc_iterator, key) {
 
 /* {{{ proto APCIterator::next() */
 PHP_METHOD(apc_iterator, next) {
-    zval *object = getThis();
-    apc_iterator_t *iterator = (apc_iterator_t*)zend_object_store_get_object(object TSRMLS_CC);
+    apc_iterator_t *iterator = (apc_iterator_t*)zend_object_store_get_object(getThis() TSRMLS_CC);
+
+    if (zend_parse_parameters_none() == FAILURE) {
+        return;
+    }
+
     if (iterator->initialized == 0 || apc_stack_size(iterator->stack) == 0) {
         RETURN_FALSE;
     }
+
     iterator->stack_idx++;
     iterator->key_idx++;
+
     RETURN_TRUE;
 }
 /* }}} */
 
 /* {{{ proto long APCIterator::getTotalHits() */
 PHP_METHOD(apc_iterator, getTotalHits) {
-    zval *object = getThis();
-    apc_iterator_t *iterator = (apc_iterator_t*)zend_object_store_get_object(object TSRMLS_CC);
+    apc_iterator_t *iterator = (apc_iterator_t*)zend_object_store_get_object(getThis() TSRMLS_CC);
+
+    if (zend_parse_parameters_none() == FAILURE) {
+        return;
+    }
 
     if (iterator->initialized == 0) {
         RETURN_FALSE;
@@ -575,8 +611,11 @@ PHP_METHOD(apc_iterator, getTotalHits) {
 
 /* {{{ proto long APCIterator:;getTotalSize() */
 PHP_METHOD(apc_iterator, getTotalSize) {
-    zval *object = getThis();
-    apc_iterator_t *iterator = (apc_iterator_t*)zend_object_store_get_object(object TSRMLS_CC);
+    apc_iterator_t *iterator = (apc_iterator_t*)zend_object_store_get_object(getThis() TSRMLS_CC);
+
+    if (zend_parse_parameters_none() == FAILURE) {
+        return;
+    }
 
     if (iterator->initialized == 0) {
         RETURN_FALSE;
@@ -592,8 +631,11 @@ PHP_METHOD(apc_iterator, getTotalSize) {
 
 /* {{{ proto long APCIterator::getTotalCount() */
 PHP_METHOD(apc_iterator, getTotalCount) {
-    zval *object = getThis();
-    apc_iterator_t *iterator = (apc_iterator_t*)zend_object_store_get_object(object TSRMLS_CC);
+    apc_iterator_t *iterator = (apc_iterator_t*)zend_object_store_get_object(getThis() TSRMLS_CC);
+
+    if (zend_parse_parameters_none() == FAILURE) {
+        return;
+    }
 
     if (iterator->initialized == 0) {
         RETURN_FALSE;
@@ -607,17 +649,39 @@ PHP_METHOD(apc_iterator, getTotalCount) {
 }
 /* }}} */
 
+
+/* {{{ arginfo */
+#if (PHP_MAJOR_VERSION >= 6 || (PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION >= 3))
+# define PHP_APC_ARGINFO
+#else
+# define PHP_APC_ARGINFO static
+#endif
+
+PHP_APC_ARGINFO
+ZEND_BEGIN_ARG_INFO_EX(arginfo_apc_iterator___construct, 0, 0, 1)
+	ZEND_ARG_INFO(0, cache)
+	ZEND_ARG_INFO(0, search)
+	ZEND_ARG_INFO(0, format)
+	ZEND_ARG_INFO(0, chunk_size)
+	ZEND_ARG_INFO(0, list)
+ZEND_END_ARG_INFO()
+
+PHP_APC_ARGINFO
+ZEND_BEGIN_ARG_INFO_EX(arginfo_apc_iterator_void, 0, 0, 0)
+ZEND_END_ARG_INFO()
+/* }}} */
+
 /* {{{ apc_iterator_functions */
 static function_entry apc_iterator_functions[] = {
-    PHP_ME(apc_iterator, __construct, NULL, ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
-    PHP_ME(apc_iterator, rewind, NULL, ZEND_ACC_PUBLIC)
-    PHP_ME(apc_iterator, current, NULL, ZEND_ACC_PUBLIC)
-    PHP_ME(apc_iterator, key, NULL, ZEND_ACC_PUBLIC)
-    PHP_ME(apc_iterator, next, NULL, ZEND_ACC_PUBLIC)
-    PHP_ME(apc_iterator, valid, NULL, ZEND_ACC_PUBLIC)
-    PHP_ME(apc_iterator, getTotalHits, NULL, ZEND_ACC_PUBLIC)
-    PHP_ME(apc_iterator, getTotalSize, NULL, ZEND_ACC_PUBLIC)
-    PHP_ME(apc_iterator, getTotalCount, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(apc_iterator, __construct, arginfo_apc_iterator___construct, ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
+    PHP_ME(apc_iterator, rewind, arginfo_apc_iterator_void, ZEND_ACC_PUBLIC)
+    PHP_ME(apc_iterator, current, arginfo_apc_iterator_void, ZEND_ACC_PUBLIC)
+    PHP_ME(apc_iterator, key, arginfo_apc_iterator_void, ZEND_ACC_PUBLIC)
+    PHP_ME(apc_iterator, next, arginfo_apc_iterator_void, ZEND_ACC_PUBLIC)
+    PHP_ME(apc_iterator, valid, arginfo_apc_iterator_void, ZEND_ACC_PUBLIC)
+    PHP_ME(apc_iterator, getTotalHits, arginfo_apc_iterator_void, ZEND_ACC_PUBLIC)
+    PHP_ME(apc_iterator, getTotalSize, arginfo_apc_iterator_void, ZEND_ACC_PUBLIC)
+    PHP_ME(apc_iterator, getTotalCount, arginfo_apc_iterator_void, ZEND_ACC_PUBLIC)
     {NULL, NULL, NULL}
 };
 /* }}} */
