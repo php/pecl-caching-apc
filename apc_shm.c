@@ -47,23 +47,15 @@
 # define SHM_A 0222 /* write permission */
 #endif
 
-int apc_shm_create(const char* pathname, int proj, size_t size)
+int apc_shm_create(int proj, size_t size)
 {
     int shmid;  /* shared memory id */
     int oflag;  /* permissions on shm */
     key_t key;  /* shm key returned by ftok */
 
     key = IPC_PRIVATE;
-#ifndef PHP_WIN32
-    /* no ftok yet for win32 */
-    if (pathname != NULL) {
-        if ((key = ftok(pathname, proj)) < 0) {
-            apc_eprint("apc_shm_create: ftok failed:");
-        }
-    }
-#endif
-
     oflag = IPC_CREAT | SHM_R | SHM_A;
+
     if ((shmid = shmget(key, size, oflag)) < 0) {
         apc_eprint("apc_shm_create: shmget(%d, %d, %d) failed: %s. It is possible that the chosen SHM segment size is higher than the operation system allows. Linux has usually a default limit of 32MB per segment.", key, size, oflag, strerror(errno));
     }
