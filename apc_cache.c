@@ -473,6 +473,9 @@ static void apc_cache_expunge_flush(apc_cache_t* cache, size_t size)
                 p = &(*p)->next;
             }
         }
+
+        memset(&cache->header->lastkey, 0, sizeof(apc_keyid_t));
+
         cache->header->busy = 0;
         CACHE_SAFE_UNLOCK(cache);
     }
