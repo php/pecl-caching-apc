@@ -51,7 +51,11 @@
 /* ---- */
 
 #include <time.h>
+#ifdef WIN32
+#include "win32/unistd.h"
+#else
 #include <unistd.h>
+#endif
 
 /* #include "storage/s_lock.h" -- Removed for APC */
 #include "pgsql_s_lock.h"
@@ -219,7 +223,7 @@ s_lock(volatile slock_t *lock, const char *file, int line)
 
 			/* increase delay by a random fraction between 1X and 2X */
 			cur_delay += (int) (cur_delay *
-					  ((double) random() / (double) MAX_RANDOM_VALUE) + 0.5);
+					  ((double) rand() / (double) MAX_RANDOM_VALUE) + 0.5);
 			/* wrap back to minimum delay when max is exceeded */
 			if (cur_delay > MAX_DELAY_MSEC)
 				cur_delay = MIN_DELAY_MSEC;
