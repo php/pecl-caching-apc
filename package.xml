@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8" ?>
+﻿<?xml version="1.0" encoding="UTF-8" ?>
 <package xmlns="http://pear.php.net/dtd/package-2.0" xmlns:tasks="http://pear.php.net/dtd/tasks-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" packagerversion="1.4.7" version="2.0" xsi:schemaLocation="http://pear.php.net/dtd/tasks-1.0 http://pear.php.net/dtd/tasks-1.0.xsd http://pear.php.net/dtd/package-2.0 http://pear.php.net/dtd/package-2.0.xsd">
  <name>APC</name>
  <channel>pecl.php.net</channel>
@@ -77,6 +77,8 @@
     <file role="doc" name="TECHNOTES.txt" />
     <file role="src" name="apc.c" />
     <file role="src" name="apc.h" />
+    <file role="src" name="apc_bin.c" />
+    <file role="src" name="apc_bin.h" />
     <file role="src" name="apc_cache.c" />
     <file role="src" name="apc_cache.h" />
     <file role="src" name="apc_compile.c" />
@@ -132,6 +134,15 @@
      <file role="test" name="apc_007.phpt" />
      <file role="test" name="apc_008.phpt" />
      <file role="test" name="apc_009.phpt" />
+     <file role="test" name="apc53_001.phpt" />  
+     <file role="test" name="apc53_002.phpt" />  
+     <file role="test" name="apc53_003.phpt" />  
+     <file role="test" name="apc53_004.phpt" />  
+     <file role="test" name="apc53_005.phpt" />  
+     <file role="test" name="apc_bin_001.phpt" />  
+     <file role="test" name="apc_bin_002-1.inc" />  
+     <file role="test" name="apc_bin_002-2.inc" />  
+     <file role="test" name="apc_bin_002.phpt" /> 
      <file role="test" name="iterator_001.phpt" />
      <file role="test" name="iterator_002.phpt" />
      <file role="test" name="iterator_003.phpt" />
