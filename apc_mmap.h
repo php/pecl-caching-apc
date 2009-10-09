@@ -12,7 +12,7 @@
   | obtain it through the world-wide-web, please send a note to          |
   | license@php.net so we can mail you a copy immediately.               |
   +----------------------------------------------------------------------+
-  | Authors: Gopal V <gopalv@php.net> 
+  | Authors: Gopal V <gopalv@php.net>                                    |
   +----------------------------------------------------------------------+
 
    This software was contributed to PHP by Community Connect Inc. in 2002
