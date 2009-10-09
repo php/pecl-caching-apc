@@ -23,9 +23,9 @@ echo "\$perfection -= 1 = ".(apc_inc('perfection')?"ok":"epic fail")."\n";
 
 $success = false;
 
-echo "\$foobar += 1 = ".apc_inc('foobar', 1, &$success)."\n";
+echo "\$foobar += 1 = ".apc_inc('foobar', 1, $success)."\n";
 echo "pass by ref success ". $success . "\n";
-echo "\$foobar -= 1 = ".apc_dec('foobar', 1, &$success)."\n";
+echo "\$foobar -= 1 = ".apc_dec('foobar', 1, $success)."\n";
 echo "pass by ref success ". $success . "\n";
 
 ?>
