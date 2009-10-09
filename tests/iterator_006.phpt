@@ -763,7 +763,7 @@ array(1) {
 string(4) "key4"
 array(1) {
   ["mem_size"]=>
-  int(580)
+  int(%d)
 }
 string(4) "key5"
 array(1) {
