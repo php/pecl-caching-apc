@@ -5,7 +5,7 @@ dnl
 PHP_ARG_ENABLE(apc, whether to enable APC support,
 [  --enable-apc           Enable APC support])
 
-AC_MSG_CHECKING(Checking whether we should enable cache request file info)
+AC_MSG_CHECKING(whether we should enable cache request file info)
 AC_ARG_ENABLE(apc-filehits,
 [  --enable-apc-filehits   Enable per request file info about files used from the APC cache (ie: apc_filehits()) ],
 [
@@ -17,7 +17,7 @@ AC_ARG_ENABLE(apc-filehits,
 	AC_MSG_RESULT(no)
 ])
 
-AC_MSG_CHECKING(Checking whether we should use semaphore locking instead of fcntl)
+AC_MSG_CHECKING(whether we should use semaphore locking instead of fcntl)
 AC_ARG_ENABLE(apc-sem,
 [  --enable-apc-sem
                           Enable semaphore locks instead of fcntl],
@@ -29,7 +29,7 @@ AC_ARG_ENABLE(apc-sem,
   AC_MSG_RESULT(no)
 ])
 
-AC_MSG_CHECKING(Checking whether we should use pthread mutex locking)
+AC_MSG_CHECKING(whether we should use pthread mutex locking)
 AC_ARG_ENABLE(apc-pthreadmutex,
 [  --disable-apc-pthreadmutex
                           Disable pthread mutex locking ],
@@ -42,7 +42,7 @@ AC_ARG_ENABLE(apc-pthreadmutex,
   AC_MSG_RESULT(yes)
 ])
 
-AC_MSG_CHECKING(Checking whether we should use Least Recently Used list expunging cache entries)
+AC_MSG_CHECKING(whether we should use Least Recently Used list expunging cache entries)
 AC_ARG_ENABLE(apc-lfu,
 [  --enable-apc-lfu
                           Enable Least Recently Used (LFU) list for expunging cache entries],
@@ -104,7 +104,7 @@ if test "$PHP_APC_PTHREADMUTEX" != "no"; then
 	LIBS="$orig_LIBS"
 fi
 
-AC_MSG_CHECKING(Checking whether we should use spin locks)
+AC_MSG_CHECKING(whether we should use spin locks)
 AC_ARG_ENABLE(apc-spinlocks,
 [  --enable-apc-spinlocks
                           Enable spin locks  EXPERIMENTAL ],
@@ -117,7 +117,7 @@ AC_ARG_ENABLE(apc-spinlocks,
   AC_MSG_RESULT(no)
 ])
 
-AC_MSG_CHECKING(Checking whether we should use Least Frequently Used list expunging cache entries)
+AC_MSG_CHECKING(whether we should use Least Frequently Used list expunging cache entries)
 AC_ARG_ENABLE(apc-lfu,
 [  --enable-apc-lfu
                           Enable Least Frequently Used (LFU) list for expunging cache entries],
@@ -129,7 +129,7 @@ AC_ARG_ENABLE(apc-lfu,
    AC_MSG_RESULT(no)
 ])
 
-AC_MSG_CHECKING(Checking whether we should enable memory protection)
+AC_MSG_CHECKING(whether we should enable memory protection)
 AC_ARG_ENABLE(apc-memprotect,
 [  --enable-apc-memprotect
                           Enable mmap/shm memory protection],
