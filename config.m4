@@ -42,18 +42,6 @@ AC_ARG_ENABLE(apc-pthreadmutex,
   AC_MSG_RESULT(yes)
 ])
 
-AC_MSG_CHECKING(whether we should use Least Recently Used list expunging cache entries)
-AC_ARG_ENABLE(apc-lfu,
-[  --enable-apc-lfu
-                          Enable Least Recently Used (LFU) list for expunging cache entries],
-[
-  PHP_APC_LFU=$enableval
-  AC_MSG_RESULT($enableval)
-], [
-  PHP_APC_LFU=no
-  AC_MSG_RESULT(no)
-])
-
 if test "$PHP_APC_PTHREADMUTEX" != "no"; then
 	orig_LIBS="$LIBS"
 	LIBS="$LIBS -lpthread"
