@@ -456,7 +456,7 @@ static void apc_cache_expunge_flush(apc_cache_t* cache, size_t size)
                  */
                 if((*p)->value->type == APC_CACHE_ENTRY_USER) {
                     if((*p)->value->data.user.ttl) {
-                        if((*p)->creation_time + (*p)->value->data.user.ttl < t) {
+                        if((time_t) ((*p)->creation_time + (*p)->value->data.user.ttl) < t) {
                             remove_slot(cache, p);
                             continue;
                         }
@@ -696,7 +696,7 @@ int apc_cache_user_insert(apc_cache_t* cache, apc_cache_key_t key, apc_cache_ent
              * there is a ttl and the entry has not timed out yet.
              */
             if(exclusive && (  !(*slot)->value->data.user.ttl ||
-                              ( (*slot)->value->data.user.ttl && ((*slot)->creation_time + (*slot)->value->data.user.ttl) >= t ) 
+                              ( (*slot)->value->data.user.ttl && (time_t) ((*slot)->creation_time + (*slot)->value->data.user.ttl) >= t ) 
                             ) ) {
                 goto fail;
             }
@@ -711,7 +711,7 @@ int apc_cache_user_insert(apc_cache_t* cache, apc_cache_key_t key, apc_cache_ent
          * we see if the entry has a hard ttl on it and remove it if it has been around longer than its ttl
          */
         if((cache->ttl && (*slot)->access_time < (t - cache->ttl)) || 
-           ((*slot)->value->data.user.ttl && ((*slot)->creation_time + (*slot)->value->data.user.ttl) < t)) {
+           ((*slot)->value->data.user.ttl && (time_t) ((*slot)->creation_time + (*slot)->value->data.user.ttl) < t)) {
             remove_slot(cache, slot);
             continue;
         }
@@ -824,7 +824,7 @@ apc_cache_entry_t* apc_cache_user_find(apc_cache_t* cache, char *strkey, int key
     while (*slot) {
         if (!memcmp((*slot)->key.data.user.identifier, strkey, keylen)) {
             /* Check to make sure this entry isn't expired by a hard TTL */
-            if((*slot)->value->data.user.ttl && ((*slot)->creation_time + (*slot)->value->data.user.ttl) < t) {
+            if((*slot)->value->data.user.ttl && (time_t) ((*slot)->creation_time + (*slot)->value->data.user.ttl) < t) {
                 remove_slot(cache, slot);
                 cache->header->num_misses++;
                 apc_stats_update(&cache->header->miss_stats, 1 TSRMLS_CC);
