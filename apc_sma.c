@@ -396,7 +396,6 @@ static size_t sma_deallocate(apc_segment_t *segment, size_t offset)
 /* }}} */
 
 /* {{{ apc_sma_init */
-
 void apc_sma_init(apc_segment_t *segment, char *mmap_file_mask)
 {
     sma_header_t*   header;
@@ -420,6 +419,8 @@ void apc_sma_init(apc_segment_t *segment, char *mmap_file_mask)
     if (mmap_file_mask) {
         memcpy(&mmap_file_mask[strlen(mmap_file_mask)-6], "XXXXXX", 6);
     }
+#else
+    apc_shm_attach(segment, apc_shm_create(0, segment->size));
 #endif
 
     header = (sma_header_t*) segment->shmaddr;
@@ -482,6 +483,8 @@ void apc_sma_cleanup(apc_segment_t *segment)
 
 #if APC_MMAP
     apc_unmap(segment);
+#else
+    apc_shm_detach(segment->shmaddr);
 #endif
 
     segment->initialized = 0;

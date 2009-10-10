@@ -41,7 +41,7 @@
 
 extern int apc_shm_create(int proj, size_t size);
 extern void apc_shm_destroy(int shmid);
-extern apc_segment_t apc_shm_attach(int shmid);
+extern void apc_shm_attach(apc_segment_t *segment, int shmid);
 extern void apc_shm_detach(apc_segment_t* segment);
 
 #endif

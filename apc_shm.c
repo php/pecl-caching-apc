@@ -69,18 +69,16 @@ void apc_shm_destroy(int shmid)
     shmctl(shmid, IPC_RMID, 0);
 }
 
-apc_segment_t apc_shm_attach(int shmid)
+void apc_shm_attach(apc_segment_t *segment, int shmid)
 {
-    apc_segment_t segment; /* shm segment */
-
-    if ((long)(segment.shmaddr = shmat(shmid, 0, 0)) == -1) {
+    if ((long)(segment->shmaddr = shmat(shmid, 0, 0)) == -1) {
         apc_eprint("apc_shm_attach: shmat failed:");
     }
 
 #ifdef APC_MEMPROTECT
     
-    if ((long)(segment.roaddr = shmat(shmid, 0, SHM_RDONLY)) == -1) {
-        segment.roaddr = NULL;
+    if ((long)(segment->roaddr = shmat(shmid, 0, SHM_RDONLY)) == -1) {
+        segment->roaddr = NULL;
     }
 
 #endif
@@ -90,7 +88,6 @@ apc_segment_t apc_shm_attach(int shmid)
      * segment won't disappear until all processes have detached from it.
      */
     apc_shm_destroy(shmid);
-    return segment;
 }
 
 void apc_shm_detach(apc_segment_t* segment)

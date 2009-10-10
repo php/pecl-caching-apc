@@ -17,6 +17,18 @@ AC_ARG_ENABLE(apc-filehits,
 	AC_MSG_RESULT(no)
 ])
 
+AC_MSG_CHECKING(whether we should use mmap)
+AC_ARG_ENABLE(apc-mmap,
+[  --disable-apc-mmap
+                          Disable mmap support and use IPC shm instead],
+[
+  PHP_APC_MMAP=$enableval
+  AC_MSG_RESULT($enableval)
+], [
+  PHP_APC_MMAP=yes
+  AC_MSG_RESULT(yes)
+])
+
 AC_MSG_CHECKING(whether we should use semaphore locking instead of fcntl)
 AC_ARG_ENABLE(apc-sem,
 [  --enable-apc-sem
