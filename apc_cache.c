@@ -668,7 +668,7 @@ int apc_cache_user_insert(apc_cache_t* cache, apc_cache_key_t key, apc_cache_ent
         return 0;
     }
 
-    if(apc_cache_is_last_key(cache, &key, t)) {
+    if(apc_cache_is_last_key(cache, &key, t TSRMLS_CC)) {
         /* potential cache slam */
         return 0;
     }
@@ -1446,7 +1446,7 @@ zend_bool apc_cache_busy(apc_cache_t* cache)
 /* }}} */
 
 /* {{{ apc_cache_is_last_key */
-zend_bool apc_cache_is_last_key(apc_cache_t* cache, apc_cache_key_t* key, time_t t)
+zend_bool apc_cache_is_last_key(apc_cache_t* cache, apc_cache_key_t* key, time_t t TSRMLS_DC)
 {
     apc_keyid_t *lastkey = &cache->header->lastkey;
     unsigned int keylen = key->data.user.identifier_len+1;
