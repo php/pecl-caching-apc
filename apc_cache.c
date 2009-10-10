@@ -31,6 +31,7 @@
 /* $Id$ */
 
 #include "apc_cache.h"
+#include "apc_zend.h"
 #include "apc_sma.h"
 #include "apc_main.h"
 #include "apc_globals.h"
@@ -1211,14 +1212,14 @@ apc_cache_info_t* apc_cache_info(apc_cache_t* cache, zend_bool limited)
 
     CACHE_LOCK(cache);
 
-    info = (apc_cache_info_t*) apc_emalloc(sizeof(apc_cache_info_t));
+    info = (apc_cache_info_t*) apc_php_malloc(sizeof(apc_cache_info_t));
     if(!info) {
         CACHE_UNLOCK(cache);
         return NULL;
     }
     info->id = cache->id;
-    info->name = apc_xstrdup(cache->name, apc_emalloc);
-    info->const_name = apc_xstrdup(cache->const_name, apc_emalloc);
+    info->name = apc_xstrdup(cache->name, apc_php_malloc);
+    info->const_name = apc_xstrdup(cache->const_name, apc_php_malloc);
     info->fpstat = cache->fpstat;
     info->stat_ctime = cache->stat_ctime;
     info->size_hint = cache->size_hint;
@@ -1229,9 +1230,9 @@ apc_cache_info_t* apc_cache_info(apc_cache_t* cache, zend_bool limited)
     info->num_slots = cache->num_slots;
     info->ttl = cache->ttl;
     info->num_hits = cache->header->num_hits;
-    apc_stats_copy(&info->hit_stats, &cache->header->hit_stats, apc_emalloc TSRMLS_CC);
+    apc_stats_copy(&info->hit_stats, &cache->header->hit_stats, apc_php_malloc TSRMLS_CC);
     info->num_misses = cache->header->num_misses;
-    apc_stats_copy(&info->miss_stats, &cache->header->miss_stats, apc_emalloc TSRMLS_CC);
+    apc_stats_copy(&info->miss_stats, &cache->header->miss_stats, apc_php_malloc TSRMLS_CC);
     info->list = NULL;
     info->expunge_method = cache->expunge_method;
     info->segment_idx = cache->segment_idx;
@@ -1245,7 +1246,7 @@ apc_cache_info_t* apc_cache_info(apc_cache_t* cache, zend_bool limited)
     info->mem_size = cache->header->mem_size;
     info->num_entries = cache->header->num_entries;
     info->num_inserts = cache->header->num_inserts;
-    apc_stats_copy(&info->insert_stats, &cache->header->insert_stats, apc_emalloc TSRMLS_CC);
+    apc_stats_copy(&info->insert_stats, &cache->header->insert_stats, apc_php_malloc TSRMLS_CC);
 #ifdef MULTIPART_EVENT_FORMDATA
     info->file_upload_progress = (APCG(rfc1867_cache) == cache);
 #else
@@ -1257,17 +1258,17 @@ apc_cache_info_t* apc_cache_info(apc_cache_t* cache, zend_bool limited)
         for (i = 0; i < info->num_slots; i++) {
             p = cache->slots[i];
             for (; p != NULL; p = p->next) {
-                apc_cache_link_t* link = (apc_cache_link_t*) apc_emalloc(sizeof(apc_cache_link_t));
+                apc_cache_link_t* link = (apc_cache_link_t*) apc_php_malloc(sizeof(apc_cache_link_t));
 
                 if(p->value->type == APC_CACHE_ENTRY_FILE) {
                     if(p->key.type == APC_CACHE_KEY_FILE) {
                         link->data.file.device = p->key.data.file.device;
                         link->data.file.inode = p->key.data.file.inode;
-                        link->data.file.filename = apc_xstrdup(p->value->data.file.filename, apc_emalloc);
+                        link->data.file.filename = apc_xstrdup(p->value->data.file.filename, apc_php_malloc);
                     } else { /* This is a no-stat fullpath file entry */
                         link->data.file.device = 0;
                         link->data.file.inode = 0;
-                        link->data.file.filename = apc_xstrdup(p->key.data.fpfile.fullpath, apc_emalloc);
+                        link->data.file.filename = apc_xstrdup(p->key.data.fpfile.fullpath, apc_php_malloc);
                     }
                     link->type = APC_CACHE_ENTRY_FILE;
                     if (cache->md5) {
@@ -1277,7 +1278,7 @@ apc_cache_info_t* apc_cache_info(apc_cache_t* cache, zend_bool limited)
                       link->data.file.md5 = NULL;
                     }
                 } else if(p->value->type == APC_CACHE_ENTRY_USER) {
-                    link->data.user.info = apc_xmemcpy(p->value->data.user.info, p->value->data.user.info_len+1, apc_emalloc);
+                    link->data.user.info = apc_xmemcpy(p->value->data.user.info, p->value->data.user.info_len+1, apc_php_malloc);
                     link->data.user.ttl = p->value->data.user.ttl;
                     link->type = APC_CACHE_ENTRY_USER;
                 }
@@ -1295,17 +1296,17 @@ apc_cache_info_t* apc_cache_info(apc_cache_t* cache, zend_bool limited)
 
         /* For each slot pending deletion */
         for (p = cache->header->deleted_list; p != NULL; p = p->next) {
-            apc_cache_link_t* link = (apc_cache_link_t*) apc_emalloc(sizeof(apc_cache_link_t));
+            apc_cache_link_t* link = (apc_cache_link_t*) apc_php_malloc(sizeof(apc_cache_link_t));
 
             if(p->value->type == APC_CACHE_ENTRY_FILE) {
                 if(p->key.type == APC_CACHE_KEY_FILE) {
                     link->data.file.device = p->key.data.file.device;
                     link->data.file.inode = p->key.data.file.inode;
-                    link->data.file.filename = apc_xstrdup(p->value->data.file.filename, apc_emalloc);
+                    link->data.file.filename = apc_xstrdup(p->value->data.file.filename, apc_php_malloc);
                 } else { /* This is a no-stat fullpath file entry */
                     link->data.file.device = 0;
                     link->data.file.inode = 0;
-                    link->data.file.filename = apc_xstrdup(p->key.data.fpfile.fullpath, apc_emalloc);
+                    link->data.file.filename = apc_xstrdup(p->key.data.fpfile.fullpath, apc_php_malloc);
                 }
                 link->type = APC_CACHE_ENTRY_FILE;
                 if (cache->md5) {
@@ -1315,7 +1316,7 @@ apc_cache_info_t* apc_cache_info(apc_cache_t* cache, zend_bool limited)
                   link->data.file.md5 = NULL;
                 }
             } else if(p->value->type == APC_CACHE_ENTRY_USER) {
-                link->data.user.info = apc_xmemcpy(p->value->data.user.info, p->value->data.user.info_len+1, apc_emalloc);
+                link->data.user.info = apc_xmemcpy(p->value->data.user.info, p->value->data.user.info_len+1, apc_php_malloc);
                 link->data.user.ttl = p->value->data.user.ttl;
                 link->type = APC_CACHE_ENTRY_USER;
             }
@@ -1334,10 +1335,10 @@ apc_cache_info_t* apc_cache_info(apc_cache_t* cache, zend_bool limited)
         if (cache->expunge_method == APC_CACHE_EXPUNGE_LFU) {
             /* For each LFU list slot */
             for (p = cache->header->lfu_tail->lfu_up; p->prev_ptr != NULL; p = p->lfu_up) {
-                apc_cache_link_t* link = (apc_cache_link_t*) apc_emalloc(sizeof(apc_cache_link_t));
+                apc_cache_link_t* link = (apc_cache_link_t*) apc_php_malloc(sizeof(apc_cache_link_t));
 
                 if(p->value->type == APC_CACHE_ENTRY_FILE) {
-                    link->data.file.filename = apc_xstrdup(p->value->data.file.filename, apc_emalloc);
+                    link->data.file.filename = apc_xstrdup(p->value->data.file.filename, apc_php_malloc);
                     if(p->key.type == APC_CACHE_KEY_FILE) {
                         link->data.file.device = p->key.data.file.device;
                         link->data.file.inode = p->key.data.file.inode;
@@ -1353,7 +1354,7 @@ apc_cache_info_t* apc_cache_info(apc_cache_t* cache, zend_bool limited)
                       link->data.file.md5 = NULL;
                     }
                 } else if(p->value->type == APC_CACHE_ENTRY_USER) {
-                    link->data.user.info = apc_xmemcpy(p->value->data.user.info, p->value->data.user.info_len, apc_emalloc);
+                    link->data.user.info = apc_xmemcpy(p->value->data.user.info, p->value->data.user.info_len, apc_php_malloc);
                     link->data.user.ttl = p->value->data.user.ttl;
                     link->type = APC_CACHE_ENTRY_USER;
                 }
@@ -1382,8 +1383,8 @@ void apc_cache_free_info(apc_cache_info_t* info)
     apc_cache_link_t* p = info->list;
     apc_cache_link_t* q = NULL;
 
-    apc_efree(info->name);
-    apc_efree(info->const_name);
+    apc_php_free(info->name);
+    apc_php_free(info->const_name);
     while (p != NULL) {
         q = p;
         p = p->next;
@@ -1391,10 +1392,10 @@ void apc_cache_free_info(apc_cache_info_t* info)
             if(q->data.file.md5) {
                 efree(q->data.file.md5);
             }
-            apc_efree(q->data.file.filename);
+            apc_php_free(q->data.file.filename);
         }
-        else if(q->type == APC_CACHE_ENTRY_USER) apc_efree(q->data.user.info);
-        apc_efree(q);
+        else if(q->type == APC_CACHE_ENTRY_USER) apc_php_free(q->data.user.info);
+        apc_php_free(q);
     }
     p = info->deleted_list;
     while (p != NULL) {
@@ -1404,10 +1405,10 @@ void apc_cache_free_info(apc_cache_info_t* info)
             if(q->data.file.md5) {
                 efree(q->data.file.md5);
             }
-            apc_efree(q->data.file.filename);
+            apc_php_free(q->data.file.filename);
         }
-        else if(q->type == APC_CACHE_ENTRY_USER) apc_efree(q->data.user.info);
-        apc_efree(q);
+        else if(q->type == APC_CACHE_ENTRY_USER) apc_php_free(q->data.user.info);
+        apc_php_free(q);
     }
 #ifdef APC_LFU
     if (info->expunge_method == APC_CACHE_EXPUNGE_LFU) {
@@ -1419,14 +1420,14 @@ void apc_cache_free_info(apc_cache_info_t* info)
                 if(q->data.file.md5) {
                     efree(q->data.file.md5);
                 }
-                apc_efree(q->data.file.filename);
+                apc_php_free(q->data.file.filename);
             }
-            else if(q->type == APC_CACHE_ENTRY_USER) apc_efree(q->data.user.info);
-            apc_efree(q);
+            else if(q->type == APC_CACHE_ENTRY_USER) apc_php_free(q->data.user.info);
+            apc_php_free(q);
         }
     }
 #endif
-    apc_efree(info);
+    apc_php_free(info);
 
 }
 /* }}} */

@@ -890,7 +890,7 @@ PHP_FUNCTION(apc_cache_info)
     if (cache_id & APC_CACHE_MASK) {
         multiple = 0;
         num_caches=1;
-        info = apc_emalloc(sizeof(apc_cache_t*) * num_caches);
+        info = apc_php_malloc(sizeof(apc_cache_info_t*) * num_caches);
         APCG(current_cache) = apc_get_cache(cache_id, 0 TSRMLS_CC);
         info[0] = apc_cache_info(APCG(current_cache), limited);
         APCG(current_cache) = NULL;
@@ -902,7 +902,7 @@ PHP_FUNCTION(apc_cache_info)
         if (!cache_id || cache_id & APC_CACHE_USER) {
             num_caches += APCG(num_user_caches);
         }
-        info = apc_emalloc(sizeof(apc_cache_t*) * num_caches);
+        info = apc_php_malloc(sizeof(apc_cache_info_t*) * num_caches);
         j=0;
         if (!cache_id || cache_id & APC_CACHE_FILE) {
             for(i=0; i < APCG(num_file_caches); i++) {
@@ -1089,7 +1089,7 @@ PHP_FUNCTION(apc_cache_info)
         }
     }
 
-    apc_efree(info);
+    apc_php_free(info);
 
 }
 /* }}} */
