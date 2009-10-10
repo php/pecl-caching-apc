@@ -1463,7 +1463,7 @@ static int cas_updater(apc_cache_t* cache, apc_cache_entry_t* entry, void* data)
 }
 /* }}} */
 
-/* {{{ proto int apc_cas(string key, long old, long new [, cache_id])
+/* {{{ proto int apc_cas(string key, int old, int new [, cache_id])
  */
 PHP_FUNCTION(apc_cas) {
     char *strkey;
@@ -1725,7 +1725,7 @@ static void _apc_define_constants(zval *constants, zend_bool case_sensitive TSRM
     }
 }
 
-/* {{{ proto mixed apc_define_constants(string key, array constants [,bool case-sensitive, [int cache_id]])
+/* {{{ proto mixed apc_define_constants(string key, array constants [, bool case-sensitive, [int cache_id]])
  */
 PHP_FUNCTION(apc_define_constants) {
     char *strkey;
@@ -1998,7 +1998,7 @@ PHP_FUNCTION(apc_compile_file) {
 }
 /* }}} */
 
-/* {{{ proto mixed apc_bin_dump(optional array files, optional array user_vars)
+/* {{{ proto mixed apc_bin_dump([array files [, array user_vars]])
     Returns a binary dump of the given files and user variables from the APC cache.
     A NULL for files or user_vars signals a dump of every entry, while array() will dump nothing.
  */
@@ -2032,7 +2032,7 @@ PHP_FUNCTION(apc_bin_dump) {
     return;
 }
 
-/* {{{ proto mixed apc_bin_dumpfile(array files, array user_vars, array cache_ids, string filename, long flags, resource context)
+/* {{{ proto mixed apc_bin_dumpfile(array files, array user_vars, array cache_ids, string filename, int flags, resource context)
     Output a binary dump of the given files and user variables from the APC cache to the named file.
  */
 PHP_FUNCTION(apc_bin_dumpfile) {
@@ -2199,118 +2199,6 @@ PHP_FUNCTION(apc_bin_loadfile) {
 }
 /* }}} */
 
-/* {{{ arginfo */
-#if (PHP_MAJOR_VERSION >= 6 || (PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION >= 3))
-# define PHP_APC_ARGINFO
-#else
-# define PHP_APC_ARGINFO static
-#endif
-
-PHP_APC_ARGINFO
-ZEND_BEGIN_ARG_INFO_EX(arginfo_apc_store, 0, 0, 2)
-    ZEND_ARG_INFO(0, key)
-    ZEND_ARG_INFO(0, var)
-    ZEND_ARG_INFO(0, ttl)
-ZEND_END_ARG_INFO()
-
-PHP_APC_ARGINFO
-ZEND_BEGIN_ARG_INFO_EX(arginfo_apc_filehits, 0, 0, 0)
-ZEND_END_ARG_INFO()
-
-PHP_APC_ARGINFO
-ZEND_BEGIN_ARG_INFO_EX(arginfo_apc_clear_cache, 0, 0, 0)
-    ZEND_ARG_INFO(0, info)
-ZEND_END_ARG_INFO()
-
-PHP_APC_ARGINFO
-ZEND_BEGIN_ARG_INFO_EX(arginfo_apc_cache_info, 0, 0, 0)
-    ZEND_ARG_INFO(0, type)
-    ZEND_ARG_INFO(0, limited)
-ZEND_END_ARG_INFO()
-
-PHP_APC_ARGINFO
-ZEND_BEGIN_ARG_INFO_EX(arginfo_apc_define_constants, 0, 0, 2)
-    ZEND_ARG_INFO(0, key)
-    ZEND_ARG_INFO(0, constants)
-    ZEND_ARG_INFO(0, case_sensitive)
-ZEND_END_ARG_INFO()
-
-PHP_APC_ARGINFO
-ZEND_BEGIN_ARG_INFO(arginfo_apc_delete_file, 0)
-	ZEND_ARG_INFO(0, keys)
-ZEND_END_ARG_INFO()
-
-PHP_APC_ARGINFO
-ZEND_BEGIN_ARG_INFO(arginfo_apc_delete, 0)
-	ZEND_ARG_INFO(0, keys)
-ZEND_END_ARG_INFO()
-
-PHP_APC_ARGINFO
-ZEND_BEGIN_ARG_INFO_EX(arginfo_apc_fetch, 0, 0, 1)
-    ZEND_ARG_INFO(0, key)
-    ZEND_ARG_INFO(1, success)
-ZEND_END_ARG_INFO()
-
-PHP_APC_ARGINFO
-ZEND_BEGIN_ARG_INFO_EX(arginfo_apc_inc, 0, 0, 1)
-    ZEND_ARG_INFO(0, key)
-    ZEND_ARG_INFO(0, step)
-    ZEND_ARG_INFO(1, success)
-ZEND_END_ARG_INFO()
-
-PHP_APC_ARGINFO
-ZEND_BEGIN_ARG_INFO(arginfo_apc_cas, 0)
-    ZEND_ARG_INFO(0, key)
-    ZEND_ARG_INFO(0, old)
-    ZEND_ARG_INFO(0, new)
-ZEND_END_ARG_INFO()
-
-PHP_APC_ARGINFO
-ZEND_BEGIN_ARG_INFO_EX(arginfo_apc_load_constants, 0, 0, 1)
-    ZEND_ARG_INFO(0, key)
-    ZEND_ARG_INFO(0, case_sensitive)
-ZEND_END_ARG_INFO()
-
-PHP_APC_ARGINFO
-ZEND_BEGIN_ARG_INFO_EX(arginfo_apc_compile_file, 0, 0, 1)
-    ZEND_ARG_INFO(0, filenames)
-    ZEND_ARG_INFO(0, atomic)
-ZEND_END_ARG_INFO()
-
-PHP_APC_ARGINFO
-ZEND_BEGIN_ARG_INFO_EX(arginfo_apc_bin_dump, 0, 0, 0)
-    ZEND_ARG_INFO(0, files)
-    ZEND_ARG_INFO(0, user_vars)
-ZEND_END_ARG_INFO()
-
-PHP_APC_ARGINFO
-ZEND_BEGIN_ARG_INFO_EX(arginfo_apc_bin_dumpfile, 0, 0, 3)
-    ZEND_ARG_INFO(0, files)
-    ZEND_ARG_INFO(0, user_vars)
-    ZEND_ARG_INFO(0, filename)
-    ZEND_ARG_INFO(0, flags)
-    ZEND_ARG_INFO(0, context)
-ZEND_END_ARG_INFO()
-
-PHP_APC_ARGINFO
-ZEND_BEGIN_ARG_INFO_EX(arginfo_apc_bin_load, 0, 0, 1)
-    ZEND_ARG_INFO(0, data)
-    ZEND_ARG_INFO(0, flags)
-ZEND_END_ARG_INFO()
-
-PHP_APC_ARGINFO
-ZEND_BEGIN_ARG_INFO_EX(arginfo_apc_bin_loadfile, 0, 0, 1)
-    ZEND_ARG_INFO(0, filename)
-    ZEND_ARG_INFO(0, context)
-    ZEND_ARG_INFO(0, flags)
-ZEND_END_ARG_INFO()
-
-PHP_APC_ARGINFO
-ZEND_BEGIN_ARG_INFO_EX(arginfo_apc_default_cache, 0, 0, 1)
-    ZEND_ARG_INFO(0, cache_id)
-ZEND_END_ARG_INFO()
-/* }}} */
-
 /* {{{ proto boolean apc_default_cache(int cache_id) */
 PHP_FUNCTION(apc_default_cache) {
     long cache_id = 0;
@@ -2330,6 +2218,129 @@ PHP_FUNCTION(apc_default_cache) {
 
     RETURN_TRUE;
 }
+/* }}} */
+
+
+/* {{{ arginfo */
+#if (PHP_MAJOR_VERSION >= 6 || (PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION >= 3))
+# define PHP_APC_ARGINFO
+#else
+# define PHP_APC_ARGINFO static
+#endif
+
+PHP_APC_ARGINFO
+ZEND_BEGIN_ARG_INFO_EX(arginfo_apc_store, 0, 0, 2)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_INFO(0, var)
+    ZEND_ARG_INFO(0, ttl)
+    ZEND_ARG_INFO(0, cache_id)
+ZEND_END_ARG_INFO()
+
+PHP_APC_ARGINFO
+ZEND_BEGIN_ARG_INFO_EX(arginfo_apc_filehits, 0, 0, 0)
+ZEND_END_ARG_INFO()
+
+PHP_APC_ARGINFO
+ZEND_BEGIN_ARG_INFO_EX(arginfo_apc_clear_cache, 0, 0, 0)
+    ZEND_ARG_INFO(0, cache_id)
+ZEND_END_ARG_INFO()
+
+PHP_APC_ARGINFO
+ZEND_BEGIN_ARG_INFO_EX(arginfo_apc_cache_info, 0, 0, 0)
+    ZEND_ARG_INFO(0, cache_id)
+    ZEND_ARG_INFO(0, limited)
+ZEND_END_ARG_INFO()
+
+PHP_APC_ARGINFO
+ZEND_BEGIN_ARG_INFO_EX(arginfo_apc_define_constants, 0, 0, 2)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_INFO(0, constants)
+    ZEND_ARG_INFO(0, case_sensitive)
+    ZEND_ARG_INFO(0, cache_id)
+ZEND_END_ARG_INFO()
+
+PHP_APC_ARGINFO
+ZEND_BEGIN_ARG_INFO(arginfo_apc_delete_file, 0)
+	ZEND_ARG_INFO(0, keys)
+    ZEND_ARG_INFO(0, cache_id)
+ZEND_END_ARG_INFO()
+
+PHP_APC_ARGINFO
+ZEND_BEGIN_ARG_INFO(arginfo_apc_delete, 0)
+	ZEND_ARG_INFO(0, keys)
+    ZEND_ARG_INFO(0, cache_id)
+ZEND_END_ARG_INFO()
+
+PHP_APC_ARGINFO
+ZEND_BEGIN_ARG_INFO_EX(arginfo_apc_fetch, 0, 0, 1)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_INFO(1, success)
+    ZEND_ARG_INFO(0, cache_id)
+ZEND_END_ARG_INFO()
+
+PHP_APC_ARGINFO
+ZEND_BEGIN_ARG_INFO_EX(arginfo_apc_inc, 0, 0, 1)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_INFO(0, step)
+    ZEND_ARG_INFO(1, success)
+    ZEND_ARG_INFO(0, cache_id)
+ZEND_END_ARG_INFO()
+
+PHP_APC_ARGINFO
+ZEND_BEGIN_ARG_INFO(arginfo_apc_cas, 0)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_INFO(0, old)
+    ZEND_ARG_INFO(0, new)
+    ZEND_ARG_INFO(0, cache_id)
+ZEND_END_ARG_INFO()
+
+PHP_APC_ARGINFO
+ZEND_BEGIN_ARG_INFO_EX(arginfo_apc_load_constants, 0, 0, 1)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_INFO(0, case_sensitive)
+    ZEND_ARG_INFO(0, cache_id)
+ZEND_END_ARG_INFO()
+
+PHP_APC_ARGINFO
+ZEND_BEGIN_ARG_INFO_EX(arginfo_apc_compile_file, 0, 0, 1)
+    ZEND_ARG_INFO(0, filenames)
+    ZEND_ARG_INFO(0, atomic)
+    ZEND_ARG_INFO(0, cache_id)
+ZEND_END_ARG_INFO()
+
+PHP_APC_ARGINFO
+ZEND_BEGIN_ARG_INFO_EX(arginfo_apc_bin_dump, 0, 0, 0)
+    ZEND_ARG_INFO(0, cache_id)
+    ZEND_ARG_INFO(0, filter)
+ZEND_END_ARG_INFO()
+
+PHP_APC_ARGINFO
+ZEND_BEGIN_ARG_INFO_EX(arginfo_apc_bin_dumpfile, 0, 0, 3)
+    ZEND_ARG_INFO(0, cache_id)
+    ZEND_ARG_INFO(0, filter)
+    ZEND_ARG_INFO(0, flags)
+    ZEND_ARG_INFO(0, context)
+ZEND_END_ARG_INFO()
+
+PHP_APC_ARGINFO
+ZEND_BEGIN_ARG_INFO_EX(arginfo_apc_bin_load, 0, 0, 1)
+    ZEND_ARG_INFO(0, data)
+    ZEND_ARG_INFO(0, flags)
+    ZEND_ARG_INFO(0, cache_id)
+ZEND_END_ARG_INFO()
+
+PHP_APC_ARGINFO
+ZEND_BEGIN_ARG_INFO_EX(arginfo_apc_bin_loadfile, 0, 0, 1)
+    ZEND_ARG_INFO(0, filename)
+    ZEND_ARG_INFO(0, context)
+    ZEND_ARG_INFO(0, flags)
+    ZEND_ARG_INFO(0, cache_id)
+ZEND_END_ARG_INFO()
+
+PHP_APC_ARGINFO
+ZEND_BEGIN_ARG_INFO_EX(arginfo_apc_default_cache, 0, 0, 1)
+    ZEND_ARG_INFO(0, cache_id)
+ZEND_END_ARG_INFO()
 /* }}} */
 
 /* {{{ apc_functions[] */
@@ -2356,7 +2367,7 @@ function_entry apc_functions[] = {
     PHP_FE(apc_bin_dumpfile,        arginfo_apc_bin_dumpfile)
     PHP_FE(apc_bin_loadfile,        arginfo_apc_bin_loadfile)
     PHP_FE(apc_default_cache,       arginfo_apc_default_cache)
-    {NULL,    NULL,                 NULL}
+    {NULL, NULL, NULL}
 };
 /* }}} */
 
