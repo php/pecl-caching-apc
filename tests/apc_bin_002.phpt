@@ -12,21 +12,21 @@ report_memleaks = Off
 --FILE--
 <?php
 
-$filename=dirname(__FILE__).'/apc_bin_002.inc';
-$filename1=dirname(__FILE__).'/apc_bin_002-1.inc';
-$filename2=dirname(__FILE__).'/apc_bin_002-2.inc';
+define('filename',dirname(__FILE__).'/apc_bin_002.inc');
+define('filename1',dirname(__FILE__).'/apc_bin_002-1.inc');
+define('filename2',dirname(__FILE__).'/apc_bin_002-2.inc');
 
-copy($filename1, $filename);
-apc_compile_file($filename);
+copy(filename1, filename);
+apc_compile_file(filename);
 $data = apc_bin_dump(APC_CACHE_FILE, NULL);
 
 apc_clear_cache(APC_CACHE_FILE);
 
-copy($filename2, $filename);
+copy(filename2, filename);
 apc_bin_load($data, APC_BIN_VERIFY_MD5 | APC_BIN_VERIFY_CRC32, APC_CACHE_FILE);
-include($filename);
+include(filename);
 
-unlink($filename);
+unlink(filename);
 
 ?>
 ===DONE===
