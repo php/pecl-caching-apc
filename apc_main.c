@@ -78,7 +78,7 @@ static int install_function(apc_function_t fn, apc_context_t* ctxt, int lazy TSR
                               sizeof(apc_function_t),
                               NULL);
     } else {
-        zend_function *func = apc_copy_function_for_execution(fn.function, ctxt);
+        zend_function *func = apc_copy_function_for_execution(fn.function, ctxt TSRMLS_CC);
         status = zend_hash_add(EG(function_table),
                               fn.name,
                               fn.name_len+1,

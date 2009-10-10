@@ -1352,7 +1352,7 @@ zend_op_array* apc_copy_op_array_for_execution(zend_op_array* dst, zend_op_array
 /* }}} */
 
 /* {{{ apc_copy_function_for_execution */
-zend_function* apc_copy_function_for_execution(zend_function* src, apc_context_t* ctxt)
+zend_function* apc_copy_function_for_execution(zend_function* src, apc_context_t* ctxt TSRMLS_DC)
 {
     zend_function* dst;
     TSRMLS_FETCH();
@@ -1365,10 +1365,10 @@ zend_function* apc_copy_function_for_execution(zend_function* src, apc_context_t
 /* }}} */
 
 /* {{{ apc_copy_function_for_execution_ex */
-zend_function* apc_copy_function_for_execution_ex(void *dummy, zend_function* src, apc_context_t* ctxt)
+zend_function* apc_copy_function_for_execution_ex(void *dummy, zend_function* src, apc_context_t* ctxt TSRMLS_DC)
 {
     if(src->type==ZEND_INTERNAL_FUNCTION || src->type==ZEND_OVERLOADED_FUNCTION) return src;
-    return apc_copy_function_for_execution(src, ctxt);
+    return apc_copy_function_for_execution(src, ctxt TSRMLS_CC);
 }
 /* }}} */
 
