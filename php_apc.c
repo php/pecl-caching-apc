@@ -1569,6 +1569,11 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_apc_clear_cache, 0, 0, 0)
 ZEND_END_ARG_INFO()
 
 PHP_APC_ARGINFO
+ZEND_BEGIN_ARG_INFO_EX(arginfo_apc_sma_info, 0, 0, 0)
+    ZEND_ARG_INFO(0, limited)
+ZEND_END_ARG_INFO()
+
+PHP_APC_ARGINFO
 ZEND_BEGIN_ARG_INFO_EX(arginfo_apc_cache_info, 0, 0, 0)
     ZEND_ARG_INFO(0, type)
     ZEND_ARG_INFO(0, limited)
@@ -1656,7 +1661,7 @@ ZEND_END_ARG_INFO()
 function_entry apc_functions[] = {
     PHP_FE(apc_cache_info,          arginfo_apc_cache_info)
     PHP_FE(apc_clear_cache,         arginfo_apc_clear_cache)
-    PHP_FE(apc_sma_info,            arginfo_apc_clear_cache)
+    PHP_FE(apc_sma_info,            arginfo_apc_sma_info)
     PHP_FE(apc_store,               arginfo_apc_store)
     PHP_FE(apc_fetch,               arginfo_apc_fetch)
     PHP_FE(apc_delete,              arginfo_apc_delete)
