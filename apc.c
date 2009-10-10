@@ -618,7 +618,7 @@ HashTable* apc_flip_hash(HashTable *hash) {
         Z_ADDREF_P(data);
         zend_hash_move_forward_ex(hash, &pos);
     }
-    efree(data);
+    zval_ptr_dtor(&data);
 
     return new_hash;
 }
