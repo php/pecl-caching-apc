@@ -585,6 +585,7 @@ void* apc_sma_protect(void *p)
 {
     int i;
     size_t offset;
+	TSRMLS_FETCH();
 
     if (p == NULL) {
         return NULL;
