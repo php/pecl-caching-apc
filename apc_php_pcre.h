@@ -12,8 +12,17 @@
   | obtain it through the world-wide-web, please send a note to          |
   | license@php.net so we can mail you a copy immediately.               |
   +----------------------------------------------------------------------+
-  | Author: Andrei Zmievski <andrei@php.net>                             |
+  | Authors: Andrei Zmievski <andrei@php.net>                            |
   +----------------------------------------------------------------------+
+
+   This software was contributed to PHP by Community Connect Inc. in 2002
+   and revised in 2005 by Yahoo! Inc. to add support for PHP 5.1.
+   Future revisions and derivatives of this source code must acknowledge
+   Community Connect Inc. as the original contributor of this module by
+   leaving this note intact in the source code.
+
+   All other licensing and usage conditions are those of the PHP Group.
+
  */
  
 /* $Id$ */
