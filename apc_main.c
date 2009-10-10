@@ -663,14 +663,14 @@ static zval* data_unserialize(const char *filename)
 
     tmp = contents = malloc(len);
 
-	if(!contents) {
-		return NULL;
-	}
+    if(!contents) {
+       return NULL;
+    }
 
     if(fread(contents, 1, len, fp) < 1) {	
-		free(contents);
-		return NULL;
-	}
+      free(contents);
+      return NULL;
+    }
 
     MAKE_STD_ZVAL(retval);
 
