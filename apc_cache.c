@@ -666,24 +666,22 @@ int apc_cache_user_insert(apc_cache_t* cache, apc_cache_key_t key, apc_cache_ent
         return 0;
     }
 
-    if(!APCG(slam_defense)) {  
-        return 0;  
-    } 
-
-    /* unlocked reads, but we're not shooting for 100% success with this */
-    if(lastkey->h == h && keylen == lastkey->keylen) {
-        if(lastkey->mtime == t) {
-            /* potential cache slam */
-            apc_wprint("Potential cache slam averted for key '%s'", key.data.user.identifier);
-            return 0;
-        }
+    if(apc_cache_is_last_key(cache, &key, t)) {
+        /* potential cache slam */
+        return 0;
     }
 
     CACHE_LOCK(cache);
 
+    memset(lastkey, 0, sizeof(apc_keyid_t));
+
     lastkey->h = h;
     lastkey->keylen = keylen;
     lastkey->mtime = t;
+    
+    /* we do not reset lastkey after the insert. Whether it is inserted 
+     * or not, another insert in the same second is always a bad idea. 
+     */
 
     process_pending_removals(cache);
     
@@ -731,13 +729,11 @@ int apc_cache_user_insert(apc_cache_t* cache, apc_cache_key_t key, apc_cache_ent
     cache->header->num_inserts++;
     apc_stats_update(&cache->header->insert_stats, 1 TSRMLS_CC);
 
-    memset(lastkey, 0, sizeof(apc_keyid_t));
     CACHE_UNLOCK(cache);
 
     return 1;
 
 fail:
-    memset(lastkey, 0, sizeof(apc_keyid_t));
     CACHE_UNLOCK(cache);
 
     return 0;
@@ -1444,6 +1440,26 @@ void apc_cache_unlock(apc_cache_t* cache)
 zend_bool apc_cache_busy(apc_cache_t* cache)
 {
     return cache->header->busy;
+}
+/* }}} */
+
+/* {{{ apc_cache_is_last_key */
+zend_bool apc_cache_is_last_key(apc_cache_t* cache, apc_cache_key_t* key, time_t t)
+{
+    apc_keyid_t *lastkey = &cache->header->lastkey;
+    unsigned int keylen = key->data.user.identifier_len+1;
+    unsigned int h = string_nhash_8(key->data.user.identifier, keylen);
+
+    /* unlocked reads, but we're not shooting for 100% success with this */
+    if(lastkey->h == h && keylen == lastkey->keylen) {
+        if(lastkey->mtime == t) {
+            /* potential cache slam */
+            apc_wprint("Potential cache slam averted for key '%s'", key->data.user.identifier);
+            return 1;
+        }
+    }
+
+    return 0;
 }
 /* }}} */
 
