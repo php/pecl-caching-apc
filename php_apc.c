@@ -139,6 +139,7 @@ static void php_apc_init_globals(zend_apc_globals* apc_globals TSRMLS_DC)
     apc_globals->canonicalize = 1;
     apc_globals->slam_defense = 1;
     apc_globals->report_autofilter = 0;
+    apc_globals->include_once = 0;
     apc_globals->apc_optimize_function = NULL;
     apc_globals->mmap_file_mask = NULL;
 #ifdef MULTIPART_EVENT_FORMDATA
