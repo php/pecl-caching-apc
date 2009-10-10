@@ -200,7 +200,11 @@ static int install_class(apc_class_t cl, apc_context_t* ctxt, int lazy TSRMLS_DC
         else {
             parent = *parent_ptr;
             class_entry->parent = parent;
+#ifdef ZEND_ENGINE_2
             zend_do_inheritance(class_entry, parent TSRMLS_CC);
+#else
+            zend_do_inheritance(class_entry, parent);
+#endif
         }
 
 
