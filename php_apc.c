@@ -1999,9 +1999,9 @@ PHP_FUNCTION(apc_compile_file) {
 }
 /* }}} */
 
-/* {{{ proto mixed apc_bin_dump([array files [, array user_vars]])
-    Returns a binary dump of the given files and user variables from the APC cache.
-    A NULL for files or user_vars signals a dump of every entry, while array() will dump nothing.
+/* {{{ proto mixed apc_bin_dump([int cache_id [, array filter]])
+    Returns a binary dump of the given cache_id, allows optional 
+    limiting results to those provided in filter, an array of keys/files.
  */
 PHP_FUNCTION(apc_bin_dump) {
 
@@ -2033,8 +2033,9 @@ PHP_FUNCTION(apc_bin_dump) {
     return;
 }
 
-/* {{{ proto mixed apc_bin_dumpfile(array files, array user_vars, array cache_ids, string filename, int flags, resource context)
-    Output a binary dump of the given files and user variables from the APC cache to the named file.
+/* {{{ proto mixed apc_bin_dumpfile(int cache_id ,array filter, string filename [, int flags [, resource context]])
+    Returns a binary dump to given filename containing the given cache_id, allows 
+    limiting results to those provided in filter, an array of keys/files.
  */
 PHP_FUNCTION(apc_bin_dumpfile) {
 
@@ -2324,6 +2325,7 @@ PHP_APC_ARGINFO
 ZEND_BEGIN_ARG_INFO_EX(arginfo_apc_bin_dumpfile, 0, 0, 3)
     ZEND_ARG_INFO(0, cache_id)
     ZEND_ARG_INFO(0, filter)
+    ZEND_ARG_INFO(0, filename)
     ZEND_ARG_INFO(0, flags)
     ZEND_ARG_INFO(0, context)
 ZEND_END_ARG_INFO()
