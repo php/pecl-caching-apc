@@ -61,7 +61,6 @@ struct _apc_rfc1867_data {
 ZEND_BEGIN_MODULE_GLOBALS(apc)
     /* configuration parameters */
     zend_bool enabled;      /* if true, apc is enabled (defaults to true) */
-    long shm_segments;      /* number of shared memory segments to use */
     char *mmap_file_mask;   /* mktemp-style file-mask to pass to mmap */
 
     /* module variables */
