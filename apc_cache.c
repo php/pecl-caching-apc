@@ -1452,6 +1452,10 @@ zend_bool apc_cache_is_last_key(apc_cache_t* cache, apc_cache_key_t* key, time_t
     unsigned int keylen = key->data.user.identifier_len+1;
     unsigned int h = string_nhash_8(key->data.user.identifier, keylen);
 
+    if(!APCG(slam_defense)) {
+        return 0;
+    }
+
     /* unlocked reads, but we're not shooting for 100% success with this */
     if(lastkey->h == h && keylen == lastkey->keylen) {
         if(lastkey->mtime == t) {
