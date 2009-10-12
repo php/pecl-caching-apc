@@ -96,6 +96,7 @@
     <file role="src" name="apc_mmap.c" />
     <file role="src" name="apc_mmap.h" />
     <file role="src" name="apc_php.h" />
+    <file role="php" name="apc_php_pcre.h" />
     <file role="src" name="apc_pthreadmutex.c" />
     <file role="src" name="apc_pthreadmutex.h" />
     <file role="src" name="apc_sem.c" />
