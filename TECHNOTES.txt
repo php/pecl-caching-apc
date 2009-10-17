@@ -221,7 +221,7 @@ form of a quick-start guide to start hacking on APC.
    symlinks and get rid of relative path components.  By using the device+inode we
    can uniquely identify a file with a single stat.
 
-   So, on an insert we find the array position in the slots array by hasing the device+inode.
+   So, on an insert we find the array position in the slots array by hashing the device+inode.
    If there are currently no other slots there, we just create the slot and stick it into
    the array:
 
