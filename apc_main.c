@@ -106,7 +106,7 @@ int apc_lookup_function_hook(char *name, int len, ulong hash, zend_function **fe
     ctxt.copy = APC_COPY_OUT_OPCODE;
 
     if(zend_hash_quick_find(APCG(lazy_function_table), name, len, hash, (void**)&fn) == SUCCESS) {
-        *fe = apc_copy_function_for_execution(fn->function, &ctxt);
+        *fe = apc_copy_function_for_execution(fn->function, &ctxt TSRMLS_CC);
         status = zend_hash_add(EG(function_table),
                                   fn->name,
                                   fn->name_len+1,
