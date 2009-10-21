@@ -1355,7 +1355,6 @@ zend_op_array* apc_copy_op_array_for_execution(zend_op_array* dst, zend_op_array
 zend_function* apc_copy_function_for_execution(zend_function* src, apc_context_t* ctxt TSRMLS_DC)
 {
     zend_function* dst;
-    TSRMLS_FETCH();
 
     dst = (zend_function*) emalloc(sizeof(src[0]));
     memcpy(dst, src, sizeof(src[0]));
