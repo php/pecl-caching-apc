@@ -521,7 +521,7 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
 #endif
 
     /* try to create a cache key; if we fail, give up on caching */
-    if (!apc_cache_make_file_key(&key, h->filename, PG(include_path), t, h TSRMLS_CC)) {
+    if (!apc_cache_make_file_key(&key, h->filename, PG(include_path), t TSRMLS_CC)) {
         return old_compile_file(h, type TSRMLS_CC);
     }
 
