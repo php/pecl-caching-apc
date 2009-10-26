@@ -894,7 +894,7 @@ int apc_bin_load(apc_bd_t *bd, int flags TSRMLS_DC) {
                     goto failure;
                 }
 
-                if (!apc_cache_make_file_key(&cache_key, ep->val.file.filename, PG(include_path), t TSRMLS_CC)) {
+                if (!apc_cache_make_file_key(&cache_key, ep->val.file.filename, PG(include_path), t, NULL TSRMLS_CC)) {
                     goto failure;
                 }
 

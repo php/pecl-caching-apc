@@ -50,7 +50,7 @@ static void apc_cache_expunge(apc_cache_t* cache, size_t size);
 /* {{{ hash */
 static unsigned int hash(apc_cache_key_t key)
 {
-    return key.data.file.device + key.data.file.inode;
+    return (unsigned int)(key.data.file.device + key.data.file.inode);
 }
 /* }}} */
 
@@ -754,6 +754,10 @@ int apc_cache_make_file_key(apc_cache_key_t* key,
     struct stat *tmp_buf=NULL;
     struct apc_fileinfo_t fileinfo = { {0}, };
     int len;
+#ifdef PHP_WIN32
+	HANDLE hFile;
+	BY_HANDLE_FILE_INFORMATION hInfo;
+#endif
 
     assert(key != NULL);
 
@@ -832,8 +836,32 @@ int apc_cache_make_file_key(apc_cache_key_t* key,
         return 0;
     }
 
+#if PHP_WIN32
+	hFile = CreateFile(filename, GENERIC_WRITE, FILE_SHARE_WRITE|FILE_SHARE_READ, NULL, OPEN_ALWAYS, FILE_FLAG_BACKUP_SEMANTICS, NULL);
+	if (!hFile) {
+# ifdef __DEBUG_APC__
+		fprintf(stderr,"Cannot create a file HANDLE for %s\n", filename);
+# endif
+		return 0;
+	}
+
+	if (!GetFileInformationByHandle(hFile, &hInfo)) {
+# ifdef __DEBUG_APC__
+		fprintf(stderr,"Cannot get file information from handle\n");
+# endif
+		CloseHandle(hFile);
+		return 0;
+	}
+	CloseHandle(hFile);
+
+	key->data.file.device = hInfo.dwVolumeSerialNumber;
+	key->data.file.inode = (((apc_ino_t)(hInfo.nFileIndexHigh) << 32) | (apc_ino_t) hInfo.nFileIndexLow);
+
+#else
     key->data.file.device = fileinfo.st_buf.sb.st_dev;
     key->data.file.inode  = fileinfo.st_buf.sb.st_ino;
+#endif
+
     /*
      * If working with content management systems that like to munge the mtime, 
      * it might be appropriate to key off of the ctime to be immune to systems

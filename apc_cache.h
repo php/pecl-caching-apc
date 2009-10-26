@@ -49,6 +49,14 @@
 #define APC_CACHE_KEY_USER     2
 #define APC_CACHE_KEY_FPFILE   3
 
+#ifdef PHP_WIN32
+typedef unsigned __int64 apc_ino_t;
+typedef unsigned __int64 apc_dev_t;
+#else
+typedef ino_t apc_ino_t;
+typedef ino_t apc_dev_t;
+#endif
+
 /* {{{ cache locking macros */
 #define CACHE_LOCK(cache)        { LOCK(cache->header->lock);   cache->has_lock = 1; }
 #define CACHE_UNLOCK(cache)      { UNLOCK(cache->header->lock); cache->has_lock = 0; }
@@ -62,8 +70,8 @@ typedef struct apc_cache_t apc_cache_t; /* opaque cache type */
 
 typedef union _apc_cache_key_data_t {
     struct {
-        dev_t device;             /* the filesystem device */
-        ino_t inode;              /* the filesystem inode */
+        apc_dev_t device;             /* the filesystem device */
+        apc_ino_t inode;              /* the filesystem inode */
     } file;
     struct {
         const char *identifier;
@@ -259,8 +267,8 @@ extern int apc_cache_make_user_key(apc_cache_key_t* key, char* identifier, int i
 typedef union _apc_cache_link_data_t {
     struct {
         char *filename;
-        dev_t device;
-        ino_t inode;
+        apc_ino_t device;
+        apc_dev_t inode;
         unsigned char *md5;
     } file;
     struct {

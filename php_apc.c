@@ -462,8 +462,21 @@ PHP_FUNCTION(apc_cache_info)
 
         if(p->type == APC_CACHE_ENTRY_FILE) {
             add_assoc_string(link, "filename", p->data.file.filename, 1);
+#ifdef PHP_WIN32
+			{
+				char buf[20];
+				sprintf(buf, "%I64d",  p->data.file.device);
+				add_assoc_string(link, "device", buf, 1);
+
+				sprintf(buf, "%I64d",  p->data.file.inode);
+				add_assoc_string(link, "inode", buf, 1);
+			}
+#else
             add_assoc_long(link, "device", p->data.file.device);
             add_assoc_long(link, "inode", p->data.file.inode);
+#endif
+
+
             add_assoc_string(link, "type", "file", 1);
             if(APCG(file_md5)) {
                 make_digest(md5str, p->data.file.md5);
@@ -500,8 +513,20 @@ PHP_FUNCTION(apc_cache_info)
 
         if(p->type == APC_CACHE_ENTRY_FILE) {
             add_assoc_string(link, "filename", p->data.file.filename, 1);
+#ifdef PHP_WIN32
+			{
+				char buf[20];
+				sprintf(buf, "%I64d",  p->data.file.device);
+				add_assoc_string(link, "device", buf, 1);
+
+				sprintf(buf, "%I64d",  p->data.file.inode);
+				add_assoc_string(link, "inode", buf, 1);
+			}
+#else
             add_assoc_long(link, "device", p->data.file.device);
             add_assoc_long(link, "inode", p->data.file.inode);
+#endif
+
             add_assoc_string(link, "type", "file", 1);
             if(APCG(file_md5)) {
                 make_digest(md5str, p->data.file.md5);

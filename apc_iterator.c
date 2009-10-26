@@ -46,7 +46,11 @@ static apc_iterator_item_t* apc_iterator_item_ctor(apc_iterator_t *iterator, slo
 
     if (slot->key.type == APC_CACHE_KEY_FILE) {
         /* keys should be unique and with stat=1 we could have multiple files with the same name, so use '<device> <inode>' instead */
+#ifdef PHP_WIN32
+        item->key_len = spprintf(&item->key, 0, "%I64d %I64d", slot->key.data.file.device, slot->key.data.file.inode);
+#else
         item->key_len = spprintf(&item->key, 0, "%ld %ld", (ulong)slot->key.data.file.device, (ulong)slot->key.data.file.inode);
+#endif
         item->filename_key = estrdup(slot->value->data.file.filename);
     } else if (slot->key.type == APC_CACHE_KEY_USER) {
         item->key = estrndup((char*)slot->key.data.user.identifier, slot->key.data.user.identifier_len);
@@ -80,12 +84,24 @@ static apc_iterator_item_t* apc_iterator_item_ctor(apc_iterator_t *iterator, slo
     }
     if (APC_ITER_DEVICE & iterator->format) {
         if(slot->key.type == APC_CACHE_KEY_FILE) {
+#ifdef PHP_WIN32
+			char buf[20];
+			sprintf(buf, "%I64d", slot->key.data.file.device);
+			add_assoc_string(item->value, "device", buf, 1);
+#else
             add_assoc_long(item->value, "device", slot->key.data.file.device);
+#endif
         }
     }
     if (APC_ITER_INODE & iterator->format) {
         if(slot->key.type == APC_CACHE_KEY_FILE) {
+#ifdef PHP_WIN32
+			char buf[20];
+			sprintf(buf, "%I64d", slot->key.data.file.device);
+			add_assoc_string(item->value, "device", buf, 1);
+#else
             add_assoc_long(item->value, "inode", slot->key.data.file.inode);
+#endif
         }
     }
     if (APC_ITER_KEY & iterator->format) {
