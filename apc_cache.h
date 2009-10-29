@@ -54,7 +54,7 @@ typedef unsigned __int64 apc_ino_t;
 typedef unsigned __int64 apc_dev_t;
 #else
 typedef ino_t apc_ino_t;
-typedef ino_t apc_dev_t;
+typedef dev_t apc_dev_t;
 #endif
 
 /* {{{ cache locking macros */
