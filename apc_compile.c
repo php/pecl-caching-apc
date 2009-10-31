@@ -219,12 +219,10 @@ static zval* my_serialize_object(zval* dst, const zval* src, apc_context_t* ctxt
 /* }}} */
 
 /* {{{ my_unserialize_object */
-static zval* my_unserialize_object(zval* dst, const zval* src, apc_context_t* ctxt)
+static zval* my_unserialize_object(zval* dst, const zval* src, apc_context_t* ctxt TSRMLS_DC)
 {
     php_unserialize_data_t var_hash;
     const unsigned char *p = (unsigned char*)Z_STRVAL_P(src);
-
-    TSRMLS_FETCH();
 
     PHP_VAR_UNSERIALIZE_INIT(var_hash);
     if(!php_var_unserialize(&dst, &p, p + Z_STRLEN_P(src), &var_hash TSRMLS_CC)) {
@@ -308,7 +306,7 @@ static zval* my_copy_zval(zval* dst, const zval* src, apc_context_t* ctxt)
         if(ctxt->copy == APC_COPY_IN_USER) {
             dst = my_serialize_object(dst, src, ctxt);
         } else if(ctxt->copy == APC_COPY_OUT_USER) {
-            dst = my_unserialize_object(dst, src, ctxt);
+            dst = my_unserialize_object(dst, src, ctxt TSRMLS_CC);
         }
         break;
 
