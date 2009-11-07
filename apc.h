@@ -96,7 +96,7 @@ typedef struct apc_fileinfo_t
     php_stream_statbuf st_buf;
 } apc_fileinfo_t;
 
-extern int apc_search_paths(const char* filename, const char* path, apc_fileinfo_t* fileinfo);
+extern int apc_search_paths(const char* filename, const char* path, apc_fileinfo_t* fileinfo TSRMLS_DC);
 
 /* regular expression wrapper functions */
 extern void* apc_regex_compile_array(char* patterns[] TSRMLS_DC);

@@ -471,7 +471,7 @@ zend_bool apc_compile_cache_entry(apc_cache_t *cache, apc_cache_key_t *key, zend
     fprintf(stderr,"2. h->opened_path=[%s]  h->filename=[%s]\n", h->opened_path?h->opened_path:"null",h->filename);
 #endif
 
-    if(!(*cache_entry = apc_cache_make_file_entry(path, alloc_op_array, alloc_functions, alloc_classes, &ctxt))) {
+    if(!(*cache_entry = apc_cache_make_file_entry(path, alloc_op_array, alloc_functions, alloc_classes, &ctxt TSRMLS_CC))) {
         goto freepool;
     }
 
@@ -590,7 +590,7 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
         if(tmp_buf) {
             fileinfo.st_buf.sb = *tmp_buf;
         } else {
-            if (apc_search_paths(h->filename, PG(include_path), &fileinfo) != 0) {
+            if (apc_search_paths(h->filename, PG(include_path), &fileinfo TSRMLS_CC) != 0) {
 #ifdef __DEBUG_APC__
                 fprintf(stderr,"Stat failed %s - bailing (%s) (%d)\n",h->filename,SG(request_info).path_translated);
 #endif
@@ -643,7 +643,7 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
 
 extern int _apc_store(char *strkey, int strkey_len, const zval *val, const unsigned int ttl, const int exclusive TSRMLS_DC);
 
-static zval* data_unserialize(const char *filename)
+static zval* data_unserialize(const char *filename TSRMLS_DC)
 {
     zval* retval;
     long len = 0;
@@ -651,7 +651,6 @@ static zval* data_unserialize(const char *filename)
     char *contents, *tmp;
     FILE *fp;
     php_unserialize_data_t var_hash;
-    TSRMLS_FETCH();
 
     if(VCWD_STAT(filename, &sb) == -1) {
         return NULL;
@@ -707,7 +706,7 @@ static int apc_load_data(const char *data_file TSRMLS_DC)
             p[0] = '\0';
             key_len = strlen(key);
 
-            data = data_unserialize(data_file);
+            data = data_unserialize(data_file TSRMLS_CC);
             if(data) {
                 _apc_store(key, key_len, data, 0, 1 TSRMLS_CC);
             }

@@ -194,13 +194,11 @@ static zval** my_copy_zval_ptr(zval** dst, const zval** src, apc_context_t* ctxt
 /* }}} */
 
 /* {{{ my_serialize_object */
-static zval* my_serialize_object(zval* dst, const zval* src, apc_context_t* ctxt)
+static zval* my_serialize_object(zval* dst, const zval* src, apc_context_t* ctxt TSRMLS_DC)
 {
     smart_str buf = {0};
     php_serialize_data_t var_hash;
     apc_pool* pool = ctxt->pool;
-
-    TSRMLS_FETCH();
 
     PHP_VAR_SERIALIZE_INIT(var_hash);
     php_var_serialize(&buf, (zval**)&src, &var_hash TSRMLS_CC);
@@ -219,12 +217,10 @@ static zval* my_serialize_object(zval* dst, const zval* src, apc_context_t* ctxt
 /* }}} */
 
 /* {{{ my_unserialize_object */
-static zval* my_unserialize_object(zval* dst, const zval* src, apc_context_t* ctxt)
+static zval* my_unserialize_object(zval* dst, const zval* src, apc_context_t* ctxt TSRMLS_DC)
 {
     php_unserialize_data_t var_hash;
     const unsigned char *p = (unsigned char*)Z_STRVAL_P(src);
-
-    TSRMLS_FETCH();
 
     PHP_VAR_UNSERIALIZE_INIT(var_hash);
     if(!php_var_unserialize(&dst, &p, p + Z_STRLEN_P(src), &var_hash TSRMLS_CC)) {
@@ -306,9 +302,9 @@ static zval* my_copy_zval(zval* dst, const zval* src, apc_context_t* ctxt)
     
         dst->type = IS_NULL;
         if(ctxt->copy == APC_COPY_IN_USER) {
-            dst = my_serialize_object(dst, src, ctxt);
+            dst = my_serialize_object(dst, src, ctxt TSRMLS_CC);
         } else if(ctxt->copy == APC_COPY_OUT_USER) {
-            dst = my_unserialize_object(dst, src, ctxt);
+			dst = my_unserialize_object(dst, src, ctxt TSRMLS_CC);
         }
         break;
 
@@ -1024,7 +1020,7 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_con
                 (zo->op1.op_type == IS_CONST && zo->op1.u.constant.type == IS_STRING)) {
                 /* constant includes */
                 if(!IS_ABSOLUTE_PATH(Z_STRVAL_P(&zo->op1.u.constant),Z_STRLEN_P(&zo->op1.u.constant))) { 
-                    if (apc_search_paths(Z_STRVAL_P(&zo->op1.u.constant), PG(include_path), &fileinfo) == 0) {
+                    if (apc_search_paths(Z_STRVAL_P(&zo->op1.u.constant), PG(include_path), &fileinfo TSRMLS_CC) == 0) {
                         if((fullpath = realpath(fileinfo.fullpath, canon_path))) {
                             /* everything has to go through a realpath() */
                             zend_op *dzo = &(dst->opcodes[i]);
@@ -1486,14 +1482,13 @@ void apc_free_class_entry_after_execution(zend_class_entry* src)
 /* }}} */
 
 /* {{{ apc_file_halt_offset */
-long apc_file_halt_offset(const char *filename)
+long apc_file_halt_offset(const char *filename TSRMLS_DC)
 {
     zend_constant *c;
     char *name;
     int len;
     char haltoff[] = "__COMPILER_HALT_OFFSET__";
     long value = -1;
-    TSRMLS_FETCH();
 
     zend_mangle_property_name(&name, &len, haltoff, sizeof(haltoff) - 1, filename, strlen(filename), 0);
     

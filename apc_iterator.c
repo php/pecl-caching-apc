@@ -37,7 +37,7 @@ zend_object_handlers apc_iterator_object_handlers;
 
 
 /* {{{ apc_iterator_item */
-static apc_iterator_item_t* apc_iterator_item_ctor(apc_iterator_t *iterator, slot_t **slot_pp) {
+static apc_iterator_item_t* apc_iterator_item_ctor(apc_iterator_t *iterator, slot_t **slot_pp TSRMLS_DC) {
     zval *zvalue;
     char md5str[33];
     slot_t *slot = *slot_pp;
@@ -98,7 +98,7 @@ static apc_iterator_item_t* apc_iterator_item_ctor(apc_iterator_t *iterator, slo
             ctxt.copy = APC_COPY_OUT_USER;
 
             MAKE_STD_ZVAL(zvalue);
-            apc_cache_fetch_zval(zvalue, slot->value->data.user.val, &ctxt);
+            apc_cache_fetch_zval(zvalue, slot->value->data.user.val, &ctxt TSRMLS_CC);
             apc_pool_destroy(ctxt.pool);
             add_assoc_zval(item->value, "value", zvalue);
         }
@@ -253,7 +253,7 @@ static int apc_iterator_search_match(apc_iterator_t *iterator, slot_t **slot) {
 /* }}} */
 
 /* {{{ apc_iterator_fetch_active */
-static int apc_iterator_fetch_active(apc_iterator_t *iterator) {
+static int apc_iterator_fetch_active(apc_iterator_t *iterator TSRMLS_DC) {
     int count=0;
     slot_t **slot;
     apc_iterator_item_t *item;
@@ -268,7 +268,7 @@ static int apc_iterator_fetch_active(apc_iterator_t *iterator) {
         while(*slot) {
             if (apc_iterator_search_match(iterator, slot)) {
                 count++;
-                item = apc_iterator_item_ctor(iterator, slot);
+                item = apc_iterator_item_ctor(iterator, slot TSRMLS_CC);
                 if (item) {
                     apc_stack_push(iterator->stack, item);
                 }
@@ -284,7 +284,7 @@ static int apc_iterator_fetch_active(apc_iterator_t *iterator) {
 /* }}} */
 
 /* {{{ apc_iterator_fetch_deleted */
-static int apc_iterator_fetch_deleted(apc_iterator_t *iterator) {
+static int apc_iterator_fetch_deleted(apc_iterator_t *iterator TSRMLS_DC) {
     int count=0;
     slot_t **slot;
     apc_iterator_item_t *item;
@@ -299,7 +299,7 @@ static int apc_iterator_fetch_deleted(apc_iterator_t *iterator) {
     while ((*slot) && count < iterator->chunk_size) {
         if (apc_iterator_search_match(iterator, slot)) {
             count++;
-            item = apc_iterator_item_ctor(iterator, slot);
+            item = apc_iterator_item_ctor(iterator, slot TSRMLS_CC);
             if (item) {
                 apc_stack_push(iterator->stack, item);
             }
@@ -314,7 +314,7 @@ static int apc_iterator_fetch_deleted(apc_iterator_t *iterator) {
 /* }}} */
 
 #if APC_LFU
-static int apc_iterator_fetch_lfu(apc_iterator_t *iterator) {
+static int apc_iterator_fetch_lfu(apc_iterator_t *iterator TSRMLS_DC) {
     int count=0;
     slot_t **slot;
     apc_iterator_item_t *item;
@@ -333,7 +333,7 @@ static int apc_iterator_fetch_lfu(apc_iterator_t *iterator) {
     while ((*slot)->lfu_up && count < iterator->chunk_size) {
         if (apc_iterator_search_match(iterator, slot)) {
             count++;
-            item = apc_iterator_item_ctor(iterator, slot);
+            item = apc_iterator_item_ctor(iterator, slot TSRMLS_CC);
             if (item) {
                 apc_stack_push(iterator->stack, item);
             }
@@ -346,7 +346,7 @@ static int apc_iterator_fetch_lfu(apc_iterator_t *iterator) {
     return count;
 }
 
-static int apc_iterator_fetch_mfu(apc_iterator_t *iterator) {
+static int apc_iterator_fetch_mfu(apc_iterator_t *iterator TSRMLS_DC) {
     int count=0;
     slot_t **slot;
     apc_iterator_item_t *item;
@@ -365,7 +365,7 @@ static int apc_iterator_fetch_mfu(apc_iterator_t *iterator) {
     while ((*slot)->lfu_dn && count < iterator->chunk_size) {
         if (apc_iterator_search_match(iterator, slot)) {
             count++;
-            item = apc_iterator_item_ctor(iterator, slot);
+            item = apc_iterator_item_ctor(iterator, slot TSRMLS_CC);
             if (item) {
                 apc_stack_push(iterator->stack, item);
             }
@@ -493,7 +493,7 @@ PHP_METHOD(apc_iterator, rewind) {
     iterator->slot_idx = 0;
     iterator->stack_idx = 0;
     iterator->key_idx = 0;
-    iterator->fetch(iterator);
+    iterator->fetch(iterator TSRMLS_CC);
 }
 /* }}} */
 
@@ -510,7 +510,7 @@ PHP_METHOD(apc_iterator, valid) {
     }
 
     if (apc_stack_size(iterator->stack) == iterator->stack_idx) {
-        iterator->fetch(iterator);
+        iterator->fetch(iterator TSRMLS_CC);
     }
 
     RETURN_BOOL(apc_stack_size(iterator->stack) == 0 ? 0 : 1);
@@ -531,7 +531,7 @@ PHP_METHOD(apc_iterator, current) {
     }
 
     if (apc_stack_size(iterator->stack) == iterator->stack_idx) {
-        if (iterator->fetch(iterator) == 0) {
+        if (iterator->fetch(iterator TSRMLS_CC) == 0) {
             RETURN_FALSE;
         }
     }
@@ -555,7 +555,7 @@ PHP_METHOD(apc_iterator, key) {
     }
 
     if (apc_stack_size(iterator->stack) == iterator->stack_idx) {
-        if (iterator->fetch(iterator) == 0) {
+        if (iterator->fetch(iterator TSRMLS_CC) == 0) {
             RETURN_FALSE;
         }
     }
@@ -743,11 +743,11 @@ int apc_iterator_delete(zval *zobj TSRMLS_DC) {
         return 0;
     }
 
-    while (iterator->fetch(iterator)) {
+    while (iterator->fetch(iterator TSRMLS_CC)) {
         while (iterator->stack_idx < apc_stack_size(iterator->stack)) {
             item = apc_stack_get(iterator->stack, iterator->stack_idx++);
             if (iterator->cache->type == APC_CACHE_FILE) {
-                apc_cache_delete(iterator->cache, item->filename_key, strlen(item->filename_key)+1);
+                apc_cache_delete(iterator->cache, item->filename_key, strlen(item->filename_key)+1 TSRMLS_CC);
             } else {
                 apc_cache_user_delete(iterator->cache, item->key, item->key_len+1);
             }

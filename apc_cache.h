@@ -202,14 +202,14 @@ extern apc_cache_entry_t* apc_cache_user_find(T cache, char* strkey, int keylen,
 /*
  * apc_cache_delete and apc_cache_user_delete finds an entry in the cache and deletes it.
  */
-extern int apc_cache_delete(apc_cache_t* cache, char *filename, int filename_len);
+extern int apc_cache_delete(apc_cache_t* cache, char *filename, int filename_len TSRMLS_DC);
 extern int apc_cache_user_delete(apc_cache_t* cache, char *strkey, int keylen);
 
 /* apc_cach_fetch_zval takes a zval in the cache and reconstructs a runtime
  * zval from it.
  *
  */
-zval* apc_cache_fetch_zval(zval* dst, const zval* src, apc_context_t* ctxt);
+zval* apc_cache_fetch_zval(zval* dst, const zval* src, apc_context_t* ctxt TSRMLS_DC);
 
 /*
  * apc_cache_release decrements the reference count associated with a cache
@@ -253,7 +253,8 @@ extern apc_cache_entry_t* apc_cache_make_file_entry(const char* filename,
                                                     zend_op_array* op_array,
                                                     apc_function_t* functions,
                                                     apc_class_t* classes,
-                                                    apc_context_t* ctxt);
+                                                    apc_context_t* ctxt
+													TSRMLS_DC);
 
 
 zend_bool apc_compile_cache_entry(apc_cache_t *cache, apc_cache_key_t *key, zend_file_handle* h, int type, time_t t, zend_op_array** op_array_pp, apc_cache_entry_t** cache_entry_pp TSRMLS_DC);
@@ -262,7 +263,7 @@ zend_bool apc_compile_cache_entry(apc_cache_t *cache, apc_cache_key_t *key, zend
  * apc_cache_make_user_entry creates an apc_cache_entry_t object given an info string
  * and the zval to be stored.
  */
-extern apc_cache_entry_t* apc_cache_make_user_entry(const char* info, int info_len, const zval *val, apc_context_t* ctxt, const unsigned int ttl);
+extern apc_cache_entry_t* apc_cache_make_user_entry(const char* info, int info_len, const zval *val, apc_context_t* ctxt, const unsigned int ttl TSRMLS_DC);
 
 extern int apc_cache_make_user_key(apc_cache_key_t* key, char* identifier, int identifier_len, const time_t t);
 
@@ -378,7 +379,7 @@ struct cache_header_t {
 };
 /* }}} */
 
-typedef void (*apc_expunge_cb_t)(T cache, size_t n); 
+typedef void (*apc_expunge_cb_t)(T cache, size_t n TSRMLS_DC); 
 
 /* {{{ struct definition: apc_cache_t */
 struct apc_cache_t {
@@ -415,7 +416,7 @@ struct apc_cache_t {
 };
 /* }}} */
 
-extern apc_cache_info_t* apc_cache_info(T cache, zend_bool limited);
+extern apc_cache_info_t* apc_cache_info(T cache, zend_bool limited TSRMLS_DC);
 extern void apc_cache_free_info(apc_cache_info_t* info);
 extern void apc_cache_unlock(apc_cache_t* cache);
 extern zend_bool apc_cache_busy(apc_cache_t* cache);

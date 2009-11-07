@@ -510,7 +510,7 @@ void* apc_sma_malloc_ex(size_t n, size_t fragment, size_t* allocated)
     if(off == -1) { 
         /* retry failed allocation after we expunge */
         UNLOCK(((sma_header_t*)segment->shmaddr)->sma_lock);
-        APCG(current_cache)->expunge_cb(APCG(current_cache), n);
+        APCG(current_cache)->expunge_cb(APCG(current_cache), n TSRMLS_CC);
         LOCK(((sma_header_t*)segment->shmaddr)->sma_lock);
         off = sma_allocate(segment, n, fragment, allocated);
     }

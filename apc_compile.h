@@ -127,7 +127,7 @@ extern apc_optimize_function_t apc_register_optimizer(apc_optimize_function_t op
 /*
  * To handle __COMPILER_HALT_OFFSET__
  */
-long apc_file_halt_offset(const char* filename);
+long apc_file_halt_offset(const char* filename TSRMLS_DC);
 void apc_do_halt_compiler_register(const char *filename, long halt_offset TSRMLS_DC);
 
 #endif

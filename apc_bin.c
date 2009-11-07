@@ -876,7 +876,7 @@ int apc_bin_load(apc_cache_t *cache, apc_bd_t *bd, int flags TSRMLS_DC) {
                 alloc_classes[i2].name = NULL;
                 alloc_classes[i2].class_entry = NULL;
 
-                if(!(cache_entry = apc_cache_make_file_entry(ep->val.file.filename, alloc_op_array, alloc_functions, alloc_classes, &ctxt))) {
+                if(!(cache_entry = apc_cache_make_file_entry(ep->val.file.filename, alloc_op_array, alloc_functions, alloc_classes, &ctxt TSRMLS_CC))) {
                     goto failure;
                 }
 

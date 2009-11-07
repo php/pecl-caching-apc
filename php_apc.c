@@ -892,7 +892,7 @@ PHP_FUNCTION(apc_cache_info)
         num_caches=1;
         info = apc_php_malloc(sizeof(apc_cache_info_t*) * num_caches);
         APCG(current_cache) = apc_get_cache(cache_id, 0 TSRMLS_CC);
-        info[0] = apc_cache_info(APCG(current_cache), limited);
+        info[0] = apc_cache_info(APCG(current_cache), limited TSRMLS_CC);
         APCG(current_cache) = NULL;
     } else {
         multiple = 1;
@@ -907,7 +907,7 @@ PHP_FUNCTION(apc_cache_info)
         if (!cache_id || cache_id & APC_CACHE_FILE) {
             for(i=0; i < APCG(num_file_caches); i++) {
                 APCG(current_cache) = &(APCG(file_caches)[i]);
-                info[j] = apc_cache_info(&(APCG(file_caches)[i]), limited);
+                info[j] = apc_cache_info(&(APCG(file_caches)[i]), limited TSRMLS_CC);
                 APCG(current_cache) = NULL;
                 j++;
             }
@@ -915,7 +915,7 @@ PHP_FUNCTION(apc_cache_info)
         if (!cache_id || cache_id & APC_CACHE_USER) {
             for(i=0; i < APCG(num_user_caches); i++) {
                 APCG(current_cache) = &(APCG(user_caches)[i]);
-                info[j] = apc_cache_info(&(APCG(user_caches)[i]), limited);
+                info[j] = apc_cache_info(&(APCG(user_caches)[i]), limited TSRMLS_CC);
                 APCG(current_cache) = NULL;
                 j++;
             }
@@ -1288,7 +1288,7 @@ int _apc_store(apc_cache_t *cache, char *strkey, int strkey_len, const zval *val
 	    goto freepool;
     }
 
-    if (!(entry = apc_cache_make_user_entry(strkey, strkey_len, val, &ctxt, ttl))) {
+    if (!(entry = apc_cache_make_user_entry(strkey, strkey_len, val, &ctxt, ttl TSRMLS_CC))) {
         goto freepool;
     }
 
@@ -1537,7 +1537,7 @@ PHP_FUNCTION(apc_fetch) {
         entry = apc_cache_user_find(cache, strkey, strkey_len + 1, t TSRMLS_CC);
         if(entry) {
             /* deep-copy returned shm zval to emalloc'ed return_value */
-            apc_cache_fetch_zval(return_value, entry->data.user.val, &ctxt);
+            apc_cache_fetch_zval(return_value, entry->data.user.val, &ctxt TSRMLS_CC);
             apc_cache_release(cache, entry);
         } else {
             goto freepool;
@@ -1556,7 +1556,7 @@ PHP_FUNCTION(apc_fetch) {
             if(entry) {
                 /* deep-copy returned shm zval to emalloc'ed return_value */
                 MAKE_STD_ZVAL(result_entry);
-                apc_cache_fetch_zval(result_entry, entry->data.user.val, &ctxt);
+                apc_cache_fetch_zval(result_entry, entry->data.user.val, &ctxt TSRMLS_CC);
                 apc_cache_release(cache, entry);
                 zend_hash_add(Z_ARRVAL_P(result), Z_STRVAL_PP(hentry), Z_STRLEN_PP(hentry) +1, &result_entry, sizeof(zval*), NULL);
             } /* don't set values we didn't find */
@@ -1650,7 +1650,7 @@ PHP_FUNCTION(apc_delete_file) {
     APCG(current_cache) = apc_get_cache(cache_id, APC_CACHE_FILE TSRMLS_CC);
     if (Z_TYPE_P(keys) == IS_STRING) {
         if (!Z_STRLEN_P(keys)) RETURN_FALSE;
-        if(apc_cache_delete(APCG(current_cache), Z_STRVAL_P(keys), Z_STRLEN_P(keys) + 1) != 1) {
+        if(apc_cache_delete(APCG(current_cache), Z_STRVAL_P(keys), Z_STRLEN_P(keys) + 1 TSRMLS_CC) != 1) {
             RETURN_FALSE;
         } else {
             RETURN_TRUE;
@@ -1666,7 +1666,7 @@ PHP_FUNCTION(apc_delete_file) {
                 apc_wprint("apc_delete_file() expects a string, array of strings, or APCIterator instance.");
                 add_next_index_zval(return_value, *hentry);
                 Z_ADDREF_PP(hentry);
-            } else if(apc_cache_delete(APCG(current_cache), Z_STRVAL_PP(hentry), Z_STRLEN_PP(hentry) + 1) != 1) {
+            } else if(apc_cache_delete(APCG(current_cache), Z_STRVAL_PP(hentry), Z_STRLEN_PP(hentry) + 1 TSRMLS_CC) != 1) {
                 add_next_index_zval(return_value, *hentry);
                 Z_ADDREF_PP(hentry);
             }

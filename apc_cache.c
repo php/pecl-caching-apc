@@ -52,11 +52,11 @@
 #endif
 /* }}} */
 
-static void apc_cache_expunge_flush(apc_cache_t* cache, size_t size);
+static void apc_cache_expunge_flush(apc_cache_t* cache, size_t size TSRMLS_DC);
 #ifdef APC_LFU
-static void apc_cache_expunge_lfu(apc_cache_t* cache, size_t size);
+static void apc_cache_expunge_lfu(apc_cache_t* cache, size_t size TSRMLS_DC);
 #endif
-static void apc_cache_expunge_none(apc_cache_t* cache, size_t size);
+static void apc_cache_expunge_none(apc_cache_t* cache, size_t size TSRMLS_DC);
 
 /* {{{ hash */
 static unsigned int hash(apc_cache_key_t key)
@@ -408,11 +408,10 @@ void apc_cache_clear(apc_cache_t* cache)
 /* }}} */
 
 /* {{{ apc_cache_expunge_flush */
-static void apc_cache_expunge_flush(apc_cache_t* cache, size_t size)
+static void apc_cache_expunge_flush(apc_cache_t* cache, size_t size TSRMLS_DC)
 {
     int i;
     time_t t;
-    TSRMLS_FETCH();
 
     t = apc_time();
 
@@ -509,7 +508,7 @@ static void apc_cache_adjust_list(apc_cache_t *cache, slot_t *slot) {
 
 #ifdef APC_LFU
 /* {{{ apc_cache_expunge_lfu */
-static void apc_cache_expunge_lfu(apc_cache_t* cache, size_t size)
+static void apc_cache_expunge_lfu(apc_cache_t* cache, size_t size TSRMLS_DC)
 {
     size_t rm_size=0;
 
@@ -536,7 +535,7 @@ static void apc_cache_expunge_lfu(apc_cache_t* cache, size_t size)
 #endif
 
 /* {{{ apc_cache_expunge_lfu */
-static void apc_cache_expunge_none(apc_cache_t* cache, size_t size)
+static void apc_cache_expunge_none(apc_cache_t* cache, size_t size TSRMLS_DC)
 {
 
     if(!cache) return;
@@ -911,13 +910,11 @@ int apc_cache_user_delete(apc_cache_t* cache, char *strkey, int keylen)
 /* }}} */
 
 /* {{{ apc_cache_delete */
-int apc_cache_delete(apc_cache_t* cache, char *filename, int filename_len)
+int apc_cache_delete(apc_cache_t* cache, char *filename, int filename_len TSRMLS_DC)
 {
     slot_t** slot;
     time_t t;
     apc_cache_key_t key;
-
-    TSRMLS_FETCH();
 
     t = apc_time();
 
@@ -996,7 +993,7 @@ int apc_cache_make_file_key(apc_cache_t *cache,
             key->type = APC_CACHE_KEY_FPFILE;
             return 1;
         } else if(APCG(canonicalize)) {
-            if (apc_search_paths(filename, include_path, &fileinfo) != 0) {
+            if (apc_search_paths(filename, include_path, &fileinfo TSRMLS_CC) != 0) {
                 apc_wprint("apc failed to locate %s - bailing", filename);
                 return 0;
             }
@@ -1021,7 +1018,7 @@ int apc_cache_make_file_key(apc_cache_t *cache,
     if(tmp_buf) {
         fileinfo.st_buf.sb = *tmp_buf;
     } else {
-        if (apc_search_paths(filename, include_path, &fileinfo) != 0) {
+        if (apc_search_paths(filename, include_path, &fileinfo TSRMLS_CC) != 0) {
 #ifdef __DEBUG_APC__
             fprintf(stderr,"Stat failed %s - bailing (%s) (%d)\n",filename,SG(request_info).path_translated);
 #endif
@@ -1099,7 +1096,8 @@ apc_cache_entry_t* apc_cache_make_file_entry(const char* filename,
                                         zend_op_array* op_array,
                                         apc_function_t* functions,
                                         apc_class_t* classes,
-                                        apc_context_t* ctxt)
+                                        apc_context_t* ctxt 
+										TSRMLS_DC)
 {
     apc_cache_entry_t* entry;
     apc_pool* pool = ctxt->pool;
@@ -1121,7 +1119,7 @@ apc_cache_entry_t* apc_cache_make_file_entry(const char* filename,
     entry->data.file.functions = functions;
     entry->data.file.classes   = classes;
 
-    entry->data.file.halt_offset = apc_file_halt_offset(filename);
+    entry->data.file.halt_offset = apc_file_halt_offset(filename TSRMLS_CC);
 
     entry->type = APC_CACHE_ENTRY_FILE;
     entry->ref_count = 0;
@@ -1132,10 +1130,8 @@ apc_cache_entry_t* apc_cache_make_file_entry(const char* filename,
 /* }}} */
 
 /* {{{ apc_cache_store_zval */
-zval* apc_cache_store_zval(zval* dst, const zval* src, apc_context_t* ctxt)
+zval* apc_cache_store_zval(zval* dst, const zval* src, apc_context_t* ctxt TSRMLS_DC)
 {
-    TSRMLS_FETCH();
-
     if (Z_TYPE_P(src) == IS_ARRAY) {
         /* Maintain a list of zvals we've copied to properly handle recursive structures */
         zend_hash_init(&APCG(copied_zvals), 0, NULL, NULL, 0);
@@ -1152,10 +1148,8 @@ zval* apc_cache_store_zval(zval* dst, const zval* src, apc_context_t* ctxt)
 /* }}} */
 
 /* {{{ apc_cache_fetch_zval */
-zval* apc_cache_fetch_zval(zval* dst, const zval* src, apc_context_t* ctxt)
+zval* apc_cache_fetch_zval(zval* dst, const zval* src, apc_context_t* ctxt TSRMLS_DC)
 {
-    TSRMLS_FETCH();
-
     if (Z_TYPE_P(src) == IS_ARRAY) {
         /* Maintain a list of zvals we've copied to properly handle recursive structures */
         zend_hash_init(&APCG(copied_zvals), 0, NULL, NULL, 0);
@@ -1172,7 +1166,7 @@ zval* apc_cache_fetch_zval(zval* dst, const zval* src, apc_context_t* ctxt)
 /* }}} */
 
 /* {{{ apc_cache_make_user_entry */
-apc_cache_entry_t* apc_cache_make_user_entry(const char* info, int info_len, const zval* val, apc_context_t* ctxt, const unsigned int ttl)
+apc_cache_entry_t* apc_cache_make_user_entry(const char* info, int info_len, const zval* val, apc_context_t* ctxt, const unsigned int ttl TSRMLS_DC)
 {
     apc_cache_entry_t* entry;
     apc_pool* pool = ctxt->pool;
@@ -1185,7 +1179,7 @@ apc_cache_entry_t* apc_cache_make_user_entry(const char* info, int info_len, con
     if(!entry->data.user.info) {
         return NULL;
     }
-    entry->data.user.val = apc_cache_store_zval(NULL, val, ctxt);
+    entry->data.user.val = apc_cache_store_zval(NULL, val, ctxt TSRMLS_CC);
     if(!entry->data.user.val) {
         return NULL;
     }
@@ -1200,13 +1194,11 @@ apc_cache_entry_t* apc_cache_make_user_entry(const char* info, int info_len, con
 /* }}} */
 
 /* {{{ apc_cache_info */
-apc_cache_info_t* apc_cache_info(apc_cache_t* cache, zend_bool limited)
+apc_cache_info_t* apc_cache_info(apc_cache_t* cache, zend_bool limited TSRMLS_DC)
 {
     apc_cache_info_t* info;
     slot_t* p;
     int i;
-
-	TSRMLS_FETCH();
 
     if(!cache) return NULL;
 

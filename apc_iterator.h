@@ -74,7 +74,7 @@ typedef struct _apc_iterator_t {
     zend_object obj;         /* must always be first */
     short int initialized;   /* sanity check in case __construct failed */
     long format;             /* format bitmask of the return values ie: key, value, info */
-    int (*fetch)(struct _apc_iterator_t *iterator);
+    int (*fetch)(struct _apc_iterator_t *iterator TSRMLS_DC);
                              /* fetch callback to fetch items from cache slots or lists */
     apc_cache_t *cache;      /* cache which we are iterating on */
     long slot_idx;           /* index to the slot array or linked list */
