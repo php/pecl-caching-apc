@@ -49,8 +49,8 @@ struct apc_segment_t {
     struct apc_segment_t *next;  /* next segment */
 };
 
-extern void* apc_sma_protect(void *p);
-extern void* apc_sma_unprotect(void *p);
+extern void* apc_sma_protect(apc_segment_t *segment, void *p);
+extern void* apc_sma_unprotect(apc_segment_t *segment, void *p);
 
 /* {{{ struct definition: apc_sma_link_t */
 typedef struct apc_sma_link_t apc_sma_link_t;
