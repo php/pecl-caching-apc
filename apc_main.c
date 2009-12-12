@@ -580,7 +580,7 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
         /* TODO: check what happens with EG(included_files) */
     }
 
-    /* Make sure the mtime reflects the files last known mtime in the case of fpstat==0 */
+    /* Make sure the mtime reflects the files last known mtime, and we respect max_file_size in the case of fpstat==0 */
     if(key.type == APC_CACHE_KEY_FPFILE) {
         apc_fileinfo_t fileinfo;
         struct stat *tmp_buf = NULL;
@@ -596,6 +596,12 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
 #endif
                 return op_array;
             }
+        }
+        if (APCG(max_file_size) < fileinfo.st_buf.sb.st_size) { 
+#ifdef __DEBUG_APC__
+            fprintf(stderr,"File is too big %s (%ld) - bailing\n", h->filename, fileinfo.st_buf.sb.st_size);
+#endif
+            return op_array;
         }
         key.mtime = fileinfo.st_buf.sb.st_mtime;
     }
