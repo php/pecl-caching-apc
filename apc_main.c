@@ -584,14 +584,14 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
 #ifdef __DEBUG_APC__
                 fprintf(stderr,"Stat failed %s - bailing (%s) (%d)\n",h->filename,SG(request_info).path_translated);
 #endif
-                return op_array;
+                return old_compile_file(h, type TSRMLS_CC);
             }
         }
         if (APCG(max_file_size) < fileinfo.st_buf.sb.st_size) { 
 #ifdef __DEBUG_APC__
             fprintf(stderr,"File is too big %s (%ld) - bailing\n", h->filename, fileinfo.st_buf.sb.st_size);
 #endif
-            return op_array;
+            return old_compile_file(h, type TSRMLS_CC);
         }
         key.mtime = fileinfo.st_buf.sb.st_mtime;
     }
