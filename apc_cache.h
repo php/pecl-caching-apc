@@ -198,6 +198,15 @@ extern apc_cache_entry_t* apc_cache_find(T cache, apc_cache_key_t key, time_t t)
 extern apc_cache_entry_t* apc_cache_user_find(T cache, char* strkey, int keylen, time_t t);
 
 /*
+ * apc_cache_user_exists searches for a cache entry by its hashed identifier,
+ * and returns a pointer to the entry if found, NULL otherwise.  This is a
+ * quick non-locking version of apc_cache_user_find that does not modify the
+ * shared memory segment in any way.
+ *
+ */
+extern apc_cache_entry_t* apc_cache_user_exists(T cache, char* strkey, int keylen, time_t t);
+
+/*
  * apc_cache_delete and apc_cache_user_delete finds an entry in the cache and deletes it.
  */
 extern int apc_cache_delete(apc_cache_t* cache, char *filename, int filename_len);

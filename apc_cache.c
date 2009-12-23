@@ -635,6 +635,36 @@ apc_cache_entry_t* apc_cache_user_find(apc_cache_t* cache, char *strkey, int key
 }
 /* }}} */
 
+/* {{{ apc_cache_user_exists */
+apc_cache_entry_t* apc_cache_user_exists(apc_cache_t* cache, char *strkey, int keylen, time_t t)
+{
+    slot_t** slot;
+    volatile apc_cache_entry_t* value = NULL;
+
+    if(apc_cache_busy(cache))
+    {
+        /* cache cleanup in progress */ 
+        return NULL;
+    }
+
+    slot = &cache->slots[string_nhash_8(strkey, keylen) % cache->num_slots];
+
+    while (*slot) {
+        if (!memcmp((*slot)->key.data.user.identifier, strkey, keylen)) {
+            /* Check to make sure this entry isn't expired by a hard TTL */
+            if((*slot)->value->data.user.ttl && (time_t) ((*slot)->creation_time + (*slot)->value->data.user.ttl) < t) {
+                return NULL;
+            }
+            /* Otherwise we are fine, increase counters and return the cache entry */
+            value = (*slot)->value;
+            return (apc_cache_entry_t*)value;
+        }
+        slot = &(*slot)->next;
+    }
+    return NULL;
+}
+/* }}} */
+
 /* {{{ apc_cache_user_update */
 int _apc_cache_user_update(apc_cache_t* cache, char *strkey, int keylen, apc_cache_updater_t updater, void* data TSRMLS_DC)
 {

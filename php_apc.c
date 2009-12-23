@@ -984,6 +984,68 @@ freepool:
 }
 /* }}} */
 
+/* {{{ proto mixed apc_exists(mixed key)
+ */
+PHP_FUNCTION(apc_exists) {
+    zval *key;
+    HashTable *hash;
+    HashPosition hpos;
+    zval **hentry;
+    char *strkey;
+    int strkey_len;
+    apc_cache_entry_t* entry;
+    zval *result;
+    zval *result_entry;
+    time_t t;
+
+    if(!APCG(enabled)) RETURN_FALSE;
+
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &key) == FAILURE) {
+        return;
+    }
+
+    t = apc_time();
+
+    if(Z_TYPE_P(key) != IS_STRING && Z_TYPE_P(key) != IS_ARRAY) {
+        convert_to_string(key);
+    }
+
+    if(Z_TYPE_P(key) == IS_STRING) {
+        strkey = Z_STRVAL_P(key);
+        strkey_len = Z_STRLEN_P(key);
+        if(!strkey_len) RETURN_FALSE;
+        entry = apc_cache_user_exists(apc_user_cache, strkey, strkey_len + 1, t);
+        if(entry) {
+            RETURN_TRUE;
+        }
+    } else if(Z_TYPE_P(key) == IS_ARRAY) {
+        hash = Z_ARRVAL_P(key);
+        MAKE_STD_ZVAL(result);
+        array_init(result); 
+        zend_hash_internal_pointer_reset_ex(hash, &hpos);
+        while(zend_hash_get_current_data_ex(hash, (void**)&hentry, &hpos) == SUCCESS) {
+            if(Z_TYPE_PP(hentry) != IS_STRING) {
+                apc_wprint("apc_exists() expects a string or array of strings.");
+                goto done;
+            }
+            entry = apc_cache_user_exists(apc_user_cache, Z_STRVAL_PP(hentry), Z_STRLEN_PP(hentry) + 1, t);
+            if(entry) {
+                MAKE_STD_ZVAL(result_entry);
+                ZVAL_BOOL(result_entry, 1);
+                zend_hash_add(Z_ARRVAL_P(result), Z_STRVAL_PP(hentry), Z_STRLEN_PP(hentry) +1, &result_entry, sizeof(zval*), NULL);
+            } /* don't set values we didn't find */
+            zend_hash_move_forward_ex(hash, &hpos);
+        }
+        RETVAL_ZVAL(result, 0, 1);
+    } else {
+        apc_wprint("apc_exists() expects a string or array of strings.");
+    }
+
+done:
+    RETURN_FALSE;
+}
+/* }}} */
+
 
 /* {{{ proto mixed apc_delete(mixed keys)
  */
@@ -1680,6 +1742,11 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_apc_bin_loadfile, 0, 0, 1)
     ZEND_ARG_INFO(0, context)
     ZEND_ARG_INFO(0, flags)
 ZEND_END_ARG_INFO()
+
+PHP_APC_ARGINFO
+ZEND_BEGIN_ARG_INFO(arginfo_apc_exists, 0)
+	ZEND_ARG_INFO(0, keys)
+ZEND_END_ARG_INFO()
 /* }}} */
 
 /* {{{ apc_functions[] */
@@ -1702,6 +1769,7 @@ function_entry apc_functions[] = {
     PHP_FE(apc_bin_load,            arginfo_apc_bin_load)
     PHP_FE(apc_bin_dumpfile,        arginfo_apc_bin_dumpfile)
     PHP_FE(apc_bin_loadfile,        arginfo_apc_bin_loadfile)
+    PHP_FE(apc_exists,              arginfo_apc_exists)
     {NULL, NULL, NULL}
 };
 /* }}} */
