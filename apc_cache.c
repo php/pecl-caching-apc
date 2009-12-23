@@ -655,7 +655,7 @@ apc_cache_entry_t* apc_cache_user_exists(apc_cache_t* cache, char *strkey, int k
             if((*slot)->value->data.user.ttl && (time_t) ((*slot)->creation_time + (*slot)->value->data.user.ttl) < t) {
                 return NULL;
             }
-            /* Otherwise we are fine, increase counters and return the cache entry */
+            /* Return the cache entry ptr */
             value = (*slot)->value;
             return (apc_cache_entry_t*)value;
         }
