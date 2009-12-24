@@ -647,20 +647,25 @@ apc_cache_entry_t* apc_cache_user_exists(apc_cache_t* cache, char *strkey, int k
         return NULL;
     }
 
+    CACHE_LOCK(cache);
+
     slot = &cache->slots[string_nhash_8(strkey, keylen) % cache->num_slots];
 
     while (*slot) {
         if (!memcmp((*slot)->key.data.user.identifier, strkey, keylen)) {
             /* Check to make sure this entry isn't expired by a hard TTL */
             if((*slot)->value->data.user.ttl && (time_t) ((*slot)->creation_time + (*slot)->value->data.user.ttl) < t) {
+                CACHE_UNLOCK(cache);
                 return NULL;
             }
             /* Return the cache entry ptr */
             value = (*slot)->value;
+            CACHE_UNLOCK(cache);
             return (apc_cache_entry_t*)value;
         }
         slot = &(*slot)->next;
     }
+    CACHE_UNLOCK(cache);
     return NULL;
 }
 /* }}} */

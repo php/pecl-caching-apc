@@ -1026,8 +1026,9 @@ PHP_FUNCTION(apc_exists) {
         while(zend_hash_get_current_data_ex(hash, (void**)&hentry, &hpos) == SUCCESS) {
             if(Z_TYPE_PP(hentry) != IS_STRING) {
                 apc_wprint("apc_exists() expects a string or array of strings.");
-                goto done;
+                RETURN_FALSE;
             }
+
             entry = apc_cache_user_exists(apc_user_cache, Z_STRVAL_PP(hentry), Z_STRLEN_PP(hentry) + 1, t);
             if(entry) {
                 MAKE_STD_ZVAL(result_entry);
@@ -1039,10 +1040,8 @@ PHP_FUNCTION(apc_exists) {
         RETVAL_ZVAL(result, 0, 1);
     } else {
         apc_wprint("apc_exists() expects a string or array of strings.");
+        RETURN_FALSE;
     }
-
-done:
-    RETURN_FALSE;
 }
 /* }}} */
 
