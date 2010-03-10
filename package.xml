@@ -562,7 +562,7 @@ Allow keys used in apc_store/apc_fetch/apc_delete to be binary safe and prevent 
    <license uri="http://www.php.net/license">PHP License</license>
      <date>2009-08-13</date>
   <notes>
-  - pecl package.xml/build fixes (bjori)
+- pecl package.xml/build fixes (bjori)
 - 5.3 support + test-cases (Gopal)
 - Lazy loading support (Shire)
 - Fix PCRE module init order issues (Shire)
