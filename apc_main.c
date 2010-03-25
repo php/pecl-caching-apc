@@ -639,7 +639,7 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
 
 extern int _apc_store(char *strkey, int strkey_len, const zval *val, const unsigned int ttl, const int exclusive TSRMLS_DC);
 
-static zval* data_unserialize(const char *filename)
+static zval* data_unserialize(const char *filename TSRMLS_DC)
 {
     zval* retval;
     long len = 0;
@@ -647,7 +647,6 @@ static zval* data_unserialize(const char *filename)
     char *contents, *tmp;
     FILE *fp;
     php_unserialize_data_t var_hash;
-    TSRMLS_FETCH();
 
     if(VCWD_STAT(filename, &sb) == -1) {
         return NULL;
@@ -703,7 +702,7 @@ static int apc_load_data(const char *data_file TSRMLS_DC)
             p[0] = '\0';
             key_len = strlen(key);
 
-            data = data_unserialize(data_file);
+            data = data_unserialize(data_file TSRMLS_CC);
             if(data) {
                 _apc_store(key, key_len, data, 0, 1 TSRMLS_CC);
             }
