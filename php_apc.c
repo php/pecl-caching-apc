@@ -1749,7 +1749,7 @@ ZEND_END_ARG_INFO()
 /* }}} */
 
 /* {{{ apc_functions[] */
-function_entry apc_functions[] = {
+zend_function_entry apc_functions[] = {
     PHP_FE(apc_cache_info,          arginfo_apc_cache_info)
     PHP_FE(apc_clear_cache,         arginfo_apc_clear_cache)
     PHP_FE(apc_sma_info,            arginfo_apc_sma_info)
