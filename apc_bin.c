@@ -191,6 +191,7 @@ static void apc_swizzle_op_array(apc_bd_t *bd, zend_llist *ll, zend_op_array *op
 
     /* swizzle op_array */
     for(i=0; i < op_array->last; i++) {
+#ifndef ZEND_ENGINE_2_4
         if(op_array->opcodes[i].result.op_type == IS_CONST) {
             apc_swizzle_zval(bd, ll, &op_array->opcodes[i].result.u.constant TSRMLS_CC);
         }
@@ -200,14 +201,23 @@ static void apc_swizzle_op_array(apc_bd_t *bd, zend_llist *ll, zend_op_array *op
         if(op_array->opcodes[i].op2.op_type == IS_CONST) {
             apc_swizzle_zval(bd, ll, &op_array->opcodes[i].op2.u.constant TSRMLS_CC);
         }
+#endif
         switch (op_array->opcodes[i].opcode) {
             case ZEND_JMP:
+#ifdef ZEND_ENGINE_2_4
+                apc_swizzle_ptr(bd, ll, &op_array->opcodes[i].op1.jmp_addr);
+#else
                 apc_swizzle_ptr(bd, ll, &op_array->opcodes[i].op1.u.jmp_addr);
+#endif
             case ZEND_JMPZ:
             case ZEND_JMPNZ:
             case ZEND_JMPZ_EX:
             case ZEND_JMPNZ_EX:
+#ifdef ZEND_ENGINE_2_4
+                apc_swizzle_ptr(bd, ll, &op_array->opcodes[i].op2.jmp_addr);
+#else
                 apc_swizzle_ptr(bd, ll, &op_array->opcodes[i].op2.u.jmp_addr);
+#endif
         }
     }
     apc_swizzle_ptr(bd, ll, &op_array->opcodes);

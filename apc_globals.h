@@ -116,6 +116,9 @@ ZEND_BEGIN_MODULE_GLOBALS(apc)
     HashTable *lazy_function_table;  /* lazy function entry table */
     zend_bool lazy_classes;          /* enable/disable lazy class loading */
     HashTable *lazy_class_table;     /* lazy class entry table */
+#ifdef ZEND_ENGINE_2_4
+    long shm_strings_buffer;
+#endif
 ZEND_END_MODULE_GLOBALS(apc)
 
 /* (the following declaration is defined in php_apc.c) */

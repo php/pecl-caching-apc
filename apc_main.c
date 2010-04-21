@@ -41,6 +41,7 @@
 #include "apc_stack.h"
 #include "apc_zend.h"
 #include "apc_pool.h"
+#include "apc_string.h"
 #include "SAPI.h"
 #include "php_scandir.h"
 #include "ext/standard/php_var.h"
@@ -189,6 +190,9 @@ static int install_class(apc_class_t cl, apc_context_t* ctxt, int lazy TSRMLS_DC
          */
         status = zend_lookup_class_ex(cl.parent_name,
                                     strlen(cl.parent_name), 
+#ifdef ZEND_ENGINE_2_4
+                                    NULL,
+#endif
                                     0,
                                     &parent_ptr TSRMLS_CC);
         if (status == FAILURE) {
@@ -396,6 +400,30 @@ default_compile:
 /* }}} */
 
 /* {{{ apc_compile_cache_entry  */
+static zend_op_array *apc_call_old_compile_file(zend_file_handle* h, int type TSRMLS_DC)
+{
+#ifdef ZEND_ENGINE_2_4
+    zend_op_array *op_array;
+    int rebailout;
+   
+    apc_interned_strings_disable(TSRMLS_C);
+    zend_try {
+        op_array = old_compile_file(h, type TSRMLS_CC);
+        rebailout = 0;
+    } zend_catch {
+        rebailout = 1;
+    } zend_end_try();
+    apc_interned_strings_enable(TSRMLS_C);
+    if (rebailout) {
+        zend_bailout();
+    }
+    return op_array;
+#else
+    return old_compile_file(h, type TSRMLS_CC); 
+#endif
+}
+
+/* {{{ apc_compile_cache_entry  */
 zend_bool apc_compile_cache_entry(apc_cache_key_t key, zend_file_handle* h, int type, time_t t, zend_op_array** op_array, apc_cache_entry_t** cache_entry TSRMLS_DC) {
     int num_functions, num_classes;
     apc_function_t* alloc_functions;
@@ -411,7 +439,7 @@ zend_bool apc_compile_cache_entry(apc_cache_key_t key, zend_file_handle* h, int 
     /* compile the file using the default compile function,  *
      * we set *op_array here so we return opcodes during     *
      * a failure.  We should not return prior to this line.  */
-    *op_array = old_compile_file(h, type TSRMLS_CC);
+    *op_array = apc_call_old_compile_file(h, type TSRMLS_CC);
     if (*op_array == NULL) {
         return FAILURE;
     }
@@ -498,7 +526,7 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
     int bailout=0;
 
     if (!APCG(enabled) || apc_cache_busy(apc_cache)) {
-        return old_compile_file(h, type TSRMLS_CC);
+        return apc_call_old_compile_file(h, type TSRMLS_CC);
     }
 
     /* check our regular expression filters */
@@ -506,10 +534,10 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
         int ret = apc_regex_match_array(APCG(compiled_filters), h->opened_path);
 
         if(ret == APC_NEGATIVE_MATCH || (ret != APC_POSITIVE_MATCH && !APCG(cache_by_default))) {
-            return old_compile_file(h, type TSRMLS_CC);
+            return apc_call_old_compile_file(h, type TSRMLS_CC);
         }
     } else if(!APCG(cache_by_default)) {
-        return old_compile_file(h, type TSRMLS_CC);
+        return apc_call_old_compile_file(h, type TSRMLS_CC);
     }
     APCG(current_cache) = apc_cache;
 
@@ -522,7 +550,7 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
 
     /* try to create a cache key; if we fail, give up on caching */
     if (!apc_cache_make_file_key(&key, h->filename, PG(include_path), t TSRMLS_CC)) {
-        return old_compile_file(h, type TSRMLS_CC);
+        return apc_call_old_compile_file(h, type TSRMLS_CC);
     }
 
 
@@ -542,7 +570,7 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
                                                 apc_sma_protect, apc_sma_unprotect);
         if (!ctxt.pool) {
             apc_wprint("Unable to allocate memory for pool.");
-            return old_compile_file(h, type TSRMLS_CC);
+            return apc_call_old_compile_file(h, type TSRMLS_CC);
         }
         ctxt.copy = APC_COPY_OUT_OPCODE;
 
@@ -584,14 +612,14 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
 #ifdef __DEBUG_APC__
                 fprintf(stderr,"Stat failed %s - bailing (%s) (%d)\n",h->filename,SG(request_info).path_translated);
 #endif
-                return old_compile_file(h, type TSRMLS_CC);
+                return apc_call_old_compile_file(h, type TSRMLS_CC);
             }
         }
         if (APCG(max_file_size) < fileinfo.st_buf.sb.st_size) { 
 #ifdef __DEBUG_APC__
             fprintf(stderr,"File is too big %s (%ld) - bailing\n", h->filename, fileinfo.st_buf.sb.st_size);
 #endif
-            return old_compile_file(h, type TSRMLS_CC);
+            return apc_call_old_compile_file(h, type TSRMLS_CC);
         }
         key.mtime = fileinfo.st_buf.sb.st_mtime;
     }
@@ -602,7 +630,7 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
     if(APCG(write_lock)) {
         if(!apc_cache_write_lock(apc_cache)) {
             HANDLE_UNBLOCK_INTERRUPTIONS();
-            return old_compile_file(h, type TSRMLS_CC);
+            return apc_call_old_compile_file(h, type TSRMLS_CC);
         }
     }
 #endif
@@ -792,6 +820,10 @@ int apc_module_init(int module_number TSRMLS_DC)
     }
 #endif
 
+#ifdef ZEND_ENGINE_2_4
+    apc_interned_strings_init(TSRMLS_C);
+#endif
+
     APCG(initialized) = 1;
     return 0;
 }
@@ -837,6 +869,10 @@ int apc_module_shutdown(TSRMLS_D)
     apc_cache_destroy(apc_cache);
     apc_cache_destroy(apc_user_cache);
     apc_sma_cleanup();
+
+#ifdef ZEND_ENGINE_2_4
+    apc_interned_strings_shutdown(TSRMLS_C);
+#endif
 
     APCG(initialized) = 0;
     return 0;

@@ -12,11 +12,7 @@
   | obtain it through the world-wide-web, please send a note to          |
   | license@php.net so we can mail you a copy immediately.               |
   +----------------------------------------------------------------------+
-  | Authors: Daniel Cowgill <dcowgill@communityconnect.com>              |
-  |          George Schlossnagle <george@omniti.com>                     |
-  |          Rasmus Lerdorf <rasmus@php.net>                             |
-  |          Arun C. Murthy <arunc@yahoo-inc.com>                        |
-  |          Gopal Vijayaraghavan <gopalv@yahoo-inc.com>                 |
+  | Authors: Dmitry Stogov <dmitry@zend.com>                             |
   +----------------------------------------------------------------------+
 
    This software was contributed to PHP by Community Connect Inc. in 2002
@@ -29,41 +25,20 @@
 
  */
 
-/* $Id$ */
+/* $Id: $ */
 
-#ifndef APC_PHP_H
-#define APC_PHP_H
+#ifndef APC_STRING
+#define APC_STRING
 
-/*
- * The purpose of this header file is to include all PHP and Zend headers that
- * are typically needed elsewhere in APC. This makes it easy to insure that
- * all required headers are available.
- */
+#include "apc.h"
 
-#include "php.h"
-#include "zend.h"
-#include "zend_API.h"
-#include "zend_compile.h"
-#include "zend_hash.h"
-#include "zend_extensions.h"
+void apc_interned_strings_init(TSRMLS_D);
+void apc_interned_strings_shutdown(TSRMLS_D);
 
-#if ZEND_MODULE_API_NO >= 20100409
-#define ZEND_ENGINE_2_4
-#endif
-#if ZEND_MODULE_API_NO > 20060613
-#define ZEND_ENGINE_2_3
-#endif
-#if ZEND_MODULE_API_NO > 20050922
-#define ZEND_ENGINE_2_2
-#endif
-#if ZEND_MODULE_API_NO > 20050921
-#define ZEND_ENGINE_2_1
-#endif
-#ifdef ZEND_ENGINE_2_1
-#include "zend_vm.h"
-#endif
+void apc_interned_strings_disable(TSRMLS_D);
+void apc_interned_strings_enable(TSRMLS_D);
 
-#include "rfc1867.h"
+char *apc_new_interned_string(char *arKey, int nKeyLength TSRMLS_DC);
 
 #endif
 

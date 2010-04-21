@@ -221,7 +221,8 @@ if test "$PHP_APC" != "no"; then
                apc_signal.c \
                apc_pool.c \
                apc_iterator.c \
-               apc_bin.c "
+               apc_bin.c \
+               apc_string.c "
 
   PHP_CHECK_LIBRARY(rt, shm_open, [PHP_ADD_LIBRARY(rt,,APC_SHARED_LIBADD)])
   PHP_NEW_EXTENSION(apc, $apc_sources, $ext_shared,, \\$(APC_CFLAGS))

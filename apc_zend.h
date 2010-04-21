@@ -128,7 +128,11 @@ static inline int _apc_opcode_handler_decode(zend_op *opline)
         _UNUSED_CODE, /* 15             */
         _CV_CODE      /* 16 = IS_CV     */
     };
+#ifdef ZEND_ENGINE_2_4
+    return (opline->opcode * 25) + (apc_vm_decode[opline->op1_type] * 5) + apc_vm_decode[opline->op2_type];
+#else
     return (opline->opcode * 25) + (apc_vm_decode[opline->op1.op_type] * 5) + apc_vm_decode[opline->op2.op_type];
+#endif
 }
 
 # define APC_ZEND_OPLINE                    zend_op *opline = execute_data->opline;

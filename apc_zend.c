@@ -50,6 +50,38 @@ static opcode_handler_t apc_opcode_handlers[APC_OPCODE_HANDLER_COUNT];
 
 #define APC_EX_T(offset)                    (*(temp_variable *)((char*)execute_data->Ts + offset))
 
+#ifdef ZEND_ENGINE_2_4
+static zval *apc_get_zval_ptr(zend_uchar op_type, znode_op *node, zval **freeval, zend_execute_data *execute_data TSRMLS_DC)
+{
+    *freeval = NULL;
+
+    switch (op_type) {
+        case IS_CONST:
+            return node->zv;
+        case IS_VAR:
+            return APC_EX_T(node->var).var.ptr;
+        case IS_TMP_VAR:
+            return (*freeval = &APC_EX_T(node->var).tmp_var);
+        case IS_CV:
+        {
+            zval ***ret = &execute_data->CVs[node->var];
+
+            if (!*ret) {
+                zend_compiled_variable *cv = &EG(active_op_array)->vars[node->var];
+
+                if (zend_hash_quick_find(EG(active_symbol_table), cv->name, cv->name_len+1, cv->hash_value, (void**)ret)==FAILURE) {
+                    apc_nprint("Undefined variable: %s", cv->name);
+                    return &EG(uninitialized_zval);
+                }
+            }
+            return **ret;
+        }
+        case IS_UNUSED:
+        default:
+            return NULL;
+    }
+}
+#else
 static zval *apc_get_zval_ptr(znode *node, zval **freeval, zend_execute_data *execute_data TSRMLS_DC)
 {
     *freeval = NULL;
@@ -82,6 +114,7 @@ static zval *apc_get_zval_ptr(znode *node, zval **freeval, zend_execute_data *ex
             return NULL;
     }
 }
+#endif
 
 static int ZEND_FASTCALL apc_op_ZEND_INCLUDE_OR_EVAL(ZEND_OPCODE_HANDLER_ARGS)
 {
@@ -94,12 +127,22 @@ static int ZEND_FASTCALL apc_op_ZEND_INCLUDE_OR_EVAL(ZEND_OPCODE_HANDLER_ARGS)
     int ret = 0;
     apc_opflags_t* flags = NULL;
 
+#ifdef ZEND_ENGINE_2_4
+    if (opline->extended_value != ZEND_INCLUDE_ONCE &&
+        opline->extended_value != ZEND_REQUIRE_ONCE) {
+        return apc_original_opcode_handlers[APC_OPCODE_HANDLER_DECODE(opline)](ZEND_OPCODE_HANDLER_ARGS_PASSTHRU);
+    }
+
+    inc_filename = apc_get_zval_ptr(opline->op1_type, &opline->op1, &freeop1, execute_data TSRMLS_CC);
+#else
     if (Z_LVAL(opline->op2.u.constant) != ZEND_INCLUDE_ONCE &&
         Z_LVAL(opline->op2.u.constant) != ZEND_REQUIRE_ONCE) {
         return apc_original_opcode_handlers[APC_OPCODE_HANDLER_DECODE(opline)](ZEND_OPCODE_HANDLER_ARGS_PASSTHRU);
     }
 
     inc_filename = apc_get_zval_ptr(&opline->op1, &freeop1, execute_data TSRMLS_CC);
+#endif
+
     if (Z_TYPE_P(inc_filename) != IS_STRING) {
         tmp_inc_filename = *inc_filename;
         zval_copy_ctor(&tmp_inc_filename);
@@ -120,10 +163,17 @@ static int ZEND_FASTCALL apc_op_ZEND_INCLUDE_OR_EVAL(ZEND_OPCODE_HANDLER_ARGS)
     }
 
     if (zend_hash_exists(&EG(included_files), realpath, strlen(realpath) + 1)) {
+#ifdef ZEND_ENGINE_2_4
+        if (!(opline->result_type & EXT_TYPE_UNUSED)) {
+            ALLOC_INIT_ZVAL(APC_EX_T(opline->result.var).var.ptr);
+            ZVAL_TRUE(APC_EX_T(opline->result.var).var.ptr);
+        }
+#else
         if (!(opline->result.u.EA.type & EXT_TYPE_UNUSED)) {
             ALLOC_INIT_ZVAL(APC_EX_T(opline->result.u.var).var.ptr);
             ZVAL_TRUE(APC_EX_T(opline->result.u.var).var.ptr);
         }
+#endif
         if (inc_filename == &tmp_inc_filename) {
             zval_dtor(&tmp_inc_filename);
         }
@@ -147,9 +197,15 @@ static int ZEND_FASTCALL apc_op_ZEND_INCLUDE_OR_EVAL(ZEND_OPCODE_HANDLER_ARGS)
         /* Since the op array is a local copy, we can cheat our way through the file inclusion by temporarily 
          * changing the op to a plain require/include, calling its handler and finally restoring the opcode.
          */
+#ifdef ZEND_ENGINE_2_4
+        opline->extended_value = (opline->extended_value == ZEND_INCLUDE_ONCE) ? ZEND_INCLUDE : ZEND_REQUIRE;
+        ret = apc_original_opcode_handlers[APC_OPCODE_HANDLER_DECODE(opline)](ZEND_OPCODE_HANDLER_ARGS_PASSTHRU);
+        opline->extended_value = (opline->extended_value == ZEND_INCLUDE) ? ZEND_INCLUDE_ONCE : ZEND_REQUIRE_ONCE;
+#else
         Z_LVAL(opline->op2.u.constant) = (Z_LVAL(opline->op2.u.constant) == ZEND_INCLUDE_ONCE) ? ZEND_INCLUDE : ZEND_REQUIRE;
         ret = apc_original_opcode_handlers[APC_OPCODE_HANDLER_DECODE(opline)](ZEND_OPCODE_HANDLER_ARGS_PASSTHRU);
         Z_LVAL(opline->op2.u.constant) = (Z_LVAL(opline->op2.u.constant) == ZEND_INCLUDE) ? ZEND_INCLUDE_ONCE : ZEND_REQUIRE_ONCE;
+#endif
     } else {
         ret = apc_original_opcode_handlers[APC_OPCODE_HANDLER_DECODE(opline)](ZEND_OPCODE_HANDLER_ARGS_PASSTHRU);
     }

@@ -33,6 +33,7 @@
 #include "apc_compile.h"
 #include "apc_globals.h"
 #include "apc_zend.h"
+#include "apc_string.h"
 #include "ext/standard/php_var.h"
 #include "ext/standard/php_smart_str.h"
 
@@ -236,6 +237,21 @@ static zval* my_unserialize_object(zval* dst, const zval* src, apc_context_t* ct
 }
 /* }}} */
 
+#ifdef ZEND_ENGINE_2_4
+static char *apc_string_pmemcpy(char *str, size_t len, apc_pool* pool)
+{
+    if (pool->type != APC_UNPOOL) {
+        char * ret = apc_new_interned_string(str, len TSRMLS_CC);
+        if (ret) {
+            return ret;
+        }
+    }
+    return apc_pmemcpy(str, len, pool);
+}
+#else
+# define apc_string_pmemcpy(str, len, pool) apc_pmemcpy(str, len, pool)
+#endif
+
 /* {{{ my_copy_zval */
 static zval* my_copy_zval(zval* dst, const zval* src, apc_context_t* ctxt)
 {
@@ -283,7 +299,7 @@ static zval* my_copy_zval(zval* dst, const zval* src, apc_context_t* ctxt)
     case IS_CONSTANT:
     case IS_STRING:
         if (src->value.str.val) {
-            CHECK(dst->value.str.val = apc_pmemcpy(src->value.str.val,
+            CHECK(dst->value.str.val = apc_string_pmemcpy(src->value.str.val,
                                                    src->value.str.len+1,
                                                    pool));
         }
@@ -318,6 +334,34 @@ static zval* my_copy_zval(zval* dst, const zval* src, apc_context_t* ctxt)
 }
 /* }}} */
 
+#ifdef ZEND_ENGINE_2_4
+/* {{{ my_copy_znode */
+static void my_check_znode(zend_uchar op_type, apc_context_t* ctxt)
+{
+    assert(op_type == IS_CONST ||
+           op_type == IS_VAR ||
+           op_type == IS_CV ||
+           op_type == IS_TMP_VAR ||
+           op_type == IS_UNUSED);
+}
+/* }}} */
+
+/* {{{ my_copy_zend_op */
+static zend_op* my_copy_zend_op(zend_op* dst, zend_op* src, apc_context_t* ctxt)
+{
+    assert(dst != NULL);
+    assert(src != NULL);
+
+    memcpy(dst, src, sizeof(src[0]));
+
+    my_check_znode(dst->result_type & ~EXT_TYPE_UNUSED, ctxt);
+    my_check_znode(dst->op1_type, ctxt);
+    my_check_znode(dst->op2_type, ctxt);
+
+    return dst;
+}
+/* }}} */
+#else
 /* {{{ my_copy_znode */
 static znode* my_copy_znode(znode* dst, znode* src, apc_context_t* ctxt)
 {
@@ -364,6 +408,7 @@ static zend_op* my_copy_zend_op(zend_op* dst, zend_op* src, apc_context_t* ctxt)
     return dst;
 }
 /* }}} */
+#endif
 
 /* {{{ my_copy_function */
 static zend_function* my_copy_function(zend_function* dst, zend_function* src, apc_context_t* ctxt)
@@ -468,7 +513,7 @@ static zend_property_info* my_copy_property_info(zend_property_info* dst, zend_p
          * string of the form:
          *      \0<classname>\0<membername>\0
          */
-        CHECK((dst->name = apc_pmemcpy(src->name, src->name_length+1, pool)));
+        CHECK((dst->name = apc_string_pmemcpy(src->name, src->name_length+1, pool)));
     }
 
 #if defined(ZEND_ENGINE_2) && PHP_MINOR_VERSION > 0
@@ -536,11 +581,11 @@ static zend_arg_info* my_copy_arg_info(zend_arg_info* dst, const zend_arg_info* 
     dst->class_name = NULL;
 
     if (src->name) {
-        CHECK((dst->name = apc_pmemcpy(src->name, src->name_len+1, pool)));
+        CHECK((dst->name = apc_string_pmemcpy(src->name, src->name_len+1, pool)));
     }
 
     if (src->class_name) {
-        CHECK((dst->class_name = apc_pmemcpy(src->class_name, src->class_name_len+1, pool)));
+        CHECK((dst->class_name = apc_string_pmemcpy(src->class_name, src->class_name_len+1, pool)));
     }
 
     return dst;
@@ -762,9 +807,32 @@ static HashTable* my_copy_hashtable_ex(HashTable* dst,
         }
 
         /* create a copy of the bucket 'curr' */
+#ifdef ZEND_ENGINE_2_4
+        if (!curr->nKeyLength) {
+            CHECK((newp = (Bucket*) apc_pmemcpy(curr, sizeof(Bucket), pool)));
+        } else if (IS_INTERNED(curr->arKey)) {
+            CHECK((newp = (Bucket*) apc_pmemcpy(curr, sizeof(Bucket), pool)));
+        } else if (pool->type != APC_UNPOOL) {
+            char *arKey;
+            TSRMLS_FETCH();
+
+            arKey = apc_new_interned_string(curr->arKey, curr->nKeyLength TSRMLS_CC);
+            if (!arKey) {
+                CHECK((newp = (Bucket*) apc_pmemcpy(curr, sizeof(Bucket) + curr->nKeyLength, pool)));
+                newp->arKey = ((char*)newp) + sizeof(Bucket);
+            } else {
+                CHECK((newp = (Bucket*) apc_pmemcpy(curr, sizeof(Bucket), pool)));
+                newp->arKey = arKey;
+            }
+        } else {
+            CHECK((newp = (Bucket*) apc_pmemcpy(curr, sizeof(Bucket) + curr->nKeyLength, pool)));
+            newp->arKey = ((char*)newp) + sizeof(Bucket);
+        }        
+#else
         CHECK((newp = (Bucket*) apc_pmemcpy(curr,
                                   sizeof(Bucket) + curr->nKeyLength - 1,
                                   pool)));
+#endif
 
         /* insert 'newp' into the linked list at its hashed index */
         if (dst->arBuckets[n]) {
@@ -858,7 +926,11 @@ static void apc_fixup_op_array_jumps(zend_op_array *dst, zend_op_array *src )
         switch (zo->opcode) {
             case ZEND_JMP:
                 /*Note: if src->opcodes != dst->opcodes then we need to the opline according to src*/
+#ifdef ZEND_ENGINE_2_4
+                zo->op1.jmp_addr = dst->opcodes + (zo->op1.jmp_addr - src->opcodes);
+#else
                 zo->op1.u.jmp_addr = dst->opcodes + (zo->op1.u.jmp_addr - src->opcodes);
+#endif
                 break;
             case ZEND_JMPZ:
             case ZEND_JMPNZ:
@@ -867,7 +939,11 @@ static void apc_fixup_op_array_jumps(zend_op_array *dst, zend_op_array *src )
 #ifdef ZEND_ENGINE_2_3
             case ZEND_JMP_SET:
 #endif
+#ifdef ZEND_ENGINE_2_4
+                zo->op2.jmp_addr = dst->opcodes + (zo->op2.jmp_addr - src->opcodes);
+#else
                 zo->op2.u.jmp_addr = dst->opcodes + (zo->op2.u.jmp_addr - src->opcodes);
+#endif
                 break;
             default:
                 break;
@@ -931,6 +1007,22 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_con
                                       sizeof(src->refcount[0]),
                                       pool));
 
+#ifdef ZEND_ENGINE_2_4
+    if (src->literals) {
+        zend_literal *p, *q, *end;
+
+        q = src->literals;
+        p = dst->literals = (zend_literal*) apc_pool_alloc(pool, sizeof(zend_literal) * src->last_literal);
+        end = p + src->last_literal;
+        while (p < end) {
+            *p = *q;
+            my_copy_zval(&p->constant, &q->constant, ctxt);
+            p++;
+            q++;
+        }
+    }
+#endif
+
     /* deep-copy the opcodes */
     CHECK(dst->opcodes = (zend_op*) apc_pool_alloc(pool, sizeof(zend_op) * src->last));
 
@@ -963,17 +1055,29 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_con
             case ZEND_FETCH_W:
             case ZEND_FETCH_IS:
             case ZEND_FETCH_FUNC_ARG:
+            case ZEND_FETCH_RW:
+            case ZEND_FETCH_UNSET:
                 if(PG(auto_globals_jit) && flags != NULL)
                 {
                      /* The fetch is only required if auto_globals_jit=1  */
+#ifdef ZEND_ENGINE_2_4
+                    if((zo->extended_value & ZEND_FETCH_TYPE_MASK) == ZEND_FETCH_GLOBAL &&
+                            zo->op1_type == IS_CONST && 
+                            Z_TYPE_P(zo->op1.zv) == IS_STRING) {
+                        if (Z_STRVAL_P(zo->op1.zv)[0] == '_') {
+# define SET_IF_AUTOGLOBAL(member) \
+    if(!strcmp(Z_STRVAL_P(zo->op1.zv), #member)) \
+        flags->member = 1 /* no ';' here */
+#else
                     if(zo->op2.u.EA.type == ZEND_FETCH_GLOBAL &&
                             zo->op1.op_type == IS_CONST && 
                             zo->op1.u.constant.type == IS_STRING) {
                         znode * varname = &zo->op1;
                         if (varname->u.constant.value.str.val[0] == '_') {
-#define SET_IF_AUTOGLOBAL(member) \
+# define SET_IF_AUTOGLOBAL(member) \
     if(!strcmp(varname->u.constant.value.str.val, #member)) \
         flags->member = 1 /* no ';' here */
+#endif
                             SET_IF_AUTOGLOBAL(_GET);
                             else SET_IF_AUTOGLOBAL(_POST);
                             else SET_IF_AUTOGLOBAL(_COOKIE);
@@ -981,10 +1085,17 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_con
                             else SET_IF_AUTOGLOBAL(_ENV);
                             else SET_IF_AUTOGLOBAL(_FILES);
                             else SET_IF_AUTOGLOBAL(_REQUEST);
+#ifdef ZEND_ENGINE_2_4
+                            else if(zend_is_auto_global(
+                                            Z_STRVAL_P(zo->op1.zv),
+                                            Z_STRLEN_P(zo->op1.zv)
+                                            TSRMLS_CC))
+#else
                             else if(zend_is_auto_global(
                                             varname->u.constant.value.str.val,
                                             varname->u.constant.value.str.len
                                             TSRMLS_CC))
+#endif
                             {
                                 flags->unknown_global = 1;
                             }
@@ -993,18 +1104,30 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_con
                 }
                 break;
             case ZEND_RECV_INIT:
+#ifdef ZEND_ENGINE_2_4
+                if(zo->op2_type == IS_CONST &&
+                    Z_TYPE_P(zo->op2.zv) == IS_CONSTANT_ARRAY) {
+#else
                 if(zo->op2.op_type == IS_CONST &&
                     zo->op2.u.constant.type == IS_CONSTANT_ARRAY) {
+#endif
                     if(flags != NULL) {
                         flags->deep_copy = 1;
                     }
                 }
                 break;
             default:
+#ifdef ZEND_ENGINE_2_4
+                if((zo->op1_type == IS_CONST &&
+                    Z_TYPE_P(zo->op1.zv) == IS_CONSTANT_ARRAY) ||
+                    (zo->op2_type == IS_CONST &&
+                        Z_TYPE_P(zo->op2.zv) == IS_CONSTANT_ARRAY)) {
+#else
                 if((zo->op1.op_type == IS_CONST &&
                     zo->op1.u.constant.type == IS_CONSTANT_ARRAY) ||
                     (zo->op2.op_type == IS_CONST &&
                         zo->op2.u.constant.type == IS_CONSTANT_ARRAY)) {
+#endif
                     if(flags != NULL) {
                         flags->deep_copy = 1;
                     }
@@ -1016,18 +1139,47 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_con
             return NULL;
         }
 
-/* This code breaks apc's rule#1 - cache what you compile */
+#ifdef ZEND_ENGINE_2_4
+        if (zo->op1_type == IS_CONST) {
+            dst->opcodes[i].op1.literal = src->opcodes[i].op1.literal - src->literals + dst->literals;
+        }
+        if (zo->op2_type == IS_CONST) {
+            dst->opcodes[i].op2.literal = src->opcodes[i].op2.literal - src->literals + dst->literals;
+        }
+        if (zo->result_type == IS_CONST) {
+            dst->opcodes[i].result.literal = src->opcodes[i].result.literal - src->literals + dst->literals;
+        }
+#endif
+
+        /* This code breaks apc's rule#1 - cache what you compile */
         if((APCG(fpstat)==0) && APCG(canonicalize)) {
+#ifdef ZEND_ENGINE_2_4
+            if((zo->opcode == ZEND_INCLUDE_OR_EVAL) && 
+                (zo->op1_type == IS_CONST && Z_TYPE_P(zo->op1.zv) == IS_STRING)) {
+                /* constant includes */
+                if(!IS_ABSOLUTE_PATH(Z_STRVAL_P(zo->op1.zv),Z_STRLEN_P(&zo->op1.zv))) { 
+                    if (apc_search_paths(Z_STRVAL_P(zo->op1.zv), PG(include_path), &fileinfo) == 0) {
+#else
             if((zo->opcode == ZEND_INCLUDE_OR_EVAL) && 
                 (zo->op1.op_type == IS_CONST && zo->op1.u.constant.type == IS_STRING)) {
                 /* constant includes */
                 if(!IS_ABSOLUTE_PATH(Z_STRVAL_P(&zo->op1.u.constant),Z_STRLEN_P(&zo->op1.u.constant))) { 
                     if (apc_search_paths(Z_STRVAL_P(&zo->op1.u.constant), PG(include_path), &fileinfo) == 0) {
+#endif
                         if((fullpath = realpath(fileinfo.fullpath, canon_path))) {
                             /* everything has to go through a realpath() */
                             zend_op *dzo = &(dst->opcodes[i]);
+#ifdef ZEND_ENGINE_2_4
+                            dzo->op1.literal = (zend_literal*) apc_pool_alloc(pool, sizeof(zend_literal));
+                            Z_STRLEN_P(dzo->op1.zv) = strlen(fullpath);
+                            Z_STRVAL_P(dzo->op1.zv) = apc_pstrdup(fullpath, pool);
+                            Z_SET_REFCOUNT_P(dzo->op1.zv, 2);
+                            Z_SET_ISREF(dzo->op1.zv);
+                            dzo->op1.literal->hash_value = zend_hash_func(Z_STRVAL_P(dzo->op1.zv), Z_STRLEN_P(dzo->op1.zv)+1);
+#else
                             dzo->op1.u.constant.value.str.len = strlen(fullpath);
                             dzo->op1.u.constant.value.str.val = apc_pstrdup(fullpath, pool);
+#endif
                         }
                     }
                 }
@@ -1066,7 +1218,7 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_con
         for(i = 0; i <  src->last_var; i++) dst->vars[i].name = NULL;
 
         for(i = 0; i <  src->last_var; i++) {
-            CHECK(dst->vars[i].name = apc_pmemcpy(src->vars[i].name,
+            CHECK(dst->vars[i].name = apc_string_pmemcpy(src->vars[i].name,
                                 src->vars[i].name_len + 1,
                                 pool));
         }
@@ -1209,7 +1361,19 @@ apc_class_t* apc_copy_new_classes(zend_op_array* op_array, int old_count, apc_co
 /* }}} */
 
 /* Used only by my_prepare_op_array_for_execution */
-#define APC_PREPARE_FETCH_GLOBAL_FOR_EXECUTION()                                                \
+#ifdef ZEND_ENGINE_2_4
+# define APC_PREPARE_FETCH_GLOBAL_FOR_EXECUTION()                                               \
+                         /* The fetch is only required if auto_globals_jit=1  */                \
+                        if((zo->extended_value & ZEND_FETCH_TYPE_MASK) == ZEND_FETCH_GLOBAL &&    \
+                            zo->op1_type == IS_CONST &&                                         \
+                            Z_TYPE_P(zo->op1.zv) == IS_STRING &&                                \
+                            Z_STRVAL_P(zo->op1.zv)[0] == '_') {                                 \
+                            (void)zend_is_auto_global(Z_STRVAL_P(zo->op1.zv),                   \
+                                                      Z_STRLEN_P(zo->op1.zv)                    \
+                                                      TSRMLS_CC);                               \
+                        }
+#else
+# define APC_PREPARE_FETCH_GLOBAL_FOR_EXECUTION()                                               \
                          /* The fetch is only required if auto_globals_jit=1  */                \
                         if(zo->op2.u.EA.type == ZEND_FETCH_GLOBAL &&                            \
                             zo->op1.op_type == IS_CONST &&                                      \
@@ -1220,7 +1384,8 @@ apc_class_t* apc_copy_new_classes(zend_op_array* op_array, int old_count, apc_co
                             (void)zend_is_auto_global(varname->u.constant.value.str.val,        \
                                                           varname->u.constant.value.str.len     \
                                                           TSRMLS_CC);                           \
-                        }                                                                       \
+                        }
+#endif
 
 /* {{{ my_prepare_op_array_for_execution */
 static int my_prepare_op_array_for_execution(zend_op_array* dst, zend_op_array* src, apc_context_t* ctxt TSRMLS_DC) 
@@ -1257,6 +1422,25 @@ static int my_prepare_op_array_for_execution(zend_op_array* dst, zend_op_array* 
 
     if(needcopy) {
 
+#ifdef ZEND_ENGINE_2_4
+        if (src->literals) {
+            zend_literal *p, *q, *end;
+
+            q = src->literals;
+            p = dst->literals = (zend_literal*) apc_xmemcpy(src->literals,
+                                        sizeof(zend_literal) * src->last_literal,
+                                        apc_php_malloc);
+            end = p + src->last_literal;
+            while (p < end) {
+                if (Z_TYPE(q->constant) == IS_CONSTANT_ARRAY) {
+                    my_copy_zval(&p->constant, &q->constant, ctxt);
+                }
+                p++;
+                q++;
+            }
+        }
+#endif
+
         dst->opcodes = (zend_op*) apc_xmemcpy(src->opcodes,
                                     sizeof(zend_op) * src->last,
                                     apc_php_malloc);
@@ -1264,6 +1448,17 @@ static int my_prepare_op_array_for_execution(zend_op_array* dst, zend_op_array* 
         dzo = dst->opcodes;
         while(i > 0) {
 
+#ifdef ZEND_ENGINE_2_4
+            if(zo->op1_type == IS_CONST) {
+               dzo->op1.literal = zo->op1.literal - src->literals + dst->literals;
+            }
+            if(zo->op2_type == IS_CONST) {
+               dzo->op2.literal = zo->op2.literal - src->literals + dst->literals;
+            }
+            if(zo->result_type == IS_CONST) {
+               dzo->result.literal = zo->result.literal - src->literals + dst->literals;
+            }
+#else
             if( ((zo->op1.op_type == IS_CONST &&
                   zo->op1.u.constant.type == IS_CONSTANT_ARRAY)) ||
                 ((zo->op2.op_type == IS_CONST &&
@@ -1273,11 +1468,17 @@ static int my_prepare_op_array_for_execution(zend_op_array* dst, zend_op_array* 
                     assert(0); /* emalloc failed or a bad constant array */
                 }
             }
+#endif
 
             switch(zo->opcode) {
                 case ZEND_JMP:
+#ifdef ZEND_ENGINE_2_4
+                    dzo->op1.jmp_addr = dst->opcodes +
+                                            (zo->op1.jmp_addr - src->opcodes);
+#else
                     dzo->op1.u.jmp_addr = dst->opcodes +
                                             (zo->op1.u.jmp_addr - src->opcodes);
+#endif
                     break;
                 case ZEND_JMPZ:
                 case ZEND_JMPNZ:
@@ -1286,8 +1487,13 @@ static int my_prepare_op_array_for_execution(zend_op_array* dst, zend_op_array* 
 #ifdef ZEND_ENGINE_2_3
                 case ZEND_JMP_SET:
 #endif
+#ifdef ZEND_ENGINE_2_4
+                    dzo->op2.jmp_addr = dst->opcodes +
+                                            (zo->op2.jmp_addr - src->opcodes);
+#else
                     dzo->op2.u.jmp_addr = dst->opcodes +
                                             (zo->op2.u.jmp_addr - src->opcodes);
+#endif
                     break;
                 case ZEND_FETCH_R:
                 case ZEND_FETCH_W:
