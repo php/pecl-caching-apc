@@ -240,6 +240,8 @@ static zval* my_unserialize_object(zval* dst, const zval* src, apc_context_t* ct
 #ifdef ZEND_ENGINE_2_4
 static char *apc_string_pmemcpy(char *str, size_t len, apc_pool* pool)
 {
+	TSRMLS_FETCH();
+	
     if (pool->type != APC_UNPOOL) {
         char * ret = apc_new_interned_string(str, len TSRMLS_CC);
         if (ret) {
