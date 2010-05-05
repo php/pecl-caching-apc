@@ -689,7 +689,7 @@ apc_bd_t* apc_bin_dump(HashTable *files, HashTable *user_vars TSRMLS_DC) {
                 ep->val.user.info = apc_bd_alloc(sp->value->data.user.info_len+1);
                 memcpy(ep->val.user.info, sp->value->data.user.info, sp->value->data.user.info_len+1);
                 ep->val.user.info_len = sp->value->data.user.info_len;
-                ep->val.user.val = apc_copy_zval(NULL, sp->value->data.user.val, &ctxt);
+                ep->val.user.val = apc_copy_zval(NULL, sp->value->data.user.val, &ctxt TSRMLS_CC);
                 ep->val.user.ttl = sp->value->data.user.ttl;
 
                 /* swizzle pointers */
@@ -752,7 +752,7 @@ apc_bd_t* apc_bin_dump(HashTable *files, HashTable *user_vars TSRMLS_DC) {
                     for(fcount=0; fcount < ep->num_classes; fcount++) {
                         ep->val.file.classes[fcount].name = apc_xmemcpy(sp->value->data.file.classes[fcount].name, sp->value->data.file.classes[fcount].name_len+1, apc_bd_alloc);
                         ep->val.file.classes[fcount].name_len = sp->value->data.file.classes[fcount].name_len;
-                        ep->val.file.classes[fcount].class_entry = apc_copy_class_entry(NULL, sp->value->data.file.classes[fcount].class_entry, &ctxt);
+                        ep->val.file.classes[fcount].class_entry = apc_copy_class_entry(NULL, sp->value->data.file.classes[fcount].class_entry, &ctxt TSRMLS_CC);
                         ep->val.file.classes[fcount].parent_name = apc_xstrdup(sp->value->data.file.classes[fcount].parent_name, apc_bd_alloc);
 
                         apc_swizzle_ptr(bd, &ll, &ep->val.file.classes[fcount].name);
@@ -887,7 +887,7 @@ int apc_bin_load(apc_bd_t *bd, int flags TSRMLS_DC) {
                         goto failure;
                     }
                     alloc_classes[i2].name_len = ep->val.file.classes[i2].name_len;
-                    if(! (alloc_classes[i2].class_entry = apc_copy_class_entry(NULL, ep->val.file.classes[i2].class_entry, &ctxt))) {
+                    if(! (alloc_classes[i2].class_entry = apc_copy_class_entry(NULL, ep->val.file.classes[i2].class_entry, &ctxt TSRMLS_CC))) {
                         goto failure;
                     }
                     apc_bin_fixup_class_entry(alloc_classes[i2].class_entry);

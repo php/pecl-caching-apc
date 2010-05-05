@@ -84,10 +84,10 @@ struct apc_opflags_t {
  */
 
 extern zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_context_t* ctxt TSRMLS_DC);
-extern zend_class_entry* apc_copy_class_entry(zend_class_entry* dst, zend_class_entry* src, apc_context_t* ctxt);
+extern zend_class_entry* apc_copy_class_entry(zend_class_entry* dst, zend_class_entry* src, apc_context_t* ctxt TSRMLS_DC);
 extern apc_function_t* apc_copy_new_functions(int old_count, apc_context_t* ctxt TSRMLS_DC);
 extern apc_class_t* apc_copy_new_classes(zend_op_array* op_array, int old_count, apc_context_t* ctxt TSRMLS_DC);
-extern zval* apc_copy_zval(zval* dst, const zval* src, apc_context_t* ctxt);
+extern zval* apc_copy_zval(zval* dst, const zval* src, apc_context_t* ctxt TSRMLS_DC);
 
 #if 0
 /*
@@ -108,8 +108,8 @@ extern void apc_free_zval(zval* src, apc_context_t* ctxt);
  */
 
 extern zend_op_array* apc_copy_op_array_for_execution(zend_op_array* dst, zend_op_array* src, apc_context_t* ctxt TSRMLS_DC);
-extern zend_function* apc_copy_function_for_execution(zend_function* src, apc_context_t* ctxt);
-extern zend_class_entry* apc_copy_class_entry_for_execution(zend_class_entry* src, apc_context_t* ctxt);
+extern zend_function* apc_copy_function_for_execution(zend_function* src, apc_context_t* ctxt TSRMLS_DC);
+extern zend_class_entry* apc_copy_class_entry_for_execution(zend_class_entry* src, apc_context_t* ctxt TSRMLS_DC);
 
 /*
  * The "free-after-execution" function performs a cursory clean up of the class data

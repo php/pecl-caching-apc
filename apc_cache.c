@@ -979,11 +979,11 @@ zval* apc_cache_store_zval(zval* dst, const zval* src, apc_context_t* ctxt)
     if (Z_TYPE_P(src) == IS_ARRAY) {
         /* Maintain a list of zvals we've copied to properly handle recursive structures */
         zend_hash_init(&APCG(copied_zvals), 0, NULL, NULL, 0);
-        dst = apc_copy_zval(dst, src, ctxt);
+        dst = apc_copy_zval(dst, src, ctxt TSRMLS_CC);
         zend_hash_destroy(&APCG(copied_zvals));
         APCG(copied_zvals).nTableSize=0;
     } else {
-        dst = apc_copy_zval(dst, src, ctxt);
+        dst = apc_copy_zval(dst, src, ctxt TSRMLS_CC);
     }
 
 
@@ -999,11 +999,11 @@ zval* apc_cache_fetch_zval(zval* dst, const zval* src, apc_context_t* ctxt)
     if (Z_TYPE_P(src) == IS_ARRAY) {
         /* Maintain a list of zvals we've copied to properly handle recursive structures */
         zend_hash_init(&APCG(copied_zvals), 0, NULL, NULL, 0);
-        dst = apc_copy_zval(dst, src, ctxt);
+        dst = apc_copy_zval(dst, src, ctxt TSRMLS_CC);
         zend_hash_destroy(&APCG(copied_zvals));
         APCG(copied_zvals).nTableSize=0;
     } else {
-        dst = apc_copy_zval(dst, src, ctxt);
+        dst = apc_copy_zval(dst, src, ctxt TSRMLS_CC);
     }
 
 

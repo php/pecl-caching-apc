@@ -79,7 +79,7 @@ static int install_function(apc_function_t fn, apc_context_t* ctxt, int lazy TSR
                               sizeof(apc_function_t),
                               NULL);
     } else {
-        zend_function *func = apc_copy_function_for_execution(fn.function, ctxt);
+        zend_function *func = apc_copy_function_for_execution(fn.function, ctxt TSRMLS_CC);
         status = zend_hash_add(EG(function_table),
                               fn.name,
                               fn.name_len+1,
@@ -108,7 +108,7 @@ int apc_lookup_function_hook(char *name, int len, ulong hash, zend_function **fe
     ctxt.copy = APC_COPY_OUT_OPCODE;
 
     if(zend_hash_quick_find(APCG(lazy_function_table), name, len, hash, (void**)&fn) == SUCCESS) {
-        *fe = apc_copy_function_for_execution(fn->function, &ctxt);
+        *fe = apc_copy_function_for_execution(fn->function, &ctxt TSRMLS_CC);
         status = zend_hash_add(EG(function_table),
                                   fn->name,
                                   fn->name_len+1,
@@ -167,7 +167,7 @@ static int install_class(apc_class_t cl, apc_context_t* ctxt, int lazy TSRMLS_DC
 
     *allocated_ce =
     class_entry =
-        apc_copy_class_entry_for_execution(cl.class_entry, ctxt);
+        apc_copy_class_entry_for_execution(cl.class_entry, ctxt TSRMLS_CC);
 
 
     /* restore parent class pointer for compile-time inheritance */
