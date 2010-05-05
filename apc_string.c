@@ -131,7 +131,7 @@ static char *apc_new_interned_string_for_php(char *arKey, int nKeyLength, int fr
     char *ret;
 
     LOCK(APCSG(lock))
-    ret = apc_new_interned_string(arKey, nKeyLength TSRMLS_DC);
+    ret = apc_new_interned_string(arKey, nKeyLength TSRMLS_CC);
     if (ret == NULL) {
         UNLOCK(APCSG(lock));
     	ret = arKey;
