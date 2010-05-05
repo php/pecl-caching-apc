@@ -60,8 +60,8 @@ static zend_function* my_bitwise_copy_function(zend_function*, zend_function*, a
  */
 static zval** my_copy_zval_ptr(zval**, const zval**, apc_context_t* TSRMLS_DC);
 static zval* my_copy_zval(zval*, const zval*, apc_context_t* TSRMLS_DC);
-static znode* my_copy_znode(znode*, znode*, apc_context_t*);
-static zend_op* my_copy_zend_op(zend_op*, zend_op*, apc_context_t*);
+static znode* my_copy_znode(znode*, znode*, apc_context_t* TSRMLS_DC);
+static zend_op* my_copy_zend_op(zend_op*, zend_op*, apc_context_t* TSRMLS_DC);
 static zend_function* my_copy_function(zend_function*, zend_function*, apc_context_t* TSRMLS_DC);
 static zend_function_entry* my_copy_function_entry(zend_function_entry*, const zend_function_entry*, apc_context_t* TSRMLS_DC);
 static zend_class_entry* my_copy_class_entry(zend_class_entry*, zend_class_entry*, apc_context_t* TSRMLS_DC);
@@ -234,20 +234,18 @@ static zval* my_unserialize_object(zval* dst, const zval* src, apc_context_t* ct
 }
 /* }}} */
 
-#ifdef ZEND_ENGINE_2_4
 static char *apc_string_pmemcpy(char *str, size_t len, apc_pool* pool TSRMLS_DC)
 {	
+#ifdef ZEND_ENGINE_2_4
     if (pool->type != APC_UNPOOL) {
         char * ret = apc_new_interned_string(str, len TSRMLS_CC);
         if (ret) {
             return ret;
         }
     }
+#endif
     return apc_pmemcpy(str, len, pool);
 }
-#else
-# define apc_string_pmemcpy(str, len, pool) apc_pmemcpy(str, len, pool)
-#endif
 
 /* {{{ my_copy_zval */
 static zval* my_copy_zval(zval* dst, const zval* src, apc_context_t* ctxt TSRMLS_DC)
@@ -332,7 +330,7 @@ static zval* my_copy_zval(zval* dst, const zval* src, apc_context_t* ctxt TSRMLS
 
 #ifdef ZEND_ENGINE_2_4
 /* {{{ my_copy_znode */
-static void my_check_znode(zend_uchar op_type, apc_context_t* ctxt)
+static void my_check_znode(zend_uchar op_type, apc_context_t* ctxt TSRMLS_DC)
 {
     assert(op_type == IS_CONST ||
            op_type == IS_VAR ||
@@ -359,7 +357,7 @@ static zend_op* my_copy_zend_op(zend_op* dst, zend_op* src, apc_context_t* ctxt)
 /* }}} */
 #else
 /* {{{ my_copy_znode */
-static znode* my_copy_znode(znode* dst, znode* src, apc_context_t* ctxt)
+static znode* my_copy_znode(znode* dst, znode* src, apc_context_t* ctxt TSRMLS_DC)
 {
     assert(dst != NULL);
     assert(src != NULL);
@@ -390,16 +388,16 @@ static znode* my_copy_znode(znode* dst, znode* src, apc_context_t* ctxt)
 /* }}} */
 
 /* {{{ my_copy_zend_op */
-static zend_op* my_copy_zend_op(zend_op* dst, zend_op* src, apc_context_t* ctxt)
+static zend_op* my_copy_zend_op(zend_op* dst, zend_op* src, apc_context_t* ctxt TSRMLS_DC)
 {
     assert(dst != NULL);
     assert(src != NULL);
 
     memcpy(dst, src, sizeof(src[0]));
 
-    CHECK(my_copy_znode(&dst->result, &src->result, ctxt));
-    CHECK(my_copy_znode(&dst->op1, &src->op1, ctxt));
-    CHECK(my_copy_znode(&dst->op2, &src->op2, ctxt));
+    CHECK(my_copy_znode(&dst->result, &src->result, ctxt TSRMLS_CC));
+    CHECK(my_copy_znode(&dst->op1, &src->op1, ctxt TSRMLS_CC));
+    CHECK(my_copy_znode(&dst->op2, &src->op2, ctxt TSRMLS_CC));
 
     return dst;
 }
@@ -1128,7 +1126,7 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_con
                 break;
         }
 
-        if(!(my_copy_zend_op(dst->opcodes+i, src->opcodes+i, ctxt))) {
+        if(!(my_copy_zend_op(dst->opcodes+i, src->opcodes+i, ctxt TSRMLS_CC))) {
             return NULL;
         }
 
@@ -1457,7 +1455,7 @@ static int my_prepare_op_array_for_execution(zend_op_array* dst, zend_op_array* 
                 ((zo->op2.op_type == IS_CONST &&
                   zo->op2.u.constant.type == IS_CONSTANT_ARRAY))) {
 
-                if(!(my_copy_zend_op(dzo, zo, ctxt))) {
+                if(!(my_copy_zend_op(dzo, zo, ctxt TSRMLS_CC))) {
                     assert(0); /* emalloc failed or a bad constant array */
                 }
             }
