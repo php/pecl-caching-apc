@@ -341,16 +341,16 @@ static void my_check_znode(zend_uchar op_type, apc_context_t* ctxt TSRMLS_DC)
 /* }}} */
 
 /* {{{ my_copy_zend_op */
-static zend_op* my_copy_zend_op(zend_op* dst, zend_op* src, apc_context_t* ctxt)
+static zend_op* my_copy_zend_op(zend_op* dst, zend_op* src, apc_context_t* ctxt TSRMLS_DC)
 {
     assert(dst != NULL);
     assert(src != NULL);
 
     memcpy(dst, src, sizeof(src[0]));
 
-    my_check_znode(dst->result_type & ~EXT_TYPE_UNUSED, ctxt);
-    my_check_znode(dst->op1_type, ctxt);
-    my_check_znode(dst->op2_type, ctxt);
+    my_check_znode(dst->result_type & ~EXT_TYPE_UNUSED, ctxt TSRMLS_CC);
+    my_check_znode(dst->op1_type, ctxt TSRMLS_CC);
+    my_check_znode(dst->op2_type, ctxt TSRMLS_CC);
 
     return dst;
 }
