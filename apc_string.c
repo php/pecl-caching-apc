@@ -48,7 +48,7 @@ apc_interned_strings_data_t *apc_interned_strings_data = NULL;
 
 static char *old_interned_strings_start;
 static char *old_interned_strings_end;
-static char *(*old_new_interned_string)(char *str, int len, int free_src);
+static char *(*old_new_interned_string)(char *str, int len, int free_src TSRMLS_DC);
 static void (*old_interned_strings_snapshot)(TSRMLS_D);
 static void (*old_interned_strings_restore)(TSRMLS_D);
 
@@ -144,12 +144,12 @@ static char *apc_new_interned_string_for_php(char *arKey, int nKeyLength, int fr
     return ret;
 }
 
-int apc_interned_strings_disable(TSRMLS_D)
+void apc_interned_strings_disable(TSRMLS_D)
 {
     CG(new_interned_string) = apc_dummy_new_interned_string_for_php;
 }
 
-int apc_interned_strings_enable(TSRMLS_D)
+void apc_interned_strings_enable(TSRMLS_D)
 {
     CG(new_interned_string) = apc_new_interned_string_for_php;
 }
@@ -266,9 +266,9 @@ void apc_interned_strings_init(TSRMLS_D)
 
 void apc_interned_strings_shutdown(TSRMLS_D)
 {	
-	zend_hash_clean(CG(function_table));
-	zend_hash_clean(CG(class_table));
-	zend_hash_clean(EG(zend_constants));
+    zend_hash_clean(CG(function_table));
+    zend_hash_clean(CG(class_table));
+    zend_hash_clean(EG(zend_constants));
 
     CG(interned_strings_start) = old_interned_strings_start;
     CG(interned_strings_end) = old_interned_strings_end;
@@ -276,7 +276,7 @@ void apc_interned_strings_shutdown(TSRMLS_D)
     CG(interned_strings_snapshot) = old_interned_strings_snapshot;
     CG(interned_strings_restore) = old_interned_strings_restore;
 
-	DESTROY_LOCK(APCSG(lock));
+    DESTROY_LOCK(APCSG(lock));
 }
 
 #endif

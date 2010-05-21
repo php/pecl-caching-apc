@@ -573,11 +573,11 @@ static zend_arg_info* my_copy_arg_info(zend_arg_info* dst, const zend_arg_info* 
     dst->class_name = NULL;
 
     if (src->name) {
-        CHECK((dst->name = apc_string_pmemcpy(src->name, src->name_len+1, pool TSRMLS_CC)));
+        CHECK((dst->name = apc_string_pmemcpy((char *) src->name, src->name_len+1, pool TSRMLS_CC)));
     }
 
     if (src->class_name) {
-        CHECK((dst->class_name = apc_string_pmemcpy(src->class_name, src->class_name_len+1, pool TSRMLS_CC)));
+        CHECK((dst->class_name = apc_string_pmemcpy((char *) src->class_name, src->class_name_len+1, pool TSRMLS_CC)));
     }
 
     return dst;
@@ -1148,7 +1148,7 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_con
             if((zo->opcode == ZEND_INCLUDE_OR_EVAL) && 
                 (zo->op1_type == IS_CONST && Z_TYPE_P(zo->op1.zv) == IS_STRING)) {
                 /* constant includes */
-                if(!IS_ABSOLUTE_PATH(Z_STRVAL_P(zo->op1.zv),Z_STRLEN_P(&zo->op1.zv))) { 
+                if(!IS_ABSOLUTE_PATH(Z_STRVAL_P(zo->op1.zv),Z_STRLEN_P(zo->op1.zv))) { 
                     if (apc_search_paths(Z_STRVAL_P(zo->op1.zv), PG(include_path), &fileinfo) == 0) {
 #else
             if((zo->opcode == ZEND_INCLUDE_OR_EVAL) && 
