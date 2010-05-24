@@ -1473,7 +1473,7 @@ PHP_FUNCTION(apc_bin_dump) {
     if(bd) {
         RETVAL_STRINGL((char*)bd, bd->size-1, 0);
     } else {
-        apc_eprint("Unkown error encounterd during apc_bin_dump.");
+        apc_eprint("Unknown error encountered during apc_bin_dump.");
         RETVAL_NULL();
     }
 
@@ -1515,7 +1515,7 @@ PHP_FUNCTION(apc_bin_dumpfile) {
     h_user_vars = z_user_vars ? Z_ARRVAL_P(z_user_vars) : NULL;
     bd = apc_bin_dump(h_files, h_user_vars TSRMLS_CC);
     if(!bd) {
-        apc_eprint("Unkown error uncountered during apc binary dump.");
+        apc_eprint("Unknown error encountered during apc_bin_dumpfile.");
         RETURN_FALSE;
     }
 
