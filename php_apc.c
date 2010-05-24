@@ -2026,7 +2026,7 @@ PHP_FUNCTION(apc_bin_dump) {
     if(bd) {
         RETVAL_STRINGL((char*)bd, bd->size-1, 0);
     } else {
-        apc_eprint("Unkown error encounterd during apc_bin_dump.");
+        apc_eprint("Unknown error encountered during apc_bin_dump.");
         RETVAL_NULL();
     }
 
@@ -2072,7 +2072,7 @@ PHP_FUNCTION(apc_bin_dumpfile) {
     APCG(current_cache) = NULL;
 
     if(!bd) {
-        apc_eprint("Unkown error uncountered during apc binary dump.");
+        apc_eprint("Unknown error encountered during apc_bin_dumpfile");
         RETURN_FALSE;
     }
 
