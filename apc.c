@@ -113,85 +113,25 @@ void* apc_xmemcpy(const void* p, size_t n, apc_malloc_t f)
 
 /* {{{ console display functions */
 
-static void my_log(int level, const char* fmt, va_list args)
-{
-    static const char* level_strings[] = {
-        "apc-debug",
-        "apc-notice",
-        "apc-warning",
-        "apc-error"
-    };
-    static const int num_levels = NELEMS(level_strings);
+#define apc_print(name, level) void apc_##name(const char* fmt, ...) { \
+		TSRMLS_FETCH();\
+    	va_list args;\
+	    va_start(args, fmt);\
+		php_verror(NULL, "", level, fmt, args TSRMLS_CC);\
+    	va_end(args);\
+	}
 
-    time_t now;
-    char* buf;          /* for ctime */
-
-    TSRMLS_FETCH();
-
-    fflush(stdout);
-
-    if (level < 0)
-        level = 0;
-    else if (level >= num_levels)
-        level = num_levels-1;
-
-    now = time(0);
-    buf = ctime(&now);  /* TODO: replace with reentrant impl */
-    buf[24] = '\0';
-
-    fprintf(stderr, "[%s] [%s] ", buf, level_strings[level]);
-    vfprintf(stderr, fmt, args);
-
-    if (fmt[0] != '\0' && fmt[strlen(fmt)-1] == ':') {
-        fprintf(stderr, " %s", strerror(errno));
-    }
-
-    if (zend_is_compiling(TSRMLS_C)) {
-        fprintf(stderr, " in %s on line %d.", zend_get_compiled_filename(TSRMLS_C), zend_get_compiled_lineno(TSRMLS_C)); 
-    } else if (zend_is_executing(TSRMLS_C)) {
-        fprintf(stderr, " in %s on line %d.", zend_get_executed_filename(TSRMLS_C), zend_get_executed_lineno(TSRMLS_C)); 
-    }
-    fprintf(stderr, "\n"); 
-
-    if (level == APC_ERROR) {
-        exit(2);
-    }
-}
-
-void apc_eprint(const char* fmt, ...)
-{
-    va_list args;
-    va_start(args, fmt);
-    my_log(APC_ERROR, fmt, args);
-    va_end(args);
-}
-
-void apc_wprint(const char* fmt, ...)
-{
-    va_list args;
-    va_start(args, fmt);
-    my_log(APC_WARNING, fmt, args);
-    va_end(args);
-}
-
-void apc_nprint(const char* fmt, ...)
-{
-    va_list args;
-    va_start(args, fmt);
-    my_log(APC_NOTICE, fmt, args);
-    va_end(args);
-}
-
-void apc_dprint(const char* fmt, ...)
-{
+apc_print(eprint, E_ERROR);
+apc_print(wprint, E_WARNING);
+apc_print(nprint, E_NOTICE);
 #ifdef APC_DEBUG
-    va_list args;
-    va_start(args, fmt);
-    my_log(APC_DBG, fmt, args);
-    va_end(args);
+	apc_print(dprint, E_NOTICE);
+#else
+	void apc_dprint(const char* fmt, ...) 
+	{
+		/* do nothing */
+	}
 #endif
-}
-
 /* }}} */
 
 /* {{{ string and text manipulation */

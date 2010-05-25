@@ -61,9 +61,6 @@
 #include "php.h"
 #include "main/php_streams.h"
 
-/* log levels constants (see my_log) */
-enum { APC_DBG, APC_NOTICE, APC_WARNING, APC_ERROR };
-
 /* typedefs for extensible memory allocators */
 typedef void* (*apc_malloc_t)(size_t);
 typedef void  (*apc_free_t)  (void*);
