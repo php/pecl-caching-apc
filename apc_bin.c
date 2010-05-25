@@ -289,12 +289,38 @@ static void apc_swizzle_class_entry(apc_bd_t *bd, zend_llist *ll, zend_class_ent
 #endif
 
     apc_swizzle_hashtable(bd, ll, &ce->function_table, (apc_swizzle_cb_t)apc_swizzle_function, 0 TSRMLS_CC);
+#ifdef ZEND_ENGINE_2_4
+    if (ce->default_properties_table) {
+        int i;
+
+        for (i = 0; i < ce->default_properties_count; i++) {
+            if (ce->default_properties_table[i]) {
+                apc_swizzle_ptr(bd, ll, &ce->default_properties_table[i]);
+                apc_swizzle_zval(bd, ll, ce->default_properties_table[i] TSRMLS_CC);
+            }
+        }
+    }
+#else
     apc_swizzle_hashtable(bd, ll, &ce->default_properties, (apc_swizzle_cb_t)apc_swizzle_zval, 1 TSRMLS_CC);
+#endif
 
 #ifdef ZEND_ENGINE_2
     apc_swizzle_hashtable(bd, ll, &ce->properties_info, (apc_swizzle_cb_t)apc_swizzle_property_info, 0 TSRMLS_CC);
 #endif
 
+#ifdef ZEND_ENGINE_2_4
+    if (ce->default_static_members_table) {
+        int i;
+
+        for (i = 0; i < ce->default_static_members_count; i++) {
+            if (ce->default_static_members_table[i]) {
+                apc_swizzle_ptr(bd, ll, &ce->default_static_members_table[i]);
+                apc_swizzle_zval(bd, ll, ce->default_static_members_table[i] TSRMLS_CC);
+            }
+        }
+    }
+    ce->static_members_table = ce->default_static_members_table;
+#else
     apc_swizzle_hashtable(bd, ll, &ce->default_static_members, (apc_swizzle_cb_t)apc_swizzle_zval, 1 TSRMLS_CC);
 
     if(ce->static_members != &ce->default_static_members) {
@@ -302,6 +328,7 @@ static void apc_swizzle_class_entry(apc_bd_t *bd, zend_llist *ll, zend_class_ent
     } else {
         apc_swizzle_ptr(bd, ll, &ce->static_members);
     }
+#endif
 
     apc_swizzle_hashtable(bd, ll, &ce->constants_table, (apc_swizzle_cb_t)apc_swizzle_zval, 1 TSRMLS_CC);
 
@@ -603,12 +630,16 @@ static inline void apc_bin_fixup_class_entry(zend_class_entry *ce) {
 
     /* fixup hashtable destructor pointers */
     ce->function_table.pDestructor = (dtor_func_t)zend_function_dtor;
+#ifndef ZEND_ENGINE_2_4
     ce->default_properties.pDestructor = (dtor_func_t)zval_ptr_dtor_wrapper;
+#endif
     ce->properties_info.pDestructor = (dtor_func_t)zval_ptr_dtor_wrapper;
+#ifndef ZEND_ENGINE_2_4
     ce->default_static_members.pDestructor = (dtor_func_t)zval_ptr_dtor_wrapper;
     if (ce->static_members) {
         ce->static_members->pDestructor = (dtor_func_t)zval_ptr_dtor_wrapper;
     }
+#endif
     ce->constants_table.pDestructor = (dtor_func_t)zval_ptr_dtor_wrapper;
 }
 /* }}} */

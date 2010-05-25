@@ -608,13 +608,10 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
     dst->name = NULL;
     dst->builtin_functions = NULL;
     memset(&dst->function_table, 0, sizeof(dst->function_table));
-    memset(&dst->default_properties, 0, sizeof(dst->default_properties));
-    dst->static_members = NULL;
     dst->doc_comment = NULL;
     dst->filename = NULL;
     memset(&dst->properties_info, 0, sizeof(dst->properties_info));
     memset(&dst->constants_table, 0, sizeof(dst->constants_table));
-    memset(&dst->default_static_members, 0, sizeof(dst->default_static_members));
 
     if (src->name) {
         CHECK((dst->name = apc_pstrdup(src->name, pool)));
@@ -669,6 +666,22 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
 
     my_fixup_hashtable(&dst->function_table, (ht_fixup_fun_t)my_fixup_function, src, dst);
 
+#ifdef ZEND_ENGINE_2_4
+	dst->default_properties_count = src->default_properties_count;
+    if (src->default_properties_count) {
+        CHECK(dst->default_properties_table = (zval**) apc_pool_alloc(pool, sizeof(zval*) * src->default_properties_count));
+        for (i = 0; i < src->default_properties_count; i++) {
+            if (src->default_properties_table[i]) {
+                my_copy_zval_ptr(&dst->default_properties_table[i], (const zval**)&src->default_properties_table[i], ctxt TSRMLS_CC);
+            } else {
+                dst->default_properties_table[i] = NULL;
+            }
+        }
+    } else {
+        dst->default_properties_table = NULL;
+    }
+#else
+    memset(&dst->default_properties, 0, sizeof(dst->default_properties));
     CHECK((my_copy_hashtable_ex(&dst->default_properties,
                             &src->default_properties TSRMLS_CC,
                             (ht_copy_fun_t) my_copy_zval_ptr,
@@ -676,6 +689,7 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
                             ctxt,
                             (ht_check_copy_fun_t) my_check_copy_default_property,
                             src)));
+#endif
 
     CHECK((my_copy_hashtable_ex(&dst->properties_info,
                             &src->properties_info TSRMLS_CC,
@@ -690,6 +704,24 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
     my_fixup_hashtable(&dst->properties_info, (ht_fixup_fun_t)my_fixup_property_info_for_execution, src, dst);
 #endif
 
+#ifdef ZEND_ENGINE_2_4
+	dst->default_static_members_count = src->default_static_members_count;
+    if (src->default_static_members_count) {
+        CHECK(dst->default_static_members_table = (zval**) apc_pool_alloc(pool, sizeof(zval*) * src->default_static_members_count));
+        for (i = 0; i < src->default_static_members_count; i++) {
+            if (src->default_static_members_table[i]) {
+                my_copy_zval_ptr(&dst->default_static_members_table[i], (const zval**)&src->default_static_members_table[i], ctxt TSRMLS_CC);
+            } else {
+                dst->default_static_members_table[i] = NULL;
+            }
+        }
+    } else {
+        dst->default_static_members_table = NULL;
+    }
+    dst->static_members_table = dst->default_static_members_table;
+#else
+    memset(&dst->default_static_members, 0, sizeof(dst->default_static_members));
+    dst->static_members = NULL;
     CHECK(my_copy_hashtable_ex(&dst->default_static_members,
                             &src->default_static_members TSRMLS_CC,
                             (ht_copy_fun_t) my_copy_zval_ptr,
@@ -714,6 +746,7 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
     {
         dst->static_members = &dst->default_static_members;
     }
+#endif
 
     CHECK((my_copy_hashtable(&dst->constants_table,
                             &src->constants_table,
@@ -1569,6 +1602,7 @@ zend_function* apc_copy_function_for_execution_ex(void *dummy, zend_function* sr
 /* {{{ apc_copy_class_entry_for_execution */
 zend_class_entry* apc_copy_class_entry_for_execution(zend_class_entry* src, apc_context_t* ctxt TSRMLS_DC)
 {
+	int i;
     zend_class_entry* dst = (zend_class_entry*) apc_pool_alloc(ctxt->pool, sizeof(src[0]));
     memcpy(dst, src, sizeof(src[0]));
 
@@ -1587,11 +1621,27 @@ zend_class_entry* apc_copy_class_entry_for_execution(zend_class_entry* src, apc_
 
     /* Deep-copy the class properties, because they will be modified */
 
+#ifdef ZEND_ENGINE_2_4
+	dst->default_properties_count = src->default_properties_count;
+    if (src->default_properties_count) {
+        dst->default_properties_table = (zval**) apc_php_malloc(sizeof(zval*) * src->default_properties_count);
+        for (i = 0; i < src->default_properties_count; i++) {
+            if (src->default_properties_table[i]) {
+                my_copy_zval_ptr(&dst->default_properties_table[i], (const zval**)&src->default_properties_table[i], ctxt TSRMLS_CC);
+            } else {
+                dst->default_properties_table[i] = NULL;
+            }
+        }
+    } else {
+        dst->default_properties_table = NULL;
+    }
+#else
     my_copy_hashtable(&dst->default_properties,
                       &src->default_properties,
                       (ht_copy_fun_t) my_copy_zval_ptr,
                       1,
                       ctxt);
+#endif
 
     /* For derived classes, we must also copy the function hashtable (although
      * we can merely bitwise copy the functions it contains) */
@@ -1628,6 +1678,22 @@ zend_class_entry* apc_copy_class_entry_for_execution(zend_class_entry* src, apc_
                       1,
                       ctxt);
 
+#ifdef ZEND_ENGINE_2_4
+	dst->default_static_members_count = src->default_static_members_count;
+    if (src->default_static_members_count) {
+        dst->default_static_members_table = (zval**) apc_php_malloc(sizeof(zval*) * src->default_static_members_count);
+        for (i = 0; i < src->default_static_members_count; i++) {
+            if (src->default_static_members_table[i]) {
+                my_copy_zval_ptr(&dst->default_static_members_table[i], (const zval**)&src->default_static_members_table[i], ctxt TSRMLS_CC);
+            } else {
+                dst->default_static_members_table[i] = NULL;
+            }
+        }
+    } else {
+        dst->default_static_members_table = NULL;
+    }
+    dst->static_members_table = dst->default_static_members_table;
+#else
     my_copy_hashtable(&dst->default_static_members,
                       &src->default_static_members,
                       (ht_copy_fun_t) my_copy_zval_ptr,
@@ -1646,7 +1712,7 @@ zend_class_entry* apc_copy_class_entry_for_execution(zend_class_entry* src, apc_
     {
         dst->static_members = &(dst->default_static_members);
     }
-
+#endif
 
     return dst;
 }
@@ -1662,6 +1728,29 @@ void apc_free_class_entry_after_execution(zend_class_entry* src)
     }
     /* my_destroy_hashtable() does not play nice with refcounts */
 
+#ifdef ZEND_ENGINE_2_4
+    if (src->default_static_members_table) {
+       int i;
+
+       for (i = 0; i < src->default_static_members_count; i++) {
+          zval_ptr_dtor(&src->default_static_members_table[i]);
+       }
+       efree(src->default_static_members_table);
+       src->default_static_members_table = NULL;
+    }
+    src->static_members_table = NULL;
+    if (src->default_properties_table) {
+       int i;
+
+       for (i = 0; i < src->default_properties_count; i++) {
+           if (src->default_properties_table[i]) {
+               zval_ptr_dtor(&src->default_properties_table[i]);
+           }
+       }
+       efree(src->default_properties_table);
+       src->default_properties_table = NULL;
+    }
+#else
     zend_hash_clean(&src->default_static_members);
     if(src->static_members != &(src->default_static_members))
     {
@@ -1673,7 +1762,9 @@ void apc_free_class_entry_after_execution(zend_class_entry* src)
     {
         src->static_members = NULL;
     }
+
     zend_hash_clean(&src->default_properties);
+#endif
     zend_hash_clean(&src->constants_table);
 
     /* TODO: more cleanup */
@@ -1821,6 +1912,7 @@ static int my_check_copy_function(Bucket* p, va_list args)
 }
 /* }}} */
 
+#ifndef ZEND_ENGINE_2_4
 /* {{{ my_check_copy_default_property */
 static int my_check_copy_default_property(Bucket* p, va_list args)
 {
@@ -1843,7 +1935,7 @@ static int my_check_copy_default_property(Bucket* p, va_list args)
     return 1;
 }
 /* }}} */
-
+#endif
 
 /* {{{ my_check_copy_property_info */
 static int my_check_copy_property_info(Bucket* p, va_list args)
@@ -1880,6 +1972,7 @@ static int my_check_copy_property_info(Bucket* p, va_list args)
 }
 /* }}} */
 
+#ifndef ZEND_ENGINE_2_4
 /* {{{ my_check_copy_static_member */
 static int my_check_copy_static_member(Bucket* p, va_list args)
 {
@@ -1938,6 +2031,7 @@ static int my_check_copy_static_member(Bucket* p, va_list args)
     return 1;
 }
 /* }}} */
+#endif
 
 /* {{{ apc_register_optimizer(apc_optimize_function_t optimizer)
  *      register a optimizer callback function, returns the previous callback
