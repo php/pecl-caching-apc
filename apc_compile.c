@@ -593,7 +593,7 @@ zend_class_entry* apc_copy_class_entry(zend_class_entry* dst, zend_class_entry* 
 /* {{{ my_copy_class_entry */
 static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_entry* src, apc_context_t* ctxt TSRMLS_DC)
 {
-    uint i = 0;
+    int i = 0;
     apc_pool* pool = ctxt->pool;
 
     assert(src != NULL);
@@ -633,7 +633,7 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
     /* the current count includes inherited interfaces as well,
        the real dynamic ones are the first <n> which are zero'd
        out in zend_do_end_class_declaration */
-    for(i = 0 ; i < src->num_interfaces ; i++) {
+    for(i = 0 ; (uint)i < src->num_interfaces ; i++) {
         if(src->interfaces[i])
         {
             dst->num_interfaces = i;
@@ -705,7 +705,8 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
 #endif
 
 #ifdef ZEND_ENGINE_2_4
-	dst->default_static_members_count = src->default_static_members_count;
+    dst->default_static_members_count = src->default_static_members_count;
+
     if (src->default_static_members_count) {
         CHECK(dst->default_static_members_table = (zval**) apc_pool_alloc(pool, sizeof(zval*) * src->default_static_members_count));
         for (i = 0; i < src->default_static_members_count; i++) {
