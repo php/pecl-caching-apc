@@ -78,12 +78,12 @@ struct _apc_pool {
 };
 
 #define apc_pool_alloc(pool, size) ((pool)->palloc((pool), (size)))
-#define apc_pool_free (pool, ptr)  ((pool)->pfree((pool), (ptr)))
+#define apc_pool_free(pool, ptr)  ((pool)->pfree((pool), (ptr)))
 
-#define apc_pool_protect (pool, ptr)  (pool->protect ? \
+#define apc_pool_protect(pool, ptr)  (pool->protect ? \
 										(pool)->protect((ptr)) : (ptr))
 
-#define apc_pool_unprotect (pool, ptr)  (pool->unprotect ? \
+#define apc_pool_unprotect(pool, ptr)  (pool->unprotect ? \
 											(pool)->unprotect((ptr)) : (ptr))
 
 extern void apc_pool_init();
