@@ -784,7 +784,7 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
 }
 /* }}} */
 
-/* {{{ my_copy_hashtable */
+/* {{{ my_copy_hashtable_ex */
 static HashTable* my_copy_hashtable_ex(HashTable* dst,
                                     HashTable* src TSRMLS_DC,
                                     ht_copy_fun_t copy_fn,

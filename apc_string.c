@@ -126,7 +126,7 @@ char *apc_new_interned_string(char *arKey, int nKeyLength TSRMLS_DC)
     return p->arKey;
 }
 
-static void apc_copy_interal_strings(TSRMLS_D)
+static void apc_copy_internal_strings(TSRMLS_D)
 {
     Bucket *p, *q;
 
@@ -217,7 +217,7 @@ void apc_interned_strings_init(TSRMLS_D)
     zend_interned_strings_snapshot = apc_dummy_interned_strings_snapshot_for_php;
     zend_interned_strings_restore = apc_dummy_interned_strings_restore_for_php;
 
-    apc_copy_interal_strings(TSRMLS_C);
+    apc_copy_internal_strings(TSRMLS_C);
 }
 
 void apc_interned_strings_shutdown(TSRMLS_D)
