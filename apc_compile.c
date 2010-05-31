@@ -1603,7 +1603,9 @@ zend_function* apc_copy_function_for_execution_ex(void *dummy, zend_function* sr
 /* {{{ apc_copy_class_entry_for_execution */
 zend_class_entry* apc_copy_class_entry_for_execution(zend_class_entry* src, apc_context_t* ctxt TSRMLS_DC)
 {
-	int i;
+#ifdef ZEND_ENGINE_2_4
+    int i;
+#endif
     zend_class_entry* dst = (zend_class_entry*) apc_pool_alloc(ctxt->pool, sizeof(src[0]));
     memcpy(dst, src, sizeof(src[0]));
 
