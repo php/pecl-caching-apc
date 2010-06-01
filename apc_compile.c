@@ -755,8 +755,8 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
                             (ht_copy_fun_t) my_copy_zval_ptr,
                             1,
                             ctxt,
-							(ht_check_copy_fun_t) my_check_copy_constant,
-							src)));
+                            (ht_check_copy_fun_t) my_check_copy_constant,
+                            src)));
 
     if (src->doc_comment) {
         CHECK(dst->doc_comment =
