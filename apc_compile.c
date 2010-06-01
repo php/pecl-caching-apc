@@ -96,6 +96,7 @@ static int my_check_copy_function(Bucket* src, va_list args);
 static int my_check_copy_default_property(Bucket* p, va_list args);
 static int my_check_copy_property_info(Bucket* src, va_list args);
 static int my_check_copy_static_member(Bucket* src, va_list args);
+static int my_check_copy_constant(Bucket* src, va_list args);
 
 /* }}} */
 
@@ -749,11 +750,13 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
     }
 #endif
 
-    CHECK((my_copy_hashtable(&dst->constants_table,
+    CHECK((my_copy_hashtable_ex(&dst->constants_table,
                             &src->constants_table,
                             (ht_copy_fun_t) my_copy_zval_ptr,
                             1,
-                            ctxt)));
+                            ctxt,
+							(ht_check_copy_fun_t) my_check_copy_constant,
+							src)));
 
     if (src->doc_comment) {
         CHECK(dst->doc_comment =
@@ -2035,6 +2038,29 @@ static int my_check_copy_static_member(Bucket* p, va_list args)
 }
 /* }}} */
 #endif
+
+/* {{{ my_check_copy_constant */
+static int my_check_copy_constant(Bucket* p, va_list args)
+{
+    zend_class_entry* src = va_arg(args, zend_class_entry*);
+    zend_class_entry* parent = src->parent;
+    zval ** child_const = (zval**)p->pData;
+    zval ** parent_const = NULL;
+
+    if (parent &&
+        zend_hash_quick_find(&parent->constants_table, p->arKey, 
+            p->nKeyLength, p->h, (void **) &parent_const)==SUCCESS) {
+
+        if((parent_const && child_const) && (*parent_const) == (*child_const))
+        {
+            return 0;
+        }
+    }
+
+    /* possibly not in the parent */
+    return 1;
+}
+/* }}} */
 
 /* {{{ apc_register_optimizer(apc_optimize_function_t optimizer)
  *      register a optimizer callback function, returns the previous callback
