@@ -500,14 +500,21 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
     time_t t;
     apc_context_t ctxt = {0,};
     int bailout=0;
+	const char* filename = NULL;
 
     if (!APCG(enabled) || apc_cache_busy(apc_cache)) {
         return old_compile_file(h, type TSRMLS_CC);
     }
 
+    if(h->opened_path) {
+        filename = h->opened_path;
+    } else {
+        filename = h->filename;
+    }
+
     /* check our regular expression filters */
-    if (APCG(filters) && APCG(compiled_filters) && h->opened_path) {
-        int ret = apc_regex_match_array(APCG(compiled_filters), h->opened_path);
+    if (APCG(filters) && APCG(compiled_filters) && filename) {
+        int ret = apc_regex_match_array(APCG(compiled_filters), filename);
 
         if(ret == APC_NEGATIVE_MATCH || (ret != APC_POSITIVE_MATCH && !APCG(cache_by_default))) {
             return old_compile_file(h, type TSRMLS_CC);
