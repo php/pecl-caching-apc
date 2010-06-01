@@ -751,7 +751,7 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
 #endif
 
     CHECK((my_copy_hashtable_ex(&dst->constants_table,
-                            &src->constants_table,
+                            &src->constants_table TSRMLS_CC,
                             (ht_copy_fun_t) my_copy_zval_ptr,
                             1,
                             ctxt,
