@@ -952,6 +952,9 @@ static void apc_fixup_op_array_jumps(zend_op_array *dst, zend_op_array *src )
         zend_op *zo = &(dst->opcodes[i]);
         /*convert opline number to jump address*/
         switch (zo->opcode) {
+#ifdef ZEND_ENGINE_2_3
+            case ZEND_GOTO:
+#endif
             case ZEND_JMP:
                 /*Note: if src->opcodes != dst->opcodes then we need to the opline according to src*/
 #ifdef ZEND_ENGINE_2_4
@@ -1066,6 +1069,9 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_con
         zend_op *zo = &(src->opcodes[i]);
         /* a lot of files are merely constant arrays with no jumps */
         switch (zo->opcode) {
+#ifdef ZEND_ENGINE_2_3
+            case ZEND_GOTO:
+#endif
             case ZEND_JMP:
             case ZEND_JMPZ:
             case ZEND_JMPNZ:
@@ -1499,6 +1505,9 @@ static int my_prepare_op_array_for_execution(zend_op_array* dst, zend_op_array* 
 #endif
 
             switch(zo->opcode) {
+#ifdef ZEND_ENGINE_2_3
+                case ZEND_GOTO:
+#endif
                 case ZEND_JMP:
 #ifdef ZEND_ENGINE_2_4
                     dzo->op1.jmp_addr = dst->opcodes +
