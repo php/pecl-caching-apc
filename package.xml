@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8" ?>
+﻿<?xml version="1.0" encoding="UTF-8" ?>
 <package xmlns="http://pear.php.net/dtd/package-2.0" xmlns:tasks="http://pear.php.net/dtd/tasks-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" packagerversion="1.4.7" version="2.0" xsi:schemaLocation="http://pear.php.net/dtd/tasks-1.0 http://pear.php.net/dtd/tasks-1.0.xsd http://pear.php.net/dtd/package-2.0 http://pear.php.net/dtd/package-2.0.xsd">
  <name>APC</name>
  <channel>pecl.php.net</channel>
@@ -64,9 +64,15 @@
  <stability><release>beta</release><api>beta</api></stability>
  <license uri="http://www.php.net/license">PHP License</license>
  <notes>
-- Fixed pecl bug #16860, files can be included more than once even when include/require_once are used (Pierre)
 - Windows builds may now have filehits and memory protection if enabled (Kalle)
 - Renamed the memory protection configure option to --enable-apc-memprotect (Kalle, Shire)
+- ZTS fixes and optimizations (Kalle, Felipe)
+- Added support for interned strings, run-time caches and Zend Engine 2.4 (Dmitry)
+- Added apc_exists() (Rasmus)
+- Fixed pecl bug #17650 (Fix goto jump offsets) (Gopal)
+- Fixed pecl bug #17527 (Standardized error reporting) (Gopal, Paul Dragoonis)
+- Fixed pecl bug #17089 (Scrub the constant table of all inherited members before caching) (Gopal)
+- Fixed pecl bug #16860 (files can be included more than once even when include/require_once are used) (Pierre)
 - Fixed pecl bug #16717 (apc_fetch dies after 1 hour, regardless of ttl settings) (Kalle)
  </notes>
 
