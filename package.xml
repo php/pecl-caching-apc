@@ -58,6 +58,12 @@
   <email>shire@php.net</email>
   <active>yes</active>
  </developer>
+ <developer>
+  <name>Kalle Sommer Nielsen</name>
+  <user>kalle</user>
+  <email>kalle@php.net</email>
+  <active>yes</active>
+ </developer>
  
  <date>2009-08-21</date>
  <version><release>3.1.4</release><api>3.1.0</api></version>
