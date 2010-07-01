@@ -216,7 +216,7 @@ extern int apc_cache_user_delete(apc_cache_t* cache, char *strkey, int keylen);
  * zval from it.
  *
  */
-zval* apc_cache_fetch_zval(zval* dst, const zval* src, apc_context_t* ctxt);
+zval* apc_cache_fetch_zval(zval* dst, const zval* src, apc_context_t* ctxt TSRMLS_DC);
 
 /*
  * apc_cache_release decrements the reference count associated with a cache

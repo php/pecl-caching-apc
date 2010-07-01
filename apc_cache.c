@@ -992,10 +992,8 @@ zval* apc_cache_store_zval(zval* dst, const zval* src, apc_context_t* ctxt)
 /* }}} */
 
 /* {{{ apc_cache_fetch_zval */
-zval* apc_cache_fetch_zval(zval* dst, const zval* src, apc_context_t* ctxt)
+zval* apc_cache_fetch_zval(zval* dst, const zval* src, apc_context_t* ctxt TSRMLS_DC)
 {
-    TSRMLS_FETCH();
-
     if (Z_TYPE_P(src) == IS_ARRAY) {
         /* Maintain a list of zvals we've copied to properly handle recursive structures */
         zend_hash_init(&APCG(copied_zvals), 0, NULL, NULL, 0);

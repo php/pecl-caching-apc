@@ -945,7 +945,7 @@ PHP_FUNCTION(apc_fetch) {
         entry = apc_cache_user_find(apc_user_cache, strkey, strkey_len + 1, t);
         if(entry) {
             /* deep-copy returned shm zval to emalloc'ed return_value */
-            apc_cache_fetch_zval(return_value, entry->data.user.val, &ctxt);
+            apc_cache_fetch_zval(return_value, entry->data.user.val, &ctxt TSRMLS_CC);
             apc_cache_release(apc_user_cache, entry);
         } else {
             goto freepool;
@@ -964,7 +964,7 @@ PHP_FUNCTION(apc_fetch) {
             if(entry) {
                 /* deep-copy returned shm zval to emalloc'ed return_value */
                 MAKE_STD_ZVAL(result_entry);
-                apc_cache_fetch_zval(result_entry, entry->data.user.val, &ctxt);
+                apc_cache_fetch_zval(result_entry, entry->data.user.val, &ctxt TSRMLS_CC);
                 apc_cache_release(apc_user_cache, entry);
                 zend_hash_add(Z_ARRVAL_P(result), Z_STRVAL_PP(hentry), Z_STRLEN_PP(hentry) +1, &result_entry, sizeof(zval*), NULL);
             } /* don't set values we didn't find */
