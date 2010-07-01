@@ -939,7 +939,8 @@ apc_cache_entry_t* apc_cache_make_file_entry(const char* filename,
                                         zend_op_array* op_array,
                                         apc_function_t* functions,
                                         apc_class_t* classes,
-                                        apc_context_t* ctxt)
+                                        apc_context_t* ctxt
+					TSRMLS_DC)
 {
     apc_cache_entry_t* entry;
     apc_pool* pool = ctxt->pool;
@@ -961,7 +962,7 @@ apc_cache_entry_t* apc_cache_make_file_entry(const char* filename,
     entry->data.file.functions = functions;
     entry->data.file.classes   = classes;
 
-    entry->data.file.halt_offset = apc_file_halt_offset(filename);
+    entry->data.file.halt_offset = apc_file_halt_offset(filename TSRMLS_CC);
 
     entry->type = APC_CACHE_ENTRY_FILE;
     entry->ref_count = 0;

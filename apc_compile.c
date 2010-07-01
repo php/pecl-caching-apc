@@ -1787,14 +1787,13 @@ void apc_free_class_entry_after_execution(zend_class_entry* src)
 /* }}} */
 
 /* {{{ apc_file_halt_offset */
-long apc_file_halt_offset(const char *filename)
+long apc_file_halt_offset(const char *filename TSRMLS_DC)
 {
     zend_constant *c;
     char *name;
     int len;
     char haltoff[] = "__COMPILER_HALT_OFFSET__";
     long value = -1;
-    TSRMLS_FETCH();
 
     zend_mangle_property_name(&name, &len, haltoff, sizeof(haltoff) - 1, filename, strlen(filename), 0);
     
