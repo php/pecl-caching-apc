@@ -71,6 +71,7 @@ PHP_FUNCTION(apc_bin_dump);
 PHP_FUNCTION(apc_bin_load);
 PHP_FUNCTION(apc_bin_dumpfile);
 PHP_FUNCTION(apc_bin_loadfile);
+PHP_FUNCTION(apc_exists);
 /* }}} */
 
 /* {{{ ZEND_DECLARE_MODULE_GLOBALS(apc) */
@@ -1042,11 +1043,12 @@ PHP_FUNCTION(apc_exists) {
             } /* don't set values we didn't find */
             zend_hash_move_forward_ex(hash, &hpos);
         }
-        RETVAL_ZVAL(result, 0, 1);
+        RETURN_ZVAL(result, 0, 1);
     } else {
         apc_wprint("apc_exists() expects a string or array of strings.");
-        RETURN_FALSE;
     }
+
+    RETURN_FALSE;
 }
 /* }}} */
 
