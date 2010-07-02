@@ -400,7 +400,7 @@ PHP_FUNCTION(apc_cache_info)
 
     if(ZEND_NUM_ARGS()) {
         if(!strcasecmp(cache_type,"user")) {
-            info = apc_cache_info(apc_user_cache, limited);
+            info = apc_cache_info(apc_user_cache, limited TSRMLS_CC);
         } else if(!strcasecmp(cache_type,"filehits")) {
 #ifdef APC_FILEHITS
             RETVAL_ZVAL(APCG(filehits), 1, 0);
@@ -409,9 +409,11 @@ PHP_FUNCTION(apc_cache_info)
             RETURN_FALSE;
 #endif
         } else {
-            info = apc_cache_info(apc_cache, limited);
+            info = apc_cache_info(apc_cache, limited TSRMLS_CC);
         }
-    } else info = apc_cache_info(apc_cache, limited);
+    } else {
+        info = apc_cache_info(apc_cache, limited TSRMLS_CC);
+    }
 
     if(!info) {
         php_error_docref(NULL TSRMLS_CC, E_WARNING, "No APC info available.  Perhaps APC is not enabled? Check apc.enabled in your ini file");
@@ -705,7 +707,7 @@ int _apc_store(char *strkey, int strkey_len, const zval *val, const unsigned int
 	    goto freepool;
     }
 
-    if (!(entry = apc_cache_make_user_entry(strkey, strkey_len, val, &ctxt, ttl))) {
+    if (!(entry = apc_cache_make_user_entry(strkey, strkey_len, val, &ctxt, ttl TSRMLS_CC))) {
         goto freepool;
     }
 
@@ -1113,7 +1115,7 @@ PHP_FUNCTION(apc_delete_file) {
 
     if (Z_TYPE_P(keys) == IS_STRING) {
         if (!Z_STRLEN_P(keys)) RETURN_FALSE;
-        if(apc_cache_delete(apc_cache, Z_STRVAL_P(keys), Z_STRLEN_P(keys) + 1) != 1) {
+        if(apc_cache_delete(apc_cache, Z_STRVAL_P(keys), Z_STRLEN_P(keys) + 1 TSRMLS_CC) != 1) {
             RETURN_FALSE;
         } else {
             RETURN_TRUE;
@@ -1129,7 +1131,7 @@ PHP_FUNCTION(apc_delete_file) {
                 apc_wprint("apc_delete_file() expects a string, array of strings, or APCIterator instance.");
                 add_next_index_zval(return_value, *hentry);
                 Z_ADDREF_PP(hentry);
-            } else if(apc_cache_delete(apc_cache, Z_STRVAL_PP(hentry), Z_STRLEN_PP(hentry) + 1) != 1) {
+            } else if(apc_cache_delete(apc_cache, Z_STRVAL_PP(hentry), Z_STRLEN_PP(hentry) + 1 TSRMLS_CC) != 1) {
                 add_next_index_zval(return_value, *hentry);
                 Z_ADDREF_PP(hentry);
             }

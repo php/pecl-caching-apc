@@ -591,7 +591,7 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
         if(tmp_buf) {
             fileinfo.st_buf.sb = *tmp_buf;
         } else {
-            if (apc_search_paths(h->filename, PG(include_path), &fileinfo) != 0) {
+            if (apc_search_paths(h->filename, PG(include_path), &fileinfo TSRMLS_CC) != 0) {
 #ifdef __DEBUG_APC__
                 fprintf(stderr,"Stat failed %s - bailing (%s) (%d)\n",h->filename,SG(request_info).path_translated);
 #endif

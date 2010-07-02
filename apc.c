@@ -224,7 +224,7 @@ char** apc_tokenize(const char* s, char delim)
 /* similar to php_stream_stat_path */
 #define APC_URL_STAT(wrapper, filename, pstatbuf) \
     ((wrapper)->wops->url_stat((wrapper), (filename), PHP_STREAM_URL_STAT_QUIET, (pstatbuf), NULL TSRMLS_CC))
-int apc_search_paths(const char* filename, const char* path, apc_fileinfo_t* fileinfo)
+int apc_search_paths(const char* filename, const char* path, apc_fileinfo_t* fileinfo TSRMLS_DC)
 {
     char** paths;
     char *exec_fname;
@@ -233,8 +233,6 @@ int apc_search_paths(const char* filename, const char* path, apc_fileinfo_t* fil
     int i;
     php_stream_wrapper *wrapper = NULL;
     char *path_for_open = NULL;
-
-    TSRMLS_FETCH();
 
     assert(filename && fileinfo);
 
