@@ -157,6 +157,11 @@ static inline int _apc_opcode_handler_decode(zend_op *opline)
 #define ZEND_FASTCALL
 #endif
 
+/* Added in ZE2.3.0 */
+#ifndef zend_parse_parameters_none
+# define zend_parse_parameters_none() zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "")
+#endif
+
 
 #endif  /* APC_OPCODE_OVERRIDE */
 

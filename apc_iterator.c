@@ -28,10 +28,6 @@
 
 #include "zend_interfaces.h"
 
-#ifndef zend_parse_parameters_none
-# define zend_parse_parameters_none() zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "")
-#endif
-
 zend_class_entry *apc_iterator_ce;
 zend_object_handlers apc_iterator_object_handlers;
 
