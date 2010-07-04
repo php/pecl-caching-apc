@@ -858,8 +858,8 @@ static HashTable* my_copy_hashtable_ex(HashTable* dst,
         }        
 #else
         CHECK((newp = (Bucket*) apc_pmemcpy(curr,
-                                  sizeof(Bucket) + curr->nKeyLength - 1,
-                                  pool)));
+                                  (sizeof(Bucket) + curr->nKeyLength - 1),
+                                  pool TSRMLS_CC)));
 #endif
 
         /* insert 'newp' into the linked list at its hashed index */
@@ -1212,7 +1212,7 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_con
                             dzo->op1.literal->hash_value = zend_hash_func(Z_STRVAL_P(dzo->op1.zv), Z_STRLEN_P(dzo->op1.zv)+1);
 #else
                             dzo->op1.u.constant.value.str.len = strlen(fullpath);
-                            dzo->op1.u.constant.value.str.val = apc_pstrdup(fullpath, pool);
+                            dzo->op1.u.constant.value.str.val = apc_pstrdup(fullpath, pool TSRMLS_CC);
 #endif
                         }
                     }
@@ -1770,7 +1770,7 @@ void apc_free_class_entry_after_execution(zend_class_entry* src TSRMLS_DC)
     if(src->static_members != &(src->default_static_members))
     {
         zend_hash_destroy(src->static_members);
-        apc_php_free(src->static_members);
+        apc_php_free(src->static_members TSRMLS_CC);
         src->static_members = NULL;
     }
     else
