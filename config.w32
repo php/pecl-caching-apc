@@ -11,9 +11,9 @@ ARG_ENABLE('apc-memprotect', 'Whether to enable memory protection', 'no');
 //
 // - nonblocking locks, see apc_lock.h
 //
-// ARG_ENABLE('apc-mmap', 'Whether to use mmap support', 'yes');
-// ARG_ENABLE('apc-sem', 'Whether to use semaphore locking instead of fcntl', 'no');
-// ARG_ENABLE('apc-pthreadmutex', 'Whether to use pthread mutex locking', 'no');
+// ARG_DUMMY_ENABLE('apc-mmap', 'Whether to use mmap support', 'yes');
+// ARG_DUMMY_ENABLE('apc-sem', 'Whether to use semaphore locking instead of fcntl', 'no');
+// ARG_DUMMY_ENABLE('apc-pthreadmutex', 'Whether to use pthread mutex locking', 'no');
 
 if(PHP_APC != 'no')
 {
