@@ -49,7 +49,7 @@
 
 /* {{{ memory allocation wrappers */
 
-void* apc_emalloc(size_t n)
+void* apc_emalloc(size_t n TSRMLS_DC)
 {
     void* p = malloc(n);
     if (p == NULL) {
@@ -67,7 +67,7 @@ void* apc_erealloc(void* p, size_t n)
     return p;
 }
 
-void apc_efree(void* p)
+void apc_efree(void* p TSRMLS_DC)
 {
     if (p == NULL) {
         apc_eprint("apc_efree: attempt to free null pointer");
@@ -93,16 +93,16 @@ char* apc_estrdup(const char* s)
     return dup;
 }
 
-void* apc_xstrdup(const char* s, apc_malloc_t f)
+void* apc_xstrdup(const char* s, apc_malloc_t f TSRMLS_DC)
 {
-    return s != NULL ? apc_xmemcpy(s, strlen(s)+1, f) : NULL;
+    return s != NULL ? apc_xmemcpy(s, strlen(s)+1, f TSRMLS_CC) : NULL;
 }
 
-void* apc_xmemcpy(const void* p, size_t n, apc_malloc_t f)
+void* apc_xmemcpy(const void* p, size_t n, apc_malloc_t f TSRMLS_DC)
 {
     void* q;
 
-    if (p != NULL && (q = f(n)) != NULL) {
+    if (p != NULL && (q = f(n TSRMLS_CC)) != NULL) {
         memcpy(q, p, n);
         return q;
     }
@@ -136,7 +136,7 @@ apc_print(nprint, E_NOTICE);
 
 /* {{{ string and text manipulation */
 
-char* apc_append(const char* s, const char* t)
+char* apc_append(const char* s, const char* t TSRMLS_DC)
 {
     int slen;
     int tlen;
@@ -145,14 +145,14 @@ char* apc_append(const char* s, const char* t)
     slen = strlen(s);
     tlen = strlen(t);
 
-    p = (char*) apc_emalloc((slen + tlen + 1) * sizeof(char));
+    p = (char*) apc_emalloc((slen + tlen + 1) * sizeof(char) TSRMLS_CC);
     memcpy(p, s, slen);
     memcpy(p + slen, t, tlen + 1);
 
     return p;
 }
 
-char* apc_substr(const char* s, int start, int length)
+char* apc_substr(const char* s, int start, int length TSRMLS_DC)
 {
     char* substr;
     int src_len = strlen(s);
@@ -171,12 +171,12 @@ char* apc_substr(const char* s, int start, int length)
     }
 
     /* create the substring */
-    substr = apc_xmemcpy(s + start, length + 1, apc_emalloc);
+    substr = apc_xmemcpy(s + start, length + 1, apc_emalloc TSRMLS_CC);
     substr[length] = '\0';
     return substr;
 }
 
-char** apc_tokenize(const char* s, char delim)
+char** apc_tokenize(const char* s, char delim TSRMLS_DC)
 {
     char** tokens;      /* array of tokens, NULL terminated */
     int size;           /* size of tokens array */
@@ -194,7 +194,7 @@ char** apc_tokenize(const char* s, char delim)
     cur  = 0;
     end  = strlen(s) - 1;
 
-    tokens = (char**) apc_emalloc(size * sizeof(char*));
+    tokens = (char**) apc_emalloc(size * sizeof(char*) TSRMLS_CC);
     tokens[n] = NULL;
 
     while (cur <= end) {
@@ -209,7 +209,7 @@ char** apc_tokenize(const char* s, char delim)
         }
 
         /* save the current token */
-        tokens[n] = apc_substr(s, cur, next-cur);
+        tokens[n] = apc_substr(s, cur, next-cur TSRMLS_CC);
 
         tokens[++n] = NULL;
         cur = next + 1;
@@ -257,7 +257,7 @@ int apc_search_paths(const char* filename, const char* path, apc_fileinfo_t* fil
         return 0;
     }
 
-    paths = apc_tokenize(path, DEFAULT_DIR_SEPARATOR);
+    paths = apc_tokenize(path, DEFAULT_DIR_SEPARATOR TSRMLS_CC);
     if (!paths)
         return -1;
 
@@ -290,9 +290,9 @@ int apc_search_paths(const char* filename, const char* path, apc_fileinfo_t* fil
 
     /* free the value returned by apc_tokenize */
     for (i = 0; paths[i]; i++) {
-        apc_efree(paths[i]);
+        apc_efree(paths[i] TSRMLS_CC);
     }
-    apc_efree(paths);
+    apc_efree(paths TSRMLS_CC);
 
     return found ? 0 : -1;
 }
@@ -343,7 +343,7 @@ void* apc_regex_compile_array(char* patterns[] TSRMLS_DC)
     if (!patterns)
         return NULL;
 
-    regs = (apc_regex*) apc_emalloc(sizeof(apc_regex));
+    regs = (apc_regex*) apc_emalloc(sizeof(apc_regex) TSRMLS_CC);
 
     smart_str_appendc(&pmatch, '/');
     smart_str_appendc(&nmatch, '/');
@@ -373,11 +373,11 @@ void* apc_regex_compile_array(char* patterns[] TSRMLS_DC)
     return (void*) regs;
 }
 
-void apc_regex_destroy_array(void* p)
+void apc_regex_destroy_array(void* p TSRMLS_DC)
 {
     if (p != NULL) {
         apc_regex* regs = (apc_regex*) p;
-        apc_efree(regs);
+        apc_efree(regs TSRMLS_CC);
     }
 }
 

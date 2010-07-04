@@ -46,13 +46,13 @@ struct _apc_segment_t {
 #endif
 };
 
-extern void apc_sma_init(int numseg, size_t segsize, char *mmap_file_mask);
-extern void apc_sma_cleanup();
-extern void* apc_sma_malloc(size_t size);
-extern void* apc_sma_malloc_ex(size_t size, size_t fragment, size_t* allocated);
-extern void* apc_sma_realloc(void* p, size_t size);
-extern char* apc_sma_strdup(const char *s);
-extern void apc_sma_free(void* p);
+extern void apc_sma_init(int numseg, size_t segsize, char *mmap_file_mask TSRMLS_DC);
+extern void apc_sma_cleanup(TSRMLS_D);
+extern void* apc_sma_malloc(size_t size TSRMLS_DC);
+extern void* apc_sma_malloc_ex(size_t size, size_t fragment, size_t* allocated TSRMLS_DC);
+extern void* apc_sma_realloc(void* p, size_t size TSRMLS_DC);
+extern char* apc_sma_strdup(const char *s TSRMLS_DC);
+extern void apc_sma_free(void* p TSRMLS_DC);
 #if ALLOC_DISTRIBUTION 
 extern size_t *apc_sma_get_alloc_distribution();
 #endif
@@ -78,8 +78,8 @@ struct apc_sma_info_t {
 };
 /* }}} */
 
-extern apc_sma_info_t* apc_sma_info(zend_bool limited);
-extern void apc_sma_free_info(apc_sma_info_t* info);
+extern apc_sma_info_t* apc_sma_info(zend_bool limited TSRMLS_DC);
+extern void apc_sma_free_info(apc_sma_info_t* info TSRMLS_DC);
 
 extern size_t apc_sma_get_avail_mem();
 extern void apc_sma_check_integrity();

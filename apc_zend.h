@@ -76,8 +76,8 @@
 #endif
 
 
-extern void* apc_php_malloc(size_t n);
-extern void apc_php_free(void* p);
+extern void* apc_php_malloc(size_t n TSRMLS_DC);
+extern void apc_php_free(void* p TSRMLS_DC);
 
 extern void apc_zend_init(TSRMLS_D);
 extern void apc_zend_shutdown(TSRMLS_D);

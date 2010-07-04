@@ -27,8 +27,8 @@
 
 /* $Id$ */
 
-#include "apc_stack.h"
 #include "apc.h"
+#include "apc_stack.h"
 
 struct apc_stack_t {
     void** data;
@@ -36,22 +36,22 @@ struct apc_stack_t {
     int size;
 };
 
-apc_stack_t* apc_stack_create(int size_hint)
+apc_stack_t* apc_stack_create(int size_hint TSRMLS_DC)
 {
-    apc_stack_t* stack = (apc_stack_t*) apc_emalloc(sizeof(apc_stack_t));
+    apc_stack_t* stack = (apc_stack_t*) apc_emalloc(sizeof(apc_stack_t) TSRMLS_CC);
 
     stack->capacity = (size_hint > 0) ? size_hint : 10;
     stack->size = 0;
-    stack->data = (void**) apc_emalloc(sizeof(void*) * stack->capacity);
+    stack->data = (void**) apc_emalloc(sizeof(void*) * stack->capacity TSRMLS_CC);
 
     return stack;
 }
 
-void apc_stack_destroy(apc_stack_t* stack)
+void apc_stack_destroy(apc_stack_t* stack TSRMLS_DC)
 {
     if (stack != NULL) {
-        apc_efree(stack->data);
-        apc_efree(stack);
+        apc_efree(stack->data TSRMLS_CC);
+        apc_efree(stack TSRMLS_CC);
     }
 }
 

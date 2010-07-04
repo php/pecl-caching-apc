@@ -106,12 +106,12 @@ static apc_iterator_item_t* apc_iterator_item_ctor(apc_iterator_t *iterator, slo
     if (APC_ITER_VALUE & iterator->format) {
         if(slot->value->type == APC_CACHE_ENTRY_USER) {
 
-            ctxt.pool = apc_pool_create(APC_UNPOOL, apc_php_malloc, apc_php_free, NULL, NULL);
+            ctxt.pool = apc_pool_create(APC_UNPOOL, apc_php_malloc, apc_php_free, NULL, NULL TSRMLS_CC);
             ctxt.copy = APC_COPY_OUT_USER;
 
             MAKE_STD_ZVAL(zvalue);
             apc_cache_fetch_zval(zvalue, slot->value->data.user.val, &ctxt TSRMLS_CC);
-            apc_pool_destroy(ctxt.pool);
+            apc_pool_destroy(ctxt.pool TSRMLS_CC);
             add_assoc_zval(item->value, "value", zvalue);
         }
     }
@@ -395,7 +395,7 @@ PHP_METHOD(apc_iterator, __construct) {
     iterator->stack_idx = 0;
     iterator->key_idx = 0;
     iterator->chunk_size = chunk_size == 0 ? APC_DEFAULT_CHUNK_SIZE : chunk_size;
-    iterator->stack = apc_stack_create(chunk_size);
+    iterator->stack = apc_stack_create(chunk_size TSRMLS_CC);
     iterator->format = format;
     iterator->totals_flag = 0;
     iterator->count = 0;
@@ -690,7 +690,7 @@ int apc_iterator_delete(zval *zobj TSRMLS_DC) {
             if (iterator->cache == apc_cache) {
                 apc_cache_delete(apc_cache, item->filename_key, strlen(item->filename_key) + 1 TSRMLS_CC);
             } else {
-                apc_cache_user_delete(apc_user_cache, item->key, item->key_len+1);
+                apc_cache_user_delete(apc_user_cache, item->key, (item->key_len + 1) TSRMLS_CC);
             }
         }
     }

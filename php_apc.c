@@ -86,7 +86,7 @@ static void php_apc_init_globals(zend_apc_globals* apc_globals TSRMLS_DC)
     apc_globals->filters = NULL;
     apc_globals->compiled_filters = NULL;
     apc_globals->initialized = 0;
-    apc_globals->cache_stack = apc_stack_create(0);
+    apc_globals->cache_stack = apc_stack_create(0 TSRMLS_CC);
     apc_globals->cache_by_default = 1;
     apc_globals->fpstat = 1;
     apc_globals->canonicalize = 1;
@@ -115,16 +115,16 @@ static void php_apc_shutdown_globals(zend_apc_globals* apc_globals TSRMLS_DC)
     if (apc_globals->filters != NULL) {
         int i;
         for (i=0; apc_globals->filters[i] != NULL; i++) {
-            apc_efree(apc_globals->filters[i]);
+            apc_efree(apc_globals->filters[i] TSRMLS_CC);
         }
-        apc_efree(apc_globals->filters);
+        apc_efree(apc_globals->filters TSRMLS_CC);
     }
 
     /* the stack should be empty */
     assert(apc_stack_size(apc_globals->cache_stack) == 0);
 
     /* apc cleanup */
-    apc_stack_destroy(apc_globals->cache_stack);
+    apc_stack_destroy(apc_globals->cache_stack TSRMLS_CC);
 
     /* the rest of the globals are cleaned up in apc_module_shutdown() */
 }
@@ -170,7 +170,7 @@ static long apc_atol(const char *str, int str_len)
 
 static PHP_INI_MH(OnUpdate_filters) /* {{{ */
 {
-    APCG(filters) = apc_tokenize(new_value, ',');
+    APCG(filters) = apc_tokenize(new_value, ',' TSRMLS_CC);
     return SUCCESS;
 }
 /* }}} */
@@ -453,7 +453,7 @@ PHP_FUNCTION(apc_cache_info)
     add_assoc_stringl(return_value, "locking_type", "file", sizeof("file")-1, 1);
 #endif
     if(limited) {
-        apc_cache_free_info(info);
+        apc_cache_free_info(info TSRMLS_CC);
         return;
     }
 
@@ -556,7 +556,7 @@ PHP_FUNCTION(apc_cache_info)
     }
     add_assoc_zval(return_value, "deleted_list", list);
 
-    apc_cache_free_info(info);
+    apc_cache_free_info(info TSRMLS_CC);
 }
 /* }}} */
 
@@ -572,11 +572,11 @@ PHP_FUNCTION(apc_clear_cache)
 
     if(ct_len) {
         if(!strcasecmp(cache_type, "user")) {
-            apc_cache_clear(apc_user_cache);
+            apc_cache_clear(apc_user_cache TSRMLS_CC);
             RETURN_TRUE;
         }
     }
-    apc_cache_clear(apc_cache);
+    apc_cache_clear(apc_cache TSRMLS_CC);
     RETURN_TRUE;
 }
 /* }}} */
@@ -593,7 +593,7 @@ PHP_FUNCTION(apc_sma_info)
         return;
     }
 
-    info = apc_sma_info(limited);
+    info = apc_sma_info(limited TSRMLS_CC);
 
     if(!info) {
         php_error_docref(NULL TSRMLS_CC, E_WARNING, "No APC SMA info available.  Perhaps APC is disabled via apc.enabled?");
@@ -606,7 +606,7 @@ PHP_FUNCTION(apc_sma_info)
     add_assoc_double(return_value, "avail_mem", (double)apc_sma_get_avail_mem());
 
     if(limited) {
-        apc_sma_free_info(info);
+        apc_sma_free_info(info TSRMLS_CC);
         return;
     }
 
@@ -645,7 +645,7 @@ PHP_FUNCTION(apc_sma_info)
         add_next_index_zval(block_lists, list);
     }
     add_assoc_zval(return_value, "block_lists", block_lists);
-    apc_sma_free_info(info);
+    apc_sma_free_info(info TSRMLS_CC);
 }
 /* }}} */
 
@@ -687,7 +687,7 @@ int _apc_store(char *strkey, int strkey_len, const zval *val, const unsigned int
 
     APCG(current_cache) = apc_user_cache;
 
-    ctxt.pool = apc_pool_create(APC_SMALL_POOL, apc_sma_malloc, apc_sma_free, apc_sma_protect, apc_sma_unprotect);
+    ctxt.pool = apc_pool_create(APC_SMALL_POOL, apc_sma_malloc, apc_sma_free, apc_sma_protect, apc_sma_unprotect TSRMLS_CC);
     if (!ctxt.pool) {
         apc_wprint("Unable to allocate memory for pool.");
         return 0;
@@ -714,7 +714,7 @@ int _apc_store(char *strkey, int strkey_len, const zval *val, const unsigned int
 
     if (!apc_cache_user_insert(apc_user_cache, key, entry, &ctxt, t, exclusive TSRMLS_CC)) {
 freepool:
-        apc_pool_destroy(ctxt.pool);
+        apc_pool_destroy(ctxt.pool TSRMLS_CC);
         ret = 0;
     }
 
@@ -929,7 +929,7 @@ PHP_FUNCTION(apc_fetch) {
         ZVAL_BOOL(success, 0);
     }
 
-    ctxt.pool = apc_pool_create(APC_UNPOOL, apc_php_malloc, apc_php_free, NULL, NULL);
+    ctxt.pool = apc_pool_create(APC_UNPOOL, apc_php_malloc, apc_php_free, NULL, NULL TSRMLS_CC);
     if (!ctxt.pool) {
         apc_wprint("Unable to allocate memory for pool.");
         RETURN_FALSE;
@@ -945,7 +945,7 @@ PHP_FUNCTION(apc_fetch) {
         strkey = Z_STRVAL_P(key);
         strkey_len = Z_STRLEN_P(key);
         if(!strkey_len) RETURN_FALSE;
-        entry = apc_cache_user_find(apc_user_cache, strkey, strkey_len + 1, t);
+        entry = apc_cache_user_find(apc_user_cache, strkey, (strkey_len + 1), t TSRMLS_CC);
         if(entry) {
             /* deep-copy returned shm zval to emalloc'ed return_value */
             apc_cache_fetch_zval(return_value, entry->data.user.val, &ctxt TSRMLS_CC);
@@ -963,7 +963,7 @@ PHP_FUNCTION(apc_fetch) {
                 apc_wprint("apc_fetch() expects a string or array of strings.");
                 goto freepool;
             }
-            entry = apc_cache_user_find(apc_user_cache, Z_STRVAL_PP(hentry), Z_STRLEN_PP(hentry) + 1, t);
+            entry = apc_cache_user_find(apc_user_cache, Z_STRVAL_PP(hentry), (Z_STRLEN_PP(hentry) + 1), t TSRMLS_CC);
             if(entry) {
                 /* deep-copy returned shm zval to emalloc'ed return_value */
                 MAKE_STD_ZVAL(result_entry);
@@ -977,7 +977,7 @@ PHP_FUNCTION(apc_fetch) {
     } else {
         apc_wprint("apc_fetch() expects a string or array of strings.");
 freepool:
-        apc_pool_destroy(ctxt.pool);
+        apc_pool_destroy(ctxt.pool TSRMLS_CC);
         RETURN_FALSE;
     }
 
@@ -985,7 +985,7 @@ freepool:
         ZVAL_BOOL(success, 1);
     }
 
-    apc_pool_destroy(ctxt.pool);
+    apc_pool_destroy(ctxt.pool TSRMLS_CC);
     return;
 }
 /* }}} */
@@ -1066,7 +1066,7 @@ PHP_FUNCTION(apc_delete) {
 
     if (Z_TYPE_P(keys) == IS_STRING) {
         if (!Z_STRLEN_P(keys)) RETURN_FALSE;
-        if(apc_cache_user_delete(apc_user_cache, Z_STRVAL_P(keys), Z_STRLEN_P(keys) + 1)) {
+        if(apc_cache_user_delete(apc_user_cache, Z_STRVAL_P(keys), (Z_STRLEN_P(keys) + 1) TSRMLS_CC)) {
             RETURN_TRUE;
         } else {
             RETURN_FALSE;
@@ -1082,7 +1082,7 @@ PHP_FUNCTION(apc_delete) {
                 apc_wprint("apc_delete() expects a string, array of strings, or APCIterator instance.");
                 add_next_index_zval(return_value, *hentry);
                 Z_ADDREF_PP(hentry);
-            } else if(apc_cache_user_delete(apc_user_cache, Z_STRVAL_PP(hentry), Z_STRLEN_PP(hentry) + 1) != 1) {
+            } else if(apc_cache_user_delete(apc_user_cache, Z_STRVAL_PP(hentry), (Z_STRLEN_PP(hentry) + 1) TSRMLS_CC) != 1) {
                 add_next_index_zval(return_value, *hentry);
                 Z_ADDREF_PP(hentry);
             }
@@ -1231,7 +1231,7 @@ PHP_FUNCTION(apc_load_constants) {
 
     t = apc_time();
 
-    entry = apc_cache_user_find(apc_user_cache, strkey, strkey_len + 1, t);
+    entry = apc_cache_user_find(apc_user_cache, strkey, (strkey_len + 1), t TSRMLS_CC);
 
     if(entry) {
         _apc_define_constants(entry->data.user.val, case_sensitive TSRMLS_CC);
@@ -1395,7 +1395,7 @@ PHP_FUNCTION(apc_compile_file) {
         ctxt.copy = APC_COPY_IN_OPCODE;
         ctxt.force_update = 1;
         if (count == i || !atomic) {
-            rval = apc_cache_insert_mult(apc_cache, keys, cache_entries, &ctxt, t, i);
+            rval = apc_cache_insert_mult(apc_cache, keys, cache_entries, &ctxt, t, i TSRMLS_CC);
             atomic_fail = 0;
         } else {
             atomic_fail = 1;
@@ -1407,7 +1407,7 @@ PHP_FUNCTION(apc_compile_file) {
             if (rval && rval[c] != 1) {
                 add_assoc_long(return_value, Z_STRVAL_PP(hentry), -2);  /* -2: input or cache insertion error */
                 if (cache_entries[c]) {
-                    apc_pool_destroy(cache_entries[c]->pool);
+                    apc_pool_destroy(cache_entries[c]->pool TSRMLS_CC);
                 }
             }
             if (op_arrays[c]) {
@@ -1415,7 +1415,7 @@ PHP_FUNCTION(apc_compile_file) {
                 efree(op_arrays[c]);
             }
             if (atomic_fail && cache_entries[c]) {
-                apc_pool_destroy(cache_entries[c]->pool);
+                apc_pool_destroy(cache_entries[c]->pool TSRMLS_CC);
             }
             if (keys[c].type == APC_CACHE_KEY_FPFILE) {
                 efree((void*)keys[c].data.fpfile.fullpath);

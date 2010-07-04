@@ -193,7 +193,7 @@ void apc_interned_strings_init(TSRMLS_D)
 {
     int count = APCG(shm_strings_buffer) / (sizeof(Bucket) + sizeof(Bucket*) * 2);
 
-    apc_interned_strings_data = (apc_interned_strings_data_t*)apc_sma_malloc(APCG(shm_strings_buffer));
+    apc_interned_strings_data = (apc_interned_strings_data_t*) apc_sma_malloc(APCG(shm_strings_buffer) TSRMLS_CC);
 
     CREATE_LOCK(APCSG(lock));
 

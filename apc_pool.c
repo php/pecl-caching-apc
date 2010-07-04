@@ -37,8 +37,8 @@
 
 
 /* {{{ forward references */
-static apc_pool* apc_unpool_create(apc_pool_type type, apc_malloc_t, apc_free_t, apc_protect_t, apc_unprotect_t);
-static apc_pool* apc_realpool_create(apc_pool_type type, apc_malloc_t, apc_free_t, apc_protect_t, apc_unprotect_t);
+static apc_pool* apc_unpool_create(apc_pool_type type, apc_malloc_t, apc_free_t, apc_protect_t, apc_unprotect_t TSRMLS_DC);
+static apc_pool* apc_realpool_create(apc_pool_type type, apc_malloc_t, apc_free_t, apc_protect_t, apc_unprotect_t TSRMLS_DC);
 /* }}} */
 
 /* {{{ apc_pool_create */
@@ -46,26 +46,27 @@ apc_pool* apc_pool_create(apc_pool_type pool_type,
                             apc_malloc_t allocate, 
                             apc_free_t deallocate,
                             apc_protect_t protect,
-                            apc_unprotect_t unprotect)
+                            apc_unprotect_t unprotect
+			    TSRMLS_DC)
 {
     if(pool_type == APC_UNPOOL) {
         return apc_unpool_create(pool_type, allocate, deallocate,
-                                            protect, unprotect );
+                                            protect, unprotect TSRMLS_CC);
     }
 
     return apc_realpool_create(pool_type, allocate, deallocate, 
-                                          protect,  unprotect );
+                                          protect,  unprotect TSRMLS_CC);
 }
 /* }}} */
 
 /* {{{ apc_pool_destroy */
-void apc_pool_destroy(apc_pool *pool)
+void apc_pool_destroy(apc_pool *pool TSRMLS_DC)
 {
     apc_free_t deallocate = pool->deallocate;
     apc_pcleanup_t cleanup = pool->cleanup;
 
-    cleanup(pool);
-    deallocate(pool);
+    cleanup(pool TSRMLS_CC);
+    deallocate(pool TSRMLS_CC);
 }
 /* }}} */
 
@@ -78,7 +79,7 @@ struct _apc_unpool {
     /* apc_unpool is a lie! */
 };
 
-static void* apc_unpool_alloc(apc_pool* pool, size_t size) 
+static void* apc_unpool_alloc(apc_pool* pool, size_t size TSRMLS_DC) 
 {
     apc_unpool *upool = (apc_unpool*)pool;
 
@@ -87,27 +88,28 @@ static void* apc_unpool_alloc(apc_pool* pool, size_t size)
     upool->parent.size += size;
     upool->parent.used += size;
 
-    return allocate(size);
+    return allocate(size TSRMLS_CC);
 }
 
-static void apc_unpool_free(apc_pool* pool, void *ptr)
+static void apc_unpool_free(apc_pool* pool, void *ptr TSRMLS_DC)
 {
     apc_unpool *upool = (apc_unpool*) pool;
 
     apc_free_t deallocate = upool->parent.deallocate;
 
-    deallocate(ptr);
+    deallocate(ptr TSRMLS_CC);
 }
 
-static void apc_unpool_cleanup(apc_pool* pool)
+static void apc_unpool_cleanup(apc_pool* pool TSRMLS_DC)
 {
 }
 
 static apc_pool* apc_unpool_create(apc_pool_type type, 
                     apc_malloc_t allocate, apc_free_t deallocate,
-                    apc_protect_t protect, apc_unprotect_t unprotect)
+                    apc_protect_t protect, apc_unprotect_t unprotect
+		    TSRMLS_DC)
 {
-    apc_unpool* upool = allocate(sizeof(apc_unpool));
+    apc_unpool* upool = allocate(sizeof(apc_unpool) TSRMLS_CC);
 
     if (!upool) {
         return NULL;
@@ -204,13 +206,13 @@ static const unsigned char decaff[] =  {
 } while(0)
 
 /* {{{ create_pool_block */
-static pool_block* create_pool_block(apc_realpool *rpool, size_t size)
+static pool_block* create_pool_block(apc_realpool *rpool, size_t size TSRMLS_DC)
 {
     apc_malloc_t allocate = rpool->parent.allocate;
 
     size_t realsize = sizeof(pool_block) + ALIGNWORD(size);
 
-    pool_block* entry = allocate(realsize);
+    pool_block* entry = allocate(realsize TSRMLS_CC);
 
     if (!entry) {
         return NULL;
@@ -225,7 +227,7 @@ static pool_block* create_pool_block(apc_realpool *rpool, size_t size)
 /* }}} */
 
 /* {{{ apc_realpool_alloc */
-static void* apc_realpool_alloc(apc_pool *pool, size_t size)
+static void* apc_realpool_alloc(apc_pool *pool, size_t size TSRMLS_DC)
 {
     apc_realpool *rpool = (apc_realpool*)pool;
     unsigned char *p = NULL;
@@ -257,7 +259,7 @@ static void* apc_realpool_alloc(apc_pool *pool, size_t size)
 
     poolsize = ALIGNSIZE(realsize, rpool->dsize);
 
-    entry = create_pool_block(rpool, poolsize);
+    entry = create_pool_block(rpool, poolsize TSRMLS_CC);
 
     if(!entry) {
         return NULL;
@@ -364,12 +366,12 @@ static int apc_realpool_check_integrity(apc_realpool *rpool)
  * check for redzone values when free'ing
  * data areas.
  */
-static void apc_realpool_free(apc_pool *pool, void *p)
+static void apc_realpool_free(apc_pool *pool, void *p TSRMLS_DC)
 {
 }
 /* }}} */
 
-static void apc_realpool_cleanup(apc_pool *pool) 
+static void apc_realpool_cleanup(apc_pool *pool TSRMLS_DC) 
 {
     pool_block *entry;
     pool_block *tmp;
@@ -382,14 +384,15 @@ static void apc_realpool_cleanup(apc_pool *pool)
 
     while(entry->next != NULL) {
         tmp = entry->next;
-        deallocate(entry);
+        deallocate(entry TSRMLS_CC);
         entry = tmp;
     }
 }
 
 /* {{{ apc_realpool_create */
 static apc_pool* apc_realpool_create(apc_pool_type type, apc_malloc_t allocate, apc_free_t deallocate, 
-                                                         apc_protect_t protect, apc_unprotect_t unprotect)
+                                                         apc_protect_t protect, apc_unprotect_t unprotect
+							 TSRMLS_DC)
 {
 
     size_t dsize = 0;
@@ -412,7 +415,7 @@ static apc_pool* apc_realpool_create(apc_pool_type type, apc_malloc_t allocate, 
             return NULL;
     }
 
-    rpool = (apc_realpool*)allocate(sizeof(apc_realpool) + ALIGNWORD(dsize));
+    rpool = (apc_realpool*)allocate((sizeof(apc_realpool) + ALIGNWORD(dsize)) TSRMLS_CC);
 
     if(!rpool) {
         return NULL;
@@ -444,6 +447,20 @@ static apc_pool* apc_realpool_create(apc_pool_type type, apc_malloc_t allocate, 
 
 /* }}} */
 
+/* {{{ apc_pool_alloc */
+void* apc_pool_alloc(apc_pool *pool, size_t size TSRMLS_DC)
+{
+	return (void *) pool->palloc(pool, size TSRMLS_CC);
+}
+/* }}} */
+
+/* {{{ apc_pool_free */
+void apc_pool_free(apc_pool *pool, void *ptr TSRMLS_DC)
+{
+	pool->pfree(pool, ptr TSRMLS_CC);
+}
+/* }}} */
+
 /* {{{ apc_pool_init */
 void apc_pool_init()
 {
@@ -455,18 +472,18 @@ void apc_pool_init()
 /* }}} */
 
 /* {{{ apc_pstrdup */
-void* apc_pstrdup(const char* s, apc_pool* pool)
+void* apc_pstrdup(const char* s, apc_pool* pool TSRMLS_DC)
 {
-    return s != NULL ? apc_pmemcpy(s, strlen(s)+1, pool) : NULL;
+    return s != NULL ? apc_pmemcpy(s, (strlen(s) + 1), pool TSRMLS_CC) : NULL;
 }
 /* }}} */
 
 /* {{{ apc_pmemcpy */
-void* apc_pmemcpy(const void* p, size_t n, apc_pool* pool)
+void* apc_pmemcpy(const void* p, size_t n, apc_pool* pool TSRMLS_DC)
 {
     void* q;
 
-    if (p != NULL && (q = apc_pool_alloc(pool, n)) != NULL) {
+    if (p != NULL && (q = apc_pool_alloc(pool, n TSRMLS_CC)) != NULL) {
         memcpy(q, p, n);
         return q;
     }

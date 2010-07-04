@@ -81,9 +81,9 @@ extern int _apc_store(char *strkey, int strkey_len, const zval *val, const uint 
 #endif
 
 
-static void *apc_bd_alloc(size_t size);
-static void apc_bd_free(void *ptr);
-static void *apc_bd_alloc_ex(void *ptr_new, size_t size);
+static void *apc_bd_alloc(size_t size TSRMLS_DC);
+static void apc_bd_free(void *ptr TSRMLS_DC);
+static void *apc_bd_alloc_ex(void *ptr_new, size_t size TSRMLS_DC);
 
 typedef void (*apc_swizzle_cb_t)(apc_bd_t *bd, zend_llist *ll, void *ptr TSRMLS_DC);
 
@@ -109,16 +109,15 @@ static int apc_unswizzle_bd(apc_bd_t *bd, int flags TSRMLS_DC);
 
 /* {{{ apc_bd_alloc
  *  callback for copy_* functions */
-static void *apc_bd_alloc(size_t size) {
-    return apc_bd_alloc_ex(NULL, size);
+static void *apc_bd_alloc(size_t size TSRMLS_DC) {
+    return apc_bd_alloc_ex(NULL, size TSRMLS_CC);
 } /* }}} */
 
 
 /* {{{ apc_bd_free
  *  callback for copy_* functions */
-static void apc_bd_free(void *ptr) {
+static void apc_bd_free(void *ptr TSRMLS_DC) {
     size_t *size;
-    TSRMLS_FETCH();
     if(zend_hash_index_find(&APCG(apc_bd_alloc_list), (ulong)ptr, (void**)&size) == FAILURE) {
         apc_eprint("apc_bd_free could not free pointer (not found in list: %x)", ptr);
     }
@@ -133,9 +132,8 @@ static void apc_bd_free(void *ptr) {
  *  with a range of size.  If ptr_new is NULL, returns the next available
  *  block of given size.
  */
-static void *apc_bd_alloc_ex(void *ptr_new, size_t size) {
+static void *apc_bd_alloc_ex(void *ptr_new, size_t size TSRMLS_DC) {
     void *rval;
-    TSRMLS_FETCH();
 
     rval = APCG(apc_bd_alloc_ptr);
     if(ptr_new != NULL) {  /* reset ptrs */
@@ -697,16 +695,16 @@ apc_bd_t* apc_bin_dump(HashTable *files, HashTable *user_vars TSRMLS_DC) {
     bd = emalloc(size);
     bd->size = size;
     pool_ptr = emalloc(sizeof(apc_pool));
-    apc_bd_alloc_ex(pool_ptr, sizeof(apc_pool));
-    ctxt.pool = apc_pool_create(APC_UNPOOL, apc_bd_alloc, apc_bd_free, NULL, NULL);  /* ideally the pool wouldn't be alloc'd as part of this */
+    apc_bd_alloc_ex(pool_ptr, sizeof(apc_pool) TSRMLS_CC);
+    ctxt.pool = apc_pool_create(APC_UNPOOL, apc_bd_alloc, apc_bd_free, NULL, NULL TSRMLS_CC);  /* ideally the pool wouldn't be alloc'd as part of this */
     if (!ctxt.pool) { /* TODO need to cleanup */
         apc_wprint("Unable to allocate memory for pool.");
         return NULL;
     }
     ctxt.copy = APC_COPY_IN_USER;  /* avoid stupid ALLOC_ZVAL calls here, hack */
-    apc_bd_alloc_ex( (void*)((long)bd + sizeof(apc_bd_t)), bd->size - sizeof(apc_bd_t) -1);
+    apc_bd_alloc_ex((void*)((long)bd + sizeof(apc_bd_t)), bd->size - sizeof(apc_bd_t) -1 TSRMLS_CC);
     bd->num_entries = count;
-    bd->entries = apc_bd_alloc_ex(NULL, sizeof(apc_bd_entry_t) * count);
+    bd->entries = apc_bd_alloc_ex(NULL, sizeof(apc_bd_entry_t) * count TSRMLS_CC);
 
     /* User entries */
     zend_hash_init(&APCG(copied_zvals), 0, NULL, NULL, 0);
@@ -717,7 +715,7 @@ apc_bd_t* apc_bin_dump(HashTable *files, HashTable *user_vars TSRMLS_DC) {
             if(apc_bin_checkfilter(user_vars, sp->key.data.user.identifier, sp->key.data.user.identifier_len+1)) {
                 ep = &bd->entries[count];
                 ep->type = sp->value->type;
-                ep->val.user.info = apc_bd_alloc(sp->value->data.user.info_len+1);
+                ep->val.user.info = apc_bd_alloc(sp->value->data.user.info_len + 1 TSRMLS_CC);
                 memcpy(ep->val.user.info, sp->value->data.user.info, sp->value->data.user.info_len+1);
                 ep->val.user.info_len = sp->value->data.user.info_len;
                 ep->val.user.val = apc_copy_zval(NULL, sp->value->data.user.val, &ctxt TSRMLS_CC);
@@ -743,17 +741,17 @@ apc_bd_t* apc_bin_dump(HashTable *files, HashTable *user_vars TSRMLS_DC) {
                 if(apc_bin_checkfilter(files, sp->key.data.fpfile.fullpath, sp->key.data.fpfile.fullpath_len+1)) {
                     ep = &bd->entries[count];
                     ep->type = sp->key.type;
-                    ep->val.file.filename = apc_bd_alloc(strlen(sp->value->data.file.filename)+1);
+                    ep->val.file.filename = apc_bd_alloc(strlen(sp->value->data.file.filename) + 1 TSRMLS_CC);
                     strcpy(ep->val.file.filename, sp->value->data.file.filename);
                     ep->val.file.op_array = apc_copy_op_array(NULL, sp->value->data.file.op_array, &ctxt TSRMLS_CC);
 
                     for(ep->num_functions=0; sp->value->data.file.functions[ep->num_functions].function != NULL;) { ep->num_functions++; }
-                    ep->val.file.functions = apc_bd_alloc(sizeof(apc_function_t) * ep->num_functions);
+                    ep->val.file.functions = apc_bd_alloc(sizeof(apc_function_t) * ep->num_functions TSRMLS_CC);
                     for(fcount=0; fcount < ep->num_functions; fcount++) {
                         memcpy(&ep->val.file.functions[fcount], &sp->value->data.file.functions[fcount], sizeof(apc_function_t));
-                        ep->val.file.functions[fcount].name = apc_xmemcpy(sp->value->data.file.functions[fcount].name, sp->value->data.file.functions[fcount].name_len+1, apc_bd_alloc);
+                        ep->val.file.functions[fcount].name = apc_xmemcpy(sp->value->data.file.functions[fcount].name, sp->value->data.file.functions[fcount].name_len+1, apc_bd_alloc TSRMLS_CC);
                         ep->val.file.functions[fcount].name_len = sp->value->data.file.functions[fcount].name_len;
-                        ep->val.file.functions[fcount].function = apc_bd_alloc(sizeof(zend_function));
+                        ep->val.file.functions[fcount].function = apc_bd_alloc(sizeof(zend_function) TSRMLS_CC);
                         efp = ep->val.file.functions[fcount].function;
                         sfp = sp->value->data.file.functions[fcount].function;
                         switch(sfp->type) {
@@ -779,12 +777,12 @@ apc_bd_t* apc_bin_dump(HashTable *files, HashTable *user_vars TSRMLS_DC) {
 
 
                     for(ep->num_classes=0; sp->value->data.file.classes[ep->num_classes].class_entry != NULL;) { ep->num_classes++; }
-                    ep->val.file.classes = apc_bd_alloc(sizeof(apc_class_t) * ep->num_classes);
+                    ep->val.file.classes = apc_bd_alloc(sizeof(apc_class_t) * ep->num_classes TSRMLS_CC);
                     for(fcount=0; fcount < ep->num_classes; fcount++) {
-                        ep->val.file.classes[fcount].name = apc_xmemcpy(sp->value->data.file.classes[fcount].name, sp->value->data.file.classes[fcount].name_len+1, apc_bd_alloc);
+                        ep->val.file.classes[fcount].name = apc_xmemcpy(sp->value->data.file.classes[fcount].name, sp->value->data.file.classes[fcount].name_len + 1, apc_bd_alloc TSRMLS_CC);
                         ep->val.file.classes[fcount].name_len = sp->value->data.file.classes[fcount].name_len;
                         ep->val.file.classes[fcount].class_entry = apc_copy_class_entry(NULL, sp->value->data.file.classes[fcount].class_entry, &ctxt TSRMLS_CC);
-                        ep->val.file.classes[fcount].parent_name = apc_xstrdup(sp->value->data.file.classes[fcount].parent_name, apc_bd_alloc);
+                        ep->val.file.classes[fcount].parent_name = apc_xstrdup(sp->value->data.file.classes[fcount].parent_name, apc_bd_alloc TSRMLS_CC);
 
                         apc_swizzle_ptr(bd, &ll, &ep->val.file.classes[fcount].name);
                         apc_swizzle_ptr(bd, &ll, &ep->val.file.classes[fcount].parent_name);
@@ -849,7 +847,7 @@ int apc_bin_load(apc_bd_t *bd, int flags TSRMLS_DC) {
     t = apc_time();
 
     for(i = 0; i < bd->num_entries; i++) {
-        ctxt.pool = apc_pool_create(APC_SMALL_POOL, apc_sma_malloc, apc_sma_free, apc_sma_protect, apc_sma_unprotect);
+        ctxt.pool = apc_pool_create(APC_SMALL_POOL, apc_sma_malloc, apc_sma_free, apc_sma_protect, apc_sma_unprotect TSRMLS_CC);
         if (!ctxt.pool) { /* TODO need to cleanup previous pools */
             apc_wprint("Unable to allocate memory for pool.");
             goto failure;
@@ -876,15 +874,15 @@ int apc_bin_load(apc_bd_t *bd, int flags TSRMLS_DC) {
                 }
                 apc_bin_fixup_op_array(alloc_op_array);
 
-                if(! (alloc_functions = apc_sma_malloc(sizeof(apc_function_t) * (ep->num_functions + 1)))) {
+                if(! (alloc_functions = apc_sma_malloc(sizeof(apc_function_t) * (ep->num_functions + 1) TSRMLS_CC))) {
                     goto failure;
                 }
                 for(i2=0; i2 < ep->num_functions; i2++) {
-                    if(! (alloc_functions[i2].name = apc_xmemcpy(ep->val.file.functions[i2].name, ep->val.file.functions[i2].name_len+1, apc_sma_malloc))) {
+                    if(! (alloc_functions[i2].name = apc_xmemcpy(ep->val.file.functions[i2].name, ep->val.file.functions[i2].name_len + 1, apc_sma_malloc TSRMLS_CC))) {
                         goto failure;
                     }
                     alloc_functions[i2].name_len = ep->val.file.functions[i2].name_len;
-                    if(! (alloc_functions[i2].function = apc_sma_malloc(sizeof(zend_function)))) {
+                    if(! (alloc_functions[i2].function = apc_sma_malloc(sizeof(zend_function) TSRMLS_CC))) {
                         goto failure;
                     }
                     switch(ep->val.file.functions[i2].function->type) {
@@ -910,11 +908,11 @@ int apc_bin_load(apc_bd_t *bd, int flags TSRMLS_DC) {
                 alloc_functions[i2].name = NULL;
                 alloc_functions[i2].function = NULL;
 
-                if(! (alloc_classes = apc_sma_malloc(sizeof(apc_class_t) * (ep->num_classes + 1)))) {
+                if(! (alloc_classes = apc_sma_malloc(sizeof(apc_class_t) * (ep->num_classes + 1) TSRMLS_CC))) {
                     goto failure;
                 }
                 for(i2=0; i2 < ep->num_classes; i2++) {
-                    if(! (alloc_classes[i2].name = apc_xmemcpy(ep->val.file.classes[i2].name, ep->val.file.classes[i2].name_len+1, apc_sma_malloc))) {
+                    if(! (alloc_classes[i2].name = apc_xmemcpy(ep->val.file.classes[i2].name, ep->val.file.classes[i2].name_len+1, apc_sma_malloc TSRMLS_CC))) {
                         goto failure;
                     }
                     alloc_classes[i2].name_len = ep->val.file.classes[i2].name_len;
@@ -922,7 +920,7 @@ int apc_bin_load(apc_bd_t *bd, int flags TSRMLS_DC) {
                         goto failure;
                     }
                     apc_bin_fixup_class_entry(alloc_classes[i2].class_entry);
-                    if(! (alloc_classes[i2].parent_name = apc_xstrdup(ep->val.file.classes[i2].parent_name, apc_sma_malloc))) {
+                    if(! (alloc_classes[i2].parent_name = apc_xstrdup(ep->val.file.classes[i2].parent_name, apc_sma_malloc TSRMLS_CC))) {
                         if(ep->val.file.classes[i2].parent_name != NULL) {
                             goto failure;
                         }
@@ -939,7 +937,7 @@ int apc_bin_load(apc_bd_t *bd, int flags TSRMLS_DC) {
                     goto failure;
                 }
 
-                if ((ret = apc_cache_insert(apc_cache, cache_key, cache_entry, &ctxt, t)) != 1) {
+                if ((ret = apc_cache_insert(apc_cache, cache_key, cache_entry, &ctxt, t TSRMLS_CC)) != 1) {
                     if(ret==-1) {
                         goto failure;
                     }
@@ -965,7 +963,7 @@ int apc_bin_load(apc_bd_t *bd, int flags TSRMLS_DC) {
     return 0;
 
 failure:
-    apc_pool_destroy(ctxt.pool);
+    apc_pool_destroy(ctxt.pool TSRMLS_CC);
     apc_wprint("Unable to allocate memory for apc binary load/dump functionality.");
 #if NONBLOCKING_LOCK_AVAILABLE
     if(APCG(write_lock)) {

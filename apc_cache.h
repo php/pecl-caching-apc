@@ -146,20 +146,20 @@ struct apc_cache_entry_t {
  * is needed.  This helps in cleaning up the cache and ensuring that entries 
  * hit frequently stay cached and ones not hit very often eventually disappear.
  */
-extern T apc_cache_create(int size_hint, int gc_ttl, int ttl);
+extern T apc_cache_create(int size_hint, int gc_ttl, int ttl TSRMLS_DC);
 
 /*
  * apc_cache_destroy releases any OS resources associated with a cache object.
  * Under apache, this function can be safely called by the child processes
  * when they exit.
  */
-extern void apc_cache_destroy(T cache);
+extern void apc_cache_destroy(T cache TSRMLS_DC);
 
 /*
  * apc_cache_clear empties a cache. This can safely be called at any time,
  * even while other server processes are executing cached source files.
  */
-extern void apc_cache_clear(T cache);
+extern void apc_cache_clear(T cache TSRMLS_DC);
 
 /*
  * apc_cache_insert adds an entry to the cache, using a filename as a key.
@@ -174,13 +174,13 @@ extern void apc_cache_clear(T cache);
  * value is a cache entry returned by apc_cache_make_entry (see below).
  */
 extern int apc_cache_insert(T cache, apc_cache_key_t key,
-                            apc_cache_entry_t* value, apc_context_t* ctxt, time_t t);
+                            apc_cache_entry_t* value, apc_context_t* ctxt, time_t t TSRMLS_DC);
 
 extern int apc_cache_user_insert(T cache, apc_cache_key_t key,
                             apc_cache_entry_t* value, apc_context_t* ctxt, time_t t, int exclusive TSRMLS_DC);
 
 extern int *apc_cache_insert_mult(apc_cache_t* cache, apc_cache_key_t* keys,
-                            apc_cache_entry_t** values, apc_context_t *ctxt, time_t t, int num_entries);
+                            apc_cache_entry_t** values, apc_context_t *ctxt, time_t t, int num_entries TSRMLS_DC);
 
 /*
  * apc_cache_find searches for a cache entry by filename, and returns a
@@ -188,14 +188,14 @@ extern int *apc_cache_insert_mult(apc_cache_t* cache, apc_cache_key_t* keys,
  *
  * key is a value created by apc_cache_make_file_key for file keys.
  */
-extern apc_cache_entry_t* apc_cache_find(T cache, apc_cache_key_t key, time_t t);
+extern apc_cache_entry_t* apc_cache_find(T cache, apc_cache_key_t key, time_t t TSRMLS_DC);
 
 /*
  * apc_cache_user_find searches for a cache entry by its hashed identifier,
  * and returns a pointer to the entry if found, NULL otherwise.
  *
  */
-extern apc_cache_entry_t* apc_cache_user_find(T cache, char* strkey, int keylen, time_t t);
+extern apc_cache_entry_t* apc_cache_user_find(T cache, char* strkey, int keylen, time_t t TSRMLS_DC);
 
 /*
  * apc_cache_user_exists searches for a cache entry by its hashed identifier,
@@ -210,7 +210,7 @@ extern apc_cache_entry_t* apc_cache_user_exists(T cache, char* strkey, int keyle
  * apc_cache_delete and apc_cache_user_delete finds an entry in the cache and deletes it.
  */
 extern int apc_cache_delete(apc_cache_t* cache, char *filename, int filename_len TSRMLS_DC);
-extern int apc_cache_user_delete(apc_cache_t* cache, char *strkey, int keylen);
+extern int apc_cache_user_delete(apc_cache_t* cache, char *strkey, int keylen TSRMLS_DC);
 
 /* apc_cach_fetch_zval takes a zval in the cache and reconstructs a runtime
  * zval from it.
@@ -370,7 +370,7 @@ struct apc_cache_t {
 /* }}} */
 
 extern apc_cache_info_t* apc_cache_info(T cache, zend_bool limited TSRMLS_DC);
-extern void apc_cache_free_info(apc_cache_info_t* info);
+extern void apc_cache_free_info(apc_cache_info_t* info TSRMLS_DC);
 extern void apc_cache_unlock(apc_cache_t* cache);
 extern zend_bool apc_cache_busy(apc_cache_t* cache);
 extern zend_bool apc_cache_write_lock(apc_cache_t* cache);

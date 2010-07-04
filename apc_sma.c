@@ -333,7 +333,7 @@ static size_t sma_deallocate(void* shmaddr, size_t offset)
 
 /* {{{ apc_sma_init */
 
-void apc_sma_init(int numseg, size_t segsize, char *mmap_file_mask)
+void apc_sma_init(int numseg, size_t segsize, char *mmap_file_mask TSRMLS_DC)
 {
     uint i;
 
@@ -360,7 +360,7 @@ void apc_sma_init(int numseg, size_t segsize, char *mmap_file_mask)
 
     sma_segsize = segsize > 0 ? segsize : DEFAULT_SEGSIZE;
 
-    sma_segments = (apc_segment_t*) apc_emalloc(sma_numseg*sizeof(apc_segment_t));
+    sma_segments = (apc_segment_t*) apc_emalloc((sma_numseg * sizeof(apc_segment_t)) TSRMLS_CC);
 
     for (i = 0; i < sma_numseg; i++) {
         sma_header_t*   header;
@@ -420,7 +420,7 @@ void apc_sma_init(int numseg, size_t segsize, char *mmap_file_mask)
 /* }}} */
 
 /* {{{ apc_sma_cleanup */
-void apc_sma_cleanup()
+void apc_sma_cleanup(TSRMLS_D)
 {
     uint i;
 
@@ -435,17 +435,16 @@ void apc_sma_cleanup()
 #endif
     }
     sma_initialized = 0;
-    apc_efree(sma_segments);
+    apc_efree(sma_segments TSRMLS_CC);
 }
 /* }}} */
 
 /* {{{ apc_sma_malloc_ex */
-void* apc_sma_malloc_ex(size_t n, size_t fragment, size_t* allocated)
+void* apc_sma_malloc_ex(size_t n, size_t fragment, size_t* allocated TSRMLS_DC)
 {
     size_t off;
     uint i;
 
-    TSRMLS_FETCH();
     assert(sma_initialized);
     LOCK(SMA_LCK(sma_lastseg));
 
@@ -500,25 +499,25 @@ void* apc_sma_malloc_ex(size_t n, size_t fragment, size_t* allocated)
 /* }}} */
 
 /* {{{ apc_sma_malloc */
-void* apc_sma_malloc(size_t n)
+void* apc_sma_malloc(size_t n TSRMLS_DC)
 {
     size_t allocated;
-    void *p = apc_sma_malloc_ex(n, MINBLOCKSIZE, &allocated);
+    void *p = apc_sma_malloc_ex(n, MINBLOCKSIZE, &allocated TSRMLS_CC);
 
     return p;
 }
 /* }}} */
 
 /* {{{ apc_sma_realloc */
-void* apc_sma_realloc(void *p, size_t n)
+void* apc_sma_realloc(void *p, size_t n TSRMLS_DC)
 {
-    apc_sma_free(p);
-    return apc_sma_malloc(n);
+    apc_sma_free(p TSRMLS_CC);
+    return apc_sma_malloc(n TSRMLS_CC);
 }
 /* }}} */
 
 /* {{{ apc_sma_strdup */
-char* apc_sma_strdup(const char* s)
+char* apc_sma_strdup(const char* s TSRMLS_DC)
 {
     void* q;
     int len;
@@ -526,7 +525,7 @@ char* apc_sma_strdup(const char* s)
     if(!s) return NULL;
 
     len = strlen(s)+1;
-    q = apc_sma_malloc(len);
+    q = apc_sma_malloc(len TSRMLS_CC);
     if(!q) return NULL;
     memcpy(q, s, len);
     return q;
@@ -534,7 +533,7 @@ char* apc_sma_strdup(const char* s)
 /* }}} */
 
 /* {{{ apc_sma_free */
-void apc_sma_free(void* p)
+void apc_sma_free(void* p TSRMLS_DC)
 {
     uint i;
     size_t offset;
@@ -630,7 +629,7 @@ void* apc_sma_unprotect(void *p) { return p; }
 #endif
 
 /* {{{ apc_sma_info */
-apc_sma_info_t* apc_sma_info(zend_bool limited)
+apc_sma_info_t* apc_sma_info(zend_bool limited TSRMLS_DC)
 {
     apc_sma_info_t* info;
     apc_sma_link_t** link;
@@ -642,11 +641,11 @@ apc_sma_info_t* apc_sma_info(zend_bool limited)
         return NULL;
     }
 
-    info = (apc_sma_info_t*) apc_emalloc(sizeof(apc_sma_info_t));
+    info = (apc_sma_info_t*) apc_emalloc(sizeof(apc_sma_info_t) TSRMLS_CC);
     info->num_seg = sma_numseg;
     info->seg_size = sma_segsize - (ALIGNWORD(sizeof(sma_header_t)) + ALIGNWORD(sizeof(block_t)) + ALIGNWORD(sizeof(block_t)));
 
-    info->list = apc_emalloc(info->num_seg * sizeof(apc_sma_link_t*));
+    info->list = apc_emalloc(info->num_seg * sizeof(apc_sma_link_t*) TSRMLS_CC);
     for (i = 0; i < sma_numseg; i++) {
         info->list[i] = NULL;
     }
@@ -668,7 +667,7 @@ apc_sma_info_t* apc_sma_info(zend_bool limited)
             CHECK_CANARY(cur);
 #endif
 
-            *link = apc_emalloc(sizeof(apc_sma_link_t));
+            *link = apc_emalloc(sizeof(apc_sma_link_t) TSRMLS_CC);
             (*link)->size = cur->size;
             (*link)->offset = prv->fnext;
             (*link)->next = NULL;
@@ -690,7 +689,7 @@ apc_sma_info_t* apc_sma_info(zend_bool limited)
 /* }}} */
 
 /* {{{ apc_sma_free_info */
-void apc_sma_free_info(apc_sma_info_t* info)
+void apc_sma_free_info(apc_sma_info_t* info TSRMLS_DC)
 {
     int i;
 
@@ -699,11 +698,11 @@ void apc_sma_free_info(apc_sma_info_t* info)
         while (p) {
             apc_sma_link_t* q = p;
             p = p->next;
-            apc_efree(q);
+            apc_efree(q TSRMLS_CC);
         }
     }
-    apc_efree(info->list);
-    apc_efree(info);
+    apc_efree(info->list TSRMLS_CC);
+    apc_efree(info TSRMLS_CC);
 }
 /* }}} */
 

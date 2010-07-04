@@ -33,12 +33,12 @@
 /* true global */
 int apc_reserved_offset;
 
-void* apc_php_malloc(size_t n)
+void* apc_php_malloc(size_t n TSRMLS_DC)
 {
     return emalloc(n);
 }
 
-void apc_php_free(void* p)
+void apc_php_free(void* p TSRMLS_DC)
 {
     efree(p);
 }

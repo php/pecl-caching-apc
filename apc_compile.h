@@ -116,7 +116,7 @@ extern zend_class_entry* apc_copy_class_entry_for_execution(zend_class_entry* sr
  * This is required to minimize memory leak warnings and to ensure correct destructor
  * ordering of some variables.
  */
-extern void apc_free_class_entry_after_execution(zend_class_entry* src);
+extern void apc_free_class_entry_after_execution(zend_class_entry* src TSRMLS_DC);
 
 /*
  * Optimization callback definition and registration function. 

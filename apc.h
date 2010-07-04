@@ -62,16 +62,16 @@
 #include "main/php_streams.h"
 
 /* typedefs for extensible memory allocators */
-typedef void* (*apc_malloc_t)(size_t);
-typedef void  (*apc_free_t)  (void*);
+typedef void* (*apc_malloc_t)(size_t TSRMLS_DC);
+typedef void  (*apc_free_t)  (void * TSRMLS_DC);
 
 /* wrappers for memory allocation routines */
-extern void* apc_emalloc(size_t n);
+extern void* apc_emalloc(size_t n TSRMLS_DC);
 extern void* apc_erealloc(void* p, size_t n);
-extern void apc_efree(void* p);
+extern void apc_efree(void* p TSRMLS_DC);
 extern char* apc_estrdup(const char* s);
-extern void* apc_xstrdup(const char* s, apc_malloc_t f);
-extern void* apc_xmemcpy(const void* p, size_t n, apc_malloc_t f);
+extern void* apc_xstrdup(const char* s, apc_malloc_t f TSRMLS_DC);
+extern void* apc_xmemcpy(const void* p, size_t n, apc_malloc_t f TSRMLS_DC);
 
 /* console display functions */
 extern void apc_eprint(const char* fmt, ...);
@@ -80,9 +80,9 @@ extern void apc_dprint(const char* fmt, ...);
 extern void apc_nprint(const char* fmt, ...);
 
 /* string and text manipulation */
-extern char* apc_append(const char* s, const char* t);
-extern char* apc_substr(const char* s, int start, int length);
-extern char** apc_tokenize(const char* s, char delim);
+extern char* apc_append(const char* s, const char* t TSRMLS_DC);
+extern char* apc_substr(const char* s, int start, int length TSRMLS_DC);
+extern char** apc_tokenize(const char* s, char delim TSRMLS_DC);
 
 /* filesystem functions */
 
@@ -96,7 +96,7 @@ extern int apc_search_paths(const char* filename, const char* path, apc_fileinfo
 
 /* regular expression wrapper functions */
 extern void* apc_regex_compile_array(char* patterns[] TSRMLS_DC);
-extern void apc_regex_destroy_array(void* p);
+extern void apc_regex_destroy_array(void* p TSRMLS_DC);
 extern int apc_regex_match_array(void* p, const char* input);
 
 /* apc_crc32: returns the CRC-32 checksum of the first len bytes in buf */

@@ -104,7 +104,7 @@ int apc_lookup_function_hook(char *name, int len, ulong hash, zend_function **fe
     apc_context_t ctxt = {0,};
     TSRMLS_FETCH();
 
-    ctxt.pool = apc_pool_create(APC_UNPOOL, apc_php_malloc, apc_php_free, apc_sma_protect, apc_sma_unprotect);
+    ctxt.pool = apc_pool_create(APC_UNPOOL, apc_php_malloc, apc_php_free, apc_sma_protect, apc_sma_unprotect TSRMLS_CC);
     ctxt.copy = APC_COPY_OUT_OPCODE;
 
     if(zend_hash_quick_find(APCG(lazy_function_table), name, len, hash, (void**)&fn) == SUCCESS) {
@@ -159,7 +159,7 @@ static int install_class(apc_class_t cl, apc_context_t* ctxt, int lazy TSRMLS_DC
     /*
      * XXX: We need to free this somewhere...
      */
-    allocated_ce = apc_php_malloc(sizeof(zend_class_entry*));
+    allocated_ce = apc_php_malloc(sizeof(zend_class_entry*) TSRMLS_CC);
 
     if(!allocated_ce) {
         return FAILURE;
@@ -238,7 +238,7 @@ int apc_lookup_class_hook(char *name, int len, ulong hash, zend_class_entry ***c
         return FAILURE;
     }
 
-    ctxt.pool = apc_pool_create(APC_UNPOOL, apc_php_malloc, apc_php_free, apc_sma_protect, apc_sma_unprotect);
+    ctxt.pool = apc_pool_create(APC_UNPOOL, apc_php_malloc, apc_php_free, apc_sma_protect, apc_sma_unprotect TSRMLS_CC);
     ctxt.copy = APC_COPY_OUT_OPCODE;
 
     if(install_class(*cl, &ctxt, 0 TSRMLS_CC) == FAILURE) {
@@ -421,7 +421,7 @@ zend_bool apc_compile_cache_entry(apc_cache_key_t key, zend_file_handle* h, int 
     }
 
     ctxt.pool = apc_pool_create(APC_MEDIUM_POOL, apc_sma_malloc, apc_sma_free, 
-                                                 apc_sma_protect, apc_sma_unprotect);
+                                                 apc_sma_protect, apc_sma_unprotect TSRMLS_CC);
     if (!ctxt.pool) {
         apc_wprint("Unable to allocate memory for pool.");
         return FAILURE;
@@ -481,7 +481,7 @@ zend_bool apc_compile_cache_entry(apc_cache_key_t key, zend_file_handle* h, int 
     return SUCCESS;
 
 freepool:
-    apc_pool_destroy(ctxt.pool);
+    apc_pool_destroy(ctxt.pool TSRMLS_CC);
     ctxt.pool = NULL;
 
     return FAILURE;
@@ -539,7 +539,7 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
 
     if(!APCG(force_file_update)) {
         /* search for the file in the cache */
-        cache_entry = apc_cache_find(apc_cache, key, t);
+        cache_entry = apc_cache_find(apc_cache, key, t TSRMLS_CC);
         ctxt.force_update = 0;
     } else {
         cache_entry = NULL;
@@ -550,7 +550,7 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
         int dummy = 1;
 
         ctxt.pool = apc_pool_create(APC_UNPOOL, apc_php_malloc, apc_php_free,
-                                                apc_sma_protect, apc_sma_unprotect);
+                                                apc_sma_protect, apc_sma_unprotect TSRMLS_CC);
         if (!ctxt.pool) {
             apc_wprint("Unable to allocate memory for pool.");
             return old_compile_file(h, type TSRMLS_CC);
@@ -572,7 +572,7 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
             add_next_index_string(APCG(filehits), h->filename, 1);
 #endif
             /* this is an unpool, which has no cleanup - this only free's the pool header */
-            apc_pool_destroy(ctxt.pool);
+            apc_pool_destroy(ctxt.pool TSRMLS_CC);
             return op_array;
         }
         if(APCG(report_autofilter)) {
@@ -622,8 +622,8 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
         if (apc_compile_cache_entry(key, h, type, t, &op_array, &cache_entry TSRMLS_CC) == SUCCESS) {
             ctxt.pool = cache_entry->pool;
             ctxt.copy = APC_COPY_IN_OPCODE;
-            if (apc_cache_insert(apc_cache, key, cache_entry, &ctxt, t) != 1) {
-                apc_pool_destroy(ctxt.pool);
+            if (apc_cache_insert(apc_cache, key, cache_entry, &ctxt, t TSRMLS_CC) != 1) {
+                apc_pool_destroy(ctxt.pool TSRMLS_CC);
                 ctxt.pool = NULL;
             }
         }
@@ -770,12 +770,12 @@ int apc_module_init(int module_number TSRMLS_DC)
 {
     /* apc initialization */
 #if APC_MMAP
-    apc_sma_init(APCG(shm_segments), APCG(shm_size), APCG(mmap_file_mask));
+    apc_sma_init(APCG(shm_segments), APCG(shm_size), APCG(mmap_file_mask) TSRMLS_CC);
 #else
-    apc_sma_init(APCG(shm_segments), APCG(shm_size), NULL);
+    apc_sma_init(APCG(shm_segments), APCG(shm_size), NULL TSRMLS_CC);
 #endif
-    apc_cache = apc_cache_create(APCG(num_files_hint), APCG(gc_ttl), APCG(ttl));
-    apc_user_cache = apc_cache_create(APCG(user_entries_hint), APCG(gc_ttl), APCG(user_ttl));
+    apc_cache = apc_cache_create(APCG(num_files_hint), APCG(gc_ttl), APCG(ttl) TSRMLS_CC);
+    apc_user_cache = apc_cache_create(APCG(user_entries_hint), APCG(gc_ttl), APCG(user_ttl) TSRMLS_CC);
 
     /* override compilation */
     old_compile_file = zend_compile_file;
@@ -849,9 +849,9 @@ int apc_module_shutdown(TSRMLS_D)
         apc_cache_release(apc_cache, cache_entry);
     }
 
-    apc_cache_destroy(apc_cache);
-    apc_cache_destroy(apc_user_cache);
-    apc_sma_cleanup();
+    apc_cache_destroy(apc_cache TSRMLS_CC);
+    apc_cache_destroy(apc_user_cache TSRMLS_CC);
+    apc_sma_cleanup(TSRMLS_C);
 
 #ifdef ZEND_ENGINE_2_4
     apc_interned_strings_shutdown(TSRMLS_C);
@@ -911,7 +911,7 @@ static void apc_deactivate(TSRMLS_D)
                     cache_entry->data.file.classes[i].name,
                     cache_entry->data.file.classes[i].name_len+1);
 
-                apc_free_class_entry_after_execution(zce);
+                apc_free_class_entry_after_execution(zce TSRMLS_CC);
             }
         }
         apc_cache_release(apc_cache, cache_entry);
