@@ -32,7 +32,7 @@
   <name>Edin Kadribasic</name>
   <user>edink</user>
   <email>edink@emini.dk</email>
-  <active>yes</active>
+  <active>no</active>
  </developer>
  <developer>
   <name>Ilia Alshanetsky</name>
@@ -44,13 +44,13 @@
   <name>Marcus Börger</name>
   <user>helly</user>
   <email>helly@php.net</email>
-  <active>yes</active>
+  <active>no</active>
  </developer>
  <developer>
   <name>Sara Golemon</name>
   <user>pollita</user>
   <email>pollita@php.net</email>
-  <active>yes</active>
+  <active>no</active>
  </developer>
  <developer>
   <name>Brian Shire</name>
@@ -75,6 +75,7 @@
 - ZTS fixes and optimizations (Kalle, Felipe)
 - Added support for interned strings, run-time caches and Zend Engine 2.4 (Dmitry)
 - Added apc_exists() (Rasmus)
+- Fixed pecl bug #17597 (keys with embedded NUL) (Gopal)
 - Fixed pecl bug #17650 (Fix goto jump offsets) (Gopal)
 - Fixed pecl bug #17527 (Standardized error reporting) (Gopal, Paul Dragoonis)
 - Fixed pecl bug #17089 (Scrub the constant table of all inherited members before caching) (Gopal)
