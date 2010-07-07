@@ -17,6 +17,10 @@ var_dump($bar);
 $bar = 'nice';
 var_dump($bar);
 
+apc_store('foo\x00bar', $foo);
+$bar = apc_fetch('foo\x00bar');
+var_dump($bar);
+
 ?>
 ===DONE===
 <?php exit(0); ?>
@@ -24,4 +28,5 @@ var_dump($bar);
 string(11) "hello world"
 string(11) "hello world"
 string(4) "nice"
+string(11) "hello world"
 ===DONE===
