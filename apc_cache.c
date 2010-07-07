@@ -66,7 +66,7 @@ slot_t* make_slot(apc_cache_key_t key, apc_cache_entry_t* value, slot_t* next, t
     if (!p) return NULL;
 
     if(value->type == APC_CACHE_ENTRY_USER) {
-        char *identifier = (char*) apc_pstrdup(key.data.user.identifier, value->pool TSRMLS_CC);
+        char *identifier = (char*) apc_pmemcpy(key.data.user.identifier, key.data.user.identifier_len, value->pool TSRMLS_CC);
         if (!identifier) {
             return NULL;
         }
