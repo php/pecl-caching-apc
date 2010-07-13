@@ -55,6 +55,7 @@ static apc_iterator_item_t* apc_iterator_item_ctor(apc_iterator_t *iterator, slo
     } else if (slot->key.type == APC_CACHE_KEY_FPFILE) {
         item->key = estrndup((char*)slot->key.data.fpfile.fullpath, slot->key.data.fpfile.fullpath_len);
         item->key_len = slot->key.data.fpfile.fullpath_len;
+        item->filename_key = item->key;
     } else {
         apc_eprint("Internal error, invalid entry type.");
     }
