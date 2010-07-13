@@ -55,6 +55,7 @@ struct _apc_rfc1867_data {
     size_t prev_bytes_processed;
     int update_freq;
     double rate;
+    int started;
 };
 /* }}} */
 

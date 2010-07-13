@@ -91,6 +91,7 @@ int apc_rfc1867_progress(uint event, void *event_data, void **extra TSRMLS_DC) {
                 RFC1867_DATA(bytes_processed)   = 0;
                 RFC1867_DATA(rate)              = 0;
                 RFC1867_DATA(update_freq)       = (int) APCG(rfc1867_freq);
+                RFC1867_DATA(started)           = 0;
                 
                 if(RFC1867_DATA(update_freq) < 0) {  // frequency is a percentage, not bytes
                     RFC1867_DATA(update_freq) = (int) (RFC1867_DATA(content_length) * APCG(rfc1867_freq) / 100); 
@@ -103,7 +104,20 @@ int apc_rfc1867_progress(uint event, void *event_data, void **extra TSRMLS_DC) {
                 int prefix_len = strlen(APCG(rfc1867_prefix));
                 multipart_event_formdata *data = (multipart_event_formdata *) event_data;
                 if(data->name && !strncasecmp(data->name, APCG(rfc1867_name), strlen(APCG(rfc1867_name))) 
-                    && data->value && data->length && data->length < sizeof(RFC1867_DATA(tracking_key)) - prefix_len) {
+                    && data->value && data->length) { 
+                    
+                    if(data->length >= sizeof(RFC1867_DATA(tracking_key)) - prefix_len) {
+                        apc_wprint("Key too long for '%s'. Maximum size is '%d' characters.", 
+                                    APCG(rfc1867_name), 
+                                    sizeof(RFC1867_DATA(tracking_key)) - prefix_len);
+                        break;
+                    }
+
+                    if(RFC1867_DATA(started)) {
+                        apc_wprint("Upload progress key '%s' should be before the file upload entry in the form.", 
+                                    APCG(rfc1867_name)); 
+                        break;
+                    }
 
                     strlcat(RFC1867_DATA(tracking_key), APCG(rfc1867_prefix), 63);
                     strlcat(RFC1867_DATA(tracking_key), *data->value, 63);
@@ -114,23 +128,26 @@ int apc_rfc1867_progress(uint event, void *event_data, void **extra TSRMLS_DC) {
             break;
 
         case MULTIPART_EVENT_FILE_START:
-            if(*RFC1867_DATA(tracking_key)) {
-                multipart_event_file_start *data = (multipart_event_file_start *) event_data;
+            {
+                RFC1867_DATA(started) = 1;
+                if(*RFC1867_DATA(tracking_key)) {
+                    multipart_event_file_start *data = (multipart_event_file_start *) event_data;
 
-                RFC1867_DATA(bytes_processed) = data->post_bytes_processed;
-                strncpy(RFC1867_DATA(filename),*data->filename,127);
-                RFC1867_DATA(temp_filename) = NULL;
-                strncpy(RFC1867_DATA(name),data->name,63);
-                ALLOC_INIT_ZVAL(track);
-                array_init(track);
-                add_assoc_long(track, "total", RFC1867_DATA(content_length));
-                add_assoc_long(track, "current", RFC1867_DATA(bytes_processed));
-                add_assoc_string(track, "filename", RFC1867_DATA(filename), 1);
-                add_assoc_string(track, "name", RFC1867_DATA(name), 1);
-                add_assoc_long(track, "done", 0);
-                add_assoc_double(track, "start_time", RFC1867_DATA(start_time));
-                _apc_store(RFC1867_DATA(tracking_key), RFC1867_DATA(key_length), track, APCG(rfc1867_ttl), 0 TSRMLS_CC);
-                zval_ptr_dtor(&track);
+                    RFC1867_DATA(bytes_processed) = data->post_bytes_processed;
+                    strncpy(RFC1867_DATA(filename),*data->filename,127);
+                    RFC1867_DATA(temp_filename) = NULL;
+                    strncpy(RFC1867_DATA(name),data->name,63);
+                    ALLOC_INIT_ZVAL(track);
+                    array_init(track);
+                    add_assoc_long(track, "total", RFC1867_DATA(content_length));
+                    add_assoc_long(track, "current", RFC1867_DATA(bytes_processed));
+                    add_assoc_string(track, "filename", RFC1867_DATA(filename), 1);
+                    add_assoc_string(track, "name", RFC1867_DATA(name), 1);
+                    add_assoc_long(track, "done", 0);
+                    add_assoc_double(track, "start_time", RFC1867_DATA(start_time));
+                    _apc_store(RFC1867_DATA(tracking_key), RFC1867_DATA(key_length), track, APCG(rfc1867_ttl), 0 TSRMLS_CC);
+                    zval_ptr_dtor(&track);
+                }
             }
             break;
 
