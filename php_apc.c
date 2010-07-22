@@ -1458,7 +1458,7 @@ PHP_FUNCTION(apc_compile_file) {
  */
 PHP_FUNCTION(apc_bin_dump) {
 
-    zval *z_files, *z_user_vars;
+    zval *z_files = NULL, *z_user_vars = NULL;
     HashTable *h_files, *h_user_vars;
     apc_bd_t *bd;
 
@@ -1489,9 +1489,9 @@ PHP_FUNCTION(apc_bin_dump) {
  */
 PHP_FUNCTION(apc_bin_dumpfile) {
 
-    zval *z_files, *z_user_vars;
+    zval *z_files = NULL, *z_user_vars = NULL;
     HashTable *h_files, *h_user_vars;
-    char *filename;
+    char *filename = NULL;
     int filename_len;
     long flags=0;
     zval *zcontext = NULL;

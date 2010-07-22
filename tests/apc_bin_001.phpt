@@ -9,6 +9,7 @@ apc.enable_cli=1
 <?php
 apc_clear_cache('file');
 apc_store('testkey','testvalue');
+apc_bin_dump();
 $dump = apc_bin_dump(array(), NULL);
 apc_clear_cache('user');
 var_dump(apc_fetch('testkey'));
