@@ -58,6 +58,45 @@ static unsigned int hash(apc_cache_key_t key)
 #define string_nhash_8(s,len) (unsigned int)(zend_inline_hash_func(s, len))
 /* }}} */
 
+/* {{{ make_prime */
+static int const primes[] = {
+  257, /*   256 */
+  521, /*   512 */
+ 1031, /*  1024 */
+ 2053, /*  2048 */
+ 3079, /*  3072 */
+ 4099, /*  4096 */
+ 5147, /*  5120 */
+ 6151, /*  6144 */
+ 7177, /*  7168 */
+ 8209, /*  8192 */
+ 9221, /*  9216 */
+10243, /* 10240 */
+#if 0
+11273, /* 11264 */
+12289, /* 12288 */
+13313, /* 13312 */
+14341, /* 14336 */
+15361, /* 15360 */
+16411, /* 16384 */
+17417, /* 17408 */
+18433, /* 18432 */
+19457, /* 19456 */
+#endif
+0      /* sentinel */
+};
+
+static int make_prime(int n)
+{
+    int *k = (int*)primes; 
+    while(*k) {
+        if((*k) > n) return *k;
+        k++;
+    }
+    return *(k-1);
+}
+/* }}} */
+
 /* {{{ make_slot */
 slot_t* make_slot(apc_cache_key_t key, apc_cache_entry_t* value, slot_t* next, time_t t TSRMLS_DC)
 {
@@ -196,7 +235,7 @@ apc_cache_t* apc_cache_create(int size_hint, int gc_ttl, int ttl TSRMLS_DC)
     int num_slots;
     int i;
 
-    num_slots = size_hint > 0 ? size_hint*2 : 2000;
+    num_slots = make_prime(size_hint > 0 ? size_hint : 2000);
 
     cache = (apc_cache_t*) apc_emalloc(sizeof(apc_cache_t) TSRMLS_CC);
     cache_size = sizeof(cache_header_t) + num_slots*sizeof(slot_t*);
