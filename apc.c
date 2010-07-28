@@ -245,7 +245,7 @@ int apc_search_paths(const char* filename, const char* path, apc_fileinfo_t* fil
 
     if(wrapper != &php_plain_files_wrapper) {
         if(APC_URL_STAT(wrapper, path_for_open, &fileinfo->st_buf) == 0) {
-            strncpy(fileinfo->fullpath, path_for_open, MAXPATHLEN);
+            strlcpy(fileinfo->fullpath, path_for_open, MAXPATHLEN);
             return 0;
         }
         return -1; /* cannot stat */
@@ -253,7 +253,7 @@ int apc_search_paths(const char* filename, const char* path, apc_fileinfo_t* fil
 
     if (IS_ABSOLUTE_PATH(path_for_open, strlen(path_for_open)) && 
             APC_URL_STAT(wrapper, path_for_open, &fileinfo->st_buf) == 0) {
-        strncpy(fileinfo->fullpath, path_for_open, MAXPATHLEN);
+        strlcpy(fileinfo->fullpath, path_for_open, MAXPATHLEN);
         return 0;
     }
 

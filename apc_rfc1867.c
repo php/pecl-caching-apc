@@ -134,9 +134,9 @@ int apc_rfc1867_progress(uint event, void *event_data, void **extra TSRMLS_DC) {
                     multipart_event_file_start *data = (multipart_event_file_start *) event_data;
 
                     RFC1867_DATA(bytes_processed) = data->post_bytes_processed;
-                    strncpy(RFC1867_DATA(filename),*data->filename,127);
+                    strlcpy(RFC1867_DATA(filename),*data->filename,128);
                     RFC1867_DATA(temp_filename) = NULL;
-                    strncpy(RFC1867_DATA(name),data->name,63);
+                    strlcpy(RFC1867_DATA(name),data->name,64);
                     ALLOC_INIT_ZVAL(track);
                     array_init(track);
                     add_assoc_long(track, "total", RFC1867_DATA(content_length));
