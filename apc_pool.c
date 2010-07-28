@@ -236,9 +236,8 @@ static void* apc_realpool_alloc(apc_pool *pool, size_t size TSRMLS_DC)
     unsigned char *redzone  = NULL;
     size_t redsize  = 0;
     size_t *sizeinfo= NULL;
-
-    pool_block *entry;
-
+    pool_block *entry = NULL;
+    
     if(APC_POOL_HAS_REDZONES(pool)) {
         redsize = REDZONE_SIZE(size); /* redsize might be re-using word size padding */
         realsize = size + redsize;    /* recalculating realsize */
@@ -360,7 +359,7 @@ static int apc_realpool_check_integrity(apc_realpool *rpool)
 }
 /* }}} */
 
-/* {{{ apc_pool_free */
+/* {{{ apc_realpool_free */
 /*
  * free does not do anything other than
  * check for redzone values when free'ing
@@ -392,7 +391,7 @@ static void apc_realpool_cleanup(apc_pool *pool TSRMLS_DC)
 /* {{{ apc_realpool_create */
 static apc_pool* apc_realpool_create(apc_pool_type type, apc_malloc_t allocate, apc_free_t deallocate, 
                                                          apc_protect_t protect, apc_unprotect_t unprotect
-							 TSRMLS_DC)
+                                                         TSRMLS_DC)
 {
 
     size_t dsize = 0;
