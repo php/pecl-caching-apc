@@ -704,7 +704,7 @@ int _apc_store(char *strkey, int strkey_len, const zval *val, const unsigned int
         goto freepool;
     }
 
-    if (apc_cache_is_last_key(apc_user_cache, &key, t TSRMLS_CC)) {
+    if (apc_cache_is_last_key(apc_user_cache, &key, 0, t TSRMLS_CC)) {
 	    goto freepool;
     }
 
