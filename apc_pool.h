@@ -33,19 +33,30 @@
 #include "apc.h"
 #include "apc_sma.h"
 
+/* #define APC_POOL_DEBUG 1 */
+
 typedef enum {
     APC_UNPOOL         = 0x0,
     APC_SMALL_POOL     = 0x1,
     APC_MEDIUM_POOL    = 0x2,
     APC_LARGE_POOL     = 0x3,
     APC_POOL_SIZE_MASK = 0x7,   /* waste a bit */
+#if APC_POOL_DEBUG
     APC_POOL_REDZONES  = 0x08,
     APC_POOL_SIZEINFO  = 0x10,
     APC_POOL_OPT_MASK  = 0x18
+#endif
 } apc_pool_type;
 
+#if APC_POOL_DEBUG
 #define APC_POOL_HAS_SIZEINFO(pool) ((pool->type & APC_POOL_SIZEINFO)!=0)
 #define APC_POOL_HAS_REDZONES(pool) ((pool->type & APC_POOL_REDZONES)!=0)
+#else
+/* let gcc optimize away the optional features */
+#define APC_POOL_HAS_SIZEINFO(pool) (0)
+#define APC_POOL_HAS_REDZONES(pool) (0)
+#endif
+
 
 typedef struct _apc_pool apc_pool;
 
