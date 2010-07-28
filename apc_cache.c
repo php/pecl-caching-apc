@@ -1237,16 +1237,14 @@ zend_bool apc_cache_is_last_key(apc_cache_t* cache, apc_cache_key_t* key, unsign
 
     if(!h) h = string_nhash_8(key->data.user.identifier, keylen);
 
-    if(!APCG(slam_defense)) {
-        return 0;
-    }
-
     /* unlocked reads, but we're not shooting for 100% success with this */
     if(lastkey->h == h && keylen == lastkey->keylen) {
         if(lastkey->mtime == t) {
             /* potential cache slam */
-            apc_wprint("Potential cache slam averted for key '%s'", key->data.user.identifier);
-            return 1;
+            if(APCG(slam_defense)) {
+                apc_wprint("Potential cache slam averted for key '%s'", key->data.user.identifier);
+                return 1;
+            }
         }
     }
 
