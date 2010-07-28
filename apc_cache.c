@@ -824,12 +824,8 @@ int apc_cache_make_file_key(apc_cache_key_t* key,
                        TSRMLS_DC)
 {
     struct stat *tmp_buf=NULL;
-    struct apc_fileinfo_t fileinfo = { NULL, };
+    struct apc_fileinfo_t *fileinfo = NULL;
     int len;
-#ifdef PHP_WIN32
-	HANDLE hFile;
-	BY_HANDLE_FILE_INFORMATION hInfo;
-#endif
 
     assert(key != NULL);
 
@@ -837,7 +833,7 @@ int apc_cache_make_file_key(apc_cache_key_t* key,
 #ifdef __DEBUG_APC__
         fprintf(stderr,"No filename and no path_translated - bailing\n");
 #endif
-        return 0;
+        goto cleanup;
     }
 
     len = strlen(filename);
@@ -847,46 +843,54 @@ int apc_cache_make_file_key(apc_cache_key_t* key,
             key->data.fpfile.fullpath_len = len;
             key->mtime = t;
             key->type = APC_CACHE_KEY_FPFILE;
-            return 1;
+            goto success;
         } else if(APCG(canonicalize)) {
-            if (apc_search_paths(filename, include_path, &fileinfo TSRMLS_CC) != 0) {
+
+            fileinfo = apc_php_malloc(sizeof(apc_fileinfo_t) TSRMLS_CC);
+
+            if (apc_search_paths(filename, include_path, fileinfo TSRMLS_CC) != 0) {
                 apc_wprint("apc failed to locate %s - bailing", filename);
-                return 0;
+                goto cleanup;
             }
 
-            if(!realpath(fileinfo.fullpath, APCG(canon_path))) {
+            if(!realpath(fileinfo->fullpath, APCG(canon_path))) {
                 apc_wprint("realpath failed to canonicalize %s - bailing", filename);
-                return 0;
+                goto cleanup;
             }
 
             key->data.fpfile.fullpath = APCG(canon_path);
             key->data.fpfile.fullpath_len = strlen(APCG(canon_path));
             key->mtime = t;
             key->type = APC_CACHE_KEY_FPFILE;
-            return 1;
+            goto success;
         }
         /* fall through to stat mode */
     }
 
+    fileinfo = apc_php_malloc(sizeof(apc_fileinfo_t) TSRMLS_CC);
+
+    assert(fileinfo != NULL);
+
     if(!strcmp(SG(request_info).path_translated, filename)) {
         tmp_buf = sapi_get_stat(TSRMLS_C);  /* Apache has already done this stat() for us */
     }
+
     if(tmp_buf) {
-        fileinfo.st_buf.sb = *tmp_buf;
+        fileinfo->st_buf.sb = *tmp_buf;
     } else {
-        if (apc_search_paths(filename, include_path, &fileinfo TSRMLS_CC) != 0) {
+        if (apc_search_paths(filename, include_path, fileinfo TSRMLS_CC) != 0) {
 #ifdef __DEBUG_APC__
             fprintf(stderr,"Stat failed %s - bailing (%s) (%d)\n",filename,SG(request_info).path_translated);
 #endif
-            return 0;
+            goto cleanup;
         }
     }
 
-    if(APCG(max_file_size) < fileinfo.st_buf.sb.st_size) {
+    if(APCG(max_file_size) < fileinfo->st_buf.sb.st_size) {
 #ifdef __DEBUG_APC__
         fprintf(stderr,"File is too big %s (%d - %ld) - bailing\n",filename,t,fileinfo.st_buf.sb.st_size);
 #endif
-        return 0;
+        goto cleanup;
     }
 
     /*
@@ -901,38 +905,15 @@ int apc_cache_make_file_key(apc_cache_key_t* key,
      * tiny safety is easier than educating the world.  This is now
      * configurable, but the default is still 2 seconds.
      */
-    if(APCG(file_update_protection) && (t - fileinfo.st_buf.sb.st_mtime < APCG(file_update_protection)) && !APCG(force_file_update)) {
+    if(APCG(file_update_protection) && (t - fileinfo->st_buf.sb.st_mtime < APCG(file_update_protection)) && !APCG(force_file_update)) {
 #ifdef __DEBUG_APC__
         fprintf(stderr,"File is too new %s (%d - %d) - bailing\n",filename,t,fileinfo.st_buf.sb.st_mtime);
 #endif
-        return 0;
+        goto cleanup;
     }
 
-#if PHP_WIN32
-	hFile = CreateFile(filename, GENERIC_WRITE, FILE_SHARE_WRITE|FILE_SHARE_READ, NULL, OPEN_ALWAYS, FILE_FLAG_BACKUP_SEMANTICS, NULL);
-	if (!hFile) {
-# ifdef __DEBUG_APC__
-		fprintf(stderr,"Cannot create a file HANDLE for %s\n", filename);
-# endif
-		return 0;
-	}
-
-	if (!GetFileInformationByHandle(hFile, &hInfo)) {
-# ifdef __DEBUG_APC__
-		fprintf(stderr,"Cannot get file information from handle\n");
-# endif
-		CloseHandle(hFile);
-		return 0;
-	}
-	CloseHandle(hFile);
-
-	key->data.file.device = hInfo.dwVolumeSerialNumber;
-	key->data.file.inode = (((apc_ino_t)(hInfo.nFileIndexHigh) << 32) | (apc_ino_t) hInfo.nFileIndexLow);
-
-#else
-    key->data.file.device = fileinfo.st_buf.sb.st_dev;
-    key->data.file.inode  = fileinfo.st_buf.sb.st_ino;
-#endif
+    key->data.file.device = fileinfo->st_buf.sb.st_dev;
+    key->data.file.inode  = fileinfo->st_buf.sb.st_ino;
 
     /*
      * If working with content management systems that like to munge the mtime, 
@@ -946,12 +927,27 @@ int apc_cache_make_file_key(apc_cache_key_t* key,
      * set the apc.stat_ctime=true to enable this check.
      */
     if(APCG(stat_ctime)) {
-        key->mtime  = (fileinfo.st_buf.sb.st_ctime > fileinfo.st_buf.sb.st_mtime) ? fileinfo.st_buf.sb.st_ctime : fileinfo.st_buf.sb.st_mtime; 
+        key->mtime  = (fileinfo->st_buf.sb.st_ctime > fileinfo->st_buf.sb.st_mtime) ? fileinfo->st_buf.sb.st_ctime : fileinfo->st_buf.sb.st_mtime; 
     } else {
-        key->mtime = fileinfo.st_buf.sb.st_mtime;
+        key->mtime = fileinfo->st_buf.sb.st_mtime;
     }
     key->type = APC_CACHE_KEY_FILE;
+
+success: 
+
+    if(fileinfo != NULL) {
+        apc_php_free(fileinfo TSRMLS_CC);
+    }
+
     return 1;
+
+cleanup:
+    
+    if(fileinfo != NULL) {
+        apc_php_free(fileinfo TSRMLS_CC);
+    }
+
+    return 0;
 }
 /* }}} */
 
