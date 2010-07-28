@@ -220,7 +220,47 @@ char** apc_tokenize(const char* s, char delim TSRMLS_DC)
 
 /* }}} */
 
-/* {{{ apc stat */
+
+/* {{{ apc_win32_restat */
+#ifdef PHP_WIN32
+int apc_win32_restat(apc_fileinfo_t *fileinfo)
+{
+    HANDLE hFile;
+    BY_HANDLE_FILE_INFORMATION hInfo;
+
+    hFile = CreateFile(filename, GENERIC_WRITE, FILE_SHARE_WRITE|FILE_SHARE_READ, NULL, OPEN_ALWAYS, FILE_FLAG_BACKUP_SEMANTICS, NULL);
+
+    if (!hFile) {
+# ifdef __DEBUG_APC__
+        fprintf(stderr,"Cannot create a file HANDLE for %s\n", filename);
+# endif
+        return -1;
+    }
+
+    if (!GetFileInformationByHandle(hFile, &hInfo)) {
+# ifdef __DEBUG_APC__
+        fprintf(stderr,"Cannot get file information from handle\n");
+# endif
+        CloseHandle(hFile);
+        return -1;
+    }
+
+    CloseHandle(hFile);
+
+    fileinfo->st_buf.sb.st_dev = hInfo.dwVolumeSerialNumber;
+    fileinfo->st_buf.sb.st_ino = (((apc_ino_t)(hInfo.nFileIndexHigh) << 32) | (apc_ino_t) hInfo.nFileIndexLow);
+
+    return 0;
+}
+#else
+int apc_win32_restat(apc_fileinfo_t *fileinfo)
+{
+    return 0;
+}
+#endif
+/* }}} */
+
+/* {{{ apc_search_paths */
 /* similar to php_stream_stat_path */
 #define APC_URL_STAT(wrapper, filename, pstatbuf) \
     ((wrapper)->wops->url_stat((wrapper), (filename), PHP_STREAM_URL_STAT_QUIET, (pstatbuf), NULL TSRMLS_CC))
@@ -253,7 +293,7 @@ int apc_search_paths(const char* filename, const char* path, apc_fileinfo_t* fil
     if(wrapper != &php_plain_files_wrapper) {
         if(APC_URL_STAT(wrapper, path_for_open, &fileinfo->st_buf) == 0) {
             fileinfo->fullpath = COPY_IF_CHANGED(path_for_open);
-            return 0;
+            return apc_win32_restat(fileinfo);
         }
         return -1; /* cannot stat */
     }
@@ -261,7 +301,7 @@ int apc_search_paths(const char* filename, const char* path, apc_fileinfo_t* fil
     if (IS_ABSOLUTE_PATH(path_for_open, strlen(path_for_open)) && 
             APC_URL_STAT(wrapper, path_for_open, &fileinfo->st_buf) == 0) {
         fileinfo->fullpath = COPY_IF_CHANGED(path_for_open);
-        return 0;
+        return apc_win32_restat(fileinfo);
     }
 
     paths = apc_tokenize(path, DEFAULT_DIR_SEPARATOR TSRMLS_CC);
@@ -303,7 +343,7 @@ int apc_search_paths(const char* filename, const char* path, apc_fileinfo_t* fil
     }
     apc_efree(paths TSRMLS_CC);
 
-    return found ? 0 : -1;
+    return found ? apc_win32_restat(fileinfo) : -1;
 }
 
 /* }}} */
