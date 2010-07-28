@@ -1062,7 +1062,7 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_con
          * struct. apc_zend_init() checks to ensure that it fits in a void* */
         flags = (apc_opflags_t*) & (dst->reserved[apc_reserved_offset]);
         memset(flags, 0, sizeof(apc_opflags_t));
-        /* assert(sizeof(apc_opflags_t) < sizeof(dst->reserved)); */
+        /* assert(sizeof(apc_opflags_t) <= sizeof(dst->reserved)); */
     }
 
     for (i = 0; (uint) i < src->last; i++) {
@@ -1119,6 +1119,7 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_con
                             else SET_IF_AUTOGLOBAL(_ENV);
                             else SET_IF_AUTOGLOBAL(_FILES);
                             else SET_IF_AUTOGLOBAL(_REQUEST);
+                            else SET_IF_AUTOGLOBAL(_SESSION);
 #ifdef ZEND_ENGINE_2_4
                             else if(zend_is_auto_global(
                                             Z_STRVAL_P(zo->op1.zv),
@@ -1453,6 +1454,7 @@ static int my_prepare_op_array_for_execution(zend_op_array* dst, zend_op_array* 
     FETCH_AUTOGLOBAL(_ENV);
     FETCH_AUTOGLOBAL(_FILES);
     FETCH_AUTOGLOBAL(_REQUEST);
+    FETCH_AUTOGLOBAL(_SESSION);
 
     if(needcopy) {
 

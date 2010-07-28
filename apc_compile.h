@@ -75,6 +75,7 @@ struct apc_opflags_t {
     unsigned int _ENV           : 1;
     unsigned int _FILES         : 1;
     unsigned int _REQUEST       : 1;
+    unsigned int _SESSION       : 1;
     unsigned int unknown_global : 1;
 };
 /* }}} */
