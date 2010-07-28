@@ -10,12 +10,10 @@ CVS Instructions
 ----------------
 Building from CVS can be done like this:
 
-  cvs -d :pserver:cvsread@cvs.php.net:/repository login
-  Password: phpfi
-  cvs -d :pserver:cvsread@cvs.php.net:/repository co pecl/apc
-  cd pecl/apc
+  svn co http://svn.php.net/repository/pecl/apc/trunk apc
+  cd apc
   phpize
-  ./configure --enable-apc-mmap --with-apxs --with-php-config=/usr/local/php/bin/php-config
+  ./configure --with-php-config=/usr/local/php/bin/php-config
   make
   make install
 
@@ -23,33 +21,12 @@ Suggested Configuration (in your php.ini file)
 ----------------------------------------------
   extension=apc.so
   apc.enabled=1
-  apc.shm_segments=1
   apc.shm_size=128
   apc.ttl=7200
   apc.user_ttl=7200
-  apc.num_files_hint=1024
-  apc.mmap_file_mask=/tmp/apc.XXXXXX
   apc.enable_cli=1
 
 These are fully described at the bottom of this file.
-
-PHP 4 Optimization
-------------------
-If you are trying to get every little bit of speed out of PHP4+APC, you need
-to tell APC where to find your httpd.h file and also add -DAPC_PHP4_STAT to
-your CPPFLAGS.  (if you don't have httpd.h, install the apache_dev package 
-for your OS) and do:
-  export CPPFLAGS="-I/usr/include/apache-1.3 -DAPC_PHP4_STAT" (for bash on Debian)
-  setenv CPPFLAGS "-I/usr/include/apache-1.3 -DAPC_PHP4_STAT" (for tsch on Debian)
-and then re-run your configure script.
-
-This optimization saves a stat syscall on the main script file.  In PHP5 this
-optimization is automatic and doesn't need any special build flags.
-
-The second thing you are going to want to do to save another syscall is to 
-compile using the --with-apxs configure switch.  This should work for both
-Apache1 and Apache2.  Point it directly at your apxs2 script for Apache2.
-eg. --with-apxs=/usr/local/bin/apxs2
 
 +---------------------+
 | QUICK INSTALL (DSO) |
@@ -61,7 +38,7 @@ want Apache optimizations (--with-apxs).
 $ gunzip -c apc_x.y.tar.gz | tar xf -
 $ cd apc_x.y
 $ /usr/local/php/bin/phpize
-$ ./configure --enable-apc --enable-apc-mmap --with-apxs --with-php-config=/usr/local/php/bin/php-config
+$ ./configure --with-php-config=/usr/local/php/bin/php-config
 $ make
 $ make install
 
