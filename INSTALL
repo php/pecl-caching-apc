@@ -15,6 +15,8 @@ Building from CVS can be done like this:
   phpize
   ./configure --with-php-config=/usr/local/php/bin/php-config
   make
+  export TEST_PHP_ARGS='-n'
+  make test
   make install
 
 Suggested Configuration (in your php.ini file)
