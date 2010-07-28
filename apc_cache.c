@@ -824,7 +824,7 @@ int apc_cache_make_file_key(apc_cache_key_t* key,
                        TSRMLS_DC)
 {
     struct stat *tmp_buf=NULL;
-    struct apc_fileinfo_t fileinfo = { {0}, };
+    struct apc_fileinfo_t fileinfo = { NULL, };
     int len;
 #ifdef PHP_WIN32
 	HANDLE hFile;

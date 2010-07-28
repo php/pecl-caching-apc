@@ -987,7 +987,7 @@ static void apc_fixup_op_array_jumps(zend_op_array *dst, zend_op_array *src )
 zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_context_t* ctxt TSRMLS_DC)
 {
     int i;
-    apc_fileinfo_t fileinfo;
+    apc_fileinfo_t fileinfo = { NULL, };
     char canon_path[MAXPATHLEN];
     char *fullpath = NULL;
     apc_opflags_t * flags = NULL;

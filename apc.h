@@ -88,7 +88,8 @@ extern char** apc_tokenize(const char* s, char delim TSRMLS_DC);
 
 typedef struct apc_fileinfo_t 
 {
-    char fullpath[MAXPATHLEN+1];
+    char *fullpath;
+    char path_buf[MAXPATHLEN];
     php_stream_statbuf st_buf;
 } apc_fileinfo_t;
 

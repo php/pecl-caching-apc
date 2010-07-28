@@ -224,6 +224,13 @@ char** apc_tokenize(const char* s, char delim TSRMLS_DC)
 /* similar to php_stream_stat_path */
 #define APC_URL_STAT(wrapper, filename, pstatbuf) \
     ((wrapper)->wops->url_stat((wrapper), (filename), PHP_STREAM_URL_STAT_QUIET, (pstatbuf), NULL TSRMLS_CC))
+
+/* copy out to path_buf if path_for_open isn't the same as filename */
+#define COPY_IF_CHANGED(p) \
+    (char*) (((p) == filename) ? filename : \
+            (strlcpy((char*)fileinfo->path_buf, (p), sizeof(fileinfo->path_buf))) \
+                    ? (fileinfo->path_buf) : NULL)
+
 int apc_search_paths(const char* filename, const char* path, apc_fileinfo_t* fileinfo TSRMLS_DC)
 {
     char** paths;
@@ -245,7 +252,7 @@ int apc_search_paths(const char* filename, const char* path, apc_fileinfo_t* fil
 
     if(wrapper != &php_plain_files_wrapper) {
         if(APC_URL_STAT(wrapper, path_for_open, &fileinfo->st_buf) == 0) {
-            strlcpy(fileinfo->fullpath, path_for_open, MAXPATHLEN);
+            fileinfo->fullpath = COPY_IF_CHANGED(path_for_open);
             return 0;
         }
         return -1; /* cannot stat */
@@ -253,7 +260,7 @@ int apc_search_paths(const char* filename, const char* path, apc_fileinfo_t* fil
 
     if (IS_ABSOLUTE_PATH(path_for_open, strlen(path_for_open)) && 
             APC_URL_STAT(wrapper, path_for_open, &fileinfo->st_buf) == 0) {
-        strlcpy(fileinfo->fullpath, path_for_open, MAXPATHLEN);
+        fileinfo->fullpath = COPY_IF_CHANGED(path_for_open);
         return 0;
     }
 
@@ -263,8 +270,9 @@ int apc_search_paths(const char* filename, const char* path, apc_fileinfo_t* fil
 
     /* for each directory in paths, look for filename inside */
     for (i = 0; paths[i]; i++) {
-        snprintf(fileinfo->fullpath, sizeof(fileinfo->fullpath), "%s%c%s", paths[i], DEFAULT_SLASH, path_for_open);
-        if (APC_URL_STAT(wrapper, fileinfo->fullpath, &fileinfo->st_buf) == 0) {
+        snprintf(fileinfo->path_buf, sizeof(fileinfo->path_buf), "%s%c%s", paths[i], DEFAULT_SLASH, path_for_open);
+        if (APC_URL_STAT(wrapper, fileinfo->path_buf, &fileinfo->st_buf) == 0) {
+            fileinfo->fullpath = (char*) fileinfo->path_buf;
             found = 1;
             break;
         }
@@ -278,11 +286,12 @@ int apc_search_paths(const char* filename, const char* path, apc_fileinfo_t* fil
         while((--exec_fname_length >= 0) && !IS_SLASH(exec_fname[exec_fname_length]));
         if((exec_fname && exec_fname[0] != '[') && exec_fname_length > 0) {
             /* not: [no active file] or no path */
-            memcpy(fileinfo->fullpath, exec_fname, exec_fname_length);
-            fileinfo->fullpath[exec_fname_length] = DEFAULT_SLASH;
-            strlcpy(fileinfo->fullpath +exec_fname_length +1, path_for_open,sizeof(fileinfo->fullpath)-exec_fname_length-1);
-            /* apc_wprint("filename: %s, exec_fname: %s, fileinfo->fullpath: %s", path_for_open, exec_fname, fileinfo->fullpath); */
-            if (APC_URL_STAT(wrapper, fileinfo->fullpath, &fileinfo->st_buf) == 0) {
+            memcpy(fileinfo->path_buf, exec_fname, exec_fname_length);
+            fileinfo->path_buf[exec_fname_length] = DEFAULT_SLASH;
+            strlcpy(fileinfo->path_buf +exec_fname_length +1, path_for_open,sizeof(fileinfo->path_buf)-exec_fname_length-1);
+            /* apc_wprint("filename: %s, exec_fname: %s, fileinfo->path_buf: %s", path_for_open, exec_fname, fileinfo->path_buf); */
+            if (APC_URL_STAT(wrapper, fileinfo->path_buf, &fileinfo->st_buf) == 0) {
+                fileinfo->fullpath = (char*) fileinfo->path_buf;
                 found = 1;
             }
         }
