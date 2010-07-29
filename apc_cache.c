@@ -520,7 +520,8 @@ int apc_cache_user_insert(apc_cache_t* cache, apc_cache_key_t key, apc_cache_ent
     slot = &cache->slots[h % cache->num_slots];
 
     while (*slot) {
-        if (!memcmp((*slot)->key.data.user.identifier, key.data.user.identifier, keylen)) {
+        if (((*slot)->key.data.user.identifier_len == key.data.user.identifier_len) &&
+            (!memcmp((*slot)->key.data.user.identifier, key.data.user.identifier, keylen))) {
             /* 
              * At this point we have found the user cache entry.  If we are doing 
              * an exclusive insert (apc_add) we are going to bail right away if
@@ -791,7 +792,8 @@ int apc_cache_delete(apc_cache_t* cache, char *filename, int filename_len TSRMLS
                 return 1;
             }
         } else {   /* APC_CACHE_KEY_FPFILE */
-            if(!memcmp((*slot)->key.data.fpfile.fullpath, key.data.fpfile.fullpath, key.data.fpfile.fullpath_len+1)) {
+            if(((*slot)->key.data.fpfile.fullpath_len == key.data.fpfile.fullpath_len) &&
+                (!memcmp((*slot)->key.data.fpfile.fullpath, key.data.fpfile.fullpath, key.data.fpfile.fullpath_len+1))) {
                 remove_slot(cache, slot TSRMLS_CC);
                 CACHE_UNLOCK(cache);
                 return 1;
