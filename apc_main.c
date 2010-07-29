@@ -70,7 +70,7 @@ static int install_function(apc_function_t fn, apc_context_t* ctxt, int lazy TSR
 {
     int status;
 
-
+#if APC_HAVE_LOOKUP_HOOKS
     if(lazy && fn.name[0] != '\0' && strncmp(fn.name, "__autoload", fn.name_len) != 0) {
         status = zend_hash_add(APCG(lazy_function_table),
                               fn.name,
@@ -78,6 +78,9 @@ static int install_function(apc_function_t fn, apc_context_t* ctxt, int lazy TSR
                               &fn,
                               sizeof(apc_function_t),
                               NULL);
+#else
+    if(0) {
+#endif
     } else {
         zend_function *func = apc_copy_function_for_execution(fn.function, ctxt TSRMLS_CC);
         status = zend_hash_add(EG(function_table),
@@ -349,16 +352,18 @@ static zend_op_array* cached_compile(zend_file_handle* h,
     assert(cache_entry != NULL);
 
     if (cache_entry->data.file.classes) {
+        int lazy_classes = APCG(lazy_classes);
         for (i = 0; cache_entry->data.file.classes[i].class_entry != NULL; i++) {
-            if(install_class(cache_entry->data.file.classes[i], ctxt, APCG(lazy_classes) TSRMLS_CC) == FAILURE) {
+            if(install_class(cache_entry->data.file.classes[i], ctxt, lazy_classes TSRMLS_CC) == FAILURE) {
                 goto default_compile;
             }
         }
     }
 
     if (cache_entry->data.file.functions) {
+        int lazy_functions = APCG(lazy_functions);
         for (i = 0; cache_entry->data.file.functions[i].function != NULL; i++) {
-            install_function(cache_entry->data.file.functions[i], ctxt, APCG(lazy_functions) TSRMLS_CC);
+            install_function(cache_entry->data.file.functions[i], ctxt, lazy_functions TSRMLS_CC);
         }
     }
 
@@ -930,6 +935,7 @@ int apc_request_init(TSRMLS_D)
         APCG(compiled_filters) = apc_regex_compile_array(APCG(filters) TSRMLS_CC);
     }
 
+#if APC_HAVE_LOOKUP_HOOKS
     if(APCG(lazy_functions)) {
         APCG(lazy_function_table) = emalloc(sizeof(HashTable));
         zend_hash_init(APCG(lazy_function_table), 0, NULL, NULL, 0);
@@ -938,6 +944,7 @@ int apc_request_init(TSRMLS_D)
         APCG(lazy_class_table) = emalloc(sizeof(HashTable));
         zend_hash_init(APCG(lazy_class_table), 0, NULL, NULL, 0);
     }
+#endif
 
 #ifdef APC_FILEHITS
     ALLOC_INIT_ZVAL(APCG(filehits));
@@ -950,6 +957,7 @@ int apc_request_init(TSRMLS_D)
 int apc_request_shutdown(TSRMLS_D)
 {
 
+#if APC_HAVE_LOOKUP_HOOKS
     if(APCG(lazy_class_table)) {
         zend_hash_destroy(APCG(lazy_class_table));
         efree(APCG(lazy_class_table));
@@ -958,6 +966,7 @@ int apc_request_shutdown(TSRMLS_D)
         zend_hash_destroy(APCG(lazy_function_table));
         efree(APCG(lazy_function_table));
     }
+#endif
 
     apc_deactivate(TSRMLS_C);
 
