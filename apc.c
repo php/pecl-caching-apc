@@ -33,6 +33,7 @@
 
 #include "apc.h"
 #include "apc_zend.h"
+#include "apc_cache.h"
 #include "php.h"
 
 #if HAVE_PCRE || HAVE_BUNDLED_PCRE
