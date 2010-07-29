@@ -100,7 +100,7 @@ static int make_prime(int n)
 /* {{{ make_slot */
 slot_t* make_slot(apc_cache_key_t key, apc_cache_entry_t* value, slot_t* next, time_t t TSRMLS_DC)
 {
-    slot_t* p = apc_pool_alloc(value->pool, sizeof(slot_t) TSRMLS_CC);
+    slot_t* p = apc_pool_alloc(value->pool, sizeof(slot_t));
 
     if (!p) return NULL;
 
@@ -978,7 +978,7 @@ apc_cache_entry_t* apc_cache_make_file_entry(const char* filename,
     apc_cache_entry_t* entry;
     apc_pool* pool = ctxt->pool;
 
-    entry = (apc_cache_entry_t*) apc_pool_alloc(pool, sizeof(apc_cache_entry_t) TSRMLS_CC);
+    entry = (apc_cache_entry_t*) apc_pool_alloc(pool, sizeof(apc_cache_entry_t));
     if (!entry) return NULL;
 
     entry->data.file.filename  = apc_pstrdup(filename, pool TSRMLS_CC);
@@ -1047,7 +1047,7 @@ apc_cache_entry_t* apc_cache_make_user_entry(const char* info, int info_len, con
     apc_cache_entry_t* entry;
     apc_pool* pool = ctxt->pool;
 
-    entry = (apc_cache_entry_t*) apc_pool_alloc(pool, sizeof(apc_cache_entry_t) TSRMLS_CC);
+    entry = (apc_cache_entry_t*) apc_pool_alloc(pool, sizeof(apc_cache_entry_t));
     if (!entry) return NULL;
 
     entry->data.user.info = apc_pmemcpy(info, (info_len + 1), pool TSRMLS_CC);

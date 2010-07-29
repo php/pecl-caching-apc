@@ -468,7 +468,7 @@ void* apc_pmemcpy(const void* p, size_t n, apc_pool* pool TSRMLS_DC)
 {
     void* q;
 
-    if (p != NULL && (q = apc_pool_alloc(pool, n TSRMLS_CC)) != NULL) {
+    if (p != NULL && (q = apc_pool_alloc(pool, n)) != NULL) {
         memcpy(q, p, n);
         return q;
     }
