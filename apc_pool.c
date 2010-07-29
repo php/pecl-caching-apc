@@ -446,20 +446,6 @@ static apc_pool* apc_realpool_create(apc_pool_type type, apc_malloc_t allocate, 
 
 /* }}} */
 
-/* {{{ apc_pool_alloc */
-void* apc_pool_alloc(apc_pool *pool, size_t size TSRMLS_DC)
-{
-	return (void *) pool->palloc(pool, size TSRMLS_CC);
-}
-/* }}} */
-
-/* {{{ apc_pool_free */
-void apc_pool_free(apc_pool *pool, void *ptr TSRMLS_DC)
-{
-	pool->pfree(pool, ptr TSRMLS_CC);
-}
-/* }}} */
-
 /* {{{ apc_pool_init */
 void apc_pool_init()
 {

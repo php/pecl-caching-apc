@@ -88,8 +88,8 @@ struct _apc_pool {
     /* apc_realpool and apc_unpool add more here */
 };
 
-void* apc_pool_alloc(apc_pool *pool, size_t size TSRMLS_DC);
-void apc_pool_free(apc_pool *pool, void *ptr TSRMLS_DC);
+#define apc_pool_alloc(pool, size)  ((void *) pool->palloc(pool, size TSRMLS_CC))
+#define apc_pool_free(pool, ptr) 	((void)   pool->pfree (pool, ptr TSRMLS_CC))
 
 #define apc_pool_protect(pool, ptr)  (pool->protect ? \
 										(pool)->protect((ptr)) : (ptr))
