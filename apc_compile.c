@@ -987,7 +987,7 @@ static void apc_fixup_op_array_jumps(zend_op_array *dst, zend_op_array *src )
 zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_context_t* ctxt TSRMLS_DC)
 {
     int i;
-    apc_fileinfo_t fileinfo = { NULL, };
+    apc_fileinfo_t *fileinfo = NULL;
     char canon_path[MAXPATHLEN];
     char *fullpath = NULL;
     apc_opflags_t * flags = NULL;
@@ -1188,20 +1188,22 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_con
 
         /* This code breaks apc's rule#1 - cache what you compile */
         if((APCG(fpstat)==0) && APCG(canonicalize)) {
+            /* not pool allocated, because the pool allocations eat up shm space */
+            fileinfo = (apc_fileinfo_t*) apc_php_malloc(sizeof(apc_fileinfo_t) TSRMLS_CC);
 #ifdef ZEND_ENGINE_2_4
             if((zo->opcode == ZEND_INCLUDE_OR_EVAL) && 
                 (zo->op1_type == IS_CONST && Z_TYPE_P(zo->op1.zv) == IS_STRING)) {
                 /* constant includes */
                 if(!IS_ABSOLUTE_PATH(Z_STRVAL_P(zo->op1.zv),Z_STRLEN_P(zo->op1.zv))) { 
-                    if (apc_search_paths(Z_STRVAL_P(zo->op1.zv), PG(include_path), &fileinfo TSRMLS_CC) == 0) {
+                    if (apc_search_paths(Z_STRVAL_P(zo->op1.zv), PG(include_path), fileinfo TSRMLS_CC) == 0) {
 #else
             if((zo->opcode == ZEND_INCLUDE_OR_EVAL) && 
                 (zo->op1.op_type == IS_CONST && zo->op1.u.constant.type == IS_STRING)) {
                 /* constant includes */
                 if(!IS_ABSOLUTE_PATH(Z_STRVAL_P(&zo->op1.u.constant),Z_STRLEN_P(&zo->op1.u.constant))) { 
-                    if (apc_search_paths(Z_STRVAL_P(&zo->op1.u.constant), PG(include_path), &fileinfo TSRMLS_CC) == 0) {
+                    if (apc_search_paths(Z_STRVAL_P(&zo->op1.u.constant), PG(include_path), fileinfo TSRMLS_CC) == 0) {
 #endif
-                        if((fullpath = realpath(fileinfo.fullpath, canon_path))) {
+                        if((fullpath = realpath(fileinfo->fullpath, canon_path))) {
                             /* everything has to go through a realpath() */
                             zend_op *dzo = &(dst->opcodes[i]);
 #ifdef ZEND_ENGINE_2_4
@@ -1219,6 +1221,7 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_con
                     }
                 }
             }
+            apc_php_free(fileinfo TSRMLS_CC);
         }
     }
 
