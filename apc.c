@@ -229,7 +229,7 @@ int apc_win32_restat(apc_fileinfo_t *fileinfo)
     HANDLE hFile;
     BY_HANDLE_FILE_INFORMATION hInfo;
 
-    hFile = CreateFile(fileinfo->filename, GENERIC_WRITE, FILE_SHARE_WRITE|FILE_SHARE_READ, NULL, OPEN_ALWAYS, FILE_FLAG_BACKUP_SEMANTICS, NULL);
+    hFile = CreateFile(fileinfo->fullpath, GENERIC_WRITE, FILE_SHARE_WRITE|FILE_SHARE_READ, NULL, OPEN_ALWAYS, FILE_FLAG_BACKUP_SEMANTICS, NULL);
 
     if (!hFile) {
 # ifdef __DEBUG_APC__
