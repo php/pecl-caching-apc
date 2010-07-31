@@ -249,7 +249,7 @@ int apc_win32_restat(apc_fileinfo_t *fileinfo)
     CloseHandle(hFile);
 
     fileinfo->st_buf.sb.st_dev = hInfo.dwVolumeSerialNumber;
-    fileinfo->st_buf.sb.st_ino = (_ino_t)(((apc_ino_t)(hInfo.nFileIndexHigh) << 32) | (apc_ino_t) hInfo.nFileIndexLow);
+    fileinfo->st_buf.sb.st_ino = (((apc_ino_t)(hInfo.nFileIndexHigh) << 32) | (apc_ino_t) hInfo.nFileIndexLow);
 
     return 0;
 }
