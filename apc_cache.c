@@ -233,7 +233,6 @@ apc_cache_t* apc_cache_create(int size_hint, int gc_ttl, int ttl TSRMLS_DC)
     apc_cache_t* cache;
     int cache_size;
     int num_slots;
-    int i;
 
     num_slots = make_prime(size_hint > 0 ? size_hint : 2000);
 
