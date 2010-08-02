@@ -262,9 +262,7 @@ apc_cache_t* apc_cache_create(int size_hint, int gc_ttl, int ttl TSRMLS_DC)
 #if NONBLOCKING_LOCK_AVAILABLE
     CREATE_LOCK(cache->header->wrlock);
 #endif
-    for (i = 0; i < num_slots; i++) {
-        cache->slots[i] = NULL;
-    }
+    memset(cache->slots, 0, sizeof(slot_t*)*num_slots);
     cache->expunge_cb = apc_cache_expunge;
     cache->has_lock = 0;
 
