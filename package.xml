@@ -65,26 +65,12 @@
   <active>yes</active>
  </developer>
  
- <date>2009-08-21</date>
- <version><release>3.1.4</release><api>3.1.0</api></version>
- <stability><release>beta</release><api>beta</api></stability>
+ <date>2010-08-05</date>
+ <version><release>3.1.5</release><api>3.1.0</api></version>
+ <stability><release>stable</release><api>stable</api></stability>
  <license uri="http://www.php.net/license">PHP License</license>
  <notes>
-- Windows builds may now have filehits and memory protection if enabled (Kalle)
-- Renamed the memory protection configure option to --enable-apc-memprotect (Kalle, Shire)
-- ZTS fixes and optimizations (Kalle, Felipe)
-- Win32 stat support (Pierre, Kalle) 
-- Added support for interned strings, run-time caches and Zend Engine 2.4 (Dmitry)
-- Added apc_exists() (Rasmus)
-- Fixed potential XSS in apc.php (Pierre, Matt Chapman)
-- Fixed pecl bug #17597 (keys with embedded NUL) (Gopal)
-- Fixed pecl bug #17650 (Fix goto jump offsets) (Gopal)
-- Fixed pecl bug #17527 (Standardized error reporting) (Gopal, Paul Dragoonis)
-- Fixed pecl bug #17089 (Scrub the constant table of all inherited members before caching) (Gopal)
-- Fixed pecl bug #16860 (files can be included more than once even when include/require_once are used) (Pierre)
-- Fixed pecl bug #16717 (apc_fetch dies after 1 hour, regardless of ttl settings) (Kalle)
-- Fixed pecl bug #17597 (apc user cache keys with embedded NULs) (Gopal)
-- Fixed pecl bug #13583 (apc upload progress fixes) (Gopal)
+- ??
  </notes>
 
  <contents>
@@ -594,6 +580,7 @@ Allow keys used in apc_store/apc_fetch/apc_delete to be binary safe and prevent 
 - Win32 build-fixes (Kalle)
   </notes>
     </release>
+
     <release>
      <version><release>3.1.3p1</release><api>3.1.0</api></version>
      <stability><release>beta</release><api>beta</api></stability>
@@ -603,6 +590,30 @@ Allow keys used in apc_store/apc_fetch/apc_delete to be binary safe and prevent 
 - fix pecl build / package.xml (Gopal)
      </notes>
     </release>
+
+    <release>
+    <version><release>3.1.4</release><api>3.1.0</api></version>
+    <stability><release>beta</release><api>beta</api></stability>
+    <license uri="http://www.php.net/license">PHP License</license>
+    <date>2010-08-05</date>
+    <notes>
+ - Windows builds may now have filehits and memory protection if enabled (Kalle)
+ - Renamed the memory protection configure option to --enable-apc-memprotect (Kalle, Shire)
+ - ZTS fixes and optimizations (Kalle, Felipe)
+ - Win32 stat support (Pierre, Kalle) 
+ - Added support for interned strings, run-time caches and Zend Engine 2.4 (Dmitry)
+ - Added apc_exists() (Rasmus)
+ - Fixed potential XSS in apc.php (Pierre, Matt Chapman)
+ - Fixed pecl bug #17597 (keys with embedded NUL) (Gopal)
+ - Fixed pecl bug #17650 (Fix goto jump offsets) (Gopal)
+ - Fixed pecl bug #17527 (Standardized error reporting) (Gopal, Paul Dragoonis)
+ - Fixed pecl bug #17089 (Scrub the constant table of all inherited members before caching) (Gopal)
+ - Fixed pecl bug #16860 (files can be included more than once even when include/require_once are used) (Pierre)
+ - Fixed pecl bug #16717 (apc_fetch dies after 1 hour, regardless of ttl settings) (Kalle)
+ - Fixed pecl bug #17597 (apc user cache keys with embedded NULs) (Gopal)
+- Fixed pecl bug #13583 (apc upload progress fixes) (Gopal)
+     </notes>
+     </release>
  </changelog>
 </package>
 <!--
