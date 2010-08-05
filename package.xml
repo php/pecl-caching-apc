@@ -127,6 +127,8 @@
     <file role="src" name="apc_spin.h" />
     <file role="src" name="apc_stack.c" />
     <file role="src" name="apc_stack.h" />
+    <file role="src" name="apc_string.h" />
+    <file role="src" name="apc_string.c" />
     <file role="src" name="apc_zend.c" />
     <file role="src" name="apc_zend.h" />
     <file role="src" name="apc_signal.c" />
