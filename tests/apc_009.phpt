@@ -6,6 +6,7 @@ APC: apc_delete_file test
 apc.enabled=1
 apc.enable_cli=1
 apc.file_update_protection=0
+apc.stat=On
 report_memleaks=0
 --FILE--
 <?php
