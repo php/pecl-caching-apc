@@ -991,7 +991,7 @@ EOB;
 					echo
 						"<tr class=tr-$m>",
 						"<td class=td-0>",ucwords(preg_replace("/_/"," ",$k)),"</td>",
-						"<td class=td-last>",(preg_match("/time/",$k) && $value!='None') ? date(DATE_FORMAT,$value) : $value,"</td>",
+						"<td class=td-last>",(preg_match("/time/",$k) && $value!='None') ? date(DATE_FORMAT,$value) : htmlspecialchars($value, ENT_QUOTES, 'UTF-8'),"</td>",
 						"</tr>";
 					$m=1-$m;
 				}
