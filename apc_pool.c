@@ -452,7 +452,9 @@ void apc_pool_init()
     /* put all ye sanity checks here */
     assert(sizeof(decaff) > REDZONE_SIZE(ALIGNWORD(sizeof(char))));
     assert(sizeof(pool_block) == ALIGNWORD(sizeof(pool_block)));
+#if APC_POOL_DEBUG
     assert((APC_POOL_SIZE_MASK & (APC_POOL_SIZEINFO | APC_POOL_REDZONES)) == 0);
+#endif
 }
 /* }}} */
 
