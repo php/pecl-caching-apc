@@ -364,7 +364,7 @@ void apc_sma_init(int numseg, size_t segsize, char *mmap_file_mask TSRMLS_DC)
 
     for (i = 0; i < sma_numseg; i++) {
         sma_header_t*   header;
-        block_t*    block;
+        block_t     *first, *empty, *last;
         void*       shmaddr;
 
 #if APC_MMAP
@@ -388,32 +388,32 @@ void apc_sma_init(int numseg, size_t segsize, char *mmap_file_mask TSRMLS_DC)
            for(j=0; j<30; j++) header->adist[j] = 0;
         }
 #endif
-        block = BLOCKAT(ALIGNWORD(sizeof(sma_header_t)));
-        block->size = 0;
-        block->fnext = ALIGNWORD(sizeof(sma_header_t)) + ALIGNWORD(sizeof(block_t));
-        block->fprev = 0;
-        block->prev_size = 0;
-        SET_CANARY(block);
+        first = BLOCKAT(ALIGNWORD(sizeof(sma_header_t)));
+        first->size = 0;
+        first->fnext = ALIGNWORD(sizeof(sma_header_t)) + ALIGNWORD(sizeof(block_t));
+        first->fprev = 0;
+        first->prev_size = 0;
+        SET_CANARY(first);
 #ifdef __APC_SMA_DEBUG__
         block->id = -1;
 #endif
-        block = BLOCKAT(block->fnext);
-        block->size = header->avail - ALIGNWORD(sizeof(block_t));
-        block->fnext = OFFSET(block) + block->size;
-        block->fprev = ALIGNWORD(sizeof(sma_header_t));
-        block->prev_size = 0;
-        SET_CANARY(block);
+        empty = BLOCKAT(first->fnext);
+        empty->size = header->avail - ALIGNWORD(sizeof(block_t));
+        empty->fnext = OFFSET(empty) + empty->size;
+        empty->fprev = ALIGNWORD(sizeof(sma_header_t));
+        empty->prev_size = 0;
+        SET_CANARY(empty);
 #ifdef __APC_SMA_DEBUG__
-        block->id = -1;
+        empty->id = -1;
 #endif
-        block = BLOCKAT(block->fnext);
-        block->size = 0;
-        block->fnext = 0;
-        block->fprev =  ALIGNWORD(sizeof(sma_header_t)) + ALIGNWORD(sizeof(block_t));
-        block->prev_size = header->avail - ALIGNWORD(sizeof(block_t));
-        SET_CANARY(block);
+        last = BLOCKAT(empty->fnext);
+        last->size = 0;
+        last->fnext = 0;
+        last->fprev =  OFFSET(empty);
+        last->prev_size = empty->size;
+        SET_CANARY(last);
 #ifdef __APC_SMA_DEBUG__
-        block->id = -1;
+        last->id = -1;
 #endif
     }
 }
