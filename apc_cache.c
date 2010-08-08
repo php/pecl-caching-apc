@@ -482,7 +482,7 @@ int *apc_cache_insert_mult(apc_cache_t* cache, apc_cache_key_t* keys, apc_cache_
 int apc_cache_user_insert(apc_cache_t* cache, apc_cache_key_t key, apc_cache_entry_t* value, apc_context_t* ctxt, time_t t, int exclusive TSRMLS_DC)
 {
     slot_t** slot;
-    unsigned int keylen = key.data.user.identifier_len+1;
+    unsigned int keylen = key.data.user.identifier_len;
     unsigned int h = string_nhash_8(key.data.user.identifier, keylen);
     apc_keyid_t *lastkey = &cache->header->lastkey;
     
@@ -497,6 +497,7 @@ int apc_cache_user_insert(apc_cache_t* cache, apc_cache_key_t key, apc_cache_ent
 
     if(apc_cache_is_last_key(cache, &key, h, t TSRMLS_CC)) {
         /* potential cache slam */
+        printf("Last key warning for it!");
         return 0;
     }
 
@@ -1049,7 +1050,7 @@ apc_cache_entry_t* apc_cache_make_user_entry(const char* info, int info_len, con
     entry = (apc_cache_entry_t*) apc_pool_alloc(pool, sizeof(apc_cache_entry_t));
     if (!entry) return NULL;
 
-    entry->data.user.info = apc_pmemcpy(info, (info_len + 1), pool TSRMLS_CC);
+    entry->data.user.info = apc_pmemcpy(info, info_len, pool TSRMLS_CC);
     entry->data.user.info_len = info_len;
     if(!entry->data.user.info) {
         return NULL;
@@ -1232,7 +1233,7 @@ zend_bool apc_cache_busy(apc_cache_t* cache)
 zend_bool apc_cache_is_last_key(apc_cache_t* cache, apc_cache_key_t* key, unsigned int h, time_t t TSRMLS_DC)
 {
     apc_keyid_t *lastkey = &cache->header->lastkey;
-    unsigned int keylen = key->data.user.identifier_len+1;
+    unsigned int keylen = key->data.user.identifier_len;
 
     if(!h) h = string_nhash_8(key->data.user.identifier, keylen);
 

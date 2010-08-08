@@ -755,8 +755,7 @@ static void apc_store_helper(INTERNAL_FUNCTION_PARAMETERS, const int exclusive)
         while(zend_hash_get_current_data_ex(hash, (void**)&hentry, &hpos) == SUCCESS) {
             zend_hash_get_current_key_ex(hash, &hkey, &hkey_len, &hkey_idx, 0, &hpos);
             if (hkey) {
-                /* hkey_len - 1 for consistency, because it includes '\0', while Z_STRLEN_P() doesn't */
-                if(!_apc_store(hkey, hkey_len - 1, *hentry, (unsigned int)ttl, exclusive TSRMLS_CC)) {
+                if(!_apc_store(hkey, hkey_len, *hentry, (unsigned int)ttl, exclusive TSRMLS_CC)) {
                     add_assoc_long_ex(return_value, hkey, hkey_len, -1);  /* -1: insertion error */
                 }
                 hkey = NULL;
@@ -768,7 +767,7 @@ static void apc_store_helper(INTERNAL_FUNCTION_PARAMETERS, const int exclusive)
         return;
     } else if (Z_TYPE_P(key) == IS_STRING) {
         if (!val) RETURN_FALSE;
-        if(_apc_store(Z_STRVAL_P(key), Z_STRLEN_P(key), val, (unsigned int)ttl, exclusive TSRMLS_CC))
+        if(_apc_store(Z_STRVAL_P(key), Z_STRLEN_P(key) + 1, val, (unsigned int)ttl, exclusive TSRMLS_CC))
             RETURN_TRUE;
     } else {
         apc_wprint("apc_store expects key parameter to be a string or an array of key/value pairs.");
@@ -1209,7 +1208,7 @@ PHP_FUNCTION(apc_define_constants) {
     if(!strkey_len) RETURN_FALSE;
 
     _apc_define_constants(constants, case_sensitive TSRMLS_CC);
-    if(_apc_store(strkey, strkey_len, constants, 0, 0 TSRMLS_CC)) RETURN_TRUE;
+    if(_apc_store(strkey, strkey_len + 1, constants, 0, 0 TSRMLS_CC)) RETURN_TRUE;
     RETURN_FALSE;
 } /* }}} */
 

@@ -668,7 +668,7 @@ apc_bd_t* apc_bin_dump(HashTable *files, HashTable *user_vars TSRMLS_DC) {
     for(i=0; i < apc_user_cache->num_slots; i++) {
         sp = apc_user_cache->slots[i];
         for(; sp != NULL; sp = sp->next) {
-            if(apc_bin_checkfilter(user_vars, sp->key.data.user.identifier, sp->key.data.user.identifier_len+1)) {
+            if(apc_bin_checkfilter(user_vars, sp->key.data.user.identifier, sp->key.data.user.identifier_len)) {
                 size += sizeof(apc_bd_entry_t*) + sizeof(apc_bd_entry_t);
                 size += sp->value->mem_size - (sizeof(apc_cache_entry_t) - sizeof(apc_cache_entry_value_t));
                 count++;
@@ -712,11 +712,11 @@ apc_bd_t* apc_bin_dump(HashTable *files, HashTable *user_vars TSRMLS_DC) {
     for(i=0; i < apc_user_cache->num_slots; i++) {
         sp = apc_user_cache->slots[i];
         for(; sp != NULL; sp = sp->next) {
-            if(apc_bin_checkfilter(user_vars, sp->key.data.user.identifier, sp->key.data.user.identifier_len+1)) {
+            if(apc_bin_checkfilter(user_vars, sp->key.data.user.identifier, sp->key.data.user.identifier_len)) {
                 ep = &bd->entries[count];
                 ep->type = sp->value->type;
-                ep->val.user.info = apc_bd_alloc(sp->value->data.user.info_len + 1 TSRMLS_CC);
-                memcpy(ep->val.user.info, sp->value->data.user.info, sp->value->data.user.info_len+1);
+                ep->val.user.info = apc_bd_alloc(sp->value->data.user.info_len TSRMLS_CC);
+                memcpy(ep->val.user.info, sp->value->data.user.info, sp->value->data.user.info_len);
                 ep->val.user.info_len = sp->value->data.user.info_len;
                 ep->val.user.val = apc_copy_zval(NULL, sp->value->data.user.val, &ctxt TSRMLS_CC);
                 ep->val.user.ttl = sp->value->data.user.ttl;

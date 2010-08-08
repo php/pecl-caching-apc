@@ -102,7 +102,7 @@ static apc_iterator_item_t* apc_iterator_item_ctor(apc_iterator_t *iterator, slo
         }
     }
     if (APC_ITER_KEY & iterator->format) {
-        add_assoc_stringl(item->value, "key", item->key, item->key_len, 1);
+        add_assoc_stringl(item->value, "key", item->key, (item->key_len - 1), 1);
     }
     if (APC_ITER_VALUE & iterator->format) {
         if(slot->value->type == APC_CACHE_ENTRY_USER) {
@@ -255,7 +255,7 @@ static int apc_iterator_search_match(apc_iterator_t *iterator, slot_t **slot) {
 #endif
             
     if (iterator->search_hash) {
-        rval = zend_hash_exists(iterator->search_hash, key, key_len+1);
+        rval = zend_hash_exists(iterator->search_hash, key, key_len);
         if (!rval && fname_key) {
             rval = zend_hash_exists(iterator->search_hash, fname_key, fname_key_len+1);
         }
@@ -510,7 +510,7 @@ PHP_METHOD(apc_iterator, key) {
     item = apc_stack_get(iterator->stack, iterator->stack_idx);
 
     if (item->key) {
-        RETURN_STRINGL(item->key, item->key_len, 1);
+        RETURN_STRINGL(item->key, (item->key_len-1), 1);
     } else {
         RETURN_LONG(iterator->key_idx);
     }
@@ -691,7 +691,7 @@ int apc_iterator_delete(zval *zobj TSRMLS_DC) {
             if (iterator->cache == apc_cache) {
                 apc_cache_delete(apc_cache, item->filename_key, strlen(item->filename_key) + 1 TSRMLS_CC);
             } else {
-                apc_cache_user_delete(apc_user_cache, item->key, (item->key_len + 1) TSRMLS_CC);
+                apc_cache_user_delete(apc_user_cache, item->key, item->key_len TSRMLS_CC);
             }
         }
     }
