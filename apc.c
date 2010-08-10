@@ -115,23 +115,23 @@ void* apc_xmemcpy(const void* p, size_t n, apc_malloc_t f TSRMLS_DC)
 /* {{{ console display functions */
 
 #define apc_print(name, level) void apc_##name(const char* fmt, ...) { \
-    	va_list args;\
-		TSRMLS_FETCH();\
-	    va_start(args, fmt);\
-		php_verror(NULL, "", level, fmt, args TSRMLS_CC);\
-    	va_end(args);\
-	}
+        va_list args;\
+        TSRMLS_FETCH();\
+        va_start(args, fmt);\
+        php_verror(NULL, "", level, fmt, args TSRMLS_CC);\
+        va_end(args);\
+    }
 
 apc_print(eprint, E_ERROR);
 apc_print(wprint, E_WARNING);
 apc_print(nprint, E_NOTICE);
 #ifdef APC_DEBUG
-	apc_print(dprint, E_NOTICE);
+    apc_print(dprint, E_NOTICE);
 #else
-	void apc_dprint(const char* fmt, ...) 
-	{
-		/* do nothing */
-	}
+    void apc_dprint(const char* fmt, ...) 
+    {
+        /* do nothing */
+    }
 #endif
 /* }}} */
 
