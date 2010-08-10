@@ -115,8 +115,8 @@ void* apc_xmemcpy(const void* p, size_t n, apc_malloc_t f TSRMLS_DC)
 /* {{{ console display functions */
 
 #define apc_print(name, level) void apc_##name(const char* fmt, ...) { \
-		TSRMLS_FETCH();\
     	va_list args;\
+		TSRMLS_FETCH();\
 	    va_start(args, fmt);\
 		php_verror(NULL, "", level, fmt, args TSRMLS_CC);\
     	va_end(args);\
