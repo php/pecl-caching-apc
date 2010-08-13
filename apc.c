@@ -223,7 +223,7 @@ char** apc_tokenize(const char* s, char delim TSRMLS_DC)
 
 
 /* {{{ apc_win32_restat */
-#ifndef PHP_WIN32
+#ifdef PHP_WIN32
 static int apc_restat(apc_fileinfo_t *fileinfo)
 {
     HANDLE hFile;
