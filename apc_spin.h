@@ -30,9 +30,8 @@
 
 slock_t *apc_slock_create(slock_t *lock);
 void apc_slock_destroy(slock_t *lock);
-void apc_slock_lock(slock_t *lock);
+void apc_slock_lock(slock_t *lock TSRMLS_DC);
 zend_bool apc_slock_nonblocking_lock(slock_t *lock);
-void apc_slock_lock(slock_t *lock);
 void apc_slock_unlock(slock_t *lock);
 
 #endif

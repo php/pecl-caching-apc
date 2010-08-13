@@ -34,7 +34,7 @@ void apc_slock_destroy(slock_t *lock)
     return;
 }
 
-void apc_slock_lock(slock_t *lock)
+void apc_slock_lock(slock_t *lock TSRMLS_DC)
 {
     S_LOCK(lock);
 }

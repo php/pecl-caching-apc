@@ -124,26 +124,26 @@ struct block_t {
 /* {{{ sma_debug_state(apc_sma_segment_t *segment, int canary_check, int verbose)
  *        useful for debuging state of memory blocks and free list, and sanity checking
  */
-static void sma_debug_state(void* shmaddr, int canary_check, int verbose) {
+static void sma_debug_state(void* shmaddr, int canary_check, int verbose TSRMLS_DC) {
     sma_header_t *header = (sma_header_t*)shmaddr;
     block_t *cur = BLOCKAT(ALIGNWORD(sizeof(sma_header_t)));
     block_t *prv = NULL;
     size_t avail;
 
     /* Verify free list */
-    if (verbose) apc_wprint("Free List: ");
+    if (verbose) apc_warning("Free List: " TSRMLS_CC);
     while(1) {
-        if (verbose) apc_wprint(" 0x%x[%d] (s%d)", cur, OFFSET(cur), cur->size);
+        if (verbose) apc_warning(" 0x%x[%d] (s%d)" TSRMLS_CC, cur, OFFSET(cur), cur->size);
         if (canary_check) CHECK_CANARY(cur);
         if (!cur->fnext) break;
         cur = BLOCKAT(cur->fnext);
         avail += cur->size;
         if (prv == cur) {
-            apc_wprint("Circular list detected!");
+            apc_warning("Circular list detected!" TSRMLS_CC);
             assert(0);
         }
         if (prv && cur->fprev != OFFSET(prv)) {
-            apc_wprint("Previous pointer does not point to previous!");
+            apc_warning("Previous pointer does not point to previous!" TSRMLS_CC);
             assert(0);
         }
         prv = cur;
@@ -151,13 +151,13 @@ static void sma_debug_state(void* shmaddr, int canary_check, int verbose) {
     assert(avail == header->avail);
 
     /* Verify each block */
-    if (verbose) apc_wprint("Block List: ");
+    if (verbose) apc_warning("Block List: " TSRMLS_CC);
     cur = BLOCKAT(ALIGNWORD(sizeof(sma_header_t)));
     while(1) {
         if(!cur->fnext) {
-            if (verbose) apc_wprint(" 0x%x[%d] (s%d) (u)", cur, OFFSET(cur), cur->size);
+            if (verbose) apc_warning(" 0x%x[%d] (s%d) (u)" TSRMLS_CC, cur, OFFSET(cur), cur->size);
         } else {
-            if (verbose) apc_wprint(" 0x%x[%d] (s%d) (f)", cur, OFFSET(cur), cur->size);
+            if (verbose) apc_warning(" 0x%x[%d] (s%d) (f)" TSRMLS_CC, cur, OFFSET(cur), cur->size);
         }
         if (canary_check) CHECK_CANARY(cur);
         if (!cur->size && !cur->fnext) break;
@@ -167,7 +167,7 @@ static void sma_debug_state(void* shmaddr, int canary_check, int verbose) {
             cur = NEXT_SBLOCK(cur);
         }
         if (prv == cur) {
-            apc_wprint("Circular list detected!");
+            apc_warning("Circular list detected!" TSRMLS_CC);
             assert(0);
         }
         prv = cur;
@@ -368,10 +368,10 @@ void apc_sma_init(int numseg, size_t segsize, char *mmap_file_mask TSRMLS_DC)
         void*       shmaddr;
 
 #if APC_MMAP
-        sma_segments[i] = apc_mmap(mmap_file_mask, sma_segsize);
+        sma_segments[i] = apc_mmap(mmap_file_mask, sma_segsize TSRMLS_CC);
         if(sma_numseg != 1) memcpy(&mmap_file_mask[strlen(mmap_file_mask)-6], "XXXXXX", 6);
 #else
-        sma_segments[i] = apc_shm_attach(apc_shm_create(i, sma_segsize));
+        sma_segments[i] = apc_shm_attach(apc_shm_create(i, sma_segsize TSRMLS_CC) TSRMLS_CC);
 #endif
         
         sma_segments[i].size = sma_segsize;
@@ -429,9 +429,9 @@ void apc_sma_cleanup(TSRMLS_D)
     for (i = 0; i < sma_numseg; i++) {
         apc_lck_destroy(SMA_LCK(i));
 #if APC_MMAP
-        apc_unmap(&sma_segments[i]);
+        apc_unmap(&sma_segments[i] TSRMLS_CC);
 #else
-        apc_shm_detach(&sma_segments[i]);
+        apc_shm_detach(&sma_segments[i] TSRMLS_CC);
 #endif
     }
     sma_initialized = 0;
@@ -559,7 +559,7 @@ void apc_sma_free(void* p TSRMLS_DC)
         }
     }
 
-    apc_eprint("apc_sma_free: could not locate address %p", p);
+    apc_error("apc_sma_free: could not locate address %p" TSRMLS_CC, p);
 }
 /* }}} */
 

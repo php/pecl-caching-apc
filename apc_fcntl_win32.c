@@ -28,8 +28,8 @@
 
 /* $Id$ */
 
-#include "apc_fcntl.h"
 #include "apc.h"
+#include "apc_fcntl.h"
 #include <php.h>
 #include <win32/flock.h>
 #include <io.h>
@@ -37,7 +37,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-int apc_fcntl_create(const char* pathname)
+int apc_fcntl_create(const char* pathname TSRMLS_DC)
 {
     char *lock_file = emalloc(MAXPATHLEN);
     HANDLE fd;
@@ -62,7 +62,7 @@ int apc_fcntl_create(const char* pathname)
 
 
     if (fd == INVALID_HANDLE_VALUE) {
-        apc_eprint("apc_fcntl_create: could not open %s", lock_file);
+        apc_error("apc_fcntl_create: could not open %s" TSRMLS_CC, lock_file);
         efree(lock_file);
         return -1;
     }
@@ -76,25 +76,25 @@ void apc_fcntl_destroy(int fd)
     CloseHandle((HANDLE)fd);
 }
 
-void apc_fcntl_lock(int fd)
+void apc_fcntl_lock(int fd TSRMLS_DC)
 {
     OVERLAPPED offset = {0, 0, 0, 0, NULL};
 
     if (!LockFileEx((HANDLE)fd, LOCKFILE_EXCLUSIVE_LOCK, 0, 1, 0, &offset)) {
-        apc_eprint("apc_fcntl_lock failed errno:%d", GetLastError());
+        apc_error("apc_fcntl_lock failed errno:%d" TSRMLS_CC, GetLastError());
     }
 }
 
-void apc_fcntl_rdlock(int fd)
+void apc_fcntl_rdlock(int fd TSRMLS_DC)
 {
     OVERLAPPED offset = {0, 0, 0, 0, NULL};
 
     if (!LockFileEx((HANDLE)fd, 0, 0, 1, 0, &offset)) {
-        apc_eprint("apc_fcntl_rdlock failed errno:%d", GetLastError());
+        apc_error("apc_fcntl_rdlock failed errno:%d" TSRMLS_CC, GetLastError());
     }
 }
 
-void apc_fcntl_unlock(int fd)
+void apc_fcntl_unlock(int fd TSRMLS_DC)
 {
     OVERLAPPED offset = {0, 0, 0, 0, NULL};
 
@@ -102,7 +102,7 @@ void apc_fcntl_unlock(int fd)
         DWORD error_code = GetLastError();
         /* Ignore already unlocked error */
         if (error_code != ERROR_NOT_LOCKED) {
-            apc_eprint("apc_fcntl_unlock failed errno:%d", error_code);
+            apc_error("apc_fcntl_unlock failed errno:%d" TSRMLS_CC, error_code);
         }
     }
 }

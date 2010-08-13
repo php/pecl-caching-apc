@@ -50,7 +50,7 @@ extern int _apc_store(char *strkey, int strkey_len, const zval *val, const uint 
             ptr = (void*)((long)(ptr) - (long)(bd)); \
             printf("%x in %s on line %d", ptr, __FILE__, __LINE__); \
         } else if((long)ptr > bd->size) { /* not swizzled */ \
-            apc_eprint("pointer to be swizzled is not within allowed memory range! (%x < %x < %x) in %s on %d", (long)bd, ptr, ((long)bd + bd->size), __FILE__, __LINE__); \
+            apc_error("pointer to be swizzled is not within allowed memory range! (%x < %x < %x) in %s on %d" TSRMLS_CC, (long)bd, ptr, ((long)bd + bd->size), __FILE__, __LINE__); \
         } \
         printf("\n"); \
     } while(0);
@@ -69,7 +69,7 @@ extern int _apc_store(char *strkey, int strkey_len, const zval *val, const uint 
         if((long)bd < (long)ptr && (ulong)ptr < ((long)bd + bd->size)) { \
             ptr = (void*)((long)(ptr) - (long)(bd)); \
         } else if((ulong)ptr > bd->size) { /* not swizzled */ \
-            apc_eprint("pointer to be swizzled is not within allowed memory range! (%x < %x < %x) in %s on %d", (long)bd, ptr, ((long)bd + bd->size), __FILE__, __LINE__); \
+            apc_error("pointer to be swizzled is not within allowed memory range! (%x < %x < %x) in %s on %d" TSRMLS_CC, (long)bd, ptr, ((long)bd + bd->size), __FILE__, __LINE__); \
         } \
     } while(0);
 
@@ -119,7 +119,7 @@ static void *apc_bd_alloc(size_t size TSRMLS_DC) {
 static void apc_bd_free(void *ptr TSRMLS_DC) {
     size_t *size;
     if(zend_hash_index_find(&APCG(apc_bd_alloc_list), (ulong)ptr, (void**)&size) == FAILURE) {
-        apc_eprint("apc_bd_free could not free pointer (not found in list: %x)", ptr);
+        apc_error("apc_bd_free could not free pointer (not found in list: %x)" TSRMLS_CC, ptr);
     }
     APCG(apc_bd_alloc_ptr) = (void*)((size_t)APCG(apc_bd_alloc_ptr) - *size);
     zend_hash_index_del(&APCG(apc_bd_alloc_list), (ulong)ptr);
@@ -142,10 +142,10 @@ static void *apc_bd_alloc_ex(void *ptr_new, size_t size TSRMLS_DC) {
     } else {  /* alloc block */
       APCG(apc_bd_alloc_ptr) = (void*)((size_t)APCG(apc_bd_alloc_ptr) + size);
 #if APC_BINDUMP_DEBUG
-      apc_nprint("apc_bd_alloc: rval: 0x%x  ptr: 0x%x  ubptr: 0x%x  size: %d", rval, APCG(apc_bd_alloc_ptr), APCG(apc_bd_alloc_ubptr), size);
+      apc_notice("apc_bd_alloc: rval: 0x%x  ptr: 0x%x  ubptr: 0x%x  size: %d" TSRMLS_CC, rval, APCG(apc_bd_alloc_ptr), APCG(apc_bd_alloc_ubptr), size);
 #endif
       if(APCG(apc_bd_alloc_ptr) > APCG(apc_bd_alloc_ubptr)) {
-          apc_eprint("Exceeded bounds check in apc_bd_alloc_ex by %d bytes.", (unsigned char *) APCG(apc_bd_alloc_ptr) - (unsigned char *) APCG(apc_bd_alloc_ubptr));
+          apc_error("Exceeded bounds check in apc_bd_alloc_ex by %d bytes." TSRMLS_CC, (unsigned char *) APCG(apc_bd_alloc_ptr) - (unsigned char *) APCG(apc_bd_alloc_ubptr));
       }
       zend_hash_index_update(&APCG(apc_bd_alloc_list), (ulong)rval, &size, sizeof(size_t), NULL);
     }
@@ -164,7 +164,7 @@ static void _apc_swizzle_ptr(apc_bd_t *bd, zend_llist *ll, void **ptr, const cha
             printf(" in %s on line %d \n", file, line);
 #endif
         } else if((ulong)ptr > bd->size) {
-            apc_eprint("pointer to be swizzled is not within allowed memory range! (%x < %x < %x) in %s on %d", (long)bd, *ptr, ((long)bd + bd->size), file, line); \
+            apc_error("pointer to be swizzled is not within allowed memory range! (%x < %x < %x) in %s on %d" TSRMLS_CC, (long)bd, *ptr, ((long)bd + bd->size), file, line); \
         }
     }
 } /* }}} */
@@ -548,7 +548,7 @@ static int apc_unswizzle_bd(apc_bd_t *bd, int flags TSRMLS_DC) {
         PHP_MD5Update(&context, (const unsigned char*)bd, bd->size);
         PHP_MD5Final(digest, &context);
         if(memcmp(md5_orig, digest, 16)) {
-            apc_eprint("MD5 checksum of binary dump failed.");
+            apc_error("MD5 checksum of binary dump failed." TSRMLS_CC);
             memcpy(bd->md5, md5_orig, 16); /* add back md5 checksum */
             return -1;
         }
@@ -560,7 +560,7 @@ static int apc_unswizzle_bd(apc_bd_t *bd, int flags TSRMLS_DC) {
           crc = ((crc >> 8) & 0x00FFFFFF) ^ crc32tab[(crc ^ (*crc_p)) & 0xFF ];
         }
         if(crc_orig != crc) {
-            apc_eprint("CRC32 checksum of binary dump failed.");
+            apc_error("CRC32 checksum of binary dump failed." TSRMLS_CC);
             bd->crc = crc_orig;
             return -1;
         }
@@ -686,7 +686,7 @@ apc_bd_t* apc_bin_dump(HashTable *files, HashTable *user_vars TSRMLS_DC) {
                 }
             } else {
                 /* TODO: Currently we don't support APC_CACHE_KEY_FILE type.  We need to store the path and re-stat on load */
-                apc_wprint("Excluding some files from apc_bin_dump[file].  Cached files must be included using full path with apc.stat=0.");
+                apc_warning("Excluding some files from apc_bin_dump[file].  Cached files must be included using full path with apc.stat=0." TSRMLS_CC);
             }
         }
     }
@@ -698,7 +698,7 @@ apc_bd_t* apc_bin_dump(HashTable *files, HashTable *user_vars TSRMLS_DC) {
     apc_bd_alloc_ex(pool_ptr, sizeof(apc_pool) TSRMLS_CC);
     ctxt.pool = apc_pool_create(APC_UNPOOL, apc_bd_alloc, apc_bd_free, NULL, NULL TSRMLS_CC);  /* ideally the pool wouldn't be alloc'd as part of this */
     if (!ctxt.pool) { /* TODO need to cleanup */
-        apc_wprint("Unable to allocate memory for pool.");
+        apc_warning("Unable to allocate memory for pool." TSRMLS_CC);
         return NULL;
     }
     ctxt.copy = APC_COPY_IN_USER;  /* avoid stupid ALLOC_ZVAL calls here, hack */
@@ -849,7 +849,7 @@ int apc_bin_load(apc_bd_t *bd, int flags TSRMLS_DC) {
     for(i = 0; i < bd->num_entries; i++) {
         ctxt.pool = apc_pool_create(APC_SMALL_POOL, apc_sma_malloc, apc_sma_free, apc_sma_protect, apc_sma_unprotect TSRMLS_CC);
         if (!ctxt.pool) { /* TODO need to cleanup previous pools */
-            apc_wprint("Unable to allocate memory for pool.");
+            apc_warning("Unable to allocate memory for pool." TSRMLS_CC);
             goto failure;
         }
         ep = &bd->entries[i];
@@ -863,7 +863,7 @@ int apc_bin_load(apc_bd_t *bd, int flags TSRMLS_DC) {
                 HANDLE_BLOCK_INTERRUPTIONS();
 #if NONBLOCKING_LOCK_AVAILABLE
                 if(APCG(write_lock)) {
-                    if(!apc_cache_write_lock(apc_cache)) {
+                    if(!apc_cache_write_lock(apc_cache TSRMLS_CC)) {
                         HANDLE_UNBLOCK_INTERRUPTIONS();
                         return -1;
                     }
@@ -945,7 +945,7 @@ int apc_bin_load(apc_bd_t *bd, int flags TSRMLS_DC) {
 
 #if NONBLOCKING_LOCK_AVAILABLE
                 if(APCG(write_lock)) {
-                    apc_cache_write_unlock(apc_cache);
+                    apc_cache_write_unlock(apc_cache TSRMLS_CC);
                 }
 #endif
                 HANDLE_UNBLOCK_INTERRUPTIONS();
@@ -964,10 +964,10 @@ int apc_bin_load(apc_bd_t *bd, int flags TSRMLS_DC) {
 
 failure:
     apc_pool_destroy(ctxt.pool TSRMLS_CC);
-    apc_wprint("Unable to allocate memory for apc binary load/dump functionality.");
+    apc_warning("Unable to allocate memory for apc binary load/dump functionality." TSRMLS_CC);
 #if NONBLOCKING_LOCK_AVAILABLE
     if(APCG(write_lock)) {
-        apc_cache_write_unlock(apc_cache);
+        apc_cache_write_unlock(apc_cache TSRMLS_CC);
     }
 #endif
     HANDLE_UNBLOCK_INTERRUPTIONS();

@@ -93,7 +93,7 @@ static int install_function(apc_function_t fn, apc_context_t* ctxt, int lazy TSR
     }
 
     if (status == FAILURE) {
-        /* apc_eprint("Cannot redeclare %s()", fn.name); */
+        /* apc_error("Cannot redeclare %s()" TSRMLS_CC, fn.name); */
     }
 
     return status;
@@ -200,7 +200,7 @@ static int install_class(apc_class_t cl, apc_context_t* ctxt, int lazy TSRMLS_DC
                                     &parent_ptr TSRMLS_CC);
         if (status == FAILURE) {
             if(APCG(report_autofilter)) {
-                apc_wprint("Dynamic inheritance detected for class %s", cl.name);
+                apc_warning("Dynamic inheritance detected for class %s" TSRMLS_CC, cl.name);
             }
             class_entry->parent = NULL;
             return status;
@@ -222,7 +222,7 @@ static int install_class(apc_class_t cl, apc_context_t* ctxt, int lazy TSRMLS_DC
                            NULL);
 
     if (status == FAILURE) {
-        apc_eprint("Cannot redeclare class %s", cl.name);
+        apc_error("Cannot redeclare class %s" TSRMLS_CC, cl.name);
     }
     return status;
 }
@@ -245,12 +245,12 @@ int apc_lookup_class_hook(char *name, int len, ulong hash, zend_class_entry ***c
     ctxt.copy = APC_COPY_OUT_OPCODE;
 
     if(install_class(*cl, &ctxt, 0 TSRMLS_CC) == FAILURE) {
-        apc_wprint("apc_lookup_class_hook: could not install %s", name);
+        apc_warning("apc_lookup_class_hook: could not install %s" TSRMLS_CC, name);
         return FAILURE;
     }
 
     if(zend_hash_quick_find(EG(class_table), name, len, hash, (void**)ce) == FAILURE) {
-        apc_wprint("apc_lookup_class_hook: known error trying to fetch class %s", name);
+        apc_warning("apc_lookup_class_hook: known error trying to fetch class %s" TSRMLS_CC, name);
         return FAILURE;
     }
 
@@ -268,7 +268,7 @@ static int uninstall_class(apc_class_t cl TSRMLS_DC)
                            cl.name,
                            cl.name_len+1);
     if (status == FAILURE) {
-        apc_eprint("Cannot delete class %s", cl.name);
+        apc_error("Cannot delete class %s" TSRMLS_CC, cl.name);
     }
     return status;
 }
@@ -375,7 +375,7 @@ static zend_op_array* cached_compile(zend_file_handle* h,
 default_compile:
 
     if(APCG(report_autofilter)) {
-        apc_wprint("Autofiltering %s", h->opened_path);
+        apc_warning("Autofiltering %s" TSRMLS_CC, h->opened_path);
     }
 
     if(cache_entry->data.file.classes) {
@@ -386,7 +386,7 @@ default_compile:
 
     apc_stack_pop(APCG(cache_stack)); /* pop out cache_entry */
 
-    apc_cache_release(apc_cache, cache_entry);
+    apc_cache_release(apc_cache, cache_entry TSRMLS_CC);
 
     /* cannot free up cache data yet, it maybe in use */
 
@@ -428,7 +428,7 @@ zend_bool apc_compile_cache_entry(apc_cache_key_t key, zend_file_handle* h, int 
     ctxt.pool = apc_pool_create(APC_MEDIUM_POOL, apc_sma_malloc, apc_sma_free, 
                                                  apc_sma_protect, apc_sma_unprotect TSRMLS_CC);
     if (!ctxt.pool) {
-        apc_wprint("Unable to allocate memory for pool.");
+        apc_warning("Unable to allocate memory for pool." TSRMLS_CC);
         return FAILURE;
     }
     ctxt.copy = APC_COPY_IN_OPCODE;
@@ -454,10 +454,10 @@ zend_bool apc_compile_cache_entry(apc_cache_key_t key, zend_file_handle* h, int 
             PHP_MD5Final(key.md5, &context);
             php_stream_close(stream);
             if(n<0) {
-                apc_wprint("Error while reading '%s' for md5 generation.", filename);
+                apc_warning("Error while reading '%s' for md5 generation." TSRMLS_CC, filename);
             }
         } else {
-            apc_wprint("Unable to open '%s' for md5 generation.", filename);
+            apc_warning("Unable to open '%s' for md5 generation." TSRMLS_CC, filename);
         }
     }
 
@@ -557,7 +557,7 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
         ctxt.pool = apc_pool_create(APC_UNPOOL, apc_php_malloc, apc_php_free,
                                                 apc_sma_protect, apc_sma_unprotect TSRMLS_CC);
         if (!ctxt.pool) {
-            apc_wprint("Unable to allocate memory for pool.");
+            apc_warning("Unable to allocate memory for pool." TSRMLS_CC);
             return old_compile_file(h, type TSRMLS_CC);
         }
         ctxt.copy = APC_COPY_OUT_OPCODE;
@@ -569,7 +569,7 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
 
         zend_llist_add_element(&CG(open_files), h); /* We leak fds without this hack */
 
-        apc_stack_push(APCG(cache_stack), cache_entry);
+        apc_stack_push(APCG(cache_stack), cache_entry TSRMLS_CC);
         op_array = cached_compile(h, type, &ctxt TSRMLS_CC);
         if(op_array) {
 #ifdef APC_FILEHITS
@@ -581,7 +581,7 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
             return op_array;
         }
         if(APCG(report_autofilter)) {
-            apc_wprint("Recompiling %s", cache_entry->data.file.filename);
+            apc_warning("Recompiling %s" TSRMLS_CC, cache_entry->data.file.filename);
         }
         /* TODO: check what happens with EG(included_files) */
     }
@@ -616,7 +616,7 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
 
 #if NONBLOCKING_LOCK_AVAILABLE
     if(APCG(write_lock)) {
-        if(!apc_cache_write_lock(apc_cache)) {
+        if(!apc_cache_write_lock(apc_cache TSRMLS_CC)) {
             HANDLE_UNBLOCK_INTERRUPTIONS();
             return old_compile_file(h, type TSRMLS_CC);
         }
@@ -640,7 +640,7 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
 
 #if NONBLOCKING_LOCK_AVAILABLE
     if(APCG(write_lock)) {
-        apc_cache_write_unlock(apc_cache);
+        apc_cache_write_unlock(apc_cache TSRMLS_CC);
     }
 #endif
     HANDLE_UNBLOCK_INTERRUPTIONS();
@@ -803,7 +803,7 @@ int apc_module_init(int module_number TSRMLS_DC)
     }
 #else
     if(APCG(lazy_functions) || APCG(lazy_classes)) {
-        apc_wprint("Lazy function/class loading not available with this version of PHP, please disable APC lazy loading.");
+        apc_warning("Lazy function/class loading not available with this version of PHP, please disable APC lazy loading." TSRMLS_CC);
         APCG(lazy_functions) = APCG(lazy_classes) = 0;
     }
 #endif
@@ -851,7 +851,7 @@ int apc_module_shutdown(TSRMLS_D)
                     cache_entry->data.file.classes[i].name_len+1);
             }
         }
-        apc_cache_release(apc_cache, cache_entry);
+        apc_cache_release(apc_cache, cache_entry TSRMLS_CC);
     }
 
     apc_cache_destroy(apc_cache TSRMLS_CC);
@@ -919,7 +919,7 @@ static void apc_deactivate(TSRMLS_D)
                 apc_free_class_entry_after_execution(zce TSRMLS_CC);
             }
         }
-        apc_cache_release(apc_cache, cache_entry);
+        apc_cache_release(apc_cache, cache_entry TSRMLS_CC);
     }
 }
 /* }}} */

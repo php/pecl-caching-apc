@@ -47,11 +47,11 @@ void dump(zend_op_array *op_array TSRMLS_DC)
 
   if(dump_op_array)
   {
-  dump_op_array(op_array TSRMLS_CC); 
+    dump_op_array(op_array TSRMLS_CC); 
   }
   else
   {
-  apc_wprint("vld is not installed or something even worse.");
+     apc_warning("vld is not installed or something even worse." TSRMLS_CC);
   }
 #endif
 }

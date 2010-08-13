@@ -69,7 +69,7 @@ union semun {
 # define UNDO 0
 #endif
 
-int apc_sem_create(int proj, int initval)
+int apc_sem_create(int proj, int initval TSRMLS_DC)
 {
     int semid;
     int perms = 0777;
@@ -80,18 +80,18 @@ int apc_sem_create(int proj, int initval)
         /* sempahore created for the first time, initialize now */
         arg.val = initval;
         if (semctl(semid, 0, SETVAL, arg) < 0) {
-            apc_eprint("apc_sem_create: semctl(%d,...) failed:", semid);
+            apc_error("apc_sem_create: semctl(%d,...) failed:" TSRMLS_CC, semid);
         }
     }
     else if (errno == EEXIST) {
         /* sempahore already exists, don't initialize */
         if ((semid = semget(key, 1, perms)) < 0) {
-            apc_eprint("apc_sem_create: semget(%u,...) failed:", key);
+            apc_error("apc_sem_create: semget(%u,...) failed:" TSRMLS_CC, key);
         }
         /* insert <sleazy way to avoid race condition> here */
     }
     else {
-        apc_eprint("apc_sem_create: semget(%u,...) failed:", key);
+        apc_error("apc_sem_create: semget(%u,...) failed:" TSRMLS_CC, key);
     }
 
     return semid;
@@ -104,7 +104,7 @@ void apc_sem_destroy(int semid)
     semctl(semid, 0, IPC_RMID, arg);
 }
 
-void apc_sem_lock(int semid)
+void apc_sem_lock(int semid TSRMLS_DC)
 {
     struct sembuf op;
 
@@ -114,12 +114,12 @@ void apc_sem_lock(int semid)
 
     if (semop(semid, &op, 1) < 0) {
         if (errno != EINTR) {
-            apc_eprint("apc_sem_lock: semop(%d) failed:", semid);
+            apc_error("apc_sem_lock: semop(%d) failed:" TSRMLS_CC, semid);
         }
     }
 }
 
-int apc_sem_nonblocking_lock(int semid) 
+int apc_sem_nonblocking_lock(int semid TSRMLS_DC) 
 {
     struct sembuf op;
 
@@ -131,14 +131,14 @@ int apc_sem_nonblocking_lock(int semid)
       if (errno == EAGAIN) {
         return 0;  /* Lock is already held */
       } else if (errno != EINTR) {
-        apc_eprint("apc_sem_lock: semop(%d) failed:", semid);
+        apc_error("apc_sem_lock: semop(%d) failed:" TSRMLS_CC, semid);
       }
     }
 
     return 1;  /* Lock obtained */
 }
 
-void apc_sem_unlock(int semid)
+void apc_sem_unlock(int semid TSRMLS_DC)
 {
     struct sembuf op;
 
@@ -148,12 +148,12 @@ void apc_sem_unlock(int semid)
 
     if (semop(semid, &op, 1) < 0) {
         if (errno != EINTR) {
-            apc_eprint("apc_sem_unlock: semop(%d) failed:", semid);
+            apc_error("apc_sem_unlock: semop(%d) failed:" TSRMLS_CC, semid);
         }
     }
 }
 
-void apc_sem_wait_for_zero(int semid)
+void apc_sem_wait_for_zero(int semid TSRMLS_DC)
 {
     struct sembuf op;
 
@@ -163,19 +163,19 @@ void apc_sem_wait_for_zero(int semid)
 
     if (semop(semid, &op, 1) < 0) {
         if (errno != EINTR) {
-            apc_eprint("apc_sem_waitforzero: semop(%d) failed:", semid);
+            apc_error("apc_sem_waitforzero: semop(%d) failed:" TSRMLS_CC, semid);
         }
     }
 }
 
-int apc_sem_get_value(int semid)
+int apc_sem_get_value(int semid TSRMLS_DC)
 {
     union semun arg;
     unsigned short val[1];
 
     arg.array = val;
     if (semctl(semid, 0, GETALL, arg) < 0) {
-        apc_eprint("apc_sem_getvalue: semctl(%d,...) failed:", semid);
+        apc_error("apc_sem_getvalue: semctl(%d,...) failed:" TSRMLS_CC, semid);
     }
     return val[0];
 }

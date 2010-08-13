@@ -47,7 +47,7 @@
 # define SHM_A 0222 /* write permission */
 #endif
 
-int apc_shm_create(int proj, size_t size)
+int apc_shm_create(int proj, size_t size TSRMLS_DC)
 {
     int shmid;			/* shared memory id */
     int oflag;			/* permissions on shm */
@@ -55,7 +55,7 @@ int apc_shm_create(int proj, size_t size)
 
     oflag = IPC_CREAT | SHM_R | SHM_A;
     if ((shmid = shmget(key, size, oflag)) < 0) {
-        apc_eprint("apc_shm_create: shmget(%d, %d, %d) failed: %s. It is possible that the chosen SHM segment size is higher than the operation system allows. Linux has usually a default limit of 32MB per segment.", key, size, oflag, strerror(errno));
+        apc_error("apc_shm_create: shmget(%d, %d, %d) failed: %s. It is possible that the chosen SHM segment size is higher than the operation system allows. Linux has usually a default limit of 32MB per segment." TSRMLS_CC, key, size, oflag, strerror(errno));
     }
 
     return shmid;
@@ -67,12 +67,12 @@ void apc_shm_destroy(int shmid)
     shmctl(shmid, IPC_RMID, 0);
 }
 
-apc_segment_t apc_shm_attach(int shmid)
+apc_segment_t apc_shm_attach(int shmid TSRMLS_DC)
 {
     apc_segment_t segment; /* shm segment */
 
     if ((long)(segment.shmaddr = shmat(shmid, 0, 0)) == -1) {
-        apc_eprint("apc_shm_attach: shmat failed:");
+        apc_error("apc_shm_attach: shmat failed:" TSRMLS_CC);
     }
 
 #ifdef APC_MEMPROTECT
@@ -91,15 +91,15 @@ apc_segment_t apc_shm_attach(int shmid)
     return segment;
 }
 
-void apc_shm_detach(apc_segment_t* segment)
+void apc_shm_detach(apc_segment_t* segment TSRMLS_DC)
 {
     if (shmdt(segment->shmaddr) < 0) {
-        apc_eprint("apc_shm_detach: shmdt failed:");
+        apc_error("apc_shm_detach: shmdt failed:" TSRMLS_CC);
     }
 
 #ifdef APC_MEMPROTECT
     if (segment->roaddr && shmdt(segment->roaddr) < 0) {
-        apc_eprint("apc_shm_detach: shmdt failed:");
+        apc_error("apc_shm_detach: shmdt failed:" TSRMLS_CC);
     }
 #endif
 }

@@ -67,17 +67,20 @@ typedef void  (*apc_free_t)  (void * TSRMLS_DC);
 
 /* wrappers for memory allocation routines */
 extern void* apc_emalloc(size_t n TSRMLS_DC);
-extern void* apc_erealloc(void* p, size_t n);
+extern void* apc_erealloc(void* p, size_t n TSRMLS_DC);
 extern void apc_efree(void* p TSRMLS_DC);
-extern char* apc_estrdup(const char* s);
+extern char* apc_estrdup(const char* s TSRMLS_DC);
 extern void* apc_xstrdup(const char* s, apc_malloc_t f TSRMLS_DC);
 extern void* apc_xmemcpy(const void* p, size_t n, apc_malloc_t f TSRMLS_DC);
 
 /* console display functions */
-extern void apc_eprint(const char* fmt, ...);
-extern void apc_wprint(const char* fmt, ...);
-extern void apc_dprint(const char* fmt, ...);
-extern void apc_nprint(const char* fmt, ...);
+extern void apc_error(const char *format TSRMLS_DC, ...);
+extern void apc_warning(const char *format TSRMLS_DC, ...);
+extern void apc_notice(const char *format TSRMLS_DC, ...);
+
+#ifdef __DEBUG_APC__
+extern void apc_debug(const char *format TSRMLS_DC, ...);
+#endif
 
 /* string and text manipulation */
 extern char* apc_append(const char* s, const char* t TSRMLS_DC);

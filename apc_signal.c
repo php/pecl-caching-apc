@@ -53,7 +53,7 @@ static void apc_core_unmap(int signo, siginfo_t *siginfo, void *context);
  */
 static void apc_core_unmap(int signo, siginfo_t *siginfo, void *context) 
 {
-	TSRMLS_FETCH();
+    TSRMLS_FETCH();
 	
     apc_sma_cleanup(TSRMLS_C);
     apc_rehandle_signal(signo, siginfo, context);
@@ -105,7 +105,7 @@ static int apc_register_signal(int signo, void (*handler)(int, siginfo_t*, void*
             p_sig.siginfo = ((sa.sa_flags & SA_SIGINFO) == SA_SIGINFO);
             p_sig.handler = (void *)sa.sa_handler;
 
-            apc_signal_info.prev = (apc_signal_entry_t **)apc_erealloc(apc_signal_info.prev, (apc_signal_info.installed+1)*sizeof(apc_signal_entry_t *));
+            apc_signal_info.prev = (apc_signal_entry_t **)apc_erealloc(apc_signal_info.prev, (apc_signal_info.installed+1)*sizeof(apc_signal_entry_t *) TSRMLS_CC);
             apc_signal_info.prev[apc_signal_info.installed] = (apc_signal_entry_t *)apc_emalloc(sizeof(apc_signal_entry_t) TSRMLS_CC);
             *apc_signal_info.prev[apc_signal_info.installed++] = p_sig;
         } else {
@@ -122,7 +122,7 @@ static int apc_register_signal(int signo, void (*handler)(int, siginfo_t*, void*
         sa.sa_handler = (void*)handler;
 
         if (sigaction(signo, &sa, NULL) < 0) {
-            apc_wprint("Error installing apc signal handler for %d", signo);
+            apc_warning("Error installing apc signal handler for %d" TSRMLS_CC, signo);
         }
 
         return SUCCESS;

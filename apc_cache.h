@@ -204,7 +204,7 @@ extern apc_cache_entry_t* apc_cache_user_find(T cache, char* strkey, int keylen,
  * shared memory segment in any way.
  *
  */
-extern apc_cache_entry_t* apc_cache_user_exists(T cache, char* strkey, int keylen, time_t t);
+extern apc_cache_entry_t* apc_cache_user_exists(T cache, char* strkey, int keylen, time_t t TSRMLS_DC);
 
 /*
  * apc_cache_delete and apc_cache_user_delete finds an entry in the cache and deletes it.
@@ -227,7 +227,7 @@ zval* apc_cache_fetch_zval(zval* dst, const zval* src, apc_context_t* ctxt TSRML
  *
  * entry is the cache entry whose ref count you want to decrement.
  */
-extern void apc_cache_release(T cache, apc_cache_entry_t* entry);
+extern void apc_cache_release(T cache, apc_cache_entry_t* entry TSRMLS_DC);
 
 /*
  * apc_cache_make_file_key creates a key object given a relative or absolute
@@ -371,10 +371,10 @@ struct apc_cache_t {
 
 extern apc_cache_info_t* apc_cache_info(T cache, zend_bool limited TSRMLS_DC);
 extern void apc_cache_free_info(apc_cache_info_t* info TSRMLS_DC);
-extern void apc_cache_unlock(apc_cache_t* cache);
+extern void apc_cache_unlock(apc_cache_t* cache TSRMLS_DC);
 extern zend_bool apc_cache_busy(apc_cache_t* cache);
-extern zend_bool apc_cache_write_lock(apc_cache_t* cache);
-extern void apc_cache_write_unlock(apc_cache_t* cache);
+extern zend_bool apc_cache_write_lock(apc_cache_t* cache TSRMLS_DC);
+extern void apc_cache_write_unlock(apc_cache_t* cache TSRMLS_DC);
 extern zend_bool apc_cache_is_last_key(apc_cache_t* cache, apc_cache_key_t* key, unsigned int h, time_t t TSRMLS_DC);
 
 /* used by apc_rfc1867 to update data in-place - not to be used elsewhere */

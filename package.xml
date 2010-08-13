@@ -70,7 +70,7 @@
  <stability><release>stable</release><api>stable</api></stability>
  <license uri="http://www.php.net/license">PHP License</license>
  <notes>
-- ??
+ - ZTS optimizations (Kalle)
  </notes>
 
  <contents>

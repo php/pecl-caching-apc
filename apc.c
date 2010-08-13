@@ -54,16 +54,16 @@ void* apc_emalloc(size_t n TSRMLS_DC)
 {
     void* p = malloc(n);
     if (p == NULL) {
-        apc_eprint("apc_emalloc: malloc failed to allocate %u bytes:", n);
+        apc_error("apc_emalloc: malloc failed to allocate %u bytes:" TSRMLS_CC, n);
     }
     return p;
 }
 
-void* apc_erealloc(void* p, size_t n)
+void* apc_erealloc(void* p, size_t n TSRMLS_DC)
 {
     p = realloc(p, n);
     if (p == NULL) {
-        apc_eprint("apc_erealloc: realloc failed to allocate %u bytes:", n);
+        apc_error("apc_erealloc: realloc failed to allocate %u bytes:" TSRMLS_CC, n);
     }
     return p;
 }
@@ -71,12 +71,12 @@ void* apc_erealloc(void* p, size_t n)
 void apc_efree(void* p TSRMLS_DC)
 {
     if (p == NULL) {
-        apc_eprint("apc_efree: attempt to free null pointer");
+        apc_error("apc_efree: attempt to free null pointer" TSRMLS_CC);
     }
     free(p);
 }
 
-char* apc_estrdup(const char* s)
+char* apc_estrdup(const char* s TSRMLS_DC)
 {
     int len;
     char* dup;
@@ -87,7 +87,7 @@ char* apc_estrdup(const char* s)
     len = strlen(s);
     dup = (char*) malloc(len+1);
     if (dup == NULL) {
-        apc_eprint("apc_estrdup: malloc failed to allocate %u bytes:", len+1);
+        apc_error("apc_estrdup: malloc failed to allocate %u bytes:" TSRMLS_CC, len+1);
     }
     memcpy(dup, s, len);
     dup[len] = '\0';
@@ -113,25 +113,28 @@ void* apc_xmemcpy(const void* p, size_t n, apc_malloc_t f TSRMLS_DC)
 /* }}} */
 
 /* {{{ console display functions */
-
-#define apc_print(name, level) void apc_##name(const char* fmt, ...) { \
-        va_list args;\
-        TSRMLS_FETCH();\
-        va_start(args, fmt);\
-        php_verror(NULL, "", level, fmt, args TSRMLS_CC);\
-        va_end(args);\
-    }
-
-apc_print(eprint, E_ERROR);
-apc_print(wprint, E_WARNING);
-apc_print(nprint, E_NOTICE);
-#ifdef APC_DEBUG
-    apc_print(dprint, E_NOTICE);
+#ifdef ZTS
+# define APC_PRINT_FUNCTION_PARAMETER TSRMLS_C
 #else
-    void apc_dprint(const char* fmt, ...) 
-    {
-        /* do nothing */
-    }
+# define APC_PRINT_FUNCTION_PARAMETER format
+#endif
+
+#define APC_PRINT_FUNCTION(name, verbosity)					\
+	void apc_##name(const char *format TSRMLS_DC, ...)			\
+	{									\
+		va_list args;							\
+										\
+		va_start(args, APC_PRINT_FUNCTION_PARAMETER);			\
+		php_verror(NULL, "", verbosity, format, args TSRMLS_CC);	\
+		va_end(args);							\
+	}
+
+APC_PRINT_FUNCTION(error, E_ERROR)
+APC_PRINT_FUNCTION(warning, E_WARNING)
+APC_PRINT_FUNCTION(notice, E_NOTICE)
+
+#ifdef __DEBUG_APC__
+APC_PRINT_FUNCTION(debug, E_NOTICE)
 #endif
 /* }}} */
 
@@ -206,7 +209,7 @@ char** apc_tokenize(const char* s, char delim TSRMLS_DC)
         /* resize token array if necessary */
         if (n == size-1) {
             size *= 2;
-            tokens = (char**) apc_erealloc(tokens, size * sizeof(char*));
+            tokens = (char**) apc_erealloc(tokens, size * sizeof(char*) TSRMLS_CC);
         }
 
         /* save the current token */
@@ -327,7 +330,7 @@ int apc_search_paths(const char* filename, const char* path, apc_fileinfo_t* fil
             memcpy(fileinfo->path_buf, exec_fname, exec_fname_length);
             fileinfo->path_buf[exec_fname_length] = DEFAULT_SLASH;
             strlcpy(fileinfo->path_buf +exec_fname_length +1, path_for_open,sizeof(fileinfo->path_buf)-exec_fname_length-1);
-            /* apc_wprint("filename: %s, exec_fname: %s, fileinfo->path_buf: %s", path_for_open, exec_fname, fileinfo->path_buf); */
+            /* apc_warning("filename: %s, exec_fname: %s, fileinfo->path_buf: %s" TSRMLS_CC, path_for_open, exec_fname, fileinfo->path_buf); */
             if (APC_URL_STAT(wrapper, fileinfo->path_buf, &fileinfo->st_buf) == 0) {
                 fileinfo->fullpath = (char*) fileinfo->path_buf;
                 found = 1;
@@ -370,7 +373,7 @@ typedef struct {
 #define APC_COMPILE_PATTERN(re, match) do {\
     if(match.len > 2) { /* more than just "//" */\
         if (((re) = pcre_get_compiled_regex(match.c, NULL, NULL TSRMLS_CC)) == NULL) {\
-            apc_wprint("apc_regex_compile_array: invalid expression '%s'", match.c); \
+            apc_warning("apc_regex_compile_array: invalid expression '%s'" TSRMLS_CC, match.c); \
             smart_str_free(&match);\
             return NULL;\
         }\
@@ -453,7 +456,7 @@ int apc_regex_match_array(void* p, const char* input)
 void* apc_regex_compile_array(char* patterns[] TSRMLS_DC)
 {
     if(patterns && patterns[0] != NULL) {
-        apc_wprint("pcre missing, disabling filters");
+        apc_warning("pcre missing, disabling filters" TSRMLS_CC);
     }
     return NULL;
 }

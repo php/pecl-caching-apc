@@ -57,7 +57,7 @@ static apc_iterator_item_t* apc_iterator_item_ctor(apc_iterator_t *iterator, slo
         item->key_len = slot->key.data.fpfile.fullpath_len;
         item->filename_key = item->key;
     } else {
-        apc_eprint("Internal error, invalid entry type.");
+        apc_error("Internal error, invalid entry type." TSRMLS_CC);
     }
 
     ALLOC_INIT_ZVAL(item->value);
@@ -158,7 +158,7 @@ static apc_iterator_item_t* apc_iterator_item_ctor(apc_iterator_t *iterator, slo
 /* {{{ apc_iterator_clone */
 static zend_object_value apc_iterator_clone(zval *zobject TSRMLS_DC) {
     zend_object_value value = {0};
-    apc_eprint("APCIterator object cannot be cloned.");
+    apc_error("APCIterator object cannot be cloned." TSRMLS_CC);
     return value;
 }
 /* }}} */
@@ -283,7 +283,7 @@ static int apc_iterator_fetch_active(apc_iterator_t *iterator TSRMLS_DC) {
                 count++;
                 item = apc_iterator_item_ctor(iterator, slot TSRMLS_CC);
                 if (item) {
-                    apc_stack_push(iterator->stack, item);
+                    apc_stack_push(iterator->stack, item TSRMLS_CC);
                 }
             }
             slot = &(*slot)->next;
@@ -314,7 +314,7 @@ static int apc_iterator_fetch_deleted(apc_iterator_t *iterator TSRMLS_DC) {
             count++;
             item = apc_iterator_item_ctor(iterator, slot TSRMLS_CC);
             if (item) {
-                apc_stack_push(iterator->stack, item);
+                apc_stack_push(iterator->stack, item TSRMLS_CC);
             }
         }
         slot = &(*slot)->next;
@@ -327,7 +327,7 @@ static int apc_iterator_fetch_deleted(apc_iterator_t *iterator TSRMLS_DC) {
 /* }}} */
 
 /* {{{ apc_iterator_totals */
-static void apc_iterator_totals(apc_iterator_t *iterator) {
+static void apc_iterator_totals(apc_iterator_t *iterator TSRMLS_DC) {
     slot_t **slot;
     int i;
 
@@ -364,16 +364,16 @@ PHP_METHOD(apc_iterator, __construct) {
     }
 
     if (!APCG(enabled)) {
-        apc_eprint("APC must be enabled to use APCIterator.");
+        apc_error("APC must be enabled to use APCIterator." TSRMLS_CC);
     }
 
     if (chunk_size < 0) {
-        apc_eprint("APCIterator chunk size must be 0 or greater.");
+        apc_error("APCIterator chunk size must be 0 or greater." TSRMLS_CC);
         return;
     }
 
     if (format > APC_ITER_ALL) {
-        apc_eprint("APCIterator format is invalid.");
+        apc_error("APCIterator format is invalid." TSRMLS_CC);
         return;
     }
 
@@ -382,7 +382,7 @@ PHP_METHOD(apc_iterator, __construct) {
     } else if (list == APC_LIST_DELETED) {
         iterator->fetch = apc_iterator_fetch_deleted;
     } else {
-        apc_wprint("APCIterator invalid list type.");
+        apc_warning("APCIterator invalid list type." TSRMLS_CC);
         return;
     }
 
@@ -412,10 +412,10 @@ PHP_METHOD(apc_iterator, __construct) {
         iterator->re = pcre_get_compiled_regex(Z_STRVAL_P(search), NULL, NULL TSRMLS_CC);
 
         if(!iterator->re) {
-            apc_eprint("Could not compile regular expression: %s", Z_STRVAL_P(search));
+            apc_error("Could not compile regular expression: %s" TSRMLS_CC, Z_STRVAL_P(search));
         }
 #else
-        apc_eprint("Regular expressions support is not enabled, please enable PCRE for APCIterator regex support");
+        apc_error("Regular expressions support is not enabled, please enable PCRE for APCIterator regex support" TSRMLS_CC);
 #endif
     } else if (search && Z_TYPE_P(search) == IS_ARRAY) {
         Z_ADDREF_P(search);
@@ -549,7 +549,7 @@ PHP_METHOD(apc_iterator, getTotalHits) {
     }
 
     if (iterator->totals_flag == 0) {
-        apc_iterator_totals(iterator);
+        apc_iterator_totals(iterator TSRMLS_CC);
     }
 
     RETURN_LONG(iterator->hits);
@@ -569,7 +569,7 @@ PHP_METHOD(apc_iterator, getTotalSize) {
     }
 
     if (iterator->totals_flag == 0) {
-        apc_iterator_totals(iterator);
+        apc_iterator_totals(iterator TSRMLS_CC);
     }
 
     RETURN_LONG(iterator->size);
@@ -589,7 +589,7 @@ PHP_METHOD(apc_iterator, getTotalCount) {
     }
 
     if (iterator->totals_flag == 0) {
-        apc_iterator_totals(iterator);
+        apc_iterator_totals(iterator TSRMLS_CC);
     }
 
     RETURN_LONG(iterator->count);
@@ -676,7 +676,7 @@ int apc_iterator_delete(zval *zobj TSRMLS_DC) {
     apc_iterator_item_t *item;
 
     if (!ce || !instanceof_function(ce, apc_iterator_ce TSRMLS_CC)) {
-        apc_eprint("apc_delete object argument must be instance of APCIterator");
+        apc_error("apc_delete object argument must be instance of APCIterator" TSRMLS_CC);
         return 0;
     }
     iterator = (apc_iterator_t*)zend_object_store_get_object(zobj TSRMLS_CC);

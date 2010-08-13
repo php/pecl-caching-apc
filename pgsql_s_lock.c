@@ -129,7 +129,7 @@ pg_usleep(long microsec)
  * s_lock_stuck() - complain about a stuck spinlock
  */
 static void
-s_lock_stuck(volatile slock_t *lock, const char *file, int line)
+s_lock_stuck(volatile slock_t *lock, const char *file, int line TSRMLS_DC)
 {
 #if defined(S_LOCK_TEST)
 	fprintf(stderr,
@@ -141,7 +141,7 @@ s_lock_stuck(volatile slock_t *lock, const char *file, int line)
 	elog(PANIC, "stuck spinlock (%p) detected at %s:%d",
 		 lock, file, line);
   */
-  apc_eprint("Stuck spinlock (%p) detected", lock);
+  apc_error("Stuck spinlock (%p) detected" TSRMLS_CC, lock);
 #endif
 }
 
@@ -150,7 +150,7 @@ s_lock_stuck(volatile slock_t *lock, const char *file, int line)
  * s_lock(lock) - platform-independent portion of waiting for a spinlock.
  */
 void
-s_lock(volatile slock_t *lock, const char *file, int line)
+s_lock(volatile slock_t *lock, const char *file, int line TSRMLS_DC)
 {
 	/*
 	 * We loop tightly for awhile, then delay using pg_usleep() and try again.
@@ -209,7 +209,7 @@ s_lock(volatile slock_t *lock, const char *file, int line)
 		if (++spins >= spins_per_delay)
 		{
 			if (++delays > NUM_DELAYS)
-				s_lock_stuck(lock, file, line);
+				s_lock_stuck(lock, file, line TSRMLS_CC);
 
 			if (cur_delay == 0) /* first time to delay? */
 				cur_delay = MIN_DELAY_MSEC;
@@ -387,99 +387,5 @@ tas_dummy()						/* really means: extern int tas(slock_t
 #endif   /* sun3 */
 #endif   /* not __GNUC__ */
 #endif   /* HAVE_SPINLOCKS */
-
-
-
-/*****************************************************************************/
-#if defined(S_LOCK_TEST)
-
-/*
- * test program for verifying a port's spinlock support.
- */
-
-struct test_lock_struct
-{
-	char		pad1;
-	slock_t		lock;
-	char		pad2;
-};
-
-volatile struct test_lock_struct test_lock;
-
-int
-main()
-{
-	srandom((unsigned int) time(NULL));
-
-	test_lock.pad1 = test_lock.pad2 = 0x44;
-
-	S_INIT_LOCK(&test_lock.lock);
-
-	if (test_lock.pad1 != 0x44 || test_lock.pad2 != 0x44)
-	{
-		printf("S_LOCK_TEST: failed, declared datatype is wrong size\n");
-		return 1;
-	}
-
-	if (!S_LOCK_FREE(&test_lock.lock))
-	{
-		printf("S_LOCK_TEST: failed, lock not initialized\n");
-		return 1;
-	}
-
-	S_LOCK(&test_lock.lock);
-
-	if (test_lock.pad1 != 0x44 || test_lock.pad2 != 0x44)
-	{
-		printf("S_LOCK_TEST: failed, declared datatype is wrong size\n");
-		return 1;
-	}
-
-	if (S_LOCK_FREE(&test_lock.lock))
-	{
-		printf("S_LOCK_TEST: failed, lock not locked\n");
-		return 1;
-	}
-
-	S_UNLOCK(&test_lock.lock);
-
-	if (test_lock.pad1 != 0x44 || test_lock.pad2 != 0x44)
-	{
-		printf("S_LOCK_TEST: failed, declared datatype is wrong size\n");
-		return 1;
-	}
-
-	if (!S_LOCK_FREE(&test_lock.lock))
-	{
-		printf("S_LOCK_TEST: failed, lock not unlocked\n");
-		return 1;
-	}
-
-	S_LOCK(&test_lock.lock);
-
-	if (test_lock.pad1 != 0x44 || test_lock.pad2 != 0x44)
-	{
-		printf("S_LOCK_TEST: failed, declared datatype is wrong size\n");
-		return 1;
-	}
-
-	if (S_LOCK_FREE(&test_lock.lock))
-	{
-		printf("S_LOCK_TEST: failed, lock not re-locked\n");
-		return 1;
-	}
-
-	printf("S_LOCK_TEST: this will print %d stars and then\n", NUM_DELAYS);
-	printf("             exit with a 'stuck spinlock' message\n");
-	printf("             if S_LOCK() and TAS() are working.\n");
-	fflush(stdout);
-
-	s_lock(&test_lock.lock, __FILE__, __LINE__);
-
-	printf("S_LOCK_TEST: failed, lock not locked\n");
-	return 1;
-}
-
-#endif   /* S_LOCK_TEST */
 
 #endif /* APC_SPIN_LOCKS */

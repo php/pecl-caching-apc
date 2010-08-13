@@ -107,14 +107,14 @@ int apc_rfc1867_progress(uint event, void *event_data, void **extra TSRMLS_DC) {
                     && data->value && data->length) { 
                     
                     if(data->length >= sizeof(RFC1867_DATA(tracking_key)) - prefix_len) {
-                        apc_wprint("Key too long for '%s'. Maximum size is '%d' characters.", 
+                        apc_warning("Key too long for '%s'. Maximum size is '%d' characters." TSRMLS_CC, 
                                     APCG(rfc1867_name), 
                                     sizeof(RFC1867_DATA(tracking_key)) - prefix_len);
                         break;
                     }
 
                     if(RFC1867_DATA(started)) {
-                        apc_wprint("Upload progress key '%s' should be before the file upload entry in the form.", 
+                        apc_warning("Upload progress key '%s' should be before the file upload entry in the form." TSRMLS_CC, 
                                     APCG(rfc1867_name)); 
                         break;
                     }

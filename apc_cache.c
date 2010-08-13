@@ -33,7 +33,6 @@
 #include "apc_cache.h"
 #include "apc_zend.h"
 #include "apc_sma.h"
-#include "apc_main.h"
 #include "apc_globals.h"
 #include "SAPI.h"
 
@@ -181,11 +180,11 @@ static void process_pending_removals(apc_cache_t* cache TSRMLS_DC)
             if (dead->value->ref_count > 0) {
                 switch(dead->value->type) {
                     case APC_CACHE_ENTRY_FILE:
-                        apc_wprint("GC cache entry '%s' (dev=%d ino=%d) was on gc-list for %d seconds", 
+                        apc_warning("GC cache entry '%s' (dev=%d ino=%d) was on gc-list for %d seconds" TSRMLS_CC, 
                             dead->value->data.file.filename, dead->key.data.file.device, dead->key.data.file.inode, gc_sec);
                         break;
                     case APC_CACHE_ENTRY_USER:
-                        apc_wprint("GC cache entry '%s'was on gc-list for %d seconds", dead->value->data.user.info, gc_sec);
+                        apc_warning("GC cache entry '%s'was on gc-list for %d seconds" TSRMLS_CC, dead->value->data.user.info, gc_sec);
                         break;
                 }
             }
@@ -241,7 +240,7 @@ apc_cache_t* apc_cache_create(int size_hint, int gc_ttl, int ttl TSRMLS_DC)
 
     cache->shmaddr = apc_sma_malloc(cache_size TSRMLS_CC);
     if(!cache->shmaddr) {
-        apc_eprint("Unable to allocate shared memory for cache structures.  (Perhaps your shared memory size isn't large enough?). ");
+        apc_error("Unable to allocate shared memory for cache structures.  (Perhaps your shared memory size isn't large enough?). " TSRMLS_CC);
     }
     memset(cache->shmaddr, 0, cache_size);
 
@@ -674,7 +673,7 @@ apc_cache_entry_t* apc_cache_user_find(apc_cache_t* cache, char *strkey, int key
 /* }}} */
 
 /* {{{ apc_cache_user_exists */
-apc_cache_entry_t* apc_cache_user_exists(apc_cache_t* cache, char *strkey, int keylen, time_t t)
+apc_cache_entry_t* apc_cache_user_exists(apc_cache_t* cache, char *strkey, int keylen, time_t t TSRMLS_DC)
 {
     slot_t** slot;
     volatile apc_cache_entry_t* value = NULL;
@@ -772,7 +771,7 @@ int apc_cache_delete(apc_cache_t* cache, char *filename, int filename_len TSRMLS
 
     /* try to create a cache key; if we fail, give up on caching */
     if (!apc_cache_make_file_key(&key, filename, PG(include_path), t TSRMLS_CC)) {
-        apc_wprint("Could not stat file %s, unable to delete from cache.", filename);
+        apc_warning("Could not stat file %s, unable to delete from cache." TSRMLS_CC, filename);
         return -1;
     }
 
@@ -808,7 +807,7 @@ int apc_cache_delete(apc_cache_t* cache, char *filename, int filename_len TSRMLS
 /* }}} */
 
 /* {{{ apc_cache_release */
-void apc_cache_release(apc_cache_t* cache, apc_cache_entry_t* entry)
+void apc_cache_release(apc_cache_t* cache, apc_cache_entry_t* entry TSRMLS_DC)
 {
     CACHE_LOCK(cache);
     entry->ref_count--;
@@ -849,12 +848,12 @@ int apc_cache_make_file_key(apc_cache_key_t* key,
             fileinfo = apc_php_malloc(sizeof(apc_fileinfo_t) TSRMLS_CC);
 
             if (apc_search_paths(filename, include_path, fileinfo TSRMLS_CC) != 0) {
-                apc_wprint("apc failed to locate %s - bailing", filename);
+                apc_warning("apc failed to locate %s - bailing" TSRMLS_CC, filename);
                 goto cleanup;
             }
 
             if(!realpath(fileinfo->fullpath, APCG(canon_path))) {
-                apc_wprint("realpath failed to canonicalize %s - bailing", filename);
+                apc_warning("realpath failed to canonicalize %s - bailing" TSRMLS_CC, filename);
                 goto cleanup;
             }
 
@@ -1216,7 +1215,7 @@ void apc_cache_free_info(apc_cache_info_t* info TSRMLS_DC)
 /* }}} */
 
 /* {{{ apc_cache_unlock */
-void apc_cache_unlock(apc_cache_t* cache)
+void apc_cache_unlock(apc_cache_t* cache TSRMLS_DC)
 {
     CACHE_UNLOCK(cache);
 }
@@ -1242,7 +1241,7 @@ zend_bool apc_cache_is_last_key(apc_cache_t* cache, apc_cache_key_t* key, unsign
         if(lastkey->mtime == t) {
             /* potential cache slam */
             if(APCG(slam_defense)) {
-                apc_wprint("Potential cache slam averted for key '%s'", key->data.user.identifier);
+                apc_warning("Potential cache slam averted for key '%s'" TSRMLS_CC, key->data.user.identifier);
                 return 1;
             }
         }
@@ -1254,14 +1253,14 @@ zend_bool apc_cache_is_last_key(apc_cache_t* cache, apc_cache_key_t* key, unsign
 
 #if NONBLOCKING_LOCK_AVAILABLE
 /* {{{ apc_cache_write_lock */
-zend_bool apc_cache_write_lock(apc_cache_t* cache)
+zend_bool apc_cache_write_lock(apc_cache_t* cache TSRMLS_DC)
 {
     return apc_lck_nb_lock(cache->header->wrlock);
 }
 /* }}} */
 
 /* {{{ apc_cache_write_unlock */
-void apc_cache_write_unlock(apc_cache_t* cache)
+void apc_cache_write_unlock(apc_cache_t* cache TSRMLS_DC)
 {
     apc_lck_unlock(cache->header->wrlock);
 }

@@ -32,12 +32,12 @@
 #define APC_FCNTL_H
 
 
-extern int apc_fcntl_create(const char* pathname);
+extern int apc_fcntl_create(const char* pathname TSRMLS_DC);
 extern void apc_fcntl_destroy(int fd);
-extern void apc_fcntl_lock(int fd);
-extern void apc_fcntl_rdlock(int fd);
-extern void apc_fcntl_unlock(int fd);
-extern unsigned char apc_fcntl_nonblocking_lock(int fd);
+extern void apc_fcntl_lock(int fd TSRMLS_DC);
+extern void apc_fcntl_rdlock(int fd TSRMLS_DC);
+extern void apc_fcntl_unlock(int fd TSRMLS_DC);
+extern unsigned char apc_fcntl_nonblocking_lock(int fd TSRMLS_DC);
 #endif
 
 /*

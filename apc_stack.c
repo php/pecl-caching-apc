@@ -61,12 +61,12 @@ void apc_stack_clear(apc_stack_t* stack)
     stack->size = 0;
 }
 
-void apc_stack_push(apc_stack_t* stack, void* item)
+void apc_stack_push(apc_stack_t* stack, void* item TSRMLS_DC)
 {
     assert(stack != NULL);
     if (stack->size == stack->capacity) {
         stack->capacity *= 2;
-        stack->data = apc_erealloc(stack->data, sizeof(void*)*stack->capacity);
+        stack->data = apc_erealloc(stack->data, sizeof(void*)*stack->capacity TSRMLS_CC);
     }
     stack->data[stack->size++] = item;
 }

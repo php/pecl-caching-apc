@@ -23,7 +23,7 @@
 
 #ifdef APC_PTHREADMUTEX_LOCKS
 
-pthread_mutex_t *apc_pthreadmutex_create(pthread_mutex_t *lock) 
+pthread_mutex_t *apc_pthreadmutex_create(pthread_mutex_t *lock TSRMLS_DC) 
 {
     int result;
     pthread_mutexattr_t* attr;
@@ -31,32 +31,32 @@ pthread_mutex_t *apc_pthreadmutex_create(pthread_mutex_t *lock)
 
     result = pthread_mutexattr_init(attr);
     if(result == ENOMEM) {
-        apc_eprint("pthread mutex error: Insufficient memory exists to create the mutex attribute object.");
+        apc_error("pthread mutex error: Insufficient memory exists to create the mutex attribute object." TSRMLS_CC);
     } else if(result == EINVAL) {
-        apc_eprint("pthread mutex error: attr does not point to writeable memory.");
+        apc_error("pthread mutex error: attr does not point to writeable memory." TSRMLS_CC);
     } else if(result == EFAULT) {
-        apc_eprint("pthread mutex error: attr is an invalid pointer.");
+        apc_error("pthread mutex error: attr is an invalid pointer." TSRMLS_CC);
     }
 
 #ifdef PTHREAD_ADAPTIVE_MUTEX_INITIALIZER_NP
        result = pthread_mutexattr_settype(attr, PTHREAD_MUTEX_ADAPTIVE_NP);
        if (result == EINVAL) {
-               apc_eprint("pthread_mutexattr_settype: unable to set adaptive mutexes");
+               apc_error("pthread_mutexattr_settype: unable to set adaptive mutexes" TSRMLS_CC);
        }
 #endif
 
     /* pthread_mutexattr_settype(attr, PTHREAD_MUTEX_ERRORCHECK); */
     result = pthread_mutexattr_setpshared(attr, PTHREAD_PROCESS_SHARED);
     if(result == EINVAL) {
-        apc_eprint("pthread mutex error: attr is not an initialized mutex attribute object, or pshared is not a valid process-shared state setting.");
+        apc_error("pthread mutex error: attr is not an initialized mutex attribute object, or pshared is not a valid process-shared state setting." TSRMLS_CC);
     } else if(result == EFAULT) {
-        apc_eprint("pthread mutex error: attr is an invalid pointer.");
+        apc_error("pthread mutex error: attr is an invalid pointer." TSRMLS_CC);
     } else if(result == ENOTSUP) {
-        apc_eprint("pthread mutex error: pshared was set to PTHREAD_PROCESS_SHARED.");
+        apc_error("pthread mutex error: pshared was set to PTHREAD_PROCESS_SHARED." TSRMLS_CC);
     }
 
     if(pthread_mutex_init(lock, attr)) { 
-        apc_eprint("unable to initialize pthread lock");
+        apc_error("unable to initialize pthread lock" TSRMLS_CC);
     }
     return lock;
 }
@@ -66,25 +66,25 @@ void apc_pthreadmutex_destroy(pthread_mutex_t *lock)
     return; /* we don't actually destroy the mutex, as it would destroy it for all processes */
 }
 
-void apc_pthreadmutex_lock(pthread_mutex_t *lock)
+void apc_pthreadmutex_lock(pthread_mutex_t *lock TSRMLS_DC)
 {
     int result;
     result = pthread_mutex_lock(lock);
     if(result == EINVAL) {
-        apc_eprint("unable to obtain pthread lock (EINVAL)");
+        apc_error("unable to obtain pthread lock (EINVAL)" TSRMLS_CC);
     } else if(result == EDEADLK) {
-        apc_eprint("unable to obtain pthread lock (EDEADLK)");
+        apc_error("unable to obtain pthread lock (EDEADLK)" TSRMLS_CC);
     }
 }
 
-void apc_pthreadmutex_unlock(pthread_mutex_t *lock)
+void apc_pthreadmutex_unlock(pthread_mutex_t *lock TSRMLS_DC)
 {
     if(pthread_mutex_unlock(lock)) {
-        apc_eprint("unable to unlock pthread lock");
+        apc_error("unable to unlock pthread lock" TSRMLS_CC);
     }
 }
 
-zend_bool apc_pthreadmutex_nonblocking_lock(pthread_mutex_t *lock)
+zend_bool apc_pthreadmutex_nonblocking_lock(pthread_mutex_t *lock TSRMLS_DC)
 {
     int rval;
     rval = pthread_mutex_trylock(lock);
@@ -93,7 +93,7 @@ zend_bool apc_pthreadmutex_nonblocking_lock(pthread_mutex_t *lock)
     } else if(rval == 0) {  /* Obtained lock */
         return 1;
     } else {                /* Other error */
-        apc_eprint("unable to obtain pthread trylock");
+        apc_error("unable to obtain pthread trylock" TSRMLS_CC);
         return 0;
     }
 }

@@ -36,7 +36,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 
-int apc_fcntl_create(const char* pathname)
+int apc_fcntl_create(const char* pathname TSRMLS_DC)
 {
     int fd;
     if(pathname == NULL) {
@@ -47,7 +47,7 @@ int apc_fcntl_create(const char* pathname)
             unlink(lock_path);
             return fd;
         } else {
-            apc_eprint("apc_fcntl_create: open(%s, O_RDWR|O_CREAT, 0666) failed:", lock_path);
+            apc_error("apc_fcntl_create: open(%s, O_RDWR|O_CREAT, 0666) failed:" TSRMLS_CC, lock_path);
             return -1;
         }
     }
@@ -56,7 +56,7 @@ int apc_fcntl_create(const char* pathname)
         unlink(pathname);
         return fd;
     }
-    apc_eprint("apc_fcntl_create: open(%s, O_RDWR|O_CREAT, 0666) failed:", pathname);
+    apc_error("apc_fcntl_create: open(%s, O_RDWR|O_CREAT, 0666) failed:" TSRMLS_CC, pathname);
     return -1;
 }
 
@@ -81,33 +81,33 @@ static int lock_reg(int fd, int cmd, int type, off_t offset, int whence, off_t l
   return(ret);
 }
 
-void apc_fcntl_lock(int fd)
+void apc_fcntl_lock(int fd TSRMLS_DC)
 {
     if(lock_reg(fd, F_SETLKW, F_WRLCK, 0, SEEK_SET, 0) < 0) {
-        apc_eprint("apc_fcntl_lock failed:");
+        apc_error("apc_fcntl_lock failed:" TSRMLS_CC);
     }
 }
 
-void apc_fcntl_rdlock(int fd)
+void apc_fcntl_rdlock(int fd TSRMLS_DC)
 {
     if(lock_reg(fd, F_SETLKW, F_RDLCK, 0, SEEK_SET, 0) < 0) {
-        apc_eprint("apc_fcntl_rdlock failed:");
+        apc_error("apc_fcntl_rdlock failed:" TSRMLS_CC);
     }
 }
 
-zend_bool apc_fcntl_nonblocking_lock(int fd)
+zend_bool apc_fcntl_nonblocking_lock(int fd TSRMLS_DC)
 {
     if(lock_reg(fd, F_SETLK, F_WRLCK, 0, SEEK_SET, 0) < 0) {
         if(errno==EACCES||errno==EAGAIN) return 0;
-        else apc_eprint("apc_fcntl_lock failed:");
+        else apc_error("apc_fcntl_lock failed:" TSRMLS_CC);
     }
     return 1;
 }
 
-void apc_fcntl_unlock(int fd)
+void apc_fcntl_unlock(int fd TSRMLS_DC)
 {
     if(lock_reg(fd, F_SETLKW, F_UNLCK, 0, SEEK_SET, 0) < 0) {
-        apc_eprint("apc_fcntl_unlock failed:");
+        apc_error("apc_fcntl_unlock failed:" TSRMLS_CC);
     }
 }
 

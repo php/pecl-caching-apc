@@ -28,11 +28,11 @@
 
 #include <pthread.h>
 
-pthread_mutex_t *apc_pthreadmutex_create();
+pthread_mutex_t *apc_pthreadmutex_create(pthread_mutex_t *lock TSRMLS_DC);
 void apc_pthreadmutex_destroy(pthread_mutex_t *lock);
-void apc_pthreadmutex_lock(pthread_mutex_t *lock);
-void apc_pthreadmutex_unlock(pthread_mutex_t *lock);
-zend_bool apc_pthreadmutex_nonblocking_lock(pthread_mutex_t *lock);
+void apc_pthreadmutex_lock(pthread_mutex_t *lock TSRMLS_DC);
+void apc_pthreadmutex_unlock(pthread_mutex_t *lock TSRMLS_DC);
+zend_bool apc_pthreadmutex_nonblocking_lock(pthread_mutex_t *lock TSRMLS_DC);
 
 #endif
 
