@@ -223,8 +223,8 @@ char** apc_tokenize(const char* s, char delim TSRMLS_DC)
 
 
 /* {{{ apc_win32_restat */
-#ifdef PHP_WIN32
-int apc_win32_restat(apc_fileinfo_t *fileinfo)
+#ifndef PHP_WIN32
+static int apc_restat(apc_fileinfo_t *fileinfo)
 {
     HANDLE hFile;
     BY_HANDLE_FILE_INFORMATION hInfo;
@@ -254,10 +254,7 @@ int apc_win32_restat(apc_fileinfo_t *fileinfo)
     return 0;
 }
 #else
-int apc_win32_restat(apc_fileinfo_t *fileinfo)
-{
-    return 0;
-}
+# define apc_restat(fileinfo) 0
 #endif
 /* }}} */
 
@@ -294,7 +291,7 @@ int apc_search_paths(const char* filename, const char* path, apc_fileinfo_t* fil
     if(wrapper != &php_plain_files_wrapper) {
         if(APC_URL_STAT(wrapper, path_for_open, &fileinfo->st_buf) == 0) {
             fileinfo->fullpath = COPY_IF_CHANGED(path_for_open);
-            return apc_win32_restat(fileinfo);
+            return apc_restat(fileinfo);
         }
         return -1; /* cannot stat */
     }
@@ -302,7 +299,7 @@ int apc_search_paths(const char* filename, const char* path, apc_fileinfo_t* fil
     if (IS_ABSOLUTE_PATH(path_for_open, strlen(path_for_open)) && 
             APC_URL_STAT(wrapper, path_for_open, &fileinfo->st_buf) == 0) {
         fileinfo->fullpath = COPY_IF_CHANGED(path_for_open);
-        return apc_win32_restat(fileinfo);
+        return apc_restat(fileinfo);
     }
 
     paths = apc_tokenize(path, DEFAULT_DIR_SEPARATOR TSRMLS_CC);
@@ -344,7 +341,7 @@ int apc_search_paths(const char* filename, const char* path, apc_fileinfo_t* fil
     }
     apc_efree(paths TSRMLS_CC);
 
-    return found ? apc_win32_restat(fileinfo) : -1;
+    return found ? apc_restat(fileinfo) : -1;
 }
 
 /* }}} */
