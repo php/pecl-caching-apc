@@ -28,3 +28,18 @@ Enhancements
 
 3.   Assert() elimination in the optimizer when some debug flag somewhere isn't set.
 
+
+Windows
+
+1.   The following configurations (build arguments) have not been implemented yet
+
+          (*) --enable-apc-mmap         Memory mapping support
+          (*) --enable-apc-sem          Semaphore locking support (FCNTL replacement)
+          (*) --enable-apc-phreadmutex	Thread mutexes, while implemented we should probably rename the internals to thread
+
+2.   Non-blocking locks is not supported either
+
+3.   Inside apc_debug.c, we do dynamic loading of a symbol but on Windows we need to use 
+     the native API (GetProcAddress and family) since we don't have dlsym()
+
+4.   Update fileinfo to support stat info in a more portable way (see PECL #17903)
