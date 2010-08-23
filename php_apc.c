@@ -284,6 +284,11 @@ static PHP_MINFO_FUNCTION(apc)
     php_info_print_table_start();
     php_info_print_table_header(2, "APC Support", APCG(enabled) ? "enabled" : "disabled");
     php_info_print_table_row(2, "Version", PHP_APC_VERSION);
+#ifdef __DEBUG_APC__
+    php_info_print_table_row(2, "APC Debugging", "Enabled");
+#else
+    php_info_print_table_row(2, "APC Debugging", "Disabled");
+#endif
 #if APC_MMAP
     php_info_print_table_row(2, "MMAP Support", "Enabled");
     php_info_print_table_row(2, "MMAP File Mask", APCG(mmap_file_mask));

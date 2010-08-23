@@ -70,6 +70,7 @@
  <stability><release>stable</release><api>stable</api></stability>
  <license uri="http://www.php.net/license">PHP License</license>
  <notes>
+ - Added --enable-apc-debug configuration argument to enable debugging (Kalle)
  - ZTS optimizations (Kalle)
  </notes>
 

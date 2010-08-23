@@ -3,6 +3,7 @@
 
 
 ARG_ENABLE('apc', 'Whether to enable APC support', 'no');
+ARG_ENABLE('apc-debug', 'Whether to enable APC debugging', 'no');
 ARG_ENABLE('apc-filehits', 'Whether to enable cache request file info', 'no');
 ARG_ENABLE('apc-spinlocks', 'Whether to use spin locks', 'no');
 ARG_ENABLE('apc-memprotect', 'Whether to enable memory protection', 'no');
@@ -13,6 +14,11 @@ if(PHP_APC != 'no')
 				'apc_fcntl_win32.c apc_iterator.c apc_main.c apc_shm.c ' + 
 				'apc_sma.c apc_stack.c apc_rfc1867.c apc_zend.c apc_pool.c ' +
 				'apc_bin.c apc_string.c';
+
+	if(PHP_APC_DEBUG != 'no')
+	{
+		ADD_FLAG('CFLAGS_APC', '/D __DEBUG_APC__=1');
+	}
 
 	if(PHP_APC_FILEHITS != 'no')
 	{
@@ -27,7 +33,7 @@ if(PHP_APC != 'no')
 	if(PHP_APC_SPINLOCKS != 'no')
 	{
 		AC_DEFINE('APC_SPIN_LOCKS', 1);
-		ADD_FLAG('CFLAGS_APC', '/DWIN32_ONLY_COMPILER=1');
+		ADD_FLAG('CFLAGS_APC', '/D WIN32_ONLY_COMPILER=1');
 
 		apc_sources += ' apc_spin.c pgsql_s_lock.c';
 	}

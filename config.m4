@@ -5,6 +5,9 @@ dnl
 PHP_ARG_ENABLE(apc, whether to enable APC support,
 [  --enable-apc           Enable APC support])
 
+PHP_ARG_ENABLE(apc-debug, whether to enable APC debugging,
+[  --enable-apc-debug     Enable APC debugging])
+
 AC_MSG_CHECKING(whether we should enable cache request file info)
 AC_ARG_ENABLE(apc-filehits,
 [  --enable-apc-filehits   Enable per request file info about files used from the APC cache (ie: apc_cache_info('filehits')) ],
@@ -132,6 +135,10 @@ AC_ARG_ENABLE(apc-memprotect,
 if test "$PHP_APC" != "no"; then
   test "$PHP_APC_MMAP" != "no" && AC_DEFINE(APC_MMAP, 1, [ ])
   test "$PHP_APC_FILEHITS" != "no" && AC_DEFINE(APC_FILEHITS, 1, [ ])
+
+	if test "$PHP_APC_DEBUG" != "no"; then
+		AC_DEFINE(__DEBUG_APC__, 1, [ ])
+	fi
 
 	if test "$PHP_APC_SEM" != "no"; then
 		AC_DEFINE(APC_SEM_LOCKS, 1, [ ])
