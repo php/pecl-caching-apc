@@ -31,7 +31,7 @@
 #include <stdio.h>
 #include "zend_compile.h"
 
-#ifdef __DEBUG_APC__
+#if defined(__DEBUG_APC__) && !defined(PHP_WIN32)
 
 #include <dlfcn.h>
 
@@ -42,7 +42,7 @@ typedef void (*vld_dump_f) (zend_op_array * TSRMLS_DC);
 
 void dump(zend_op_array *op_array TSRMLS_DC)
 {
-#ifdef __DEBUG_APC__
+#if defined(__DEBUG_APC__) && !defined(PHP_WIN32)
   vld_dump_f dump_op_array = dlsym(NULL, "vld_dump_oparray");
 
   if(dump_op_array)

@@ -887,7 +887,7 @@ int apc_cache_make_file_key(apc_cache_key_t* key,
 
     if(APCG(max_file_size) < fileinfo->st_buf.sb.st_size) {
 #ifdef __DEBUG_APC__
-        fprintf(stderr,"File is too big %s (%d - %ld) - bailing\n",filename,t,fileinfo.st_buf.sb.st_size);
+        fprintf(stderr,"File is too big %s (%d - %ld) - bailing\n",filename,t,fileinfo->st_buf.sb.st_size);
 #endif
         goto cleanup;
     }
@@ -906,7 +906,7 @@ int apc_cache_make_file_key(apc_cache_key_t* key,
      */
     if(APCG(file_update_protection) && (t - fileinfo->st_buf.sb.st_mtime < APCG(file_update_protection)) && !APCG(force_file_update)) {
 #ifdef __DEBUG_APC__
-        fprintf(stderr,"File is too new %s (%d - %d) - bailing\n",filename,t,fileinfo.st_buf.sb.st_mtime);
+        fprintf(stderr,"File is too new %s (%d - %d) - bailing\n",filename,t,fileinfo->st_buf.sb.st_mtime);
 #endif
         goto cleanup;
     }

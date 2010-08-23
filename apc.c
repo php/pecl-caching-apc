@@ -236,7 +236,7 @@ static int apc_restat(apc_fileinfo_t *fileinfo)
 
     if (!hFile) {
 # ifdef __DEBUG_APC__
-        fprintf(stderr,"Cannot create a file HANDLE for %s\n", filename);
+        fprintf(stderr,"Cannot create a file HANDLE for %s\n", fileinfo->fullpath);
 # endif
         return -1;
     }
