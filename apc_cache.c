@@ -326,6 +326,7 @@ static void apc_cache_expunge(apc_cache_t* cache, size_t size TSRMLS_DC)
         CACHE_SAFE_LOCK(cache);
         cache->header->busy = 1;
         cache->header->expunges++;
+clear_all:
         for (i = 0; i < cache->num_slots; i++) {
             slot_t* p = cache->slots[i];
             while (p) {
@@ -337,6 +338,7 @@ static void apc_cache_expunge(apc_cache_t* cache, size_t size TSRMLS_DC)
         CACHE_SAFE_UNLOCK(cache);
     } else {
         slot_t **p;
+        size_t removed = 0;
 
         /*
          * If the ttl for the cache is set we walk through and delete stale 
@@ -360,21 +362,27 @@ static void apc_cache_expunge(apc_cache_t* cache, size_t size TSRMLS_DC)
                 if((*p)->value->type == APC_CACHE_ENTRY_USER) {
                     if((*p)->value->data.user.ttl) {
                         if((time_t) ((*p)->creation_time + (*p)->value->data.user.ttl) < t) {
+                            removed += (*p)->value->mem_size;
                             remove_slot(cache, p TSRMLS_CC);
                             continue;
                         }
                     } else if(cache->ttl) {
                         if((*p)->creation_time + cache->ttl < t) {
+                            removed += (*p)->value->mem_size;
                             remove_slot(cache, p TSRMLS_CC);
                             continue;
                         }
                     }
                 } else if((*p)->access_time < (t - cache->ttl)) {
+                    removed += (*p)->value->mem_size;
                     remove_slot(cache, p TSRMLS_CC);
                     continue;
                 }
                 p = &(*p)->next;
             }
+        }
+        if (removed < size) {
+        	goto clear_all;
         }
         cache->header->busy = 0;
         CACHE_SAFE_UNLOCK(cache);
