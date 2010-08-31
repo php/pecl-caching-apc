@@ -338,7 +338,6 @@ clear_all:
         CACHE_SAFE_UNLOCK(cache);
     } else {
         slot_t **p;
-        size_t removed = 0;
 
         /*
          * If the ttl for the cache is set we walk through and delete stale 
@@ -362,26 +361,24 @@ clear_all:
                 if((*p)->value->type == APC_CACHE_ENTRY_USER) {
                     if((*p)->value->data.user.ttl) {
                         if((time_t) ((*p)->creation_time + (*p)->value->data.user.ttl) < t) {
-                            removed += (*p)->value->mem_size;
                             remove_slot(cache, p TSRMLS_CC);
                             continue;
                         }
                     } else if(cache->ttl) {
                         if((*p)->creation_time + cache->ttl < t) {
-                            removed += (*p)->value->mem_size;
                             remove_slot(cache, p TSRMLS_CC);
                             continue;
                         }
                     }
                 } else if((*p)->access_time < (t - cache->ttl)) {
-                    removed += (*p)->value->mem_size;
                     remove_slot(cache, p TSRMLS_CC);
                     continue;
                 }
                 p = &(*p)->next;
             }
         }
-        if (removed < size) {
+        if (size > apc_sma_get_avail_mem()) {
+            /* TODO: re-do this to remove goto across locked sections */
         	goto clear_all;
         }
         cache->header->busy = 0;
