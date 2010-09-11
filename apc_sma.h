@@ -82,6 +82,7 @@ extern apc_sma_info_t* apc_sma_info(zend_bool limited TSRMLS_DC);
 extern void apc_sma_free_info(apc_sma_info_t* info TSRMLS_DC);
 
 extern size_t apc_sma_get_avail_mem();
+extern zend_bool apc_sma_get_avail_size(size_t size);
 extern void apc_sma_check_integrity();
 
 /* {{{ ALIGNWORD: pad up x, aligned to the system's word boundary */

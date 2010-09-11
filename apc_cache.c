@@ -338,6 +338,7 @@ clear_all:
         CACHE_SAFE_UNLOCK(cache);
     } else {
         slot_t **p;
+        zend_bool no_mem = 1;
 
         /*
          * If the ttl for the cache is set we walk through and delete stale 
@@ -376,11 +377,12 @@ clear_all:
                 }
                 p = &(*p)->next;
             }
-        }
-        if (size > apc_sma_get_avail_mem()) {
-            /* TODO: re-do this to remove goto across locked sections */
-        	goto clear_all;
-        }
+		}
+
+		if (!apc_sma_get_avail_size(size)) {
+			/* TODO: re-do this to remove goto across locked sections */
+			goto clear_all;
+		}
         cache->header->busy = 0;
         CACHE_SAFE_UNLOCK(cache);
     }

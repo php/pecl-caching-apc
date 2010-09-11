@@ -720,6 +720,22 @@ size_t apc_sma_get_avail_mem()
 }
 /* }}} */
 
+/* {{{ apc_sma_get_avail_size */
+zend_bool apc_sma_get_avail_size(size_t size)
+{
+    uint i;
+
+    for (i = 0; i < sma_numseg; i++) {
+    	sma_header_t* header = SMA_HDR(i);
+		if (header->avail > size) {
+			return 1;
+		}
+    }
+    return 0;
+}
+/* }}} */
+
+
 #if ALLOC_DISTRIBUTION
 size_t *apc_sma_get_alloc_distribution(void) {
     sma_header_t* header = (sma_header_t*) segment->sma_shmaddr;
