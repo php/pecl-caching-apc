@@ -604,7 +604,7 @@ Allow keys used in apc_store/apc_fetch/apc_delete to be binary safe and prevent 
  - Win32 stat support (Pierre, Kalle) 
  - Added support for interned strings, run-time caches and Zend Engine 2.4 (Dmitry)
  - Added apc_exists() (Rasmus)
- - Fixed potential XSS in apc.php (Pierre, Matt Chapman)
+ - Fixed potential XSS in apc.php, CVE-2010-3294 (Pierre, Matt Chapman)
  - Fixed pecl bug #17597 (keys with embedded NUL) (Gopal)
  - Fixed pecl bug #17650 (Fix goto jump offsets) (Gopal)
  - Fixed pecl bug #17527 (Standardized error reporting) (Gopal, Paul Dragoonis)
