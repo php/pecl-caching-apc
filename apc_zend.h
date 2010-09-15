@@ -165,6 +165,17 @@ static inline int _apc_opcode_handler_decode(zend_op *opline)
 
 #endif  /* APC_OPCODE_OVERRIDE */
 
+#ifdef ZEND_ENGINE_2_4
+# define ZEND_CE_FILENAME(ce)			(ce)->info.user.filename
+# define ZEND_CE_DOC_COMMENT(ce)        (ce)->info.user.doc_comment
+# define ZEND_CE_DOC_COMMENT_LEN(ce)	(ce)->info.user.doc_comment_len
+# define ZEND_CE_BUILTIN_FUNCTIONS(ce)  (ce)->info.internal.builtin_functions
+#else
+# define ZEND_CE_FILENAME(ce)			(ce)->filename
+# define ZEND_CE_DOC_COMMENT(ce)        (ce)->doc_comment
+# define ZEND_CE_DOC_COMMENT_LEN(ce)	(ce)->doc_comment_length
+# define ZEND_CE_BUILTIN_FUNCTIONS(ce)  (ce)->builtin_functions
+#endif
 
 #endif  /* APC_ZEND_H */
 

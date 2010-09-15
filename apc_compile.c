@@ -607,10 +607,9 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
     memcpy(dst, src, sizeof(*src));
 
     dst->name = NULL;
-    dst->builtin_functions = NULL;
     memset(&dst->function_table, 0, sizeof(dst->function_table));
-    dst->doc_comment = NULL;
-    dst->filename = NULL;
+    ZEND_CE_DOC_COMMENT(dst) = NULL;
+    ZEND_CE_FILENAME(dst) = NULL;
     memset(&dst->properties_info, 0, sizeof(dst->properties_info));
     memset(&dst->constants_table, 0, sizeof(dst->constants_table));
 
@@ -758,29 +757,29 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
                             (ht_check_copy_fun_t) my_check_copy_constant,
                             src)));
 
-    if (src->doc_comment) {
-        CHECK(dst->doc_comment =
-                    apc_pmemcpy(src->doc_comment, (src->doc_comment_len + 1), pool TSRMLS_CC));
+    if (src->type == ZEND_USER_CLASS && ZEND_CE_DOC_COMMENT(src)) {
+        CHECK(ZEND_CE_DOC_COMMENT(dst) =
+                    apc_pmemcpy(ZEND_CE_DOC_COMMENT(src), (ZEND_CE_DOC_COMMENT_LEN(src) + 1), pool TSRMLS_CC));
     }
 
-    if (src->builtin_functions) {
+    if (src->type == ZEND_INTERNAL_CLASS && ZEND_CE_BUILTIN_FUNCTIONS(src)) {
         int i, n;
 
-        for (n = 0; src->type == ZEND_INTERNAL_CLASS && src->builtin_functions[n].fname != NULL; n++) {}
+        for (n = 0; src->type == ZEND_INTERNAL_CLASS && ZEND_CE_BUILTIN_FUNCTIONS(src)[n].fname != NULL; n++) {}
 
-        CHECK((dst->builtin_functions =
+        CHECK((ZEND_CE_BUILTIN_FUNCTIONS(dst) =
                 (zend_function_entry*) apc_pool_alloc(pool, ((n + 1) * sizeof(zend_function_entry)))));
 
         for (i = 0; i < n; i++) {
-            CHECK(my_copy_function_entry((zend_function_entry*)(&dst->builtin_functions[i]),
-                                   &src->builtin_functions[i],
+            CHECK(my_copy_function_entry((zend_function_entry*)(&ZEND_CE_BUILTIN_FUNCTIONS(dst)[i]),
+                                   &ZEND_CE_BUILTIN_FUNCTIONS(src)[i],
                                    ctxt TSRMLS_CC));
         }
-        *(char**)&(dst->builtin_functions[n].fname) = NULL;
+        *(char**)&(ZEND_CE_BUILTIN_FUNCTIONS(dst)[n].fname) = NULL;
     }
 
-    if (src->filename) {
-        CHECK((dst->filename = apc_pstrdup(src->filename, pool TSRMLS_CC)));
+    if (src->type == ZEND_USER_CLASS && ZEND_CE_FILENAME(src)) {
+        CHECK((ZEND_CE_FILENAME(dst) = apc_pstrdup(ZEND_CE_FILENAME(src), pool TSRMLS_CC)));
     }
 
     return dst;

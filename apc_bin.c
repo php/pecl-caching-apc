@@ -278,8 +278,8 @@ static void apc_swizzle_class_entry(apc_bd_t *bd, zend_llist *ll, zend_class_ent
         apc_swizzle_ptr(bd, ll, &ce->name);
     }
 
-    if(ce->doc_comment) {
-        apc_swizzle_ptr(bd, ll, &ce->doc_comment);
+    if (ce->type == ZEND_USER_CLASS && ZEND_CE_DOC_COMMENT(ce)) {
+        apc_swizzle_ptr(bd, ll, &ZEND_CE_DOC_COMMENT(ce));
     }
 
 #ifndef ZEND_ENGINE_2
@@ -330,9 +330,9 @@ static void apc_swizzle_class_entry(apc_bd_t *bd, zend_llist *ll, zend_class_ent
 
     apc_swizzle_hashtable(bd, ll, &ce->constants_table, (apc_swizzle_cb_t)apc_swizzle_zval, 1 TSRMLS_CC);
 
-    if(ce->builtin_functions) {
-        for(i=0; ce->builtin_functions[i].fname; i++) {
-            apc_swizzle_function_entry(bd, ll, &ce->builtin_functions[i] TSRMLS_CC);
+    if(ce->type == ZEND_INTERNAL_CLASS &&  ZEND_CE_BUILTIN_FUNCTIONS(ce)) {
+        for(i=0; ZEND_CE_BUILTIN_FUNCTIONS(ce)[i].fname; i++) {
+            apc_swizzle_function_entry(bd, ll, &ZEND_CE_BUILTIN_FUNCTIONS(ce)[i] TSRMLS_CC);
         }
     }
 
@@ -351,7 +351,9 @@ static void apc_swizzle_class_entry(apc_bd_t *bd, zend_llist *ll, zend_class_ent
     apc_swizzle_ptr(bd, ll, &ce->__tostring);
 #endif
 
-    apc_swizzle_ptr(bd, ll, &ce->filename);
+    if (ce->type == ZEND_USER_CLASS) {
+        apc_swizzle_ptr(bd, ll, &ZEND_CE_FILENAME(ce));
+    }
 } /* }}} */
 
 
