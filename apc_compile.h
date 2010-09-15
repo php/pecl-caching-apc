@@ -76,6 +76,9 @@ struct apc_opflags_t {
     unsigned int _FILES         : 1;
     unsigned int _REQUEST       : 1;
     unsigned int _SESSION       : 1;
+#ifdef ZEND_ENGINE_2_4
+    unsigned int GLOBALS        : 1;
+#endif
     unsigned int unknown_global : 1;
 };
 /* }}} */

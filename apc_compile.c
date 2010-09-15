@@ -1133,7 +1133,11 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_con
                             {
                                 flags->unknown_global = 1;
                             }
+#ifdef ZEND_ENGINE_2_4
+                        } else SET_IF_AUTOGLOBAL(GLOBALS);
+#else
                         }
+#endif
                     }
                 }
                 break;
@@ -1457,6 +1461,9 @@ static int my_prepare_op_array_for_execution(zend_op_array* dst, zend_op_array* 
     FETCH_AUTOGLOBAL(_FILES);
     FETCH_AUTOGLOBAL(_REQUEST);
     FETCH_AUTOGLOBAL(_SESSION);
+#ifdef ZEND_ENGINE_2_4
+    FETCH_AUTOGLOBAL(GLOBALS);
+#endif
 
     if(needcopy) {
 
