@@ -124,6 +124,7 @@ static int ZEND_FASTCALL apc_op_ZEND_INCLUDE_OR_EVAL(ZEND_OPCODE_HANDLER_ARGS)
     char realpath[MAXPATHLEN];
     php_stream_wrapper *wrapper;
     char *path_for_open;
+    char *full_path = NULL;
     int ret = 0;
     apc_opflags_t* flags = NULL;
 
@@ -152,9 +153,7 @@ static int ZEND_FASTCALL apc_op_ZEND_INCLUDE_OR_EVAL(ZEND_OPCODE_HANDLER_ARGS)
 
     wrapper = php_stream_locate_url_wrapper(Z_STRVAL_P(inc_filename), &path_for_open, 0 TSRMLS_CC);
 
-    if (wrapper != &php_plain_files_wrapper ||
-        !(IS_ABSOLUTE_PATH(path_for_open, strlen(path_for_open)) ||
-          expand_filepath(path_for_open, realpath TSRMLS_CC))) {
+    if (wrapper != &php_plain_files_wrapper || !(IS_ABSOLUTE_PATH(path_for_open, strlen(path_for_open)) || (full_path = expand_filepath(path_for_open, realpath TSRMLS_CC)))) {
         /* Fallback to original handler */
         if (inc_filename == &tmp_inc_filename) {
             zval_dtor(&tmp_inc_filename);
@@ -162,6 +161,9 @@ static int ZEND_FASTCALL apc_op_ZEND_INCLUDE_OR_EVAL(ZEND_OPCODE_HANDLER_ARGS)
         return apc_original_opcode_handlers[APC_OPCODE_HANDLER_DECODE(opline)](ZEND_OPCODE_HANDLER_ARGS_PASSTHRU);
     }
 
+    if (!full_path) {
+    	full_path = path_for_open;
+    }
     if (zend_hash_exists(&EG(included_files), realpath, strlen(realpath) + 1)) {
 #ifdef ZEND_ENGINE_2_4
         if (!(opline->result_type & EXT_TYPE_UNUSED)) {
