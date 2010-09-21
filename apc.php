@@ -65,7 +65,7 @@ $PHP_SELF= isset($_SERVER['PHP_SELF']) ? htmlentities(strip_tags($_SERVER['PHP_S
 $time = time();
 $host = php_uname('n');
 if($host) { $host = '('.$host.')'; }
-if ($_SERVER['SERVER_ADDR']) {
+if (isset($_SERVER['SERVER_ADDR'])) {
   $host .= ' ('.$_SERVER['SERVER_ADDR'].')';
 }
 
