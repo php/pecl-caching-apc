@@ -232,29 +232,27 @@ static PHP_INI_MH(OnUpdateRfc1867Freq) /* {{{ */
 /* }}} */
 #endif
 
-#define OnUpdateInt OnUpdateLong
-
 PHP_INI_BEGIN()
 STD_PHP_INI_BOOLEAN("apc.enabled",      "1",    PHP_INI_SYSTEM, OnUpdateBool,              enabled,         zend_apc_globals, apc_globals)
 STD_PHP_INI_ENTRY("apc.shm_segments",   "1",    PHP_INI_SYSTEM, OnUpdateShmSegments,       shm_segments,    zend_apc_globals, apc_globals)
 STD_PHP_INI_ENTRY("apc.shm_size",       "32M",  PHP_INI_SYSTEM, OnUpdateShmSize,           shm_size,        zend_apc_globals, apc_globals)
 #ifdef ZEND_ENGINE_2_4
-STD_PHP_INI_ENTRY("apc.shm_strings_buffer", "4M",   PHP_INI_SYSTEM, OnUpdateInt,           shm_strings_buffer,        zend_apc_globals, apc_globals)
+STD_PHP_INI_ENTRY("apc.shm_strings_buffer", "4M",   PHP_INI_SYSTEM, OnUpdateLong,           shm_strings_buffer,        zend_apc_globals, apc_globals)
 #endif
 STD_PHP_INI_BOOLEAN("apc.include_once_override", "0", PHP_INI_SYSTEM, OnUpdateBool,     include_once,    zend_apc_globals, apc_globals)
-STD_PHP_INI_ENTRY("apc.num_files_hint", "1000", PHP_INI_SYSTEM, OnUpdateInt,            num_files_hint,  zend_apc_globals, apc_globals)
-STD_PHP_INI_ENTRY("apc.user_entries_hint", "4096", PHP_INI_SYSTEM, OnUpdateInt,          user_entries_hint, zend_apc_globals, apc_globals)
-STD_PHP_INI_ENTRY("apc.gc_ttl",         "3600", PHP_INI_SYSTEM, OnUpdateInt,            gc_ttl,           zend_apc_globals, apc_globals)
-STD_PHP_INI_ENTRY("apc.ttl",            "0",    PHP_INI_SYSTEM, OnUpdateInt,            ttl,              zend_apc_globals, apc_globals)
-STD_PHP_INI_ENTRY("apc.user_ttl",       "0",    PHP_INI_SYSTEM, OnUpdateInt,            user_ttl,         zend_apc_globals, apc_globals)
+STD_PHP_INI_ENTRY("apc.num_files_hint", "1000", PHP_INI_SYSTEM, OnUpdateLong,            num_files_hint,  zend_apc_globals, apc_globals)
+STD_PHP_INI_ENTRY("apc.user_entries_hint", "4096", PHP_INI_SYSTEM, OnUpdateLong,          user_entries_hint, zend_apc_globals, apc_globals)
+STD_PHP_INI_ENTRY("apc.gc_ttl",         "3600", PHP_INI_SYSTEM, OnUpdateLong,            gc_ttl,           zend_apc_globals, apc_globals)
+STD_PHP_INI_ENTRY("apc.ttl",            "0",    PHP_INI_SYSTEM, OnUpdateLong,            ttl,              zend_apc_globals, apc_globals)
+STD_PHP_INI_ENTRY("apc.user_ttl",       "0",    PHP_INI_SYSTEM, OnUpdateLong,            user_ttl,         zend_apc_globals, apc_globals)
 #if APC_MMAP
 STD_PHP_INI_ENTRY("apc.mmap_file_mask",  NULL,  PHP_INI_SYSTEM, OnUpdateString,         mmap_file_mask,   zend_apc_globals, apc_globals)
 #endif
 PHP_INI_ENTRY("apc.filters",        NULL,     PHP_INI_SYSTEM, OnUpdate_filters)
 STD_PHP_INI_BOOLEAN("apc.cache_by_default", "1",  PHP_INI_ALL, OnUpdateBool,         cache_by_default, zend_apc_globals, apc_globals)
-STD_PHP_INI_ENTRY("apc.file_update_protection", "2", PHP_INI_SYSTEM, OnUpdateInt,file_update_protection,  zend_apc_globals, apc_globals)
+STD_PHP_INI_ENTRY("apc.file_update_protection", "2", PHP_INI_SYSTEM, OnUpdateLong,file_update_protection,  zend_apc_globals, apc_globals)
 STD_PHP_INI_BOOLEAN("apc.enable_cli", "0",      PHP_INI_SYSTEM, OnUpdateBool,           enable_cli,       zend_apc_globals, apc_globals)
-STD_PHP_INI_ENTRY("apc.max_file_size", "1M",    PHP_INI_SYSTEM, OnUpdateInt,            max_file_size,    zend_apc_globals, apc_globals)
+STD_PHP_INI_ENTRY("apc.max_file_size", "1M",    PHP_INI_SYSTEM, OnUpdateLong,            max_file_size,    zend_apc_globals, apc_globals)
 STD_PHP_INI_BOOLEAN("apc.stat", "1",            PHP_INI_SYSTEM, OnUpdateBool,           fpstat,           zend_apc_globals, apc_globals)
 STD_PHP_INI_BOOLEAN("apc.canonicalize", "1",    PHP_INI_SYSTEM, OnUpdateBool,           canonicalize,     zend_apc_globals, apc_globals)
 STD_PHP_INI_BOOLEAN("apc.stat_ctime", "0",      PHP_INI_SYSTEM, OnUpdateBool,           stat_ctime,       zend_apc_globals, apc_globals)
@@ -266,7 +264,7 @@ STD_PHP_INI_BOOLEAN("apc.rfc1867", "0", PHP_INI_SYSTEM, OnUpdateBool, rfc1867, z
 STD_PHP_INI_ENTRY("apc.rfc1867_prefix", "upload_", PHP_INI_SYSTEM, OnUpdateStringUnempty, rfc1867_prefix, zend_apc_globals, apc_globals)
 STD_PHP_INI_ENTRY("apc.rfc1867_name", "APC_UPLOAD_PROGRESS", PHP_INI_SYSTEM, OnUpdateStringUnempty, rfc1867_name, zend_apc_globals, apc_globals)
 STD_PHP_INI_ENTRY("apc.rfc1867_freq", "0", PHP_INI_SYSTEM, OnUpdateRfc1867Freq, rfc1867_freq, zend_apc_globals, apc_globals)
-STD_PHP_INI_ENTRY("apc.rfc1867_ttl", "3600", PHP_INI_SYSTEM, OnUpdateInt, rfc1867_ttl, zend_apc_globals, apc_globals)
+STD_PHP_INI_ENTRY("apc.rfc1867_ttl", "3600", PHP_INI_SYSTEM, OnUpdateLong, rfc1867_ttl, zend_apc_globals, apc_globals)
 #endif
 STD_PHP_INI_BOOLEAN("apc.coredump_unmap", "0", PHP_INI_SYSTEM, OnUpdateBool, coredump_unmap, zend_apc_globals, apc_globals)
 STD_PHP_INI_ENTRY("apc.preload_path", (char*)NULL,              PHP_INI_SYSTEM, OnUpdateString,       preload_path,  zend_apc_globals, apc_globals)
