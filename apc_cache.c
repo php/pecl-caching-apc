@@ -324,6 +324,11 @@ static void apc_cache_expunge(apc_cache_t* cache, size_t size TSRMLS_DC)
          * we run out of space.
          */
         CACHE_SAFE_LOCK(cache);
+		if (apc_sma_get_avail_mem() > (APCG(shm_size)/2)) {
+            /* probably a queued up expunge, we don't need to do this */
+            CACHE_SAFE_UNLOCK(cache);
+            return;
+        }
         cache->header->busy = 1;
         cache->header->expunges++;
 clear_all:
@@ -338,8 +343,6 @@ clear_all:
         CACHE_SAFE_UNLOCK(cache);
     } else {
         slot_t **p;
-        zend_bool no_mem = 1;
-
         /*
          * If the ttl for the cache is set we walk through and delete stale 
          * entries.  For the user cache that is slightly confusing since
@@ -350,6 +353,11 @@ clear_all:
          */
 
         CACHE_SAFE_LOCK(cache);
+		if (apc_sma_get_avail_mem() > (APCG(shm_size)/2)) {
+            /* probably a queued up expunge, we don't need to do this */
+            CACHE_SAFE_UNLOCK(cache);
+            return;
+        }
         cache->header->busy = 1;
         cache->header->expunges++;
         for (i = 0; i < cache->num_slots; i++) {
