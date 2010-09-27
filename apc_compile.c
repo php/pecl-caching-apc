@@ -828,6 +828,7 @@ static HashTable* my_copy_hashtable_ex(HashTable* dst,
              */
             if(!check_fn(curr, args)) {
                 dst->nNumOfElements--;
+                va_end(args);
                 continue;
             }
 
