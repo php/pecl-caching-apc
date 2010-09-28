@@ -324,7 +324,7 @@ static void apc_cache_expunge(apc_cache_t* cache, size_t size TSRMLS_DC)
          * we run out of space.
          */
         CACHE_SAFE_LOCK(cache);
-		if (apc_sma_get_avail_mem() > (APCG(shm_size)/2)) {
+        if (apc_sma_get_avail_mem() > (APCG(shm_size)/2)) {
             /* probably a queued up expunge, we don't need to do this */
             CACHE_SAFE_UNLOCK(cache);
             return;
@@ -353,7 +353,7 @@ clear_all:
          */
 
         CACHE_SAFE_LOCK(cache);
-		if (apc_sma_get_avail_mem() > (APCG(shm_size)/2)) {
+        if (apc_sma_get_avail_mem() > (APCG(shm_size)/2)) {
             /* probably a queued up expunge, we don't need to do this */
             CACHE_SAFE_UNLOCK(cache);
             return;
@@ -385,12 +385,12 @@ clear_all:
                 }
                 p = &(*p)->next;
             }
-		}
+        }
 
-		if (!apc_sma_get_avail_size(size)) {
-			/* TODO: re-do this to remove goto across locked sections */
-			goto clear_all;
-		}
+        if (!apc_sma_get_avail_size(size)) {
+            /* TODO: re-do this to remove goto across locked sections */
+            goto clear_all;
+        }
         cache->header->busy = 0;
         CACHE_SAFE_UNLOCK(cache);
     }
@@ -403,7 +403,7 @@ static inline int _apc_cache_insert(apc_cache_t* cache,
                      apc_cache_entry_t* value,
                      apc_context_t* ctxt,
                      time_t t
-		     TSRMLS_DC)
+                     TSRMLS_DC)
 {
     slot_t** slot;
 
@@ -987,7 +987,7 @@ apc_cache_entry_t* apc_cache_make_file_entry(const char* filename,
                                         apc_function_t* functions,
                                         apc_class_t* classes,
                                         apc_context_t* ctxt
-					TSRMLS_DC)
+                                        TSRMLS_DC)
 {
     apc_cache_entry_t* entry;
     apc_pool* pool = ctxt->pool;
