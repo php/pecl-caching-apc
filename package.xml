@@ -71,6 +71,7 @@
  <license uri="http://www.php.net/license">PHP License</license>
  <notes>
  - Added --enable-apc-debug configuration argument to enable debugging (Kalle)
+ - Added support for internal debugging on Windows (Kalle)
  - ZTS optimizations (Kalle)
  </notes>
 

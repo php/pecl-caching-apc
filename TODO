@@ -29,7 +29,4 @@ Windows
 
 2.   Non-blocking locks is not supported either
 
-3.   Inside apc_debug.c, we do dynamic loading of a symbol but on Windows we need to use 
-     the native API (GetProcAddress and family) since we don't have dlsym()
-
-4.   Update fileinfo to support stat info in a more portable way (see PECL #17903)
+3.   Update fileinfo to support stat info in a more portable way (see PECL #17903)

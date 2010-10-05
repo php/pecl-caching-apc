@@ -29,11 +29,10 @@
 /* $Id$ */
 #include "apc.h"
 #include <stdio.h>
+#include "zend.h"
 #include "zend_compile.h"
 
-#if defined(__DEBUG_APC__) && !defined(PHP_WIN32)
-
-#include <dlfcn.h>
+#if defined(__DEBUG_APC__)
 
 /* keep track of vld_dump_oparray() signature */
 typedef void (*vld_dump_f) (zend_op_array * TSRMLS_DC);
@@ -42,16 +41,30 @@ typedef void (*vld_dump_f) (zend_op_array * TSRMLS_DC);
 
 void dump(zend_op_array *op_array TSRMLS_DC)
 {
-#if defined(__DEBUG_APC__) && !defined(PHP_WIN32)
-  vld_dump_f dump_op_array = dlsym(NULL, "vld_dump_oparray");
+#if defined(__DEBUG_APC__)
+  vld_dump_f dump_op_array;
+  DL_HANDLE handle = NULL;
 
-  if(dump_op_array)
-  {
-    dump_op_array(op_array TSRMLS_CC); 
+#ifdef PHP_WIN32
+  handle = GetModuleHandle(NULL);
+  
+  if (!handle) {
+	apc_warning("unable to fetch current module handle." TSRMLS_CC);
   }
-  else
-  {
-     apc_warning("vld is not installed or something even worse." TSRMLS_CC);
+#endif
+  
+  dump_op_array = (vld_dump_f) DL_FETCH_SYMBOL(handle, "vld_dump_oparray");
+  
+#ifdef PHP_WIN32
+  DL_UNLOAD(handle);
+#endif
+
+  if(dump_op_array) {
+    dump_op_array(op_array TSRMLS_CC);
+  
+    return;
   }
+  
+  apc_warning("vld is not installed or something even worse." TSRMLS_CC);
 #endif
 }
