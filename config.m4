@@ -5,7 +5,7 @@ dnl
 PHP_ARG_ENABLE(apc, whether to enable APC support,
 [  --enable-apc           Enable APC support])
 
-AC_ARG_ENABLE(apc-debug, whether to enable APC debugging,
+AC_ARG_ENABLE(apc-debug,
 [  --enable-apc-debug     Enable APC debugging], 
 [
   PHP_APC_DEBUG=yes
