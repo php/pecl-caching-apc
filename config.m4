@@ -6,7 +6,13 @@ PHP_ARG_ENABLE(apc, whether to enable APC support,
 [  --enable-apc           Enable APC support])
 
 PHP_ARG_ENABLE(apc-debug, whether to enable APC debugging,
-[  --enable-apc-debug     Enable APC debugging])
+[  --enable-apc-debug     Enable APC debugging], 
+[
+  PHP_APC_DEBUG=yes
+], 
+[
+  PHP_APC_DEBUG=no
+])
 
 AC_MSG_CHECKING(whether we should enable cache request file info)
 AC_ARG_ENABLE(apc-filehits,
