@@ -135,6 +135,8 @@ APC_PRINT_FUNCTION(notice, E_NOTICE)
 
 #ifdef __DEBUG_APC__
 APC_PRINT_FUNCTION(debug, E_NOTICE)
+#else
+void apc_debug(const char *format TSRMLS_DC, ...) {}
 #endif
 /* }}} */
 
@@ -235,16 +237,12 @@ static int apc_restat(apc_fileinfo_t *fileinfo)
     hFile = CreateFile(fileinfo->fullpath, GENERIC_WRITE, FILE_SHARE_WRITE|FILE_SHARE_READ, NULL, OPEN_ALWAYS, FILE_FLAG_BACKUP_SEMANTICS, NULL);
 
     if (!hFile) {
-# ifdef __DEBUG_APC__
-        fprintf(stderr,"Cannot create a file HANDLE for %s\n", fileinfo->fullpath);
-# endif
+        apc_debug(stderr,"Cannot create a file HANDLE for %s\n", fileinfo->fullpath);
         return -1;
     }
 
     if (!GetFileInformationByHandle(hFile, &hInfo)) {
-# ifdef __DEBUG_APC__
-        fprintf(stderr,"Cannot get file information from handle\n");
-# endif
+        apc_debug("Cannot get file information from handle\n");
         CloseHandle(hFile);
         return -1;
     }

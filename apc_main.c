@@ -475,9 +475,7 @@ zend_bool apc_compile_cache_entry(apc_cache_key_t key, zend_file_handle* h, int 
     path = h->opened_path;
     if(!path) path=h->filename;
 
-#ifdef __DEBUG_APC__
-    fprintf(stderr,"2. h->opened_path=[%s]  h->filename=[%s]\n", h->opened_path?h->opened_path:"null",h->filename);
-#endif
+    apc_debug("2. h->opened_path=[%s]  h->filename=[%s]\n", h->opened_path?h->opened_path:"null",h->filename);
 
     if(!(*cache_entry = apc_cache_make_file_entry(path, alloc_op_array, alloc_functions, alloc_classes, &ctxt TSRMLS_CC))) {
         goto freepool;
@@ -532,9 +530,7 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
 
     t = apc_time();
 
-#ifdef __DEBUG_APC__
-    fprintf(stderr,"1. h->opened_path=[%s]  h->filename=[%s]\n", h->opened_path?h->opened_path:"null",h->filename);
-#endif
+    apc_debug("1. h->opened_path=[%s]  h->filename=[%s]\n", h->opened_path?h->opened_path:"null",h->filename);
 
     /* try to create a cache key; if we fail, give up on caching */
     if (!apc_cache_make_file_key(&key, h->filename, PG(include_path), t TSRMLS_CC)) {
@@ -597,16 +593,12 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
             fileinfo.st_buf.sb = *tmp_buf;
         } else {
             if (apc_search_paths(h->filename, PG(include_path), &fileinfo TSRMLS_CC) != 0) {
-#ifdef __DEBUG_APC__
-                fprintf(stderr,"Stat failed %s - bailing (%s) (%d)\n",h->filename,SG(request_info).path_translated);
-#endif
+                apc_debug("Stat failed %s - bailing (%s) (%d)\n",h->filename,SG(request_info).path_translated);
                 return old_compile_file(h, type TSRMLS_CC);
             }
         }
         if (APCG(max_file_size) < fileinfo.st_buf.sb.st_size) { 
-#ifdef __DEBUG_APC__
-            fprintf(stderr,"File is too big %s (%ld) - bailing\n", h->filename, fileinfo.st_buf.sb.st_size);
-#endif
+            apc_debug("File is too big %s (%ld) - bailing\n", h->filename, fileinfo.st_buf.sb.st_size);
             return old_compile_file(h, type TSRMLS_CC);
         }
         key.mtime = fileinfo.st_buf.sb.st_mtime;
