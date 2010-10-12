@@ -411,7 +411,7 @@ static inline int _apc_cache_insert(apc_cache_t* cache,
         return 0;
     }
 
-    apc_debug("Inserting [%s]\n", value->data.file.filename);
+    apc_debug("Inserting [%s]\n" TSRMLS_CC, value->data.file.filename);
 
     process_pending_removals(cache TSRMLS_CC);
 
@@ -842,7 +842,7 @@ int apc_cache_make_file_key(apc_cache_key_t* key,
     assert(key != NULL);
 
     if (!filename || !SG(request_info).path_translated) {
-        apc_debug("No filename and no path_translated - bailing\n");
+        apc_debug("No filename and no path_translated - bailing\n" TSRMLS_CC);
         goto cleanup;
     }
 
@@ -889,13 +889,13 @@ int apc_cache_make_file_key(apc_cache_key_t* key,
         fileinfo->st_buf.sb = *tmp_buf;
     } else {
         if (apc_search_paths(filename, include_path, fileinfo TSRMLS_CC) != 0) {
-            apc_debug("Stat failed %s - bailing (%s) (%d)\n",filename,SG(request_info).path_translated);
+            apc_debug("Stat failed %s - bailing (%s) (%d)\n" TSRMLS_CC, filename,SG(request_info).path_translated);
             goto cleanup;
         }
     }
 
     if(APCG(max_file_size) < fileinfo->st_buf.sb.st_size) {
-        apc_debug("File is too big %s (%d - %ld) - bailing\n",filename,t,fileinfo->st_buf.sb.st_size);
+        apc_debug("File is too big %s (%d - %ld) - bailing\n" TSRMLS_CC, filename,t,fileinfo->st_buf.sb.st_size);
         goto cleanup;
     }
 
@@ -912,7 +912,7 @@ int apc_cache_make_file_key(apc_cache_key_t* key,
      * configurable, but the default is still 2 seconds.
      */
     if(APCG(file_update_protection) && (t - fileinfo->st_buf.sb.st_mtime < APCG(file_update_protection)) && !APCG(force_file_update)) {
-        apc_debug("File is too new %s (%d - %d) - bailing\n",filename,t,fileinfo->st_buf.sb.st_mtime);
+        apc_debug("File is too new %s (%d - %d) - bailing\n" TSRMLS_CC,filename,t,fileinfo->st_buf.sb.st_mtime);
         goto cleanup;
     }
 
@@ -987,10 +987,10 @@ apc_cache_entry_t* apc_cache_make_file_entry(const char* filename,
 
     entry->data.file.filename  = apc_pstrdup(filename, pool TSRMLS_CC);
     if(!entry->data.file.filename) {
-        apc_debug("apc_cache_make_file_entry: entry->data.file.filename is NULL - bailing\n");
+        apc_debug("apc_cache_make_file_entry: entry->data.file.filename is NULL - bailing\n" TSRMLS_CC);
         return NULL;
     }
-    apc_debug("apc_cache_make_file_entry: entry->data.file.filename is [%s]\n",entry->data.file.filename);
+    apc_debug("apc_cache_make_file_entry: entry->data.file.filename is [%s]\n" TSRMLS_CC,entry->data.file.filename);
     entry->data.file.op_array  = op_array;
     entry->data.file.functions = functions;
     entry->data.file.classes   = classes;
