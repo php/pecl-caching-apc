@@ -89,6 +89,7 @@ int apc_rfc1867_progress(uint event, void *event_data, void **extra TSRMLS_DC) {
                 RFC1867_DATA(key_length)        = 0;
                 RFC1867_DATA(start_time)        = my_time();
                 RFC1867_DATA(bytes_processed)   = 0;
+                RFC1867_DATA(prev_bytes_processed) = 0;
                 RFC1867_DATA(rate)              = 0;
                 RFC1867_DATA(update_freq)       = (int) APCG(rfc1867_freq);
                 RFC1867_DATA(started)           = 0;
