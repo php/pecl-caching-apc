@@ -316,7 +316,11 @@ static int copy_class_or_interface_name(apc_class_t *cl TSRMLS_DC, int num_args,
 /* {{{ apc_defined_function_hook */
 int apc_defined_function_hook(zval *internal, zval *user) {
     TSRMLS_FETCH();
-  zend_hash_apply_with_arguments(APCG(lazy_function_table) TSRMLS_CC, (apply_func_args_t) copy_function_name, 2, internal, user);
+    zend_hash_apply_with_arguments(APCG(lazy_function_table) 
+#ifdef ZEND_ENGINE_2_3
+    TSRMLS_CC
+#endif
+    ,(apply_func_args_t) copy_function_name, 2, internal, user);
   return 1;
 }
 /* }}} */
@@ -324,7 +328,11 @@ int apc_defined_function_hook(zval *internal, zval *user) {
 /* {{{ apc_declared_class_hook */
 int apc_declared_class_hook(zval *classes, zend_uint mask, zend_uint comply) {
     TSRMLS_FETCH();
-  zend_hash_apply_with_arguments(APCG(lazy_class_table) TSRMLS_CC, (apply_func_args_t) copy_class_or_interface_name, 3, classes, mask, comply);
+    zend_hash_apply_with_arguments(APCG(lazy_class_table) 
+#ifdef ZEND_ENGINE_2_3
+    TSRMLS_CC
+#endif
+    , (apply_func_args_t) copy_class_or_interface_name, 3, classes, mask, comply);
   return 1;
 }
 /* }}} */
