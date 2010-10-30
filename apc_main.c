@@ -337,17 +337,6 @@ int apc_declared_class_hook(zval *classes, zend_uint mask, zend_uint comply) {
 }
 /* }}} */
 
-/* {{{ compare_file_handles */
-static int compare_file_handles(void* a, void* b)
-{
-    zend_file_handle* fh1 = (zend_file_handle*)a;
-    zend_file_handle* fh2 = (zend_file_handle*)b;
-    return (fh1->type == fh2->type && 
-            fh1->filename == fh2->filename &&
-            fh1->opened_path == fh2->opened_path);
-}
-/* }}} */
-
 /* {{{ cached_compile */
 static zend_op_array* cached_compile(zend_file_handle* h,
                                         int type,
@@ -382,10 +371,6 @@ static zend_op_array* cached_compile(zend_file_handle* h,
 
 default_compile:
 
-    if(APCG(report_autofilter)) {
-        apc_warning("Autofiltering %s" TSRMLS_CC, h->opened_path);
-    }
-
     if(cache_entry->data.file.classes) {
         for(ii = 0; ii < i ; ii++) {
             uninstall_class(cache_entry->data.file.classes[ii] TSRMLS_CC);
@@ -397,16 +382,6 @@ default_compile:
     apc_cache_release(apc_cache, cache_entry TSRMLS_CC);
 
     /* cannot free up cache data yet, it maybe in use */
-
-    zend_llist_del_element(&CG(open_files), h, compare_file_handles); /* We leak fds without this hack */
-
-    /* WARNING: zend_llist shallow copies - so element delete via the 
-     * zend_file_handle_dtor leaves h->opened_path dangling onto bad memory.
-     */
-
-    h->opened_path = NULL;
-    h->type = ZEND_HANDLE_FILENAME;
-    if(h->free_filename) h->filename = NULL;
 
     return NULL;
 }
@@ -545,7 +520,6 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
         return old_compile_file(h, type TSRMLS_CC);
     }
 
-
     if(!APCG(force_file_update)) {
         /* search for the file in the cache */
         cache_entry = apc_cache_find(apc_cache, key, t TSRMLS_CC);
@@ -557,7 +531,7 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
 
     if (cache_entry != NULL) {
         int dummy = 1;
-
+        
         ctxt.pool = apc_pool_create(APC_UNPOOL, apc_php_malloc, apc_php_free,
                                                 apc_sma_protect, apc_sma_unprotect TSRMLS_CC);
         if (!ctxt.pool) {
@@ -565,16 +539,14 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
             return old_compile_file(h, type TSRMLS_CC);
         }
         ctxt.copy = APC_COPY_OUT_OPCODE;
-
-        if (h->opened_path == NULL) {
-            h->opened_path = estrdup(cache_entry->data.file.filename);
-        }
-        zend_hash_add(&EG(included_files), h->opened_path, strlen(h->opened_path)+1, (void *)&dummy, sizeof(int), NULL);
-
-        zend_llist_add_element(&CG(open_files), h); /* We leak fds without this hack */
+        
+        zend_hash_add(&EG(included_files), cache_entry->data.file.filename, 
+                            strlen(cache_entry->data.file.filename)+1,
+                            (void *)&dummy, sizeof(int), NULL);
 
         apc_stack_push(APCG(cache_stack), cache_entry TSRMLS_CC);
         op_array = cached_compile(h, type, &ctxt TSRMLS_CC);
+
         if(op_array) {
 #ifdef APC_FILEHITS
             /* If the file comes from the cache, add it to the global request file list */
@@ -582,9 +554,16 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
 #endif
             /* this is an unpool, which has no cleanup - this only free's the pool header */
             apc_pool_destroy(ctxt.pool TSRMLS_CC);
+            
+            /* We might leak fds without this hack */
+            if (h->type != ZEND_HANDLE_FILENAME) {
+                zend_llist_add_element(&CG(open_files), h); 
+            }
             return op_array;
         }
         if(APCG(report_autofilter)) {
+            apc_warning("Autofiltering %s" TSRMLS_CC, 
+                            (h->opened_path ? h->opened_path : h->filename));
             apc_warning("Recompiling %s" TSRMLS_CC, cache_entry->data.file.filename);
         }
         /* TODO: check what happens with EG(included_files) */
