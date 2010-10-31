@@ -273,9 +273,17 @@ static int apc_restat(apc_fileinfo_t *fileinfo TSRMLS_DC)
             (strlcpy((char*)fileinfo->path_buf, (p), sizeof(fileinfo->path_buf))) \
                     ? (fileinfo->path_buf) : NULL)
 
+/* len checks can be skipped here because filename is NUL terminated */
+#define IS_RELATIVE_PATH(filename, len) \
+        ((filename) && (filename[0] == '.' && \
+            (IS_SLASH(filename[1]) || \
+                (filename[1] == '.' && \
+                    IS_SLASH(filename[2])))))
+    
+
 int apc_search_paths(const char* filename, const char* path, apc_fileinfo_t* fileinfo TSRMLS_DC)
 {
-    char** paths;
+    char** paths = NULL;
     char *exec_fname;
     int exec_fname_length;
     int found = 0;
@@ -306,17 +314,19 @@ int apc_search_paths(const char* filename, const char* path, apc_fileinfo_t* fil
         return apc_restat(fileinfo TSRMLS_CC);
     }
 
-    paths = apc_tokenize(path, DEFAULT_DIR_SEPARATOR TSRMLS_CC);
-    if (!paths)
-        return -1;
+    if (!IS_RELATIVE_PATH(path_for_open, strlen(path_for_open))) {
+        paths = apc_tokenize(path, DEFAULT_DIR_SEPARATOR TSRMLS_CC);
+        if (!paths)
+            return -1;
 
-    /* for each directory in paths, look for filename inside */
-    for (i = 0; paths[i]; i++) {
-        snprintf(fileinfo->path_buf, sizeof(fileinfo->path_buf), "%s%c%s", paths[i], DEFAULT_SLASH, path_for_open);
-        if (APC_URL_STAT(wrapper, fileinfo->path_buf, &fileinfo->st_buf) == 0) {
-            fileinfo->fullpath = (char*) fileinfo->path_buf;
-            found = 1;
-            break;
+        /* for each directory in paths, look for filename inside */
+        for (i = 0; paths[i]; i++) {
+            snprintf(fileinfo->path_buf, sizeof(fileinfo->path_buf), "%s%c%s", paths[i], DEFAULT_SLASH, path_for_open);
+            if (APC_URL_STAT(wrapper, fileinfo->path_buf, &fileinfo->st_buf) == 0) {
+                fileinfo->fullpath = (char*) fileinfo->path_buf;
+                found = 1;
+                break;
+            }
         }
     }
 
@@ -339,11 +349,13 @@ int apc_search_paths(const char* filename, const char* path, apc_fileinfo_t* fil
         }
     }
 
-    /* free the value returned by apc_tokenize */
-    for (i = 0; paths[i]; i++) {
-        apc_efree(paths[i] TSRMLS_CC);
+    if(paths) {
+        /* free the value returned by apc_tokenize */
+        for (i = 0; paths[i]; i++) {
+            apc_efree(paths[i] TSRMLS_CC);
+        }
+        apc_efree(paths TSRMLS_CC);
     }
-    apc_efree(paths TSRMLS_CC);
 
     return found ? apc_restat(fileinfo TSRMLS_CC) : -1;
 }
