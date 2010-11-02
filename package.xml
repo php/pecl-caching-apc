@@ -64,6 +64,12 @@
   <email>kalle@php.net</email>
   <active>yes</active>
  </developer>
+ <developer>
+  <name>Pierre Joye</name>
+  <user>pajoye</user>
+  <email>pierre@php.net</email>
+  <active>yes</active>
+ </developer>
 
  <date>2010-11-01</date>
  <version><release>3.1.5</release><api>3.1.0</api></version>
