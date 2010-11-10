@@ -41,6 +41,7 @@
 #include "apc_lock.h"
 #include "apc_pool.h"
 #include "apc_main.h"
+#include "TSRM.h"
 
 #define APC_CACHE_ENTRY_FILE   1
 #define APC_CACHE_ENTRY_USER   2
@@ -98,6 +99,11 @@ struct apc_keyid_t {
     unsigned int h;
     unsigned int keylen;
     time_t mtime;
+#ifdef ZTS
+    THREAD_T tid;
+#else
+    pid_t pid;
+#endif
 };
 /* }}} */
 

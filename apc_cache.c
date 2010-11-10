@@ -339,6 +339,7 @@ clear_all:
             }
             cache->slots[i] = NULL;
         }
+        memset(&cache->header->lastkey, 0, sizeof(apc_keyid_t));
         cache->header->busy = 0;
         CACHE_SAFE_UNLOCK(cache);
     } else {
@@ -391,6 +392,7 @@ clear_all:
             /* TODO: re-do this to remove goto across locked sections */
             goto clear_all;
         }
+        memset(&cache->header->lastkey, 0, sizeof(apc_keyid_t));
         cache->header->busy = 0;
         CACHE_SAFE_UNLOCK(cache);
     }
@@ -520,6 +522,11 @@ int apc_cache_user_insert(apc_cache_t* cache, apc_cache_key_t key, apc_cache_ent
     lastkey->h = h;
     lastkey->keylen = keylen;
     lastkey->mtime = t;
+#ifdef ZTS
+    lastkey->tid = tsrm_thread_id();
+#else
+    lastkey->pid = getpid();
+#endif
     
     /* we do not reset lastkey after the insert. Whether it is inserted 
      * or not, another insert in the same second is always a bad idea. 
@@ -812,7 +819,9 @@ int apc_cache_delete(apc_cache_t* cache, char *filename, int filename_len TSRMLS
       }
       slot = &(*slot)->next;
     }
-
+    
+    memset(&cache->header->lastkey, 0, sizeof(apc_keyid_t));
+    
     CACHE_UNLOCK(cache);
     return 0;
 
@@ -1234,12 +1243,20 @@ zend_bool apc_cache_is_last_key(apc_cache_t* cache, apc_cache_key_t* key, unsign
 {
     apc_keyid_t *lastkey = &cache->header->lastkey;
     unsigned int keylen = key->data.user.identifier_len;
+#ifdef ZTS
+    THREAD_T tid = tsrm_thread_id();
+    #define FROM_DIFFERENT_THREAD(k) (memcmp(&((k)->tid), &tid, sizeof(THREAD_T))!=0)
+#else
+    pid_t pid = getpid();
+    #define FROM_DIFFERENT_THREAD(k) (pid != (k)->pid) 
+#endif
+
 
     if(!h) h = string_nhash_8(key->data.user.identifier, keylen);
 
     /* unlocked reads, but we're not shooting for 100% success with this */
     if(lastkey->h == h && keylen == lastkey->keylen) {
-        if(lastkey->mtime == t) {
+        if(lastkey->mtime == t && FROM_DIFFERENT_THREAD(lastkey)) {
             /* potential cache slam */
             if(APCG(slam_defense)) {
                 apc_warning("Potential cache slam averted for key '%s'" TSRMLS_CC, key->data.user.identifier);
