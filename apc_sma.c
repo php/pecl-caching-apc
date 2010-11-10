@@ -444,7 +444,9 @@ void* apc_sma_malloc_ex(size_t n, size_t fragment, size_t* allocated TSRMLS_DC)
 {
     size_t off;
     uint i;
+    int nuked = 0;
 
+restart:
     assert(sma_initialized);
     LOCK(SMA_LCK(sma_lastseg));
 
@@ -453,7 +455,7 @@ void* apc_sma_malloc_ex(size_t n, size_t fragment, size_t* allocated TSRMLS_DC)
     if(off == -1 && APCG(current_cache)) { 
         /* retry failed allocation after we expunge */
         UNLOCK(SMA_LCK(sma_lastseg));
-        APCG(current_cache)->expunge_cb(APCG(current_cache), n TSRMLS_CC);
+        APCG(current_cache)->expunge_cb(APCG(current_cache), (n+fragment) TSRMLS_CC);
         LOCK(SMA_LCK(sma_lastseg));
         off = sma_allocate(SMA_HDR(sma_lastseg), n, fragment, allocated);
     }
@@ -478,7 +480,7 @@ void* apc_sma_malloc_ex(size_t n, size_t fragment, size_t* allocated TSRMLS_DC)
         if(off == -1 && APCG(current_cache)) { 
             /* retry failed allocation after we expunge */
             UNLOCK(SMA_LCK(i));
-            APCG(current_cache)->expunge_cb(APCG(current_cache), n TSRMLS_CC);
+            APCG(current_cache)->expunge_cb(APCG(current_cache), (n+fragment) TSRMLS_CC);
             LOCK(SMA_LCK(i));
             off = sma_allocate(SMA_HDR(i), n, fragment, allocated);
         }
@@ -493,6 +495,16 @@ void* apc_sma_malloc_ex(size_t n, size_t fragment, size_t* allocated TSRMLS_DC)
         }
         UNLOCK(SMA_LCK(i));
     }
+
+    /* I've tried being nice, but now you're just asking for it */
+    if(!nuked) {
+        apc_cache->expunge_cb(apc_cache, (n+fragment) TSRMLS_CC);
+        apc_user_cache->expunge_cb(apc_cache, (n+fragment) TSRMLS_CC);
+        nuked = 1;
+        goto restart;
+    }
+
+    /* now, I've truly and well given up */
 
     return NULL;
 }
