@@ -5,8 +5,8 @@
 ARG_ENABLE('apc', 'Whether to enable APC support', 'no');
 ARG_ENABLE('apc-debug', 'Whether to enable APC debugging', 'no');
 ARG_ENABLE('apc-filehits', 'Whether to enable cache request file info', 'no');
-ARG_ENABLE('apc-spinlocks', 'Whether to use spin locks', 'no');
-ARG_ENABLE('apc-memprotect', 'Whether to enable memory protection', 'no');
+ARG_ENABLE('apc-spinlocks', 'Whether to use spin locks (experimental)', 'no');
+ARG_ENABLE('apc-memprotect', 'Whether to enable memory protection (experimental)', 'no');
 
 if(PHP_APC != 'no')
 {
