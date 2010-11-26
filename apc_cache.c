@@ -872,7 +872,7 @@ int apc_cache_make_file_key(apc_cache_key_t* key,
                 goto cleanup;
             }
 
-            if(!realpath(fileinfo->fullpath, APCG(canon_path))) {
+            if(!VCWD_REALPATH(fileinfo->fullpath, APCG(canon_path))) {
                 apc_warning("realpath failed to canonicalize %s - bailing" TSRMLS_CC, filename);
                 goto cleanup;
             }
