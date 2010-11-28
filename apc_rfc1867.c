@@ -146,7 +146,7 @@ int apc_rfc1867_progress(uint event, void *event_data, void **extra TSRMLS_DC) {
                     add_assoc_string(track, "name", RFC1867_DATA(name), 1);
                     add_assoc_long(track, "done", 0);
                     add_assoc_double(track, "start_time", RFC1867_DATA(start_time));
-                    _apc_store(RFC1867_DATA(tracking_key), RFC1867_DATA(key_length), track, APCG(rfc1867_ttl), 0 TSRMLS_CC);
+                    _apc_store(RFC1867_DATA(tracking_key), RFC1867_DATA(key_length)+1, track, APCG(rfc1867_ttl), 0 TSRMLS_CC);
                     zval_ptr_dtor(&track);
                 }
             }
@@ -166,7 +166,7 @@ int apc_rfc1867_progress(uint event, void *event_data, void **extra TSRMLS_DC) {
                         add_assoc_string(track, "name", RFC1867_DATA(name), 1);
                         add_assoc_long(track, "done", 0);
                         add_assoc_double(track, "start_time", RFC1867_DATA(start_time));
-                        _apc_store(RFC1867_DATA(tracking_key), RFC1867_DATA(key_length), track, APCG(rfc1867_ttl), 0 TSRMLS_CC);
+                        _apc_store(RFC1867_DATA(tracking_key), RFC1867_DATA(key_length)+1, track, APCG(rfc1867_ttl), 0 TSRMLS_CC);
                         zval_ptr_dtor(&track);
                     }
                     RFC1867_DATA(prev_bytes_processed) = RFC1867_DATA(bytes_processed);
@@ -190,7 +190,7 @@ int apc_rfc1867_progress(uint event, void *event_data, void **extra TSRMLS_DC) {
                 add_assoc_long(track, "cancel_upload", RFC1867_DATA(cancel_upload));
                 add_assoc_long(track, "done", 0);
                 add_assoc_double(track, "start_time", RFC1867_DATA(start_time));
-                _apc_store(RFC1867_DATA(tracking_key), RFC1867_DATA(key_length), track, APCG(rfc1867_ttl), 0 TSRMLS_CC);
+                _apc_store(RFC1867_DATA(tracking_key), RFC1867_DATA(key_length)+1, track, APCG(rfc1867_ttl), 0 TSRMLS_CC);
                 zval_ptr_dtor(&track);
             }
             break;
@@ -212,7 +212,7 @@ int apc_rfc1867_progress(uint event, void *event_data, void **extra TSRMLS_DC) {
                 add_assoc_long(track, "cancel_upload", RFC1867_DATA(cancel_upload));
                 add_assoc_long(track, "done", 1);
                 add_assoc_double(track, "start_time", RFC1867_DATA(start_time));
-                _apc_store(RFC1867_DATA(tracking_key), RFC1867_DATA(key_length), track, APCG(rfc1867_ttl), 0 TSRMLS_CC);
+                _apc_store(RFC1867_DATA(tracking_key), RFC1867_DATA(key_length)+1, track, APCG(rfc1867_ttl), 0 TSRMLS_CC);
                 zval_ptr_dtor(&track);
             }
             break;
