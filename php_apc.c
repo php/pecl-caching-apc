@@ -446,15 +446,7 @@ PHP_FUNCTION(apc_cache_info)
 #else
     add_assoc_stringl(return_value, "memory_type", "IPC shared", sizeof("IPC shared")-1, 1);
 #endif
-#if APC_SEM_LOCKS
-    add_assoc_stringl(return_value, "locking_type", "IPC semaphore", sizeof("IPC semaphore")-1, 1);
-#elif APC_PTHREADMUTEX_LOCKS
-    add_assoc_stringl(return_value, "locking_type", "pthread mutex", sizeof("pthread mutex")-1, 1);
-#elif APC_SPIN_LOCKS
-    add_assoc_stringl(return_value, "locking_type", "spin", sizeof("spin")-1, 1);
-#else
-    add_assoc_stringl(return_value, "locking_type", "file", sizeof("file")-1, 1);
-#endif
+    add_assoc_stringl(return_value, "locking_type", APC_LOCK_TYPE, sizeof(APC_LOCK_TYPE)-1, 1);
     if(limited) {
         apc_cache_free_info(info TSRMLS_CC);
         return;
