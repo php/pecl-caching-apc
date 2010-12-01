@@ -123,6 +123,7 @@ apc_segment_t apc_mmap(char *file_mask, size_t size TSRMLS_DC)
     }
 
     segment.shmaddr = (void *)mmap(NULL, size, PROT_READ | PROT_WRITE, flags, fd, 0);
+    segment.size = size;
 
 #ifdef APC_MEMPROTECT
     if(remap) {
@@ -143,6 +144,7 @@ apc_segment_t apc_mmap(char *file_mask, size_t size TSRMLS_DC)
 error:
 
     segment.shmaddr = (void*)-1;
+    segment.size = 0;
 #ifdef APC_MEMPROTECT
     segment.roaddr = NULL;
 #endif
