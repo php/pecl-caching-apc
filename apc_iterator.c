@@ -237,7 +237,7 @@ static int apc_iterator_search_match(apc_iterator_t *iterator, slot_t **slot) {
     int rval = 1;
 
     if ((*slot)->key.type == APC_CACHE_KEY_FILE) {
-        key = estrdup((*slot)->value->data.file.filename);
+        key = (*slot)->value->data.file.filename;
         key_len = strlen(key);
         fname_key_len = spprintf(&fname_key, 0, "%ld %ld", (*slot)->key.data.file.device, (*slot)->key.data.file.inode);
     } else if ((*slot)->key.type == APC_CACHE_KEY_USER) {
