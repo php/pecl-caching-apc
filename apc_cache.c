@@ -511,7 +511,6 @@ int apc_cache_user_insert(apc_cache_t* cache, apc_cache_key_t key, apc_cache_ent
 
     if(apc_cache_is_last_key(cache, &key, h, t TSRMLS_CC)) {
         /* potential cache slam */
-        printf("Last key warning for it!");
         return 0;
     }
 
