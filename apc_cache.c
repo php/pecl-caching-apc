@@ -1080,7 +1080,7 @@ apc_cache_entry_t* apc_cache_make_user_entry(const char* info, int info_len, con
 /* {{{ */
 static zval* apc_cache_link_info(apc_cache_t *cache, slot_t* p)
 {
-	zval *link;
+	zval *link = NULL;
     char md5str[33];
 
 	ALLOC_INIT_ZVAL(link);
@@ -1120,7 +1120,7 @@ static zval* apc_cache_link_info(apc_cache_t *cache, slot_t* p)
                add_assoc_string(link, "md5", md5str, 1);
 		} 
 	} else if(p->value->type == APC_CACHE_ENTRY_USER) {
-		add_assoc_stringl(link, "info", p->value->data.user.info,p->value->data.user.info_len, 1);
+		add_assoc_stringl(link, "info", p->value->data.user.info, p->value->data.user.info_len-1, 1);
 		add_assoc_long(link, "ttl", (long)p->value->data.user.ttl);
 		add_assoc_string(link, "type", "user", 1);
 	}
@@ -1143,8 +1143,9 @@ zval* apc_cache_info(apc_cache_t* cache, zend_bool limited TSRMLS_DC)
     zval *info = NULL;
 	zval *list = NULL;
 	zval *deleted_list = NULL;
+	zval *slots = NULL;
     slot_t* p;
-    int i;
+    int i, j;
 
     if(!cache) return NULL;
 
@@ -1186,12 +1187,18 @@ zval* apc_cache_info(apc_cache_t* cache, zend_bool limited TSRMLS_DC)
 		ALLOC_INIT_ZVAL(list);
 		array_init(list);
 
+		ALLOC_INIT_ZVAL(slots);
+		array_init(slots);
+
         for (i = 0; i < cache->num_slots; i++) {
             p = cache->slots[i];
+			j = 0;
             for (; p != NULL; p = p->next) {
 				zval *link = apc_cache_link_info(cache, p);
         		add_next_index_zval(list, link);
+				j++;
             }
+        	add_next_index_long(slots, j);
         }
 
         /* For each slot pending deletion */
@@ -1205,6 +1212,7 @@ zval* apc_cache_info(apc_cache_t* cache, zend_bool limited TSRMLS_DC)
     	
 		add_assoc_zval(info, "cache_list", list);
 		add_assoc_zval(info, "deleted_list", deleted_list);
+		add_assoc_zval(info, "slot_distribution", slots);
     }
 
     CACHE_UNLOCK(cache);
