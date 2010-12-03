@@ -132,35 +132,35 @@ static void php_apc_shutdown_globals(zend_apc_globals* apc_globals TSRMLS_DC)
 static long apc_atol(const char *str, int str_len)
 {
 #if PHP_MAJOR_VERSION >= 6 || PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION >= 3
-	return zend_atol(str, str_len);
+    return zend_atol(str, str_len);
 #else
-	/* Re-implement zend_atol() for 5.2.x */
-	long retval;
+    /* Re-implement zend_atol() for 5.2.x */
+    long retval;
 
-	if (!str_len) {
-		str_len = strlen(str);
-	}
+    if (!str_len) {
+        str_len = strlen(str);
+    }
 
-	retval = strtol(str, NULL, 0);
+    retval = strtol(str, NULL, 0);
 
-	if (str_len > 0) {
-		switch (str[str_len - 1]) {
-			case 'g':
-			case 'G':
-				retval *= 1024;
-				/* break intentionally missing */
-			case 'm':
-			case 'M':
-				retval *= 1024;
-				/* break intentionally missing */
-			case 'k':
-			case 'K':
-				retval *= 1024;
-				break;
-		}
-	}
+    if (str_len > 0) {
+        switch (str[str_len - 1]) {
+            case 'g':
+            case 'G':
+                retval *= 1024;
+                /* break intentionally missing */
+            case 'm':
+            case 'M':
+                retval *= 1024;
+                /* break intentionally missing */
+            case 'k':
+            case 'K':
+                retval *= 1024;
+                break;
+        }
+    }
 
-	return retval;
+    return retval;
 #endif
 }
 
@@ -191,21 +191,21 @@ static PHP_INI_MH(OnUpdateShmSegments) /* {{{ */
 
 static PHP_INI_MH(OnUpdateShmSize) /* {{{ */
 {
-	long s = apc_atol(new_value, new_value_length);
+    long s = apc_atol(new_value, new_value_length);
 
-	if(s <= 0) {
-		return FAILURE;
-	}
+    if(s <= 0) {
+        return FAILURE;
+    }
 
-	if(s < 1048576L) {
-		/* if it's less than 1Mb, they are probably using the old syntax */
-		php_error_docref(NULL TSRMLS_CC, E_WARNING, "apc.shm_size now uses M/G suffixes, please update your ini files");
-		s = s * 1048576L;
-	}
+    if(s < 1048576L) {
+        /* if it's less than 1Mb, they are probably using the old syntax */
+        php_error_docref(NULL TSRMLS_CC, E_WARNING, "apc.shm_size now uses M/G suffixes, please update your ini files");
+        s = s * 1048576L;
+    }
 
-	APCG(shm_size) = s;
+    APCG(shm_size) = s;
 
-	return SUCCESS;
+    return SUCCESS;
 }
 /* }}} */
 
@@ -422,7 +422,7 @@ PHP_FUNCTION(apc_cache_info)
         RETURN_FALSE;
     }
 
-	RETURN_ZVAL(info, 0, 1);
+    RETURN_ZVAL(info, 0, 1);
 
 }
 /* }}} */
@@ -572,7 +572,7 @@ int _apc_store(char *strkey, int strkey_len, const zval *val, const unsigned int
     }
 
     if (apc_cache_is_last_key(apc_user_cache, &key, 0, t TSRMLS_CC)) {
-	    goto freepool;
+        goto freepool;
     }
 
     if (!(entry = apc_cache_make_user_entry(strkey, strkey_len, val, &ctxt, ttl TSRMLS_CC))) {
@@ -1547,12 +1547,12 @@ ZEND_END_ARG_INFO()
 
 PHP_APC_ARGINFO
 ZEND_BEGIN_ARG_INFO(arginfo_apc_delete_file, 0)
-	ZEND_ARG_INFO(0, keys)
+    ZEND_ARG_INFO(0, keys)
 ZEND_END_ARG_INFO()
 
 PHP_APC_ARGINFO
 ZEND_BEGIN_ARG_INFO(arginfo_apc_delete, 0)
-	ZEND_ARG_INFO(0, keys)
+    ZEND_ARG_INFO(0, keys)
 ZEND_END_ARG_INFO()
 
 PHP_APC_ARGINFO
@@ -1617,7 +1617,7 @@ ZEND_END_ARG_INFO()
 
 PHP_APC_ARGINFO
 ZEND_BEGIN_ARG_INFO(arginfo_apc_exists, 0)
-	ZEND_ARG_INFO(0, keys)
+    ZEND_ARG_INFO(0, keys)
 ZEND_END_ARG_INFO()
 /* }}} */
 

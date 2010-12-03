@@ -1080,60 +1080,60 @@ apc_cache_entry_t* apc_cache_make_user_entry(const char* info, int info_len, con
 /* {{{ */
 static zval* apc_cache_link_info(apc_cache_t *cache, slot_t* p)
 {
-	zval *link = NULL;
+    zval *link = NULL;
     char md5str[33];
 
-	ALLOC_INIT_ZVAL(link);
+    ALLOC_INIT_ZVAL(link);
 
-	if(!link) {
-		return NULL;
-	}
+    if(!link) {
+        return NULL;
+    }
 
-	array_init(link);
+    array_init(link);
 
-	if(p->value->type == APC_CACHE_ENTRY_FILE) {
-		add_assoc_string(link, "type", "file", 1);
-		if(p->key.type == APC_CACHE_KEY_FILE) {
+    if(p->value->type == APC_CACHE_ENTRY_FILE) {
+        add_assoc_string(link, "type", "file", 1);
+        if(p->key.type == APC_CACHE_KEY_FILE) {
 
-			#ifdef PHP_WIN32
-			{
-			char buf[20];
-			sprintf(buf, "%I64d",  p->key.data.file.device);
-			add_assoc_string(link, "device", buf, 1);
+            #ifdef PHP_WIN32
+            {
+            char buf[20];
+            sprintf(buf, "%I64d",  p->key.data.file.device);
+            add_assoc_string(link, "device", buf, 1);
 
-			sprintf(buf, "%I64d",  p->key.data.file.inode);
-			add_assoc_string(link, "inode", buf, 1);
-			}
-			#else
-			add_assoc_long(link, "device", p->key.data.file.device);
-			add_assoc_long(link, "inode", p->key.data.file.inode);
-			#endif
+            sprintf(buf, "%I64d",  p->key.data.file.inode);
+            add_assoc_string(link, "inode", buf, 1);
+            }
+            #else
+            add_assoc_long(link, "device", p->key.data.file.device);
+            add_assoc_long(link, "inode", p->key.data.file.inode);
+            #endif
 
-			add_assoc_string(link, "filename", p->value->data.file.filename, 1);
-		} else { /* This is a no-stat fullpath file entry */
-			add_assoc_long(link, "device", 0);
-			add_assoc_long(link, "inode", 0);
-			add_assoc_string(link, "filename", (char*)p->key.data.fpfile.fullpath, 1);
-		}
-		if (APCG(file_md5)) {
+            add_assoc_string(link, "filename", p->value->data.file.filename, 1);
+        } else { /* This is a no-stat fullpath file entry */
+            add_assoc_long(link, "device", 0);
+            add_assoc_long(link, "inode", 0);
+            add_assoc_string(link, "filename", (char*)p->key.data.fpfile.fullpath, 1);
+        }
+        if (APCG(file_md5)) {
                make_digest(md5str, p->key.md5);
                add_assoc_string(link, "md5", md5str, 1);
-		} 
-	} else if(p->value->type == APC_CACHE_ENTRY_USER) {
-		add_assoc_stringl(link, "info", p->value->data.user.info, p->value->data.user.info_len-1, 1);
-		add_assoc_long(link, "ttl", (long)p->value->data.user.ttl);
-		add_assoc_string(link, "type", "user", 1);
-	}
+        } 
+    } else if(p->value->type == APC_CACHE_ENTRY_USER) {
+        add_assoc_stringl(link, "info", p->value->data.user.info, p->value->data.user.info_len-1, 1);
+        add_assoc_long(link, "ttl", (long)p->value->data.user.ttl);
+        add_assoc_string(link, "type", "user", 1);
+    }
 
     add_assoc_double(link, "num_hits", (double)p->num_hits);
-	add_assoc_long(link, "mtime", p->key.mtime);
-	add_assoc_long(link, "creation_time", p->creation_time);
-	add_assoc_long(link, "deletion_time", p->deletion_time);
-	add_assoc_long(link, "access_time", p->access_time);
-	add_assoc_long(link, "ref_count", p->value->ref_count);
-	add_assoc_long(link, "mem_size", p->value->mem_size);
+    add_assoc_long(link, "mtime", p->key.mtime);
+    add_assoc_long(link, "creation_time", p->creation_time);
+    add_assoc_long(link, "deletion_time", p->deletion_time);
+    add_assoc_long(link, "access_time", p->access_time);
+    add_assoc_long(link, "ref_count", p->value->ref_count);
+    add_assoc_long(link, "mem_size", p->value->mem_size);
 
-	return link;
+    return link;
 }
 /* }}} */
 
@@ -1141,9 +1141,9 @@ static zval* apc_cache_link_info(apc_cache_t *cache, slot_t* p)
 zval* apc_cache_info(apc_cache_t* cache, zend_bool limited TSRMLS_DC)
 {
     zval *info = NULL;
-	zval *list = NULL;
-	zval *deleted_list = NULL;
-	zval *slots = NULL;
+    zval *list = NULL;
+    zval *deleted_list = NULL;
+    zval *slots = NULL;
     slot_t* p;
     int i, j;
 
@@ -1158,7 +1158,7 @@ zval* apc_cache_info(apc_cache_t* cache, zend_bool limited TSRMLS_DC)
         return NULL;
     }
 
-	array_init(info);
+    array_init(info);
     add_assoc_long(info, "num_slots", cache->num_slots);
     add_assoc_long(info, "ttl", cache->ttl);
 
@@ -1184,35 +1184,35 @@ zval* apc_cache_info(apc_cache_t* cache, zend_bool limited TSRMLS_DC)
 
     if(!limited) {
         /* For each hashtable slot */
-		ALLOC_INIT_ZVAL(list);
-		array_init(list);
+        ALLOC_INIT_ZVAL(list);
+        array_init(list);
 
-		ALLOC_INIT_ZVAL(slots);
-		array_init(slots);
+        ALLOC_INIT_ZVAL(slots);
+        array_init(slots);
 
         for (i = 0; i < cache->num_slots; i++) {
             p = cache->slots[i];
-			j = 0;
+            j = 0;
             for (; p != NULL; p = p->next) {
-				zval *link = apc_cache_link_info(cache, p);
-        		add_next_index_zval(list, link);
-				j++;
+                zval *link = apc_cache_link_info(cache, p);
+                add_next_index_zval(list, link);
+                j++;
             }
-        	add_next_index_long(slots, j);
+            add_next_index_long(slots, j);
         }
 
         /* For each slot pending deletion */
-		ALLOC_INIT_ZVAL(deleted_list);
-		array_init(deleted_list);
+        ALLOC_INIT_ZVAL(deleted_list);
+        array_init(deleted_list);
 
         for (p = cache->header->deleted_list; p != NULL; p = p->next) {
-			zval *link = apc_cache_link_info(cache, p);
-			add_next_index_zval(deleted_list, link);
+            zval *link = apc_cache_link_info(cache, p);
+            add_next_index_zval(deleted_list, link);
         }
-    	
-		add_assoc_zval(info, "cache_list", list);
-		add_assoc_zval(info, "deleted_list", deleted_list);
-		add_assoc_zval(info, "slot_distribution", slots);
+        
+        add_assoc_zval(info, "cache_list", list);
+        add_assoc_zval(info, "deleted_list", deleted_list);
+        add_assoc_zval(info, "slot_distribution", slots);
     }
 
     CACHE_UNLOCK(cache);
