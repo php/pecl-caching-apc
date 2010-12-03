@@ -279,55 +279,6 @@ extern apc_cache_entry_t* apc_cache_make_user_entry(const char* info, int info_l
 
 extern int apc_cache_make_user_key(apc_cache_key_t* key, char* identifier, int identifier_len, const time_t t);
 
-/* {{{ struct definition: apc_cache_link_data_t */
-typedef union _apc_cache_link_data_t {
-    struct {
-        char *filename;
-        apc_ino_t device;
-        apc_dev_t inode;
-        unsigned char *md5;
-    } file;
-    struct {
-        char *info;
-        unsigned int ttl;
-    } user;
-} apc_cache_link_data_t;
-/* }}} */
-
-/* {{{ struct definition: apc_cache_link_t */
-typedef struct apc_cache_link_t apc_cache_link_t;
-struct apc_cache_link_t {
-    apc_cache_link_data_t data;
-    unsigned char type;
-    unsigned long num_hits;
-    time_t mtime;
-    time_t creation_time;
-    time_t deletion_time;
-    time_t access_time;
-    int ref_count;
-    size_t mem_size;
-    apc_cache_link_t* next;
-};
-/* }}} */
-
-
-/* {{{ struct definition: apc_cache_info_t */
-typedef struct apc_cache_info_t apc_cache_info_t;
-struct apc_cache_info_t {
-    int num_slots;
-    unsigned long num_hits;
-    unsigned long num_misses;
-    unsigned long num_inserts;
-    unsigned long expunges;
-    int ttl;
-    apc_cache_link_t* list;
-    apc_cache_link_t* deleted_list;
-    time_t start_time;
-    int num_entries;
-    size_t mem_size;
-};
-/* }}} */
-
 /* {{{ struct definition: slot_t */
 typedef struct slot_t slot_t;
 struct slot_t {
@@ -375,8 +326,7 @@ struct apc_cache_t {
 };
 /* }}} */
 
-extern apc_cache_info_t* apc_cache_info(T cache, zend_bool limited TSRMLS_DC);
-extern void apc_cache_free_info(apc_cache_info_t* info TSRMLS_DC);
+extern zval* apc_cache_info(T cache, zend_bool limited TSRMLS_DC);
 extern void apc_cache_unlock(apc_cache_t* cache TSRMLS_DC);
 extern zend_bool apc_cache_busy(apc_cache_t* cache);
 extern zend_bool apc_cache_write_lock(apc_cache_t* cache TSRMLS_DC);
