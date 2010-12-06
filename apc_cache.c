@@ -35,6 +35,7 @@
 #include "apc_sma.h"
 #include "apc_globals.h"
 #include "SAPI.h"
+#include "TSRM.h"
 
 /* TODO: rehash when load factor exceeds threshold */
 
@@ -141,7 +142,7 @@ static void remove_slot(apc_cache_t* cache, slot_t** slot TSRMLS_DC)
     *slot = (*slot)->next;
 
     cache->header->mem_size -= dead->value->mem_size;
-    cache->header->num_entries--;
+    CACHE_FAST_DEC(cache, cache->header->num_entries);
     if (dead->value->ref_count <= 0) {
         free_slot(dead TSRMLS_CC);
     }
@@ -330,7 +331,7 @@ static void apc_cache_expunge(apc_cache_t* cache, size_t size TSRMLS_DC)
             return;
         }
         cache->header->busy = 1;
-        cache->header->expunges++;
+        CACHE_FAST_INC(cache, cache->header->expunges);
 clear_all:
         for (i = 0; i < cache->num_slots; i++) {
             slot_t* p = cache->slots[i];
@@ -360,7 +361,7 @@ clear_all:
             return;
         }
         cache->header->busy = 1;
-        cache->header->expunges++;
+        CACHE_FAST_INC(cache, cache->header->expunges);
         for (i = 0; i < cache->num_slots; i++) {
             p = &cache->slots[i];
             while(*p) {
@@ -454,8 +455,8 @@ static inline int _apc_cache_insert(apc_cache_t* cache,
 
     value->mem_size = ctxt->pool->size;
     cache->header->mem_size += ctxt->pool->size;
-    cache->header->num_entries++;
-    cache->header->num_inserts++;
+    CACHE_FAST_INC(cache, cache->header->num_entries);
+    CACHE_FAST_INC(cache, cache->header->num_inserts);
 
     return 1;
 }
@@ -574,8 +575,8 @@ int apc_cache_user_insert(apc_cache_t* cache, apc_cache_key_t key, apc_cache_ent
     value->mem_size = ctxt->pool->size;
     cache->header->mem_size += ctxt->pool->size;
 
-    cache->header->num_entries++;
-    cache->header->num_inserts++;
+    CACHE_FAST_INC(cache, cache->header->num_entries);
+    CACHE_FAST_INC(cache, cache->header->num_inserts);
 
     CACHE_UNLOCK(cache);
 
@@ -594,7 +595,7 @@ slot_t* apc_cache_find_slot(apc_cache_t* cache, apc_cache_key_t key, time_t t TS
     slot_t** slot;
     volatile slot_t* retval = NULL;
 
-    CACHE_LOCK(cache);
+    CACHE_RDLOCK(cache);
     if(key.type == APC_CACHE_KEY_FILE) slot = &cache->slots[hash(key) % cache->num_slots];
     else slot = &cache->slots[string_nhash_8(key.data.fpfile.fullpath, key.data.fpfile.fullpath_len) % cache->num_slots];
 
@@ -603,16 +604,22 @@ slot_t* apc_cache_find_slot(apc_cache_t* cache, apc_cache_key_t key, time_t t TS
         if(key.type == APC_CACHE_KEY_FILE) {
             if(key_equals((*slot)->key.data.file, key.data.file)) {
                 if((*slot)->key.mtime != key.mtime) {
+                    #if (RDLOCK_AVAILABLE == 1) && defined(HAVE_ATOMIC_OPERATIONS)
+                    /* this is merely a memory-friendly optimization, if we do have a write-lock
+                     * might as well move this to the deleted_list right-away. Otherwise an insert
+                     * of the same key wil do it (or an expunge, *eventually*).
+                     */
                     remove_slot(cache, slot TSRMLS_CC);
-                    cache->header->num_misses++;
+                    #endif
+                    CACHE_SAFE_INC(cache, cache->header->num_misses);
                     CACHE_UNLOCK(cache);
                     return NULL;
                 }
-                (*slot)->num_hits++;
-                (*slot)->value->ref_count++;
+                CACHE_SAFE_INC(cache, (*slot)->num_hits);
+                CACHE_SAFE_INC(cache, (*slot)->value->ref_count);
                 (*slot)->access_time = t;
                 prevent_garbage_collection((*slot)->value);
-                cache->header->num_hits++;
+                CACHE_FAST_INC(cache, cache->header->num_hits); 
                 retval = *slot;
                 CACHE_UNLOCK(cache);
                 return (slot_t*)retval;
@@ -620,11 +627,11 @@ slot_t* apc_cache_find_slot(apc_cache_t* cache, apc_cache_key_t key, time_t t TS
         } else {  /* APC_CACHE_KEY_FPFILE */
             if(!memcmp((*slot)->key.data.fpfile.fullpath, key.data.fpfile.fullpath, key.data.fpfile.fullpath_len+1)) {
                 /* TTL Check ? */
-                (*slot)->num_hits++;
-                (*slot)->value->ref_count++;
+                CACHE_SAFE_INC(cache, (*slot)->num_hits);
+                CACHE_SAFE_INC(cache, (*slot)->value->ref_count);
                 (*slot)->access_time = t;
                 prevent_garbage_collection((*slot)->value);
-                cache->header->num_hits++;
+                CACHE_FAST_INC(cache, cache->header->num_hits);
                 retval = *slot;
                 CACHE_UNLOCK(cache);
                 return (slot_t*)retval;
@@ -633,7 +640,7 @@ slot_t* apc_cache_find_slot(apc_cache_t* cache, apc_cache_key_t key, time_t t TS
       }
       slot = &(*slot)->next;
     }
-    cache->header->num_misses++;
+    CACHE_FAST_INC(cache, cache->header->num_misses); 
     CACHE_UNLOCK(cache);
     return NULL;
 }
@@ -659,7 +666,7 @@ apc_cache_entry_t* apc_cache_user_find(apc_cache_t* cache, char *strkey, int key
         return NULL;
     }
 
-    CACHE_LOCK(cache);
+    CACHE_RDLOCK(cache);
 
     slot = &cache->slots[string_nhash_8(strkey, keylen) % cache->num_slots];
 
@@ -667,17 +674,23 @@ apc_cache_entry_t* apc_cache_user_find(apc_cache_t* cache, char *strkey, int key
         if (!memcmp((*slot)->key.data.user.identifier, strkey, keylen)) {
             /* Check to make sure this entry isn't expired by a hard TTL */
             if((*slot)->value->data.user.ttl && (time_t) ((*slot)->creation_time + (*slot)->value->data.user.ttl) < t) {
+                #if (RDLOCK_AVAILABLE == 1) && defined(HAVE_ATOMIC_OPERATIONS)
+                /* this is merely a memory-friendly optimization, if we do have a write-lock
+                 * might as well move this to the deleted_list right-away. Otherwise an insert
+                 * of the same key wil do it (or an expunge, *eventually*).
+                 */
                 remove_slot(cache, slot TSRMLS_CC);
-                cache->header->num_misses++;
+                #endif
+                CACHE_FAST_INC(cache, cache->header->num_misses);
                 CACHE_UNLOCK(cache);
                 return NULL;
             }
             /* Otherwise we are fine, increase counters and return the cache entry */
-            (*slot)->num_hits++;
-            (*slot)->value->ref_count++;
+            CACHE_SAFE_INC(cache, (*slot)->num_hits);
+            CACHE_SAFE_INC(cache, (*slot)->value->ref_count);
             (*slot)->access_time = t;
 
-            cache->header->num_hits++;
+            CACHE_FAST_INC(cache, cache->header->num_hits);
             value = (*slot)->value;
             CACHE_UNLOCK(cache);
             return (apc_cache_entry_t*)value;
@@ -685,7 +698,7 @@ apc_cache_entry_t* apc_cache_user_find(apc_cache_t* cache, char *strkey, int key
         slot = &(*slot)->next;
     }
  
-    cache->header->num_misses++;
+    CACHE_FAST_INC(cache, cache->header->num_misses);
     CACHE_UNLOCK(cache);
     return NULL;
 }
@@ -703,7 +716,7 @@ apc_cache_entry_t* apc_cache_user_exists(apc_cache_t* cache, char *strkey, int k
         return NULL;
     }
 
-    CACHE_LOCK(cache);
+    CACHE_RDLOCK(cache);
 
     slot = &cache->slots[string_nhash_8(strkey, keylen) % cache->num_slots];
 
@@ -830,9 +843,7 @@ int apc_cache_delete(apc_cache_t* cache, char *filename, int filename_len TSRMLS
 /* {{{ apc_cache_release */
 void apc_cache_release(apc_cache_t* cache, apc_cache_entry_t* entry TSRMLS_DC)
 {
-    CACHE_LOCK(cache);
-    entry->ref_count--;
-    CACHE_UNLOCK(cache);
+    CACHE_SAFE_DEC(cache, entry->ref_count);
 }
 /* }}} */
 

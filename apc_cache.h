@@ -63,6 +63,19 @@ typedef dev_t apc_dev_t;
 #define CACHE_UNLOCK(cache)      { UNLOCK(cache->header->lock); cache->has_lock = 0; }
 #define CACHE_SAFE_LOCK(cache)   { if ((++cache->has_lock) == 1) LOCK(cache->header->lock); }
 #define CACHE_SAFE_UNLOCK(cache) { if ((--cache->has_lock) == 0) UNLOCK(cache->header->lock); }
+
+#if (RDLOCK_AVAILABLE == 1) && defined(HAVE_ATOMIC_OPERATIONS)
+#define CACHE_RDLOCK(cache)      { RDLOCK(cache->header->lock);  cache->has_lock = 0; }
+#define CACHE_SAFE_INC(cache, obj) { ATOMIC_INC(obj); }
+#define CACHE_SAFE_DEC(cache, obj) { ATOMIC_DEC(obj); }
+#else
+#define CACHE_RDLOCK(cache)      { LOCK(cache->header->lock);  cache->has_lock = 1; }
+#define CACHE_SAFE_INC(cache, obj) { CACHE_SAFE_LOCK(cache); obj++; CACHE_SAFE_UNLOCK(cache);}
+#define CACHE_SAFE_DEC(cache, obj) { CACHE_SAFE_LOCK(cache); obj--; CACHE_SAFE_UNLOCK(cache);}
+#endif
+
+#define CACHE_FAST_INC(cache, obj) { obj++; }
+#define CACHE_FAST_DEC(cache, obj) { obj--; }
 /* }}} */
 
 /* {{{ struct definition: apc_cache_key_t */

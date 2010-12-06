@@ -95,7 +95,7 @@ if test "$PHP_APC_PTHREADMUTEX" != "no"; then
 					return -1; 
 				}
 
-				puts("pthread mutex's are supported!");
+				puts("pthread mutexs are supported!");
 				return 0;
                                 }
 			],
@@ -103,7 +103,7 @@ if test "$PHP_APC_PTHREADMUTEX" != "no"; then
 				PHP_ADD_LIBRARY(pthread)
 			],
 			[ dnl -Failure-
-				AC_MSG_WARN([It doesn't appear that pthread mutex's are supported on your system])
+				AC_MSG_WARN([It doesn't appear that pthread mutexes are supported on your system])
   			PHP_APC_PTHREADMUTEX=no
 			],
 			[
@@ -112,6 +112,92 @@ if test "$PHP_APC_PTHREADMUTEX" != "no"; then
 	)
 	LIBS="$orig_LIBS"
 fi
+
+AC_MSG_CHECKING(whether we should use pthread read/write locking)
+AC_ARG_ENABLE(apc-pthreadrwlocks,
+[  --enable-apc-pthreadrwlocks
+                          Enable pthread read/write locking ],
+[
+  PHP_APC_PTHREADRWLOCK=$enableval
+  AC_MSG_RESULT($enableval)
+],
+[
+  PHP_APC_PTHREADRWLOCK=no
+  AC_MSG_RESULT(no)
+])
+
+if test "$PHP_APC_PTHREADRWLOCK" != "no"; then
+	orig_LIBS="$LIBS"
+	LIBS="$LIBS -lpthread"
+	AC_TRY_RUN(
+			[
+				#include <sys/types.h>
+				#include <pthread.h>
+                                main() {
+				pthread_rwlock_t rwlock;
+				pthread_rwlockattr_t attr;	
+
+				if(pthread_rwlockattr_init(&attr)) { 
+					puts("Unable to initialize pthread attributes (pthread_rwlockattr_init).");
+					return -1; 
+				}
+				if(pthread_rwlockattr_setpshared(&attr, PTHREAD_PROCESS_SHARED)) { 
+					puts("Unable to set PTHREAD_PROCESS_SHARED (pthread_rwlockattr_setpshared), your system may not support shared rwlock's.");
+					return -1; 
+				}	
+				if(pthread_rwlock_init(&rwlock, &attr)) { 
+					puts("Unable to initialize the rwlock (pthread_rwlock_init).");
+					return -1; 
+				}
+				if(pthread_rwlockattr_destroy(&attr)) { 
+					puts("Unable to destroy rwlock attributes (pthread_rwlockattr_destroy).");
+					return -1; 
+				}
+				if(pthread_rwlock_destroy(&rwlock)) { 
+					puts("Unable to destroy rwlock (pthread_rwlock_destroy).");
+					return -1; 
+				}
+
+				puts("pthread rwlocks are supported!");
+				return 0;
+                                }
+			],
+			[ dnl -Success-
+				PHP_ADD_LIBRARY(pthread)
+			],
+			[ dnl -Failure-
+				AC_MSG_WARN([It doesn't appear that pthread rwlocks are supported on your system])
+  				PHP_APC_PTHREADRWLOCK=no
+			],
+			[
+				PHP_ADD_LIBRARY(pthread)
+			]
+	)
+	LIBS="$orig_LIBS"
+fi
+
+	AC_CACHE_CHECK([whether the target compiler supports builtin atomics], PHP_APC_GCC_ATOMICS, [
+
+			AC_TRY_LINK([],[
+					int foo = 0;
+					__sync_fetch_and_add(&foo, 1);
+					__sync_bool_compare_and_swap(&foo, 0, 1);
+					return __sync_fetch_and_add(&foo, 1);
+				],
+				[PHP_APC_GCC_ATOMICS=yes],
+				[PHP_APC_GCC_ATOMICS=no])
+		])
+
+	if test "x${PHP_APC_GCC_ATOMICS}" != "xno"; then
+			AC_DEFINE(HAVE_ATOMIC_OPERATIONS, 1,
+				[Define this if your target compiler supports builtin atomics])
+		else
+			if test "$PHP_APC_PTHREADRWLOCK" != "no"; then
+				AC_MSG_WARN([Disabling pthread rwlocks, because of missing atomic operations])
+				dnl - fall back would most likely be pthread mutexes 
+				PHP_APC_PTHREADRWLOCK=no
+			fi
+	fi
 
 AC_MSG_CHECKING(whether we should use spin locks)
 AC_ARG_ENABLE(apc-spinlocks,
@@ -125,6 +211,7 @@ AC_ARG_ENABLE(apc-spinlocks,
   PHP_APC_SPINLOCKS=no
   AC_MSG_RESULT(no)
 ])
+
 
 AC_MSG_CHECKING(whether we should enable memory protection)
 AC_ARG_ENABLE(apc-memprotect,
@@ -150,6 +237,8 @@ if test "$PHP_APC" != "no"; then
 		AC_DEFINE(APC_SEM_LOCKS, 1, [ ])
 	elif test "$PHP_APC_SPINLOCKS" != "no"; then
 		AC_DEFINE(APC_SPIN_LOCKS, 1, [ ]) 
+	elif test "$PHP_APC_PTHREADRWLOCK" != "no"; then
+		AC_DEFINE(APC_PTHREADRW_LOCKS, 1, [ ]) 
 	elif test "$PHP_APC_PTHREADMUTEX" != "no"; then 
 		AC_DEFINE(APC_PTHREADMUTEX_LOCKS, 1, [ ])
 	else 
@@ -225,6 +314,7 @@ if test "$PHP_APC" != "no"; then
                apc_sem.c \
                apc_shm.c \
                apc_pthreadmutex.c \
+               apc_pthreadrwlock.c \
                apc_spin.c \
                pgsql_s_lock.c \
                apc_sma.c \
@@ -243,4 +333,4 @@ if test "$PHP_APC" != "no"; then
   PHP_SUBST(APC_CFLAGS)
   AC_DEFINE(HAVE_APC, 1, [ ])
 fi
-
+dnl vim: set ts=2 

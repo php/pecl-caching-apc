@@ -35,6 +35,7 @@
 #include "apc_sem.h"
 #include "apc_fcntl.h"
 #include "apc_pthreadmutex.h"
+#include "apc_pthreadrwlock.h"
 #include "apc_spin.h"
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -47,6 +48,12 @@
 #define RDLOCK(lock)        { HANDLE_BLOCK_INTERRUPTIONS(); apc_lck_rdlock(lock); }
 #define UNLOCK(lock)        { apc_lck_unlock(lock); HANDLE_UNBLOCK_INTERRUPTIONS(); }
 /* }}} */
+
+/* atomic operations : rdlocks are impossible without these */
+#if HAVE_ATOMIC_OPERATIONS
+#define ATOMIC_INC(a) __sync_add_and_fetch(&a, 1)
+#define ATOMIC_DEC(a) __sync_sub_and_fetch(&a, 1)
+#endif
 
 #if defined(APC_SEM_LOCKS)
 #define APC_LOCK_TYPE "IPC Semaphore"
@@ -70,6 +77,17 @@
 #define apc_lck_nb_lock(a)    apc_pthreadmutex_nonblocking_lock(&a TSRMLS_CC)
 #define apc_lck_rdlock(a)     apc_pthreadmutex_lock(&a TSRMLS_CC)
 #define apc_lck_unlock(a)     apc_pthreadmutex_unlock(&a TSRMLS_CC)
+#elif defined(APC_PTHREADRW_LOCKS)
+#define APC_LOCK_TYPE "pthread upgrade/read/write Locks"
+#define RDLOCK_AVAILABLE 1
+#define NONBLOCKING_LOCK_AVAILABLE 1
+#define apc_lck_t pthread_rwlock_t 
+#define apc_lck_create(a,b,c,d) apc_pthreadrwlock_create((pthread_rwlock_t*)&d TSRMLS_CC)
+#define apc_lck_destroy(a)    apc_pthreadrwlock_destroy(&a)
+#define apc_lck_lock(a)       apc_pthreadrwlock_lock(&a TSRMLS_CC)
+#define apc_lck_nb_lock(a)    apc_pthreadrwlock_nonblocking_lock(&a TSRMLS_CC)
+#define apc_lck_rdlock(a)     apc_pthreadrwlock_rdlock(&a TSRMLS_CC)
+#define apc_lck_unlock(a)     apc_pthreadrwlock_unlock(&a TSRMLS_CC)
 #elif defined(APC_SPIN_LOCKS)
 #define APC_LOCK_TYPE "spin Locks"
 #define RDLOCK_AVAILABLE 0
