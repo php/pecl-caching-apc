@@ -325,6 +325,7 @@ static void apc_cache_expunge(apc_cache_t* cache, size_t size TSRMLS_DC)
          * we run out of space.
          */
         CACHE_SAFE_LOCK(cache);
+        process_pending_removals(cache TSRMLS_CC);
         if (apc_sma_get_avail_mem() > (size_t)(APCG(shm_size)/2)) {
             /* probably a queued up expunge, we don't need to do this */
             CACHE_SAFE_UNLOCK(cache);
@@ -355,6 +356,7 @@ clear_all:
          */
 
         CACHE_SAFE_LOCK(cache);
+        process_pending_removals(cache TSRMLS_CC);
         if (apc_sma_get_avail_mem() > (size_t)(APCG(shm_size)/2)) {
             /* probably a queued up expunge, we don't need to do this */
             CACHE_SAFE_UNLOCK(cache);
