@@ -164,6 +164,7 @@ if test "$PHP_APC_PTHREADRWLOCK" != "no"; then
 			],
 			[ dnl -Success-
 				PHP_ADD_LIBRARY(pthread)
+				APC_CFLAGS="-D_GNU_SOURCE"
 			],
 			[ dnl -Failure-
 				AC_MSG_WARN([It doesn't appear that pthread rwlocks are supported on your system])
