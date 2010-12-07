@@ -1162,7 +1162,7 @@ zval* apc_cache_info(apc_cache_t* cache, zend_bool limited TSRMLS_DC)
 
     if(!cache) return NULL;
 
-    CACHE_LOCK(cache);
+    CACHE_RDLOCK(cache);
 
     ALLOC_INIT_ZVAL(info);
 
