@@ -606,7 +606,7 @@ slot_t* apc_cache_find_slot(apc_cache_t* cache, apc_cache_key_t key, time_t t TS
         if(key.type == APC_CACHE_KEY_FILE) {
             if(key_equals((*slot)->key.data.file, key.data.file)) {
                 if((*slot)->key.mtime != key.mtime) {
-                    #if (RDLOCK_AVAILABLE == 1) && defined(HAVE_ATOMIC_OPERATIONS)
+                    #if (USE_READ_LOCKS == 0)
                     /* this is merely a memory-friendly optimization, if we do have a write-lock
                      * might as well move this to the deleted_list right-away. Otherwise an insert
                      * of the same key wil do it (or an expunge, *eventually*).
@@ -676,7 +676,7 @@ apc_cache_entry_t* apc_cache_user_find(apc_cache_t* cache, char *strkey, int key
         if (!memcmp((*slot)->key.data.user.identifier, strkey, keylen)) {
             /* Check to make sure this entry isn't expired by a hard TTL */
             if((*slot)->value->data.user.ttl && (time_t) ((*slot)->creation_time + (*slot)->value->data.user.ttl) < t) {
-                #if (RDLOCK_AVAILABLE == 1) && defined(HAVE_ATOMIC_OPERATIONS)
+                #if (USE_READ_LOCKS == 0) 
                 /* this is merely a memory-friendly optimization, if we do have a write-lock
                  * might as well move this to the deleted_list right-away. Otherwise an insert
                  * of the same key wil do it (or an expunge, *eventually*).
