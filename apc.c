@@ -280,6 +280,15 @@ static int apc_restat(apc_fileinfo_t *fileinfo TSRMLS_DC)
                 (filename[1] == '.' && \
                     IS_SLASH(filename[2])))))
     
+/* {{{ stupid stringifcation */
+#if DEFAULT_SLASH == '/'
+	#define DEFAULT_SLASH_STRING "/"
+#elif DEFAULT_SLASH == '\\'
+	#define DEFAULT_SLASH_STRING "\\"
+#else
+	#error "Unknown value for DEFAULT_SLASH"
+#endif
+/* }}} */
 
 int apc_search_paths(const char* filename, const char* path, apc_fileinfo_t* fileinfo TSRMLS_DC)
 {
@@ -328,7 +337,18 @@ int apc_search_paths(const char* filename, const char* path, apc_fileinfo_t* fil
                 break;
             }
         }
-    }
+    } else {
+		/* read cwd and try to fake up fullpath */
+		fileinfo->path_buf[0] = '\0';
+		if(VCWD_GETCWD(fileinfo->path_buf, sizeof(fileinfo->path_buf))) { 
+			strlcat(fileinfo->path_buf, DEFAULT_SLASH_STRING, sizeof(fileinfo->path_buf));
+			strlcat(fileinfo->path_buf, path_for_open, sizeof(fileinfo->path_buf));
+            if (APC_URL_STAT(wrapper, fileinfo->path_buf, &fileinfo->st_buf) == 0) {
+                fileinfo->fullpath = (char*) fileinfo->path_buf;
+				return apc_restat(fileinfo TSRMLS_CC);
+            }
+		}
+	}
 
     /* check in path of the calling scripts' current working directory */
     /* modified from main/streams/plain_wrapper.c */
