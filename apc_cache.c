@@ -1091,7 +1091,7 @@ apc_cache_entry_t* apc_cache_make_user_entry(const char* info, int info_len, con
 /* }}} */
 
 /* {{{ */
-static zval* apc_cache_link_info(apc_cache_t *cache, slot_t* p)
+static zval* apc_cache_link_info(apc_cache_t *cache, slot_t* p TSRMLS_DC)
 {
     zval *link = NULL;
     char md5str[33];
@@ -1207,7 +1207,7 @@ zval* apc_cache_info(apc_cache_t* cache, zend_bool limited TSRMLS_DC)
             p = cache->slots[i];
             j = 0;
             for (; p != NULL; p = p->next) {
-                zval *link = apc_cache_link_info(cache, p);
+                zval *link = apc_cache_link_info(cache, p TSRMLS_CC);
                 add_next_index_zval(list, link);
                 j++;
             }
@@ -1219,7 +1219,7 @@ zval* apc_cache_info(apc_cache_t* cache, zend_bool limited TSRMLS_DC)
         array_init(deleted_list);
 
         for (p = cache->header->deleted_list; p != NULL; p = p->next) {
-            zval *link = apc_cache_link_info(cache, p);
+            zval *link = apc_cache_link_info(cache, p TSRMLS_CC);
             add_next_index_zval(deleted_list, link);
         }
         
