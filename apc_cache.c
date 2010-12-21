@@ -185,7 +185,7 @@ static void process_pending_removals(apc_cache_t* cache TSRMLS_DC)
                             dead->value->data.file.filename, dead->key.data.file.device, dead->key.data.file.inode, gc_sec);
                         break;
                     case APC_CACHE_ENTRY_USER:
-                        apc_warning("GC cache entry '%s'was on gc-list for %d seconds" TSRMLS_CC, dead->value->data.user.info, gc_sec);
+                        apc_warning("GC cache entry '%s' was on gc-list for %d seconds" TSRMLS_CC, dead->value->data.user.info, gc_sec);
                         break;
                 }
             }
