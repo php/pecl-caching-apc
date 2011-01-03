@@ -23,10 +23,13 @@ Windows
 
 1.   The following configurations (build arguments) have not been implemented yet
 
-          (*) --enable-apc-mmap         Memory mapping support
-          (*) --enable-apc-sem          Semaphore locking support (FCNTL replacement)
-          (*) --enable-apc-phreadmutex	Thread mutexes, while implemented we should probably rename the internals to thread
+          (*) --enable-apc-mmap         	Memory mapping support
+          (*) --enable-apc-sem         		Semaphore locking support (FCNTL replacement)
+          (*) --enable-apc-phreadmutex		Thread mutexes, while implemented we should probably rename the internals to thread
+	  (*) --enable-apc-pthreadrwlocks	Thread mutexes, read/write locking
 
 2.   Non-blocking locks is not supported either
 
 3.   Update fileinfo to support stat info in a more portable way (see PECL #17903)
+
+4.   Check whether the signal handling needs to be enabled, and if it makes sense on Windows

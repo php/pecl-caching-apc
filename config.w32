@@ -1,7 +1,6 @@
 // $Id$
 // vim:ft=javascript
 
-
 ARG_ENABLE('apc', 'Whether to enable APC support', 'no');
 ARG_ENABLE('apc-debug', 'Whether to enable APC debugging', 'no');
 ARG_ENABLE('apc-filehits', 'Whether to enable cache request file info', 'no');
