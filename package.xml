@@ -112,6 +112,8 @@
     <file role="php" name="apc_php_pcre.h" />
     <file role="src" name="apc_pthreadmutex.c" />
     <file role="src" name="apc_pthreadmutex.h" />
+    <file role="src" name="apc_pthreadrwlock.c" />
+    <file role="src" name="apc_pthreadrwlock.h" />
     <file role="src" name="apc_sem.c" />
     <file role="src" name="apc_sem.h" />
     <file role="src" name="apc_shm.c" />
