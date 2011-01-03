@@ -36,6 +36,7 @@
 #include "apc_globals.h"
 #include "SAPI.h"
 #include "TSRM.h"
+#include "ext/standard/md5.h"
 
 /* TODO: rehash when load factor exceeds threshold */
 

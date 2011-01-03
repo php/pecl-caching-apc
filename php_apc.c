@@ -393,8 +393,7 @@ PHP_FUNCTION(apc_cache_info)
     zval* info;
     char *cache_type;
     int ct_len;
-    zend_bool limited=0;
-    char md5str[33];
+    zend_bool limited = 0;
 
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|sb", &cache_type, &ct_len, &limited) == FAILURE) {
         return;

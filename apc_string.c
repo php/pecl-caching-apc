@@ -48,11 +48,11 @@ apc_interned_strings_data_t *apc_interned_strings_data = NULL;
 
 static char *old_interned_strings_start;
 static char *old_interned_strings_end;
-static char *(*old_new_interned_string)(char *str, int len, int free_src TSRMLS_DC);
+static const char *(*old_new_interned_string)(const char *str, int len, int free_src TSRMLS_DC);
 static void (*old_interned_strings_snapshot)(TSRMLS_D);
 static void (*old_interned_strings_restore)(TSRMLS_D);
 
-static char *apc_dummy_new_interned_string_for_php(char *str, int len, int free_src TSRMLS_DC)
+static const char *apc_dummy_new_interned_string_for_php(const char *str, int len, int free_src TSRMLS_DC)
 {
     return str;
 }
