@@ -456,6 +456,7 @@ zend_bool apc_compile_cache_entry(apc_cache_key_t key, zend_file_handle* h, int 
     }
 
     path = h->opened_path;
+    if(!path && key.type == APC_CACHE_KEY_FPFILE) path = (char*)key.data.fpfile.fullpath;
     if(!path) path=h->filename;
 
     apc_debug("2. h->opened_path=[%s]  h->filename=[%s]\n" TSRMLS_CC, h->opened_path?h->opened_path:"null",h->filename);
