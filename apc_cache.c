@@ -754,6 +754,11 @@ int _apc_cache_user_update(apc_cache_t* cache, char *strkey, int keylen, apc_cac
         return 0;
     }
 
+    if(APCG(serializer)) {
+        /* serialized data cannot be updated in-place */
+        return 0;
+    }
+
     CACHE_LOCK(cache);
 
     slot = &cache->slots[string_nhash_8(strkey, keylen) % cache->num_slots];

@@ -100,6 +100,40 @@ static int my_check_copy_constant(Bucket* src, va_list args);
 
 /* }}} */
 
+/* {{{ apc php serializers */
+int apc_php_serialize(unsigned char **buf, size_t *buf_len, const zval *value TSRMLS_DC)
+{
+    smart_str strbuf = {0};
+    php_serialize_data_t var_hash;
+    PHP_VAR_SERIALIZE_INIT(var_hash);
+    php_var_serialize(&strbuf, (zval**)&value, &var_hash TSRMLS_CC);
+    PHP_VAR_SERIALIZE_DESTROY(var_hash);
+    if(strbuf.c) {
+        *buf = strbuf.c;
+        *buf_len = strbuf.len;
+        smart_str_0(&strbuf);
+        return 1; 
+    }
+    return 0;
+}
+
+int apc_php_unserialize(zval **value, unsigned char *buf, size_t buf_len TSRMLS_DC)
+{
+    const unsigned char *tmp = buf;
+    php_unserialize_data_t var_hash;
+    PHP_VAR_UNSERIALIZE_INIT(var_hash);
+    if(!php_var_unserialize(value, &tmp, buf + buf_len, &var_hash TSRMLS_CC)) {
+        PHP_VAR_UNSERIALIZE_DESTROY(var_hash);
+        zval_dtor(*value);
+        php_error_docref(NULL TSRMLS_CC, E_NOTICE, "Error at offset %ld of %ld bytes", (long)(tmp - buf), (long)buf_len);
+        (*value)->type = IS_NULL;
+        return 0;
+    }
+    PHP_VAR_UNSERIALIZE_DESTROY(var_hash);
+    return 1;
+}
+/* }}} */
+
 /* {{{ check_op_array_integrity */
 #if 0
 static void check_op_array_integrity(zend_op_array* src)
@@ -198,20 +232,20 @@ static zval** my_copy_zval_ptr(zval** dst, const zval** src, apc_context_t* ctxt
 static zval* my_serialize_object(zval* dst, const zval* src, apc_context_t* ctxt TSRMLS_DC)
 {
     smart_str buf = {0};
-    php_serialize_data_t var_hash;
     apc_pool* pool = ctxt->pool;
+    apc_serialize_t serialize = apc_php_serialize;
 
-    PHP_VAR_SERIALIZE_INIT(var_hash);
-    php_var_serialize(&buf, (zval**)&src, &var_hash TSRMLS_CC);
-    PHP_VAR_SERIALIZE_DESTROY(var_hash);
+    if(APCG(serializer)) { /* TODO: move to ctxt */
+        serialize = APCG(serializer)->serialize;
+    }
 
-    if(buf.c) {
+    if(serialize((unsigned char**)&buf.c, &buf.len, src)) {
         dst->type = src->type & ~IS_CONSTANT_INDEX;
         dst->value.str.len = buf.len;
         CHECK(dst->value.str.val = apc_pmemcpy(buf.c, (buf.len + 1), pool TSRMLS_CC));
-        dst->type = src->type;
-        smart_str_free(&buf);
     }
+
+    if(buf.c) smart_str_free(&buf);
 
     return dst;
 }
@@ -220,17 +254,21 @@ static zval* my_serialize_object(zval* dst, const zval* src, apc_context_t* ctxt
 /* {{{ my_unserialize_object */
 static zval* my_unserialize_object(zval* dst, const zval* src, apc_context_t* ctxt TSRMLS_DC)
 {
-    php_unserialize_data_t var_hash;
-    const unsigned char *p = (unsigned char*)Z_STRVAL_P(src);
+    smart_str buf = {0};
+    apc_pool* pool = ctxt->pool;
+    apc_unserialize_t unserialize = apc_php_unserialize;
+    unsigned char *p = (unsigned char*)Z_STRVAL_P(src);
 
-    PHP_VAR_UNSERIALIZE_INIT(var_hash);
-    if(!php_var_unserialize(&dst, &p, p + Z_STRLEN_P(src), &var_hash TSRMLS_CC)) {
-        PHP_VAR_UNSERIALIZE_DESTROY(var_hash);
+    if(APCG(serializer)) { /* TODO: move to ctxt */
+        unserialize = APCG(serializer)->unserialize;
+    }
+
+    if(unserialize(&dst, p, Z_STRLEN_P(src) TSRMLS_CC)) {
+        return dst;
+    } else {
         zval_dtor(dst);
-        php_error_docref(NULL TSRMLS_CC, E_NOTICE, "Error at offset %ld of %d bytes", (long)((char*)p - Z_STRVAL_P(src)), Z_STRLEN_P(src));
         dst->type = IS_NULL;
     }
-    PHP_VAR_UNSERIALIZE_DESTROY(var_hash);
     return dst;
 }
 /* }}} */
@@ -302,14 +340,19 @@ static zval* my_copy_zval(zval* dst, const zval* src, apc_context_t* ctxt TSRMLS
 
     case IS_ARRAY:
     case IS_CONSTANT_ARRAY:
+        if(APCG(serializer) == NULL ||
+            ctxt->copy == APC_COPY_IN_OPCODE || ctxt->copy == APC_COPY_OUT_OPCODE) {
 
-        CHECK(dst->value.ht =
-            my_copy_hashtable(NULL,
-                              src->value.ht,
-                              (ht_copy_fun_t) my_copy_zval_ptr,
-                              1,
-                              ctxt));
-        break;
+            CHECK(dst->value.ht =
+                my_copy_hashtable(NULL,
+                                  src->value.ht,
+                                  (ht_copy_fun_t) my_copy_zval_ptr,
+                                  1,
+                                  ctxt));
+            break;
+        } else {
+            /* fall through to object case */
+        }
 
     case IS_OBJECT:
     

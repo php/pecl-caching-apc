@@ -47,11 +47,14 @@
 #include "ext/standard/php_var.h"
 #include "ext/standard/md5.h"
 
+#define APC_MAX_SERIALIZERS 16
+
 /* {{{ module variables */
 
 /* pointer to the original Zend engine compile_file function */
 typedef zend_op_array* (zend_compile_t)(zend_file_handle*, int TSRMLS_DC);
 static zend_compile_t *old_compile_file;
+static apc_serializer_t apc_serializers[APC_MAX_SERIALIZERS] = {0,};
 
 /* }}} */
 
@@ -749,6 +752,43 @@ void apc_data_preload(TSRMLS_D)
 }
 /* }}} */
 
+/* {{{ apc_serializer hooks */
+static int apc_register_serializer(const char* name, apc_serialize_t serialize, 
+                                    apc_unserialize_t unserialize TSRMLS_DC)
+{
+    int i;
+    apc_serializer_t *serializer;
+
+    for(i = 0; i < APC_MAX_SERIALIZERS; i++) {
+        serializer = &apc_serializers[i];
+        if(!serializer->name) {
+            /* empty entry */
+            serializer->name = name; /* assumed to be const */
+            serializer->serialize = serialize;
+            serializer->unserialize = unserialize;
+            apc_serializers[i+1].name = NULL;
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+static apc_serializer_t* apc_find_serializer(const char* name TSRMLS_DC)
+{
+    int i;
+    apc_serializer_t *serializer;
+
+    for(i = 0; i < APC_MAX_SERIALIZERS; i++) {
+        serializer = &apc_serializers[i];
+        if(serializer->name && (strcmp(serializer->name, name) == 0)) {
+            return serializer;
+        }
+    }
+    return NULL;
+}
+/* }}} */
+
 /* {{{ module init and shutdown */
 
 int apc_module_init(int module_number TSRMLS_DC)
@@ -767,6 +807,9 @@ int apc_module_init(int module_number TSRMLS_DC)
     zend_compile_file = my_compile_file;
     REGISTER_LONG_CONSTANT("\000apc_magic", (long)&set_compile_hook, CONST_PERSISTENT | CONST_CS);
     REGISTER_LONG_CONSTANT("\000apc_compile_file", (long)&my_compile_file, CONST_PERSISTENT | CONST_CS);
+    REGISTER_LONG_CONSTANT("\000apc_register_serializer", (long)&apc_register_serializer, CONST_PERSISTENT | CONST_CS);
+
+    apc_register_serializer("php", apc_php_serialize, apc_php_unserialize TSRMLS_CC);
 
     apc_pool_init();
 
@@ -913,6 +956,11 @@ int apc_request_init(TSRMLS_D)
         /* compile regex filters here to avoid race condition between MINIT of PCRE and APC.
          * This should be moved to apc_cache_create() if this race condition between modules is resolved */
         APCG(compiled_filters) = apc_regex_compile_array(APCG(filters) TSRMLS_CC);
+    }
+
+    if (!APCG(serializer) && APCG(serializer_name)) {
+        /* Avoid race conditions between MINIT of apc and serializer exts like igbinary */
+        APCG(serializer) = apc_find_serializer(APCG(serializer_name));
     }
 
 #if APC_HAVE_LOOKUP_HOOKS
