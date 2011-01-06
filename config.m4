@@ -332,6 +332,7 @@ if test "$PHP_APC" != "no"; then
   PHP_NEW_EXTENSION(apc, $apc_sources, $ext_shared,, \\$(APC_CFLAGS))
   PHP_SUBST(APC_SHARED_LIBADD)
   PHP_SUBST(APC_CFLAGS)
+  PHP_INSTALL_HEADERS(ext/apc, [apc_serializer.h])
   AC_DEFINE(HAVE_APC, 1, [ ])
 fi
 dnl vim: set ts=2 

@@ -37,6 +37,7 @@
 #include "apc_cache.h"
 #include "apc_stack.h"
 #include "apc_php.h"
+#include "apc_serializer.h"
 
 /* {{{ struct apc_rfc1867_data */
 
@@ -60,10 +61,6 @@ struct _apc_rfc1867_data {
 /* }}} */
 
 /* {{{ struct apc_serializer_t */
-
-typedef int (*apc_serialize_t)(unsigned char **buf, size_t *buf_len, const zval *value, void *config TSRMLS_DC);
-typedef int (*apc_unserialize_t)(zval **value, unsigned char *buf, size_t buf_len, void *config TSRMLS_DC);
-
 typedef struct apc_serializer_t apc_serializer_t;
 struct apc_serializer_t {
     const char *name;

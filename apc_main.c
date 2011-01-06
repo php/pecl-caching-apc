@@ -753,7 +753,7 @@ void apc_data_preload(TSRMLS_D)
 /* }}} */
 
 /* {{{ apc_serializer hooks */
-static int apc_register_serializer(const char* name, apc_serialize_t serialize, 
+static int _apc_register_serializer(const char* name, apc_serialize_t serialize, 
                                     apc_unserialize_t unserialize,
                                     void *config TSRMLS_DC)
 {
@@ -809,9 +809,12 @@ int apc_module_init(int module_number TSRMLS_DC)
     zend_compile_file = my_compile_file;
     REGISTER_LONG_CONSTANT("\000apc_magic", (long)&set_compile_hook, CONST_PERSISTENT | CONST_CS);
     REGISTER_LONG_CONSTANT("\000apc_compile_file", (long)&my_compile_file, CONST_PERSISTENT | CONST_CS);
-    REGISTER_LONG_CONSTANT("\000apc_register_serializer", (long)&apc_register_serializer, CONST_PERSISTENT | CONST_CS);
+    REGISTER_LONG_CONSTANT("\000apc_register_serializer", (long)&_apc_register_serializer, CONST_PERSISTENT | CONST_CS);
 
-    apc_register_serializer("php", apc_php_serialize, apc_php_unserialize, NULL TSRMLS_CC);
+    /* test out the constant function pointer */
+    apc_register_serializer("php", APC_SERIALIZER_NAME(php), APC_UNSERIALIZER_NAME(php), NULL TSRMLS_CC);
+
+    assert(apc_serializers[0].name != NULL);
 
     apc_pool_init();
 

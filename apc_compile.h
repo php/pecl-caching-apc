@@ -41,6 +41,7 @@
 #include "apc.h"
 #include "apc_php.h"
 #include "apc_main.h"
+#include "apc_serializer.h"
 
 /* {{{ struct definition: apc_function_t */
 typedef struct apc_function_t apc_function_t;
@@ -137,9 +138,8 @@ void apc_do_halt_compiler_register(const char *filename, long halt_offset TSRMLS
 /*
  * apc serialization functions
  */
-int apc_php_serialize(unsigned char **buf, size_t *buf_len, const zval *value, void *config TSRMLS_DC);
-int apc_php_unserialize(zval **value, unsigned char *buf, size_t buf_len, void *config TSRMLS_DC);
-
+int APC_SERIALIZER_NAME(php) (APC_SERIALIZER_ARGS);
+int APC_UNSERIALIZER_NAME(php) (APC_UNSERIALIZER_ARGS); 
 #endif
 
 /*

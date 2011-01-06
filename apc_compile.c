@@ -101,8 +101,7 @@ static int my_check_copy_constant(Bucket* src, va_list args);
 /* }}} */
 
 /* {{{ apc php serializers */
-int apc_php_serialize(unsigned char **buf, size_t *buf_len, 
-                        const zval *value, void *config TSRMLS_DC)
+int APC_SERIALIZER_NAME(php) (APC_SERIALIZER_ARGS) 
 {
     smart_str strbuf = {0};
     php_serialize_data_t var_hash;
@@ -118,8 +117,7 @@ int apc_php_serialize(unsigned char **buf, size_t *buf_len,
     return 0;
 }
 
-int apc_php_unserialize(zval **value, unsigned char *buf, 
-                        size_t buf_len, void *config TSRMLS_DC)
+int APC_UNSERIALIZER_NAME(php) (APC_UNSERIALIZER_ARGS) 
 {
     const unsigned char *tmp = buf;
     php_unserialize_data_t var_hash;
@@ -235,7 +233,7 @@ static zval* my_serialize_object(zval* dst, const zval* src, apc_context_t* ctxt
 {
     smart_str buf = {0};
     apc_pool* pool = ctxt->pool;
-    apc_serialize_t serialize = apc_php_serialize;
+    apc_serialize_t serialize = APC_SERIALIZER_NAME(php);
     void *config = NULL;
 
     if(APCG(serializer)) { /* TODO: move to ctxt */
@@ -260,7 +258,7 @@ static zval* my_unserialize_object(zval* dst, const zval* src, apc_context_t* ct
 {
     smart_str buf = {0};
     apc_pool* pool = ctxt->pool;
-    apc_unserialize_t unserialize = apc_php_unserialize;
+    apc_unserialize_t unserialize = APC_UNSERIALIZER_NAME(php);
     unsigned char *p = (unsigned char*)Z_STRVAL_P(src);
     void *config = NULL;
 
