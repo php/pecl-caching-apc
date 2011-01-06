@@ -960,7 +960,7 @@ int apc_request_init(TSRMLS_D)
 
     if (!APCG(serializer) && APCG(serializer_name)) {
         /* Avoid race conditions between MINIT of apc and serializer exts like igbinary */
-        APCG(serializer) = apc_find_serializer(APCG(serializer_name));
+        APCG(serializer) = apc_find_serializer(APCG(serializer_name) TSRMLS_CC);
     }
 
 #if APC_HAVE_LOOKUP_HOOKS

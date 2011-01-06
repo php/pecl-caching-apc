@@ -239,7 +239,7 @@ static zval* my_serialize_object(zval* dst, const zval* src, apc_context_t* ctxt
         serialize = APCG(serializer)->serialize;
     }
 
-    if(serialize((unsigned char**)&buf.c, &buf.len, src)) {
+    if(serialize((unsigned char**)&buf.c, &buf.len, src TSRMLS_CC)) {
         dst->type = src->type & ~IS_CONSTANT_INDEX;
         dst->value.str.len = buf.len;
         CHECK(dst->value.str.val = apc_pmemcpy(buf.c, (buf.len + 1), pool TSRMLS_CC));
