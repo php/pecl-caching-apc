@@ -754,19 +754,32 @@ int _apc_cache_user_update(apc_cache_t* cache, char *strkey, int keylen, apc_cac
         return 0;
     }
 
-    if(APCG(serializer)) {
-        /* serialized data cannot be updated in-place */
-        return 0;
-    }
-
     CACHE_LOCK(cache);
 
     slot = &cache->slots[string_nhash_8(strkey, keylen) % cache->num_slots];
 
     while (*slot) {
         if (!memcmp((*slot)->key.data.user.identifier, strkey, keylen)) {
-            retval = updater(cache, (*slot)->value, data);
-            (*slot)->key.mtime = apc_time();
+            switch(Z_TYPE_P((*slot)->value) & ~IS_CONSTANT_INDEX) {
+                case IS_ARRAY:
+                case IS_CONSTANT_ARRAY:
+                case IS_OBJECT:
+                {
+                    if(APCG(serializer)) {
+                        retval = 0;
+                        break;
+                    } else {
+                        /* fall through */
+                    }
+                }
+                /* fall through */
+                default:
+                {
+                    retval = updater(cache, (*slot)->value, data);
+                    (*slot)->key.mtime = apc_time();
+                }
+                break;
+            }
             CACHE_UNLOCK(cache);
             return retval;
         }
