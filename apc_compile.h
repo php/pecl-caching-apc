@@ -137,8 +137,8 @@ void apc_do_halt_compiler_register(const char *filename, long halt_offset TSRMLS
 /*
  * apc serialization functions
  */
-int apc_php_serialize(unsigned char **buf, size_t *buf_len, const zval *value TSRMLS_DC);
-int apc_php_unserialize(zval **value, unsigned char *buf, size_t buf_len TSRMLS_DC);
+int apc_php_serialize(unsigned char **buf, size_t *buf_len, const zval *value, void *config TSRMLS_DC);
+int apc_php_unserialize(zval **value, unsigned char *buf, size_t buf_len, void *config TSRMLS_DC);
 
 #endif
 

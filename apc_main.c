@@ -754,7 +754,8 @@ void apc_data_preload(TSRMLS_D)
 
 /* {{{ apc_serializer hooks */
 static int apc_register_serializer(const char* name, apc_serialize_t serialize, 
-                                    apc_unserialize_t unserialize TSRMLS_DC)
+                                    apc_unserialize_t unserialize,
+                                    void *config TSRMLS_DC)
 {
     int i;
     apc_serializer_t *serializer;
@@ -766,6 +767,7 @@ static int apc_register_serializer(const char* name, apc_serialize_t serialize,
             serializer->name = name; /* assumed to be const */
             serializer->serialize = serialize;
             serializer->unserialize = unserialize;
+            serializer->config = config;
             apc_serializers[i+1].name = NULL;
             return 1;
         }
@@ -809,7 +811,7 @@ int apc_module_init(int module_number TSRMLS_DC)
     REGISTER_LONG_CONSTANT("\000apc_compile_file", (long)&my_compile_file, CONST_PERSISTENT | CONST_CS);
     REGISTER_LONG_CONSTANT("\000apc_register_serializer", (long)&apc_register_serializer, CONST_PERSISTENT | CONST_CS);
 
-    apc_register_serializer("php", apc_php_serialize, apc_php_unserialize TSRMLS_CC);
+    apc_register_serializer("php", apc_php_serialize, apc_php_unserialize, NULL TSRMLS_CC);
 
     apc_pool_init();
 
