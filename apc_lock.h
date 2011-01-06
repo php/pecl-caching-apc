@@ -38,7 +38,7 @@
 #include "apc_pthreadrwlock.h"
 #include "apc_spin.h"
 #ifdef HAVE_CONFIG_H
-#include <config.h>
+# include <config.h>
 #endif
 
 /* {{{ generic locking macros */
@@ -51,69 +51,69 @@
 
 /* atomic operations : rdlocks are impossible without these */
 #if HAVE_ATOMIC_OPERATIONS
-#define ATOMIC_INC(a) __sync_add_and_fetch(&a, 1)
-#define ATOMIC_DEC(a) __sync_sub_and_fetch(&a, 1)
+# define ATOMIC_INC(a) __sync_add_and_fetch(&a, 1)
+# define ATOMIC_DEC(a) __sync_sub_and_fetch(&a, 1)
 #endif
 
 #if defined(APC_SEM_LOCKS)
-#define APC_LOCK_TYPE "IPC Semaphore"
-#define RDLOCK_AVAILABLE 0
-#define NONBLOCKING_LOCK_AVAILABLE 1 
-#define apc_lck_t int
-#define apc_lck_create(a,b,c,d) d=apc_sem_create((b),(c) TSRMLS_CC)
-#define apc_lck_destroy(a)    apc_sem_destroy(a)
-#define apc_lck_lock(a)       apc_sem_lock(a TSRMLS_CC)
-#define apc_lck_nb_lock(a)    apc_sem_nonblocking_lock(a TSRMLS_CC)
-#define apc_lck_rdlock(a)     apc_sem_lock(a TSRMLS_CC)
-#define apc_lck_unlock(a)     apc_sem_unlock(a TSRMLS_CC)
+# define APC_LOCK_TYPE "IPC Semaphore"
+# define RDLOCK_AVAILABLE 0
+# define NONBLOCKING_LOCK_AVAILABLE 1 
+# define apc_lck_t int
+# define apc_lck_create(a,b,c,d) d=apc_sem_create((b),(c) TSRMLS_CC)
+# define apc_lck_destroy(a)    apc_sem_destroy(a)
+# define apc_lck_lock(a)       apc_sem_lock(a TSRMLS_CC)
+# define apc_lck_nb_lock(a)    apc_sem_nonblocking_lock(a TSRMLS_CC)
+# define apc_lck_rdlock(a)     apc_sem_lock(a TSRMLS_CC)
+# define apc_lck_unlock(a)     apc_sem_unlock(a TSRMLS_CC)
 #elif defined(APC_PTHREADMUTEX_LOCKS)
-#define APC_LOCK_TYPE "pthread mutex Locks"
-#define RDLOCK_AVAILABLE 0
-#define NONBLOCKING_LOCK_AVAILABLE 1
-#define apc_lck_t pthread_mutex_t 
-#define apc_lck_create(a,b,c,d) apc_pthreadmutex_create((pthread_mutex_t*)&d TSRMLS_CC)
-#define apc_lck_destroy(a)    apc_pthreadmutex_destroy(&a)
-#define apc_lck_lock(a)       apc_pthreadmutex_lock(&a TSRMLS_CC)
-#define apc_lck_nb_lock(a)    apc_pthreadmutex_nonblocking_lock(&a TSRMLS_CC)
-#define apc_lck_rdlock(a)     apc_pthreadmutex_lock(&a TSRMLS_CC)
-#define apc_lck_unlock(a)     apc_pthreadmutex_unlock(&a TSRMLS_CC)
+# define APC_LOCK_TYPE "pthread mutex Locks"
+# define RDLOCK_AVAILABLE 0
+# define NONBLOCKING_LOCK_AVAILABLE 1
+# define apc_lck_t pthread_mutex_t 
+# define apc_lck_create(a,b,c,d) apc_pthreadmutex_create((pthread_mutex_t*)&d TSRMLS_CC)
+# define apc_lck_destroy(a)    apc_pthreadmutex_destroy(&a)
+# define apc_lck_lock(a)       apc_pthreadmutex_lock(&a TSRMLS_CC)
+# define apc_lck_nb_lock(a)    apc_pthreadmutex_nonblocking_lock(&a TSRMLS_CC)
+# define apc_lck_rdlock(a)     apc_pthreadmutex_lock(&a TSRMLS_CC)
+# define apc_lck_unlock(a)     apc_pthreadmutex_unlock(&a TSRMLS_CC)
 #elif defined(APC_PTHREADRW_LOCKS)
-#define APC_LOCK_TYPE "pthread upgrade/read/write Locks"
-#define RDLOCK_AVAILABLE 1
-#define NONBLOCKING_LOCK_AVAILABLE 1
-#define apc_lck_t pthread_rwlock_t 
-#define apc_lck_create(a,b,c,d) apc_pthreadrwlock_create((pthread_rwlock_t*)&d TSRMLS_CC)
-#define apc_lck_destroy(a)    apc_pthreadrwlock_destroy(&a)
-#define apc_lck_lock(a)       apc_pthreadrwlock_lock(&a TSRMLS_CC)
-#define apc_lck_nb_lock(a)    apc_pthreadrwlock_nonblocking_lock(&a TSRMLS_CC)
-#define apc_lck_rdlock(a)     apc_pthreadrwlock_rdlock(&a TSRMLS_CC)
-#define apc_lck_unlock(a)     apc_pthreadrwlock_unlock(&a TSRMLS_CC)
+# define APC_LOCK_TYPE "pthread upgrade/read/write Locks"
+# define RDLOCK_AVAILABLE 1
+# define NONBLOCKING_LOCK_AVAILABLE 1
+# define apc_lck_t pthread_rwlock_t 
+# define apc_lck_create(a,b,c,d) apc_pthreadrwlock_create((pthread_rwlock_t*)&d TSRMLS_CC)
+# define apc_lck_destroy(a)    apc_pthreadrwlock_destroy(&a)
+# define apc_lck_lock(a)       apc_pthreadrwlock_lock(&a TSRMLS_CC)
+# define apc_lck_nb_lock(a)    apc_pthreadrwlock_nonblocking_lock(&a TSRMLS_CC)
+# define apc_lck_rdlock(a)     apc_pthreadrwlock_rdlock(&a TSRMLS_CC)
+# define apc_lck_unlock(a)     apc_pthreadrwlock_unlock(&a TSRMLS_CC)
 #elif defined(APC_SPIN_LOCKS)
-#define APC_LOCK_TYPE "spin Locks"
-#define RDLOCK_AVAILABLE 0
-#define NONBLOCKING_LOCK_AVAILABLE APC_SLOCK_NONBLOCKING_LOCK_AVAILABLE
-#define apc_lck_t slock_t 
-#define apc_lck_create(a,b,c,d) apc_slock_create((slock_t*)&(d))
-#define apc_lck_destroy(a)    apc_slock_destroy(&a)
-#define apc_lck_lock(a)       apc_slock_lock(&a TSRMLS_CC)
-#define apc_lck_nb_lock(a)    apc_slock_nonblocking_lock(&a)
-#define apc_lck_rdlock(a)     apc_slock_lock(&a TSRMLS_CC)
-#define apc_lck_unlock(a)     apc_slock_unlock(&a)
+# define APC_LOCK_TYPE "spin Locks"
+# define RDLOCK_AVAILABLE 0
+# define NONBLOCKING_LOCK_AVAILABLE APC_SLOCK_NONBLOCKING_LOCK_AVAILABLE
+# define apc_lck_t slock_t 
+# define apc_lck_create(a,b,c,d) apc_slock_create((slock_t*)&(d))
+# define apc_lck_destroy(a)    apc_slock_destroy(&a)
+# define apc_lck_lock(a)       apc_slock_lock(&a TSRMLS_CC)
+# define apc_lck_nb_lock(a)    apc_slock_nonblocking_lock(&a)
+# define apc_lck_rdlock(a)     apc_slock_lock(&a TSRMLS_CC)
+# define apc_lck_unlock(a)     apc_slock_unlock(&a)
 #else
-#define APC_LOCK_TYPE "File Locks"
-#define RDLOCK_AVAILABLE 1
-#ifdef PHP_WIN32
-#define NONBLOCKING_LOCK_AVAILABLE 0
-#else
-#define NONBLOCKING_LOCK_AVAILABLE 1
-#endif
-#define apc_lck_t int
-#define apc_lck_create(a,b,c,d) d=apc_fcntl_create((a) TSRMLS_CC)
-#define apc_lck_destroy(a)    apc_fcntl_destroy(a)
-#define apc_lck_lock(a)       apc_fcntl_lock(a TSRMLS_CC)
-#define apc_lck_nb_lock(a)    apc_fcntl_nonblocking_lock(a TSRMLS_CC)
-#define apc_lck_rdlock(a)     apc_fcntl_rdlock(a TSRMLS_CC)
-#define apc_lck_unlock(a)     apc_fcntl_unlock(a TSRMLS_CC)
+# define APC_LOCK_TYPE "File Locks"
+# define RDLOCK_AVAILABLE 1
+# ifdef PHP_WIN32
+#  define NONBLOCKING_LOCK_AVAILABLE 0
+# else
+#  define NONBLOCKING_LOCK_AVAILABLE 1
+# endif
+# define apc_lck_t int
+# define apc_lck_create(a,b,c,d) d=apc_fcntl_create((a) TSRMLS_CC)
+# define apc_lck_destroy(a)    apc_fcntl_destroy(a)
+# define apc_lck_lock(a)       apc_fcntl_lock(a TSRMLS_CC)
+# define apc_lck_nb_lock(a)    apc_fcntl_nonblocking_lock(a TSRMLS_CC)
+# define apc_lck_rdlock(a)     apc_fcntl_rdlock(a TSRMLS_CC)
+# define apc_lck_unlock(a)     apc_fcntl_unlock(a TSRMLS_CC)
 #endif
 
 #endif
