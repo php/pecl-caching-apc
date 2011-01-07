@@ -282,6 +282,10 @@ PHP_INI_END()
 /* {{{ PHP_MINFO_FUNCTION(apc) */
 static PHP_MINFO_FUNCTION(apc)
 {
+    apc_serializer_t *serializer = NULL;
+    smart_str names = {0,};
+    int i;
+
     php_info_print_table_start();
     php_info_print_table_header(2, "APC Support", APCG(enabled) ? "enabled" : "disabled");
     php_info_print_table_row(2, "Version", PHP_APC_VERSION);
@@ -297,6 +301,22 @@ static PHP_MINFO_FUNCTION(apc)
     php_info_print_table_row(2, "MMAP Support", "Disabled");
 #endif
     php_info_print_table_row(2, "Locking type", APC_LOCK_TYPE);
+
+    for( i = 0, serializer = apc_get_serializers(TSRMLS_C); 
+                serializer->name != NULL; 
+                serializer++, i++) {
+
+        if(i != 0) smart_str_appends(&names, ", ");
+        smart_str_appends(&names, serializer->name);
+    }
+
+    if(names.c) {
+        smart_str_0(&names);
+        php_info_print_table_row(2, "Serialization Support", names.c);
+    } else {
+        php_info_print_table_row(2, "Serialization Support", "broken");
+    }
+
     php_info_print_table_row(2, "Revision", "$Revision$");
     php_info_print_table_row(2, "Build Date", __DATE__ " " __TIME__);
     php_info_print_table_end();

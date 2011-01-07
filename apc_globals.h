@@ -37,7 +37,7 @@
 #include "apc_cache.h"
 #include "apc_stack.h"
 #include "apc_php.h"
-#include "apc_serializer.h"
+#include "apc_main.h"
 
 /* {{{ struct apc_rfc1867_data */
 
@@ -60,15 +60,6 @@ struct _apc_rfc1867_data {
 };
 /* }}} */
 
-/* {{{ struct apc_serializer_t */
-typedef struct apc_serializer_t apc_serializer_t;
-struct apc_serializer_t {
-    const char *name;
-    apc_serialize_t serialize;
-    apc_unserialize_t unserialize;
-    void *config;
-};
-/* }}} */
 
 ZEND_BEGIN_MODULE_GLOBALS(apc)
     /* configuration parameters */

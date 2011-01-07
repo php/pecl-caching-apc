@@ -35,6 +35,7 @@
 #define APC_MAIN_H
 
 #include "apc_pool.h"
+#include "apc_serializer.h"
 
 /*
  * This module provides the primary interface between PHP and APC.
@@ -61,6 +62,18 @@ typedef struct _apc_context_t
     apc_copy_type copy;
     unsigned int force_update:1;
 } apc_context_t;
+
+/* {{{ struct apc_serializer_t */
+typedef struct apc_serializer_t apc_serializer_t;
+struct apc_serializer_t {
+    const char *name;
+    apc_serialize_t serialize;
+    apc_unserialize_t unserialize;
+    void *config;
+};
+/* }}} */
+
+apc_serializer_t* apc_get_serializers(TSRMLS_D);
 
 #endif
 

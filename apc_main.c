@@ -789,6 +789,11 @@ static apc_serializer_t* apc_find_serializer(const char* name TSRMLS_DC)
     }
     return NULL;
 }
+
+apc_serializer_t* apc_get_serializers(TSRMLS_D)
+{
+    return &(apc_serializers[0]);
+}
 /* }}} */
 
 /* {{{ module init and shutdown */
