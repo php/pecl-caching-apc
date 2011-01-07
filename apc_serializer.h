@@ -36,7 +36,13 @@ typedef int (*apc_register_serializer_t)(const char* name,
                                         apc_serialize_t serialize, 
                                         apc_unserialize_t unserialize,
                                         void *config TSRMLS_DC);
- 
+
+/*
+ * ABI version for constant hooks. Increment this any time you make any changes 
+ * to any function in this file.
+ */
+#define APC_SERIALIZER_ABI "0"
+#define APC_SERIALIZER_CONSTANT "\000apc_register_serializer-" APC_SERIALIZER_ABI
 
 static int apc_register_serializer(const char* name, 
                                     apc_serialize_t serialize,
@@ -47,7 +53,7 @@ static int apc_register_serializer(const char* name,
     
     ALLOC_INIT_ZVAL(apc_magic_constant);
 
-    if (zend_get_constant("\000apc_register_serializer", sizeof("\000apc_register_serializer")-1, apc_magic_constant)) { 
+    if (zend_get_constant(APC_SERIALIZER_CONSTANT, sizeof(APC_SERIALIZER_CONSTANT)-1, apc_magic_constant)) { 
         if(apc_magic_constant) {
             apc_register_serializer_t register_func = (apc_register_serializer_t)(Z_LVAL_P(apc_magic_constant));
             if(register_func) {

@@ -809,7 +809,7 @@ int apc_module_init(int module_number TSRMLS_DC)
     zend_compile_file = my_compile_file;
     REGISTER_LONG_CONSTANT("\000apc_magic", (long)&set_compile_hook, CONST_PERSISTENT | CONST_CS);
     REGISTER_LONG_CONSTANT("\000apc_compile_file", (long)&my_compile_file, CONST_PERSISTENT | CONST_CS);
-    REGISTER_LONG_CONSTANT("\000apc_register_serializer", (long)&_apc_register_serializer, CONST_PERSISTENT | CONST_CS);
+    REGISTER_LONG_CONSTANT(APC_SERIALIZER_CONSTANT, (long)&_apc_register_serializer, CONST_PERSISTENT | CONST_CS);
 
     /* test out the constant function pointer */
     apc_register_serializer("php", APC_SERIALIZER_NAME(php), APC_UNSERIALIZER_NAME(php), NULL TSRMLS_CC);
