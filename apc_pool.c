@@ -464,14 +464,14 @@ void apc_pool_init()
 /* }}} */
 
 /* {{{ apc_pstrdup */
-void* apc_pstrdup(const char* s, apc_pool* pool TSRMLS_DC)
+void* APC_ALLOC apc_pstrdup(const char* s, apc_pool* pool TSRMLS_DC)
 {
     return s != NULL ? apc_pmemcpy(s, (strlen(s) + 1), pool TSRMLS_CC) : NULL;
 }
 /* }}} */
 
 /* {{{ apc_pmemcpy */
-void* apc_pmemcpy(const void* p, size_t n, apc_pool* pool TSRMLS_DC)
+void* APC_ALLOC apc_pmemcpy(const void* p, size_t n, apc_pool* pool TSRMLS_DC)
 {
     void* q;
 

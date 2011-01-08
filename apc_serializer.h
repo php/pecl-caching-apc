@@ -44,10 +44,12 @@ typedef int (*apc_register_serializer_t)(const char* name,
 #define APC_SERIALIZER_ABI "0"
 #define APC_SERIALIZER_CONSTANT "\000apc_register_serializer-" APC_SERIALIZER_ABI
 
-#if defined(__GNUC__)
-# define APC_UNUSED __attribute__((unused))
-#else 
+#if !defined(APC_UNUSED)
+# if defined(__GNUC__)
+#  define APC_UNUSED __attribute__((unused))
+# else 
 # define APC_UNUSED
+# endif
 #endif
 
 static APC_UNUSED int apc_register_serializer(const char* name, 

@@ -177,7 +177,7 @@ static void sma_debug_state(void* shmaddr, int canary_check, int verbose TSRMLS_
 #endif
 
 /* {{{ sma_allocate: tries to allocate at least size bytes in a segment */
-static size_t sma_allocate(sma_header_t* header, size_t size, size_t fragment, size_t *allocated)
+static APC_HOTSPOT size_t sma_allocate(sma_header_t* header, size_t size, size_t fragment, size_t *allocated)
 {
     void* shmaddr;          /* header of shared memory segment */
     block_t* prv;           /* block prior to working block */
@@ -274,7 +274,7 @@ static size_t sma_allocate(sma_header_t* header, size_t size, size_t fragment, s
 /* }}} */
 
 /* {{{ sma_deallocate: deallocates the block at the given offset */
-static size_t sma_deallocate(void* shmaddr, size_t offset)
+static APC_HOTSPOT size_t sma_deallocate(void* shmaddr, size_t offset)
 {
     sma_header_t* header;   /* header of shared memory segment */
     block_t* cur;       /* the new block to insert */

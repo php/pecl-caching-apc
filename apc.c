@@ -76,7 +76,7 @@ void apc_efree(void* p TSRMLS_DC)
     free(p);
 }
 
-char* apc_estrdup(const char* s TSRMLS_DC)
+char* APC_ALLOC apc_estrdup(const char* s TSRMLS_DC)
 {
     int len;
     char* dup;
@@ -94,12 +94,12 @@ char* apc_estrdup(const char* s TSRMLS_DC)
     return dup;
 }
 
-void* apc_xstrdup(const char* s, apc_malloc_t f TSRMLS_DC)
+void* APC_ALLOC apc_xstrdup(const char* s, apc_malloc_t f TSRMLS_DC)
 {
     return s != NULL ? apc_xmemcpy(s, strlen(s)+1, f TSRMLS_CC) : NULL;
 }
 
-void* apc_xmemcpy(const void* p, size_t n, apc_malloc_t f TSRMLS_DC)
+void* APC_ALLOC apc_xmemcpy(const void* p, size_t n, apc_malloc_t f TSRMLS_DC)
 {
     void* q;
 

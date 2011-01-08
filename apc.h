@@ -120,6 +120,8 @@ extern HashTable* apc_flip_hash(HashTable *hash);
 #else 
 # define APC_UNUSED
 # define APC_USED
+# define APC_ALLOC 
+# define APC_HOTSPOT 
 #endif
 
 #endif

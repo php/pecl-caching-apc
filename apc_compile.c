@@ -289,7 +289,7 @@ static char *apc_string_pmemcpy(char *str, size_t len, apc_pool* pool TSRMLS_DC)
 }
 
 /* {{{ my_copy_zval */
-static zval* my_copy_zval(zval* dst, const zval* src, apc_context_t* ctxt TSRMLS_DC)
+static APC_HOTSPOT zval* my_copy_zval(zval* dst, const zval* src, apc_context_t* ctxt TSRMLS_DC)
 {
     zval **tmp;
     apc_pool* pool = ctxt->pool;
@@ -832,7 +832,7 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
 /* }}} */
 
 /* {{{ my_copy_hashtable_ex */
-static HashTable* my_copy_hashtable_ex(HashTable* dst,
+static APC_HOTSPOT HashTable* my_copy_hashtable_ex(HashTable* dst,
                                     HashTable* src TSRMLS_DC,
                                     ht_copy_fun_t copy_fn,
                                     int holds_ptrs,
