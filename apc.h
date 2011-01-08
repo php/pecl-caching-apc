@@ -114,7 +114,9 @@ extern HashTable* apc_flip_hash(HashTable *hash);
 
 #if defined(__GNUC__)
 # define APC_UNUSED __attribute__((unused))
-# define APC_USED __attribute__((unused))
+# define APC_USED __attribute__((used))
+# define APC_ALLOC __attribute__((malloc))
+# define APC_HOTSPOT __attribute__((hot))
 #else 
 # define APC_UNUSED
 # define APC_USED
