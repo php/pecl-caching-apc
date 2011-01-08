@@ -67,7 +67,7 @@ void apc_shm_destroy(int shmid)
     shmctl(shmid, IPC_RMID, 0);
 }
 
-apc_segment_t apc_shm_attach(int shmid TSRMLS_DC)
+apc_segment_t apc_shm_attach(int shmid, size_t size TSRMLS_DC)
 {
     apc_segment_t segment; /* shm segment */
 
@@ -82,6 +82,8 @@ apc_segment_t apc_shm_attach(int shmid TSRMLS_DC)
     }
 
 #endif
+
+    segment.size = size;
 
     /*
      * We set the shmid for removal immediately after attaching to it. The

@@ -109,7 +109,7 @@ int APC_SERIALIZER_NAME(php) (APC_SERIALIZER_ARGS)
     php_var_serialize(&strbuf, (zval**)&value, &var_hash TSRMLS_CC);
     PHP_VAR_SERIALIZE_DESTROY(var_hash);
     if(strbuf.c) {
-        *buf = strbuf.c;
+        *buf = (unsigned char*)strbuf.c;
         *buf_len = strbuf.len;
         smart_str_0(&strbuf);
         return 1; 
@@ -256,8 +256,6 @@ static zval* my_serialize_object(zval* dst, const zval* src, apc_context_t* ctxt
 /* {{{ my_unserialize_object */
 static zval* my_unserialize_object(zval* dst, const zval* src, apc_context_t* ctxt TSRMLS_DC)
 {
-    smart_str buf = {0};
-    apc_pool* pool = ctxt->pool;
     apc_unserialize_t unserialize = APC_UNSERIALIZER_NAME(php);
     unsigned char *p = (unsigned char*)Z_STRVAL_P(src);
     void *config = NULL;

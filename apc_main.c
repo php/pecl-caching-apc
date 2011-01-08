@@ -54,7 +54,7 @@
 /* pointer to the original Zend engine compile_file function */
 typedef zend_op_array* (zend_compile_t)(zend_file_handle*, int TSRMLS_DC);
 static zend_compile_t *old_compile_file;
-static apc_serializer_t apc_serializers[APC_MAX_SERIALIZERS] = {0,};
+static apc_serializer_t apc_serializers[APC_MAX_SERIALIZERS] = {{0,}};
 
 /* }}} */
 

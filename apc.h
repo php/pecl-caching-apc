@@ -112,6 +112,14 @@ extern HashTable* apc_flip_hash(HashTable *hash);
 #define apc_time() \
     (APCG(use_request_time) ? (time_t) sapi_get_request_time(TSRMLS_C) : time(0));
 
+#if defined(__GNUC__)
+# define APC_UNUSED __attribute__((unused))
+# define APC_USED __attribute__((unused))
+#else 
+# define APC_UNUSED
+# define APC_USED
+#endif
+
 #endif
 
 /*

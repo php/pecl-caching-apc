@@ -303,8 +303,12 @@ found:
  * Checking integrity at runtime, does an
  * overwrite check only when the sizeinfo
  * is set.
+ *
+ * Marked as used in gcc, so that this function
+ * is accessible from gdb, eventhough it is never
+ * used in code in non-debug builds.
  */
-static int apc_realpool_check_integrity(apc_realpool *rpool) 
+static APC_USED int apc_realpool_check_integrity(apc_realpool *rpool) 
 {
     apc_pool *pool = &(rpool->parent); 
     pool_block *entry;
@@ -323,6 +327,7 @@ static int apc_realpool_check_integrity(apc_realpool *rpool)
 
     if(!APC_POOL_HAS_REDZONES(pool) ||
         !APC_POOL_HAS_SIZEINFO(pool)) {
+        (void)pool; /* remove unused warning */
         return 1;
     }
 
