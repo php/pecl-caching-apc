@@ -43,5 +43,7 @@ if(PHP_APC != 'no')
 
 	AC_DEFINE('HAVE_APC', 1);
 
+	PHP_INSTALL_HEADERS("ext/apc", "apc_serializer.h");
+
 	EXTENSION('apc', apc_sources);
 }
