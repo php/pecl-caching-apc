@@ -233,7 +233,7 @@ static int apc_iterator_search_match(apc_iterator_t *iterator, slot_t **slot) {
     char *key;
     int key_len;
     char *fname_key = NULL;
-    int fname_key_len;
+    int fname_key_len = 0;
     int rval = 1;
 
     if ((*slot)->key.type == APC_CACHE_KEY_FILE) {
@@ -246,6 +246,8 @@ static int apc_iterator_search_match(apc_iterator_t *iterator, slot_t **slot) {
     } else if ((*slot)->key.type == APC_CACHE_KEY_FPFILE) {
         key = (char*)(*slot)->key.data.fpfile.fullpath;
         key_len = (*slot)->key.data.fpfile.fullpath_len;
+    } else {
+        return 0;
     }
 
 #ifdef ITERATOR_PCRE
