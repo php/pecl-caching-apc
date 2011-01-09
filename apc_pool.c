@@ -168,6 +168,8 @@ struct _apc_realpool
     size_t     dsize;
     void       *owner;
 
+    unsigned long count;
+
     pool_block *head;
     pool_block first; 
 };
@@ -222,6 +224,8 @@ static pool_block* create_pool_block(apc_realpool *rpool, size_t size TSRMLS_DC)
     
     rpool->parent.size += realsize;
 
+    rpool->count++;
+
     return entry;
 }
 /* }}} */
@@ -237,6 +241,7 @@ static void* apc_realpool_alloc(apc_pool *pool, size_t size TSRMLS_DC)
     size_t redsize  = 0;
     size_t *sizeinfo= NULL;
     pool_block *entry = NULL;
+    unsigned long i;
     
     if(APC_POOL_HAS_REDZONES(pool)) {
         redsize = REDZONE_SIZE(size); /* redsize might be re-using word size padding */
@@ -249,8 +254,16 @@ static void* apc_realpool_alloc(apc_pool *pool, size_t size TSRMLS_DC)
         realsize += ALIGNWORD(sizeof(size_t));
     }
 
+    /* upgrade the pool type to reduce overhead */
+    if(rpool->count > 4) {
+        rpool->dsize = 4096;
+    } else if(rpool->count > 8) {
+        rpool->dsize = 8192;
+    }
 
-    for(entry = rpool->head; entry != NULL; entry = entry->next) {
+    /* minimize look-back, a value of 8 seems to give similar fill-ratios (+2%)
+     * as looping through the entire list. And much faster in allocations. */
+    for(entry = rpool->head, i = 0; entry != NULL && (i < 8); entry = entry->next, i++) {
         if(entry->avail >= realsize) {
             goto found;
         }
@@ -442,6 +455,7 @@ static apc_pool* apc_realpool_create(apc_pool_type type, apc_malloc_t allocate, 
 
     rpool->dsize = dsize;
     rpool->head = NULL;
+    rpool->count = 0;
 
     INIT_POOL_BLOCK(rpool, &(rpool->first), dsize);
 
