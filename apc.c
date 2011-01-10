@@ -55,6 +55,7 @@ void* apc_emalloc(size_t n TSRMLS_DC)
     void* p = malloc(n);
     if (p == NULL) {
         apc_error("apc_emalloc: malloc failed to allocate %u bytes:" TSRMLS_CC, n);
+        return NULL;
     }
     return p;
 }
@@ -64,6 +65,7 @@ void* apc_erealloc(void* p, size_t n TSRMLS_DC)
     p = realloc(p, n);
     if (p == NULL) {
         apc_error("apc_erealloc: realloc failed to allocate %u bytes:" TSRMLS_CC, n);
+        return NULL;
     }
     return p;
 }
@@ -72,6 +74,7 @@ void apc_efree(void* p TSRMLS_DC)
 {
     if (p == NULL) {
         apc_error("apc_efree: attempt to free null pointer" TSRMLS_CC);
+        return;
     }
     free(p);
 }
@@ -88,6 +91,7 @@ char* APC_ALLOC apc_estrdup(const char* s TSRMLS_DC)
     dup = (char*) malloc(len+1);
     if (dup == NULL) {
         apc_error("apc_estrdup: malloc failed to allocate %u bytes:" TSRMLS_CC, len+1);
+        return NULL;
     }
     memcpy(dup, s, len);
     dup[len] = '\0';

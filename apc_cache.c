@@ -243,6 +243,7 @@ apc_cache_t* apc_cache_create(int size_hint, int gc_ttl, int ttl TSRMLS_DC)
     cache->shmaddr = apc_sma_malloc(cache_size TSRMLS_CC);
     if(!cache->shmaddr) {
         apc_error("Unable to allocate shared memory for cache structures.  (Perhaps your shared memory size isn't large enough?). " TSRMLS_CC);
+        return NULL;
     }
     memset(cache->shmaddr, 0, cache_size);
 

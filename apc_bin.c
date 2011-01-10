@@ -51,6 +51,7 @@ extern int _apc_store(char *strkey, int strkey_len, const zval *val, const uint 
             printf("%x in %s on line %d", ptr, __FILE__, __LINE__); \
         } else if((long)ptr > bd->size) { /* not swizzled */ \
             apc_error("pointer to be swizzled is not within allowed memory range! (%x < %x < %x) in %s on %d" TSRMLS_CC, (long)bd, ptr, ((long)bd + bd->size), __FILE__, __LINE__); \
+            return; \
         } \
         printf("\n"); \
     } while(0);
@@ -70,6 +71,7 @@ extern int _apc_store(char *strkey, int strkey_len, const zval *val, const uint 
             ptr = (void*)((long)(ptr) - (long)(bd)); \
         } else if((ulong)ptr > bd->size) { /* not swizzled */ \
             apc_error("pointer to be swizzled is not within allowed memory range! (%x < %x < %x) in %s on %d" TSRMLS_CC, (long)bd, ptr, ((long)bd + bd->size), __FILE__, __LINE__); \
+            return NULL; \
         } \
     } while(0);
 
@@ -120,6 +122,7 @@ static void apc_bd_free(void *ptr TSRMLS_DC) {
     size_t *size;
     if(zend_hash_index_find(&APCG(apc_bd_alloc_list), (ulong)ptr, (void**)&size) == FAILURE) {
         apc_error("apc_bd_free could not free pointer (not found in list: %x)" TSRMLS_CC, ptr);
+        return;
     }
     APCG(apc_bd_alloc_ptr) = (void*)((size_t)APCG(apc_bd_alloc_ptr) - *size);
     zend_hash_index_del(&APCG(apc_bd_alloc_list), (ulong)ptr);
@@ -146,6 +149,7 @@ static void *apc_bd_alloc_ex(void *ptr_new, size_t size TSRMLS_DC) {
 #endif
       if(APCG(apc_bd_alloc_ptr) > APCG(apc_bd_alloc_ubptr)) {
           apc_error("Exceeded bounds check in apc_bd_alloc_ex by %d bytes." TSRMLS_CC, (unsigned char *) APCG(apc_bd_alloc_ptr) - (unsigned char *) APCG(apc_bd_alloc_ubptr));
+          return NULL;
       }
       zend_hash_index_update(&APCG(apc_bd_alloc_list), (ulong)rval, &size, sizeof(size_t), NULL);
     }
@@ -165,6 +169,7 @@ static void _apc_swizzle_ptr(apc_bd_t *bd, zend_llist *ll, void **ptr, const cha
 #endif
         } else if((ulong)ptr > bd->size) {
             apc_error("pointer to be swizzled is not within allowed memory range! (%x < %x < %x) in %s on %d" TSRMLS_CC, (long)bd, *ptr, ((long)bd + bd->size), file, line); \
+            return;
         }
     }
 } /* }}} */
