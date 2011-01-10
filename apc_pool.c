@@ -255,9 +255,9 @@ static void* apc_realpool_alloc(apc_pool *pool, size_t size TSRMLS_DC)
     }
 
     /* upgrade the pool type to reduce overhead */
-    if(rpool->count > 4) {
+    if(rpool->count > 4 && rpool->dsize < 4096) {
         rpool->dsize = 4096;
-    } else if(rpool->count > 8) {
+    } else if(rpool->count > 8 && rpool->dsize < 8192) {
         rpool->dsize = 8192;
     }
 
