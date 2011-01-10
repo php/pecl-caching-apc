@@ -556,7 +556,6 @@ static int apc_unswizzle_bd(apc_bd_t *bd, int flags TSRMLS_DC) {
         PHP_MD5Final(digest, &context);
         if(memcmp(md5_orig, digest, 16)) {
             apc_error("MD5 checksum of binary dump failed." TSRMLS_CC);
-            memcpy(bd->md5, md5_orig, 16); /* add back md5 checksum */
             return -1;
         }
     }
@@ -568,7 +567,6 @@ static int apc_unswizzle_bd(apc_bd_t *bd, int flags TSRMLS_DC) {
         }
         if(crc_orig != crc) {
             apc_error("CRC32 checksum of binary dump failed." TSRMLS_CC);
-            bd->crc = crc_orig;
             return -1;
         }
     }
