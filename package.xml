@@ -80,9 +80,9 @@
  - apc.serializer hooks, export apc_serializer.h as an API
  - Fix regression bug #20529: Look up files in CWD
  - Pool allocator fixes for large allocations
- - trunk compat fixes (kalle)
- - ZTS fixes (pajoye, hirokawa) 
- - Readability and warning fixes (pajoye, kalle)
+ - trunk compat fixes (Kalle)
+ - ZTS fixes (Pierre, Hirokawa) 
+ - Readability and warning fixes (Pierre, Kalle)
  </notes>
 
  <contents>
