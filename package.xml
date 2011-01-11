@@ -71,15 +71,18 @@
   <active>yes</active>
  </developer>
 
- <date>2010-11-30</date>
- <version><release>3.1.6</release><api>3.1.0</api></version>
- <stability><release>stable</release><api>stable</api></stability>
+ <date>2011-01-11</date>
+ <version><release>3.1.7</release><api>3.1.0</api></version>
+ <stability><release>beta</release><api>stable</api></stability>
  <license uri="http://www.php.net/license">PHP License</license>
  <notes>
- - make slam_defense a little more optimistic, allow a thread/process to write to cache in a loop
- - ensure realpaths hit the realpath_cache, in no-stat mode
- - prevent memory starvation, nuke all caches when expunging just one doesn't work
- - fix uploadprogress keylength issues (NUL is part of keylen, pecl bug #20016)
+ - pthread read-write locks support
+ - apc.serializer hooks, export apc_serializer.h as an API
+ - Fix regression bug #20529: Look up files in CWD
+ - Pool allocator fixes for large allocations
+ - trunk compat fixes (kalle)
+ - ZTS fixes (pajoye, hirokawa) 
+ - Readability and warning fixes (pajoye, kalle)
  </notes>
 
  <contents>
@@ -142,6 +145,7 @@
     <file role="src" name="pgsql_s_lock.h" />
     <file role="src" name="apc_fcntl_win32.c" />
     <file role="src" name="apc_rfc1867.c" />
+    <file role="src" name="apc_serializer.h" />
     <file role="php" name="apc.php" />
     <dir name="tests">
      <file role="test" name="apc_001.phpt" />
@@ -196,14 +200,14 @@
    <configureoption name="enable-apc-filehits"  default="no"  prompt="Enable per request file info about files used from the APC cache" />
    <configureoption name="enable-apc-spinlocks" default="no"  prompt="Enable spin locks (EXPERIMENTAL)" />
    <configureoption name="enable-apc-memprotect"  default="no"  prompt="Enable memory protection (EXPERIMENTAL)" />
+   <configureoption name="enable-apc-pthreadmutex"  default="yes"  prompt="Enable pthread mutexes (default)" />
+   <configureoption name="enable-apc-pthreadrwlocks"  default="no"  prompt="Enable pthread read/write locks (EXPERIMENTAL)" />
 
    <!--
         The following configures are currently not defined:
 
-	 --disable-apc-mmap
-	 --enable-apc-sem
-	 --enable-apc-pthreadmutex
-	 --enable-apc-pthreadrwlocks
+	 disable-apc-mmap
+	 enable-apc-sem
    -->
  </extsrcrelease>
 
@@ -658,6 +662,18 @@ Allow keys used in apc_store/apc_fetch/apc_delete to be binary safe and prevent 
  - Added --enable-apc-debug configuration argument to enable debugging (Kalle)
  - Added support for internal debugging on Windows (Kalle)
  - ZTS optimizations (Kalle)
+     </notes>
+     </release>
+     <release>
+     <date>2010-11-30</date>
+     <version><release>3.1.6</release><api>3.1.0</api></version>
+     <stability><release>stable</release><api>stable</api></stability>
+     <license uri="http://www.php.net/license">PHP License</license>
+     <notes>
+ - make slam_defense a little more optimistic, allow a thread/process to write to cache in a loop
+ - ensure realpaths hit the realpath_cache, in no-stat mode
+ - prevent memory starvation, nuke all caches when expunging just one doesn't work
+ - fix uploadprogress keylength issues (NUL is part of keylen, pecl bug #20016)
      </notes>
      </release>
  </changelog>
