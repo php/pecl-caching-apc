@@ -78,7 +78,7 @@
 # define apc_lck_rdlock(a)     apc_pthreadmutex_lock(&a TSRMLS_CC)
 # define apc_lck_unlock(a)     apc_pthreadmutex_unlock(&a TSRMLS_CC)
 #elif defined(APC_PTHREADRW_LOCKS)
-# define APC_LOCK_TYPE "pthread upgrade/read/write Locks"
+# define APC_LOCK_TYPE "pthread read/write Locks"
 # define RDLOCK_AVAILABLE 1
 # define NONBLOCKING_LOCK_AVAILABLE 1
 # define apc_lck_t pthread_rwlock_t 
