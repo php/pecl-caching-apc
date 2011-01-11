@@ -179,7 +179,11 @@ int apc_rfc1867_progress(uint event, void *event_data, void **extra TSRMLS_DC) {
                 multipart_event_file_end *data = (multipart_event_file_end *) event_data;
                 RFC1867_DATA(bytes_processed) = data->post_bytes_processed;
                 RFC1867_DATA(cancel_upload) = data->cancel_upload;
-                RFC1867_DATA(temp_filename) = data->temp_filename;
+                if(data->temp_filename) {
+                    RFC1867_DATA(temp_filename) = data->temp_filename;
+                } else {
+                    RFC1867_DATA(temp_filename) = "";
+                }
                 ALLOC_INIT_ZVAL(track);
                 array_init(track);
                 add_assoc_long(track, "total", RFC1867_DATA(content_length));
