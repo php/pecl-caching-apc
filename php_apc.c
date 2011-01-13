@@ -313,6 +313,7 @@ static PHP_MINFO_FUNCTION(apc)
     if(names.c) {
         smart_str_0(&names);
         php_info_print_table_row(2, "Serialization Support", names.c);
+        smart_str_free(&names);
     } else {
         php_info_print_table_row(2, "Serialization Support", "broken");
     }
