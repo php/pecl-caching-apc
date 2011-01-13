@@ -8,7 +8,7 @@ PHP_ARG_ENABLE(apc, whether to enable APC support,
 AC_ARG_ENABLE(apc-debug,
 [  --enable-apc-debug     Enable APC debugging], 
 [
-  PHP_APC_DEBUG=yes
+  PHP_APC_DEBUG=$enableval
 ], 
 [
   PHP_APC_DEBUG=no
