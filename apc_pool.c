@@ -254,19 +254,19 @@ static void* apc_realpool_alloc(apc_pool *pool, size_t size TSRMLS_DC)
         realsize += ALIGNWORD(sizeof(size_t));
     }
 
-    /* upgrade the pool type to reduce overhead */
-    if(rpool->count > 4 && rpool->dsize < 4096) {
-        rpool->dsize = 4096;
-    } else if(rpool->count > 8 && rpool->dsize < 8192) {
-        rpool->dsize = 8192;
-    }
-
     /* minimize look-back, a value of 8 seems to give similar fill-ratios (+2%)
      * as looping through the entire list. And much faster in allocations. */
     for(entry = rpool->head, i = 0; entry != NULL && (i < 8); entry = entry->next, i++) {
         if(entry->avail >= realsize) {
             goto found;
         }
+    }
+
+    /* upgrade the pool type to reduce overhead */
+    if(rpool->count > 4 && rpool->dsize < 4096) {
+        rpool->dsize = 4096;
+    } else if(rpool->count > 8 && rpool->dsize < 8192) {
+        rpool->dsize = 8192;
     }
 
     poolsize = ALIGNSIZE(realsize, rpool->dsize);
