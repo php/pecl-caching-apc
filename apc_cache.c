@@ -221,11 +221,11 @@ static void process_pending_removals(apc_cache_t* cache TSRMLS_DC)
             if (dead->value->ref_count > 0) {
                 switch(dead->value->type) {
                     case APC_CACHE_ENTRY_FILE:
-                        apc_warning("GC cache entry '%s' (dev=%d ino=%d) was on gc-list for %d seconds" TSRMLS_CC, 
+                        apc_debug("GC cache entry '%s' (dev=%d ino=%d) was on gc-list for %d seconds" TSRMLS_CC, 
                             dead->value->data.file.filename, dead->key.data.file.device, dead->key.data.file.inode, gc_sec);
                         break;
                     case APC_CACHE_ENTRY_USER:
-                        apc_warning("GC cache entry '%s' was on gc-list for %d seconds" TSRMLS_CC, dead->value->data.user.info, gc_sec);
+                        apc_debug("GC cache entry '%s' was on gc-list for %d seconds" TSRMLS_CC, dead->value->data.user.info, gc_sec);
                         break;
                 }
             }
@@ -1344,7 +1344,7 @@ zend_bool apc_cache_is_last_key(apc_cache_t* cache, apc_cache_key_t* key, time_t
         if(lastkey->mtime == t && FROM_DIFFERENT_THREAD(lastkey)) {
             /* potential cache slam */
             if(APCG(slam_defense)) {
-                apc_warning("Potential cache slam averted for key '%s'" TSRMLS_CC, key->data.user.identifier);
+                apc_debug("Potential cache slam averted for key '%s'" TSRMLS_CC, key->data.user.identifier);
                 return 1;
             }
         }
