@@ -546,6 +546,11 @@ int _apc_update(char *strkey, int strkey_len, apc_cache_updater_t updater, void*
         return 0;
     }
 
+    if (!APCG(serializer) && APCG(serializer_name)) {
+        /* Avoid race conditions between MINIT of apc and serializer exts like igbinary */
+        APCG(serializer) = apc_find_serializer(APCG(serializer_name) TSRMLS_CC);
+    }
+
     HANDLE_BLOCK_INTERRUPTIONS();
     APCG(current_cache) = apc_user_cache;
     
@@ -572,6 +577,11 @@ int _apc_store(char *strkey, int strkey_len, const zval *val, const unsigned int
     t = apc_time();
 
     if(!APCG(enabled)) return 0;
+
+    if (!APCG(serializer) && APCG(serializer_name)) {
+        /* Avoid race conditions between MINIT of apc and serializer exts like igbinary */
+        APCG(serializer) = apc_find_serializer(APCG(serializer_name) TSRMLS_CC);
+    }
 
     HANDLE_BLOCK_INTERRUPTIONS();
 

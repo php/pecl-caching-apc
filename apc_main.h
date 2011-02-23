@@ -74,6 +74,7 @@ struct apc_serializer_t {
 /* }}} */
 
 apc_serializer_t* apc_get_serializers(TSRMLS_D);
+apc_serializer_t* apc_find_serializer(const char* name TSRMLS_DC);
 
 #endif
 

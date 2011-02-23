@@ -776,7 +776,7 @@ static int _apc_register_serializer(const char* name, apc_serialize_t serialize,
     return 0;
 }
 
-static apc_serializer_t* apc_find_serializer(const char* name TSRMLS_DC)
+apc_serializer_t* apc_find_serializer(const char* name TSRMLS_DC)
 {
     int i;
     apc_serializer_t *serializer;
