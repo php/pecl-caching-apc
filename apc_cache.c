@@ -811,7 +811,7 @@ int _apc_cache_user_update(apc_cache_t* cache, char *strkey, int keylen, apc_cac
     while (*slot) {
         if ((h == (*slot)->key.h) &&
             !memcmp((*slot)->key.data.user.identifier, strkey, keylen)) {
-            switch(Z_TYPE_P((*slot)->value) & ~IS_CONSTANT_INDEX) {
+            switch(Z_TYPE_P((*slot)->value->data.user.val) & ~IS_CONSTANT_INDEX) {
                 case IS_ARRAY:
                 case IS_CONSTANT_ARRAY:
                 case IS_OBJECT:
