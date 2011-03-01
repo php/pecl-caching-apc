@@ -398,3 +398,9 @@ users should consider tuning the following parameters:
                             Optimize include_once and require_once calls and avoid the 
                             expensive system calls used.
                             (Default: 0)
+
+    apc.serializer 
+                            Defines which serializer should be used. Default is the 
+                            standard PHP serializer. Other can be used without having
+                            to re compile apc, like igbinary for example.
+                            (apc.serializer=igbinary)
