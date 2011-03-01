@@ -305,7 +305,6 @@ static PHP_MINFO_FUNCTION(apc)
     for( i = 0, serializer = apc_get_serializers(TSRMLS_C); 
                 serializer->name != NULL; 
                 serializer++, i++) {
-
         if(i != 0) smart_str_appends(&names, ", ");
         smart_str_appends(&names, serializer->name);
     }
