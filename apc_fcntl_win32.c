@@ -39,18 +39,23 @@
 
 int apc_fcntl_create(const char* pathname TSRMLS_DC)
 {
-    char *lock_file = emalloc(MAXPATHLEN);
+    char lock_file[MAXPATHLEN];
     HANDLE fd;
-    DWORD tmplen;
-    static int i=0;
+    DWORD tmp_dirname_len;
+    char lock_filename_tpl[] = ".apc.XXXXXX";
+    char *lock_filename;
 
-    tmplen = GetTempPath(MAXPATHLEN, lock_file);
-    if (!tmplen) {
-        efree(lock_file);
+    tmp_dirname_len = GetTempPath(MAXPATHLEN, lock_file);
+    if (!tmp_dirname_len) {
         return -1;
     }
 
-    snprintf(lock_file + tmplen, MAXPATHLEN - tmplen - 1, "apc.lock.%d", i++);
+    lock_filename = _mktemp(lock_filename_tpl);
+    if (lock_filename == NULL) {
+      return -1;
+    }
+
+    snprintf(lock_file + tmp_dirname_len, MAXPATHLEN - tmp_dirname_len - 1, "%s", lock_filename);
 
     fd = CreateFile(lock_file,
         GENERIC_READ | GENERIC_WRITE,
@@ -60,14 +65,11 @@ int apc_fcntl_create(const char* pathname TSRMLS_DC)
         FILE_ATTRIBUTE_NORMAL,
         NULL);
 
-
     if (fd == INVALID_HANDLE_VALUE) {
         apc_error("apc_fcntl_create: could not open %s" TSRMLS_CC, lock_file);
-        efree(lock_file);
         return -1;
     }
 
-    efree(lock_file);
     return (int)fd;
 }
 
