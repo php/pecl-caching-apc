@@ -490,7 +490,7 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
     time_t t;
     apc_context_t ctxt = {0,};
     int bailout=0;
-	const char* filename = NULL;
+    const char* filename = NULL;
 
     if (!APCG(enabled) || apc_cache_busy(apc_cache)) {
         return old_compile_file(h, type TSRMLS_CC);
@@ -994,7 +994,7 @@ int apc_request_init(TSRMLS_D)
 
 int apc_request_shutdown(TSRMLS_D)
 {
-
+printf("enter shutdown\n");
 #if APC_HAVE_LOOKUP_HOOKS
     if(APCG(lazy_class_table)) {
         zend_hash_destroy(APCG(lazy_class_table));
@@ -1011,7 +1011,7 @@ int apc_request_shutdown(TSRMLS_D)
 #ifdef APC_FILEHITS
     zval_ptr_dtor(&APCG(filehits));
 #endif
-
+printf("leaving shutdown\n");
     return 0;
 }
 
