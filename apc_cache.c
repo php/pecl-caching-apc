@@ -693,6 +693,7 @@ slot_t* apc_cache_find_slot(apc_cache_t* cache, apc_cache_key_t key, time_t t TS
 apc_cache_entry_t* apc_cache_find(apc_cache_t* cache, apc_cache_key_t key, time_t t TSRMLS_DC)
 {
     slot_t * slot = apc_cache_find_slot(cache, key, t TSRMLS_CC);
+    apc_debug("apc_cache_find [%i]\n" TSRMLS_CC, key.h);
     return (slot) ? slot->value : NULL;
 }
 /* }}} */
@@ -1188,12 +1189,12 @@ static zval* apc_cache_link_info(apc_cache_t *cache, slot_t* p TSRMLS_DC)
 
             #ifdef PHP_WIN32
             {
-            char buf[20];
-            sprintf(buf, "%I64d",  p->key.data.file.device);
-            add_assoc_string(link, "device", buf, 1);
+              char buf[20];
+              sprintf(buf, "%I64d",  p->key.data.file.device);
+              add_assoc_string(link, "device", buf, 1);
 
-            sprintf(buf, "%I64d",  p->key.data.file.inode);
-            add_assoc_string(link, "inode", buf, 1);
+              sprintf(buf, "%I64d",  p->key.data.file.inode);
+              add_assoc_string(link, "inode", buf, 1);
             }
             #else
             add_assoc_long(link, "device", p->key.data.file.device);
