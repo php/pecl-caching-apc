@@ -185,7 +185,7 @@ form of a quick-start guide to start hacking on APC.
      };
 
    Since this is at the start of the shared memory segment, these values are accessible
-   across all the yapache processes and hence access to them has to be locked.
+   across all the apache processes and hence access to them has to be locked.
 
    After the header we have an array of slots.  The number of slots is user-defined
    through the apc.num_slots ini hint.  Each slot is described by:
