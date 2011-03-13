@@ -42,6 +42,7 @@ if(PHP_APC != 'no')
 	}
 
 	AC_DEFINE('HAVE_APC', 1);
+	AC_DEFINE('HAVE_ATOMIC_OPERATIONS', 1);
 
 	PHP_INSTALL_HEADERS("ext/apc", "apc_serializer.h");
 

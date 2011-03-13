@@ -51,8 +51,13 @@
 
 /* atomic operations : rdlocks are impossible without these */
 #if HAVE_ATOMIC_OPERATIONS
-# define ATOMIC_INC(a) __sync_add_and_fetch(&a, 1)
-# define ATOMIC_DEC(a) __sync_sub_and_fetch(&a, 1)
+# ifdef PHP_WIN32
+#  define ATOMIC_INC(a) InterlockedIncrement(&a)
+#  define ATOMIC_DEC(a) InterlockedDecrement(&a)
+# else
+#  define ATOMIC_INC(a) __sync_add_and_fetch(&a, 1)
+#  define ATOMIC_DEC(a) __sync_sub_and_fetch(&a, 1)
+# endif
 #endif
 
 #if defined(APC_SEM_LOCKS)
