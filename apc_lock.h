@@ -101,7 +101,9 @@
 # define apc_lck_unlock(a)     apc_slock_unlock(&a)
 #else
 # define APC_LOCK_TYPE "File Locks"
-# define RDLOCK_AVAILABLE 1
+# ifdef HAVE_ATOMIC_OPERATIONS
+#  define RDLOCK_AVAILABLE 1
+# endif
 # ifdef PHP_WIN32
 #  define NONBLOCKING_LOCK_AVAILABLE 0
 # else
