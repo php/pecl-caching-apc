@@ -15,6 +15,7 @@
   | Authors: Pierre Joye <pierre@php.net>                                |
   +----------------------------------------------------------------------+
  */
+/* $Id$ */
 /*
  These APIs are not actually exposed nor documented. But should work fine
  from a binary as available since XP without signature changes.

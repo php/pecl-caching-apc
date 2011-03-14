@@ -14,10 +14,8 @@
   +----------------------------------------------------------------------+
   | Authors: Pierre Joye <pierre@php.net>                                |
   +----------------------------------------------------------------------+
-
  */
-
-/* $Id: apc_pthreadrwlock.h 302175 2010-08-13 06:20:28Z kalle $ */
+/* $Id$ */
 
 #ifndef APC_WINDOWS_CS_RWLOCK_H
 #define APC_WINDOWS_CS_RWLOCK_H
