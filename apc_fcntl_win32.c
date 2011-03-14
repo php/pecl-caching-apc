@@ -14,6 +14,7 @@
   +----------------------------------------------------------------------+
   | Authors: George Schlossnagle <george@omniti.com>                     |
   |          Edin Kadribasic <edink@php.net>                             |
+  |          Pierre Joye <pierre@php.net>                                |
   +----------------------------------------------------------------------+
 
    This software was contributed to PHP by Community Connect Inc. in 2002

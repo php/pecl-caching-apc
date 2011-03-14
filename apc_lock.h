@@ -14,6 +14,7 @@
   +----------------------------------------------------------------------+
   | Authors: George Schlossnagle <george@omniti.com>                     |
   |          Rasmus Lerdorf <rasmus@php.net>                             |
+  |          Pierre Joye <pierre@php.net>                                |
   +----------------------------------------------------------------------+
 
    This software was contributed to PHP by Community Connect Inc. in 2002
@@ -31,15 +32,17 @@
 #ifndef APC_LOCK
 #define APC_LOCK
 
+#ifdef HAVE_CONFIG_H
+# include <config.h>
+#endif
+
 #include "apc.h"
 #include "apc_sem.h"
 #include "apc_fcntl.h"
 #include "apc_pthreadmutex.h"
 #include "apc_pthreadrwlock.h"
 #include "apc_spin.h"
-#ifdef HAVE_CONFIG_H
-# include <config.h>
-#endif
+#include "apc_windows_srwlock_kernel.h"
 
 /* {{{ generic locking macros */
 #define CREATE_LOCK(lock)     apc_lck_create(NULL, 0, 1, lock)
@@ -47,6 +50,7 @@
 #define LOCK(lock)          { HANDLE_BLOCK_INTERRUPTIONS(); apc_lck_lock(lock); }
 #define RDLOCK(lock)        { HANDLE_BLOCK_INTERRUPTIONS(); apc_lck_rdlock(lock); }
 #define UNLOCK(lock)        { apc_lck_unlock(lock); HANDLE_UNBLOCK_INTERRUPTIONS(); }
+#define RDUNLOCK(lock)      { apc_lck_rdunlock(lock); HANDLE_UNBLOCK_INTERRUPTIONS(); }
 /* }}} */
 
 /* atomic operations : rdlocks are impossible without these */
@@ -71,6 +75,7 @@
 # define apc_lck_nb_lock(a)    apc_sem_nonblocking_lock(a TSRMLS_CC)
 # define apc_lck_rdlock(a)     apc_sem_lock(a TSRMLS_CC)
 # define apc_lck_unlock(a)     apc_sem_unlock(a TSRMLS_CC)
+# define apc_lck_rdunlock(a)   apc_sem_unlock(a TSRMLS_CC)
 #elif defined(APC_PTHREADMUTEX_LOCKS)
 # define APC_LOCK_TYPE "pthread mutex Locks"
 # define RDLOCK_AVAILABLE 0
@@ -82,6 +87,7 @@
 # define apc_lck_nb_lock(a)    apc_pthreadmutex_nonblocking_lock(&a TSRMLS_CC)
 # define apc_lck_rdlock(a)     apc_pthreadmutex_lock(&a TSRMLS_CC)
 # define apc_lck_unlock(a)     apc_pthreadmutex_unlock(&a TSRMLS_CC)
+# define apc_lck_rdunlock(a)   apc_pthreadmutex_unlock(&a TSRMLS_CC)
 #elif defined(APC_PTHREADRW_LOCKS)
 # define APC_LOCK_TYPE "pthread read/write Locks"
 # define RDLOCK_AVAILABLE 1
@@ -93,6 +99,7 @@
 # define apc_lck_nb_lock(a)    apc_pthreadrwlock_nonblocking_lock(&a TSRMLS_CC)
 # define apc_lck_rdlock(a)     apc_pthreadrwlock_rdlock(&a TSRMLS_CC)
 # define apc_lck_unlock(a)     apc_pthreadrwlock_unlock(&a TSRMLS_CC)
+# define apc_lck_rdunlock(a)   apc_pthreadrwlock_unlock(&a TSRMLS_CC)
 #elif defined(APC_SPIN_LOCKS)
 # define APC_LOCK_TYPE "spin Locks"
 # define RDLOCK_AVAILABLE 0
@@ -104,6 +111,32 @@
 # define apc_lck_nb_lock(a)    apc_slock_nonblocking_lock(&a)
 # define apc_lck_rdlock(a)     apc_slock_lock(&a TSRMLS_CC)
 # define apc_lck_unlock(a)     apc_slock_unlock(&a)
+# define apc_lck_rdunlock(a)   apc_slock_unlock(&a)
+#elif defined(APC_SRWLOCK_NATIVE) && defined(PHP_WIN32)
+# define APC_LOCK_TYPE "Windows Slim RWLOCK (native)"
+# define RDLOCK_AVAILABLE 1
+# define NONBLOCKING_LOCK_AVAILABLE 0
+# define apc_lck_t SRWLOCK
+# define apc_lck_create(a,b,c,d) InitializeSRWLock((SRWLOCK*)&(d))
+# define apc_lck_destroy(a)
+# define apc_lck_lock(a)       AcquireSRWLockExclusive(&a)
+# define apc_lck_rdlock(a)     AcquireSRWLockShared(&a)
+# define apc_lck_unlock(a)     ReleaseSRWLockExclusive(&a)
+# define apc_lck_rdunlock(a)   ReleaseSRWLockShared(&a)
+# if NONBLOCKING_LOCK_AVAILABLE==1 /* Only in win7/2008 */
+#  define apc_lck_nb_lock(a)    (TryAcquireSRWLockExclusive(&a TSRMLS_CC) == 0 ? 1 : 0);
+# endif
+#elif defined(APC_SRWLOCK_KERNEL) && defined(PHP_WIN32)
+# define APC_LOCK_TYPE "Windows Slim RWLOCK (kernel)"
+# define RDLOCK_AVAILABLE 1
+# define NONBLOCKING_LOCK_AVAILABLE 0
+# define apc_lck_t apc_windows_cs_rwlock_t
+# define apc_lck_create(a,b,c,d) apc_windows_cs_create((apc_windows_cs_rwlock_t*)&(d) TSRMLS_CC)
+# define apc_lck_destroy(a)      apc_windows_cs_destroy(&a);
+# define apc_lck_lock(a)         apc_windows_cs_lock(&a TSRMLS_CC)
+# define apc_lck_rdlock(a)       apc_windows_cs_rdlock(&a TSRMLS_CC)
+# define apc_lck_unlock(a)       apc_windows_cs_unlock_wr(&a TSRMLS_CC)
+# define apc_lck_rdunlock(a)     apc_windows_cs_unlock_rd(&a TSRMLS_CC)
 #else
 # define APC_LOCK_TYPE "File Locks"
 # ifdef HAVE_ATOMIC_OPERATIONS
@@ -121,6 +154,7 @@
 # define apc_lck_nb_lock(a)    apc_fcntl_nonblocking_lock(a TSRMLS_CC)
 # define apc_lck_rdlock(a)     apc_fcntl_rdlock(a TSRMLS_CC)
 # define apc_lck_unlock(a)     apc_fcntl_unlock(a TSRMLS_CC)
+# define apc_lck_rdunlock(a)   apc_fcntl_unlock(&a TSRMLS_CC)
 #endif
 
 #endif

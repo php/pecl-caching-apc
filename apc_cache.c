@@ -654,7 +654,7 @@ slot_t* apc_cache_find_slot(apc_cache_t* cache, apc_cache_key_t key, time_t t TS
                     remove_slot(cache, slot TSRMLS_CC);
                     #endif
                     CACHE_SAFE_INC(cache, cache->header->num_misses);
-                    CACHE_UNLOCK(cache);
+                    CACHE_RDUNLOCK(cache);
                     return NULL;
                 }
                 CACHE_SAFE_INC(cache, (*slot)->num_hits);
@@ -663,7 +663,7 @@ slot_t* apc_cache_find_slot(apc_cache_t* cache, apc_cache_key_t key, time_t t TS
                 prevent_garbage_collection((*slot)->value);
                 CACHE_FAST_INC(cache, cache->header->num_hits); 
                 retval = *slot;
-                CACHE_UNLOCK(cache);
+                CACHE_RDUNLOCK(cache);
                 return (slot_t*)retval;
             }
         } else {  /* APC_CACHE_KEY_FPFILE */
@@ -676,7 +676,7 @@ slot_t* apc_cache_find_slot(apc_cache_t* cache, apc_cache_key_t key, time_t t TS
                 prevent_garbage_collection((*slot)->value);
                 CACHE_FAST_INC(cache, cache->header->num_hits);
                 retval = *slot;
-                CACHE_UNLOCK(cache);
+                CACHE_RDUNLOCK(cache);
                 return (slot_t*)retval;
             }
         }
@@ -684,7 +684,7 @@ slot_t* apc_cache_find_slot(apc_cache_t* cache, apc_cache_key_t key, time_t t TS
       slot = &(*slot)->next;
     }
     CACHE_FAST_INC(cache, cache->header->num_misses); 
-    CACHE_UNLOCK(cache);
+    CACHE_RDUNLOCK(cache);
     return NULL;
 }
 /* }}} */
@@ -730,7 +730,7 @@ apc_cache_entry_t* apc_cache_user_find(apc_cache_t* cache, char *strkey, int key
                 remove_slot(cache, slot TSRMLS_CC);
                 #endif
                 CACHE_FAST_INC(cache, cache->header->num_misses);
-                CACHE_UNLOCK(cache);
+                CACHE_RDUNLOCK(cache);
                 return NULL;
             }
             /* Otherwise we are fine, increase counters and return the cache entry */
@@ -740,14 +740,14 @@ apc_cache_entry_t* apc_cache_user_find(apc_cache_t* cache, char *strkey, int key
 
             CACHE_FAST_INC(cache, cache->header->num_hits);
             value = (*slot)->value;
-            CACHE_UNLOCK(cache);
+            CACHE_RDUNLOCK(cache);
             return (apc_cache_entry_t*)value;
         }
         slot = &(*slot)->next;
     }
  
     CACHE_FAST_INC(cache, cache->header->num_misses);
-    CACHE_UNLOCK(cache);
+    CACHE_RDUNLOCK(cache);
     return NULL;
 }
 /* }}} */
@@ -781,12 +781,12 @@ apc_cache_entry_t* apc_cache_user_exists(apc_cache_t* cache, char *strkey, int k
             }
             /* Return the cache entry ptr */
             value = (*slot)->value;
-            CACHE_UNLOCK(cache);
+            CACHE_RDUNLOCK(cache);
             return (apc_cache_entry_t*)value;
         }
         slot = &(*slot)->next;
     }
-    CACHE_UNLOCK(cache);
+    CACHE_RDUNLOCK(cache);
     return NULL;
 }
 /* }}} */

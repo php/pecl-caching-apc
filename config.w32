@@ -6,6 +6,8 @@ ARG_ENABLE('apc-debug', 'Whether to enable APC debugging', 'no');
 ARG_ENABLE('apc-filehits', 'Whether to enable cache request file info', 'no');
 ARG_ENABLE('apc-spinlocks', 'Whether to use spin locks (experimental)', 'no');
 ARG_ENABLE('apc-memprotect', 'Whether to enable memory protection (experimental)', 'no');
+ARG_ENABLE('apc-srwlock-native', 'Whether to use SRWLOCK locks native (win7/2008 only)', 'no');
+ARG_ENABLE('apc-srwlock-kernel', 'Whether to use SRWLOCK locks (loaded at runtime)', 'no');
 
 if(PHP_APC != 'no')
 {
@@ -29,16 +31,24 @@ if(PHP_APC != 'no')
 		AC_DEFINE('APC_MEMPROTECT', 1);
 	}
 
-	if(PHP_APC_SPINLOCKS != 'no')
-	{
-		AC_DEFINE('APC_SPIN_LOCKS', 1);
-		ADD_FLAG('CFLAGS_APC', '/D WIN32_ONLY_COMPILER=1');
+	if(PHP_APC_SRWLOCK_NATIVE != 'no') {
+		AC_DEFINE('APC_SRWLOCK_NATIVE', 1);
+	} else {
+		if(PHP_APC_SRWLOCK_KERNEL != 'no') {
+			AC_DEFINE('APC_SRWLOCK_KERNEL', 1);
+			ADD_FLAG('CFLAGS_APC', '/D WIN32_ONLY_COMPILER=1');
 
-		apc_sources += ' apc_spin.c pgsql_s_lock.c';
-	}
-	else
-	{
-		AC_DEFINE('APC_FCNTL_LOCKS', 1);
+			apc_sources += ' apc_windows_srwlock_kernel.c';
+		} else {
+			if(PHP_APC_SPINLOCKS != 'no') {
+				AC_DEFINE('APC_SPIN_LOCKS', 1);
+				ADD_FLAG('CFLAGS_APC', '/D WIN32_ONLY_COMPILER=1');
+
+				apc_sources += ' apc_spin.c pgsql_s_lock.c';
+			} else {
+				AC_DEFINE('APC_FCNTL_LOCKS', 1);
+			}
+		}
 	}
 
 	AC_DEFINE('HAVE_APC', 1);
