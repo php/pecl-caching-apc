@@ -73,7 +73,7 @@ typedef dev_t apc_dev_t;
 #else
 #define USE_READ_LOCKS 0
 #define CACHE_RDLOCK(cache)        { LOCK(cache->header->lock);  cache->has_lock = 1; }
-#define CACHE_RDUNLOCK(cache)      { LOCK(cache->header->lock);  cache->has_lock = 0; }
+#define CACHE_RDUNLOCK(cache)      { UNLOCK(cache->header->lock);  cache->has_lock = 0; }
 #define CACHE_SAFE_INC(cache, obj) { CACHE_SAFE_LOCK(cache); obj++; CACHE_SAFE_UNLOCK(cache);}
 #define CACHE_SAFE_DEC(cache, obj) { CACHE_SAFE_LOCK(cache); obj--; CACHE_SAFE_UNLOCK(cache);}
 #endif
