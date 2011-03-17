@@ -71,18 +71,13 @@
   <active>yes</active>
  </developer>
 
- <date>2011-01-11</date>
- <version><release>3.1.7</release><api>3.1.0</api></version>
- <stability><release>beta</release><api>stable</api></stability>
+ <date>2011-03-17</date>
+ <version><release>3.1.8</release><api>3.1.0</api></version>
+ <stability><release>stable</release><api>stable</api></stability>
  <license uri="http://www.php.net/license">PHP License</license>
  <notes>
- - pthread read-write locks support
- - apc.serializer hooks, export apc_serializer.h as an API
- - Fix regression bug #20529: Look up files in CWD
- - Pool allocator fixes for large allocations
- - trunk compat fixes (Kalle)
- - ZTS fixes (Pierre, Hirokawa) 
- - Readability and warning fixes (Pierre, Kalle)
+ - Windows read-write locks support on Windows XP or later and Windows Win7
+   or later (use php_apc-xp.dll or php_apc-win7.dll)
  </notes>
 
  <contents>
@@ -125,6 +120,8 @@
     <file role="src" name="apc_sma.h" />
     <file role="src" name="apc_spin.c" />
     <file role="src" name="apc_spin.h" />
+    <file role="src" name="apc_windows_srwlock_kernel.c" />
+    <file role="src" name="apc_windows_srwlock_kernel.h" />
     <file role="src" name="apc_stack.c" />
     <file role="src" name="apc_stack.h" />
     <file role="src" name="apc_string.h" />
@@ -212,6 +209,21 @@
  </extsrcrelease>
 
  <changelog>
+   <release>
+     <date>2011-01-11</date>
+     <version><release>3.1.7</release><api>3.1.0</api></version>
+     <stability><release>beta</release><api>stable</api></stability>
+     <license uri="http://www.php.net/license">PHP License</license>
+     <notes>
+     - pthread read-write locks support
+     - apc.serializer hooks, export apc_serializer.h as an API
+     - Fix regression bug #20529: Look up files in CWD
+     - Pool allocator fixes for large allocations
+     - trunk compat fixes (Kalle)
+     - ZTS fixes (Pierre, Hirokawa) 
+     - Readability and warning fixes (Pierre, Kalle)
+     </notes>
+   </release>
    <release>
      <stability><release>stable</release><api>stable</api></stability>
      <version><release>2.0.0</release><api>2.0.0</api></version>
