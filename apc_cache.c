@@ -1246,7 +1246,7 @@ zval* apc_cache_info(apc_cache_t* cache, zend_bool limited TSRMLS_DC)
     ALLOC_INIT_ZVAL(info);
 
     if(!info) {
-        CACHE_UNLOCK(cache);
+        CACHE_RDUNLOCK(cache);
         return NULL;
     }
 
@@ -1307,7 +1307,7 @@ zval* apc_cache_info(apc_cache_t* cache, zend_bool limited TSRMLS_DC)
         add_assoc_zval(info, "slot_distribution", slots);
     }
 
-    CACHE_UNLOCK(cache);
+    CACHE_RDUNLOCK(cache);
     return info;
 }
 /* }}} */
