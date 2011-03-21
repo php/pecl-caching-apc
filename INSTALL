@@ -23,7 +23,7 @@ Suggested Configuration (in your php.ini file)
 ----------------------------------------------
   extension=apc.so
   apc.enabled=1
-  apc.shm_size=128
+  apc.shm_size=128M
   apc.ttl=7200
   apc.user_ttl=7200
   apc.enable_cli=1
@@ -217,8 +217,9 @@ users should consider tuning the following parameters:
     apc.shm_size            The size of each shared memory segment in MB.
                             By default, some systems (including most BSD
                             variants) have very low limits on the size of a
-                            shared memory segment.
+                            shared memory segment. M/G suffixes must be used.
                             (Default: 30)
+
                             
     apc.optimization        This option has been deprecated.
                             (Default: 0)
