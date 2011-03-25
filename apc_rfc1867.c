@@ -146,7 +146,6 @@ int apc_rfc1867_progress(uint event, void *event_data, void **extra TSRMLS_DC) {
                     add_assoc_string(track, "name", RFC1867_DATA(name), 1);
                     add_assoc_long(track, "done", 0);
                     add_assoc_double(track, "start_time", RFC1867_DATA(start_time));
-                    add_assoc_string(track, "temp_filename", RFC1867_DATA(temp_filename), 1);
                     _apc_store(RFC1867_DATA(tracking_key), RFC1867_DATA(key_length)+1, track, APCG(rfc1867_ttl), 0 TSRMLS_CC);
                     zval_ptr_dtor(&track);
                 }
