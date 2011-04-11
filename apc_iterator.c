@@ -267,11 +267,35 @@ static int apc_iterator_search_match(apc_iterator_t *iterator, slot_t **slot) {
 }
 /* }}} */
 
+/* {{{ apc_iterator_check_expiry */
+static int apc_iterator_check_expiry(apc_cache_t* cache, slot_t **slot, time_t t)
+{
+    if((*slot)->value->type == APC_CACHE_ENTRY_USER) {
+        if((*slot)->value->data.user.ttl) {
+            if((time_t) ((*slot)->creation_time + (*slot)->value->data.user.ttl) < t) {
+                return 0;
+            }
+        } else if(cache->ttl) {
+            if((*slot)->creation_time + cache->ttl < t) {
+                return 0;
+            }
+        }
+    } else if((*slot)->access_time < (t - cache->ttl)) {
+        return 0;
+    }
+
+    return 1;
+}
+/* }}} */
+
 /* {{{ apc_iterator_fetch_active */
 static int apc_iterator_fetch_active(apc_iterator_t *iterator TSRMLS_DC) {
     int count=0;
     slot_t **slot;
     apc_iterator_item_t *item;
+    time_t t;
+
+    t = apc_time();
 
     while (apc_stack_size(iterator->stack) > 0) {
         apc_iterator_item_dtor(apc_stack_pop(iterator->stack));
@@ -281,11 +305,13 @@ static int apc_iterator_fetch_active(apc_iterator_t *iterator TSRMLS_DC) {
     while(count <= iterator->chunk_size && iterator->slot_idx < iterator->cache->num_slots) {
         slot = &iterator->cache->slots[iterator->slot_idx];
         while(*slot) {
-            if (apc_iterator_search_match(iterator, slot)) {
-                count++;
-                item = apc_iterator_item_ctor(iterator, slot TSRMLS_CC);
-                if (item) {
-                    apc_stack_push(iterator->stack, item TSRMLS_CC);
+            if (apc_iterator_check_expiry(iterator->cache, slot, t)) {
+                if (apc_iterator_search_match(iterator, slot)) {
+                    count++;
+                    item = apc_iterator_item_ctor(iterator, slot TSRMLS_CC);
+                    if (item) {
+                        apc_stack_push(iterator->stack, item TSRMLS_CC);
+                    }
                 }
             }
             slot = &(*slot)->next;
