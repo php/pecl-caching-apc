@@ -81,7 +81,7 @@
   </stability>
   <license uri="http://www.php.net/license">PHP License</license>
   <notes>
- - Fix regression introduce in 3.1.8 (#22687)
+ - Fix regression introduced in 3.1.8 (#22687)
 </notes>
   <contents>
     <dir name="/">
