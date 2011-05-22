@@ -154,7 +154,7 @@
 # define apc_lck_nb_lock(a)    apc_fcntl_nonblocking_lock(a TSRMLS_CC)
 # define apc_lck_rdlock(a)     apc_fcntl_rdlock(a TSRMLS_CC)
 # define apc_lck_unlock(a)     apc_fcntl_unlock(a TSRMLS_CC)
-# define apc_lck_rdunlock(a)   apc_fcntl_unlock(&a TSRMLS_CC)
+# define apc_lck_rdunlock(a)   apc_fcntl_unlock(a TSRMLS_CC)
 #endif
 
 #endif
