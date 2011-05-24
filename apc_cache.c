@@ -1290,7 +1290,9 @@ zval* apc_cache_info(apc_cache_t* cache, zend_bool limited TSRMLS_DC)
                 add_next_index_zval(list, link);
                 j++;
             }
-            add_next_index_long(slots, j);
+            if(j != 0) {
+                add_index_long(slots, (ulong)i, j);
+            }
         }
 
         /* For each slot pending deletion */
