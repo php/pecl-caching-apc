@@ -25,7 +25,7 @@
 
  */
 
-/* $Id: $ */
+/* $Id$ */
 
 #include "apc.h"
 #include "apc_globals.h"
