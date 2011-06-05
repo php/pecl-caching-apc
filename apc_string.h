@@ -25,7 +25,7 @@
 
  */
 
-/* $Id: $ */
+/* $Id$ */
 
 #ifndef APC_STRING
 #define APC_STRING
