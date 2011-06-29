@@ -60,7 +60,9 @@ static zend_function* my_bitwise_copy_function(zend_function*, zend_function*, a
  */
 static zval** my_copy_zval_ptr(zval**, const zval**, apc_context_t* TSRMLS_DC);
 static zval* my_copy_zval(zval*, const zval*, apc_context_t* TSRMLS_DC);
+#ifndef ZEND_ENGINE_2_4
 static znode* my_copy_znode(znode*, znode*, apc_context_t* TSRMLS_DC);
+#endif
 static zend_op* my_copy_zend_op(zend_op*, zend_op*, apc_context_t* TSRMLS_DC);
 static zend_function* my_copy_function(zend_function*, zend_function*, apc_context_t* TSRMLS_DC);
 static zend_function_entry* my_copy_function_entry(zend_function_entry*, const zend_function_entry*, apc_context_t* TSRMLS_DC);
@@ -93,9 +95,11 @@ static void my_fixup_property_info( Bucket *p, zend_class_entry *src, zend_class
  * defined/overridden in the 'current' class and not inherited.
  */
 static int my_check_copy_function(Bucket* src, va_list args);
-static int my_check_copy_default_property(Bucket* p, va_list args);
 static int my_check_copy_property_info(Bucket* src, va_list args);
+#ifndef ZEND_ENGINE_2_4
+static int my_check_copy_default_property(Bucket* p, va_list args);
 static int my_check_copy_static_member(Bucket* src, va_list args);
+#endif
 static int my_check_copy_constant(Bucket* src, va_list args);
 
 /* }}} */
