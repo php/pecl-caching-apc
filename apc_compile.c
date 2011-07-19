@@ -951,6 +951,8 @@ static APC_HOTSPOT HashTable* my_copy_hashtable_ex(HashTable* dst,
 
     dst->pListTail = newp;
 
+    zend_hash_internal_pointer_reset(dst);
+
     return dst;
 }
 /* }}} */
