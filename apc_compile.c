@@ -1700,6 +1700,7 @@ zend_class_entry* apc_copy_class_entry_for_execution(zend_class_entry* src, apc_
     /* Deep-copy the class properties, because they will be modified */
 
 #ifdef ZEND_ENGINE_2_4
+    dst->name = apc_string_pmemcpy(src->name, src->name_length+1, pool TSRMLS_CC); 
 	dst->default_properties_count = src->default_properties_count;
     if (src->default_properties_count) {
         dst->default_properties_table = (zval**) apc_php_malloc((sizeof(zval*) * src->default_properties_count) TSRMLS_CC);
