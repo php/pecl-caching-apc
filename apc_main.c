@@ -887,13 +887,13 @@ int apc_module_shutdown(TSRMLS_D)
         apc_cache_release(apc_cache, cache_entry TSRMLS_CC);
     }
 
-    apc_cache_destroy(apc_cache TSRMLS_CC);
-    apc_cache_destroy(apc_user_cache TSRMLS_CC);
-    apc_sma_cleanup(TSRMLS_C);
-
 #ifdef ZEND_ENGINE_2_4
     apc_interned_strings_shutdown(TSRMLS_C);
 #endif
+
+    apc_cache_destroy(apc_cache TSRMLS_CC);
+    apc_cache_destroy(apc_user_cache TSRMLS_CC);
+    apc_sma_cleanup(TSRMLS_C);
 
     APCG(initialized) = 0;
     return 0;
