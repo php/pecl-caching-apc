@@ -217,6 +217,9 @@ static zend_object_value apc_iterator_create(zend_class_entry *ce TSRMLS_DC) {
     iterator->obj.ce = ce;
     ALLOC_HASHTABLE(iterator->obj.properties);
     zend_hash_init(iterator->obj.properties, 0, NULL, ZVAL_PTR_DTOR, 0);
+#ifdef ZEND_ENGINE_2_4
+    iterator->obj.properties_table = NULL;
+#endif
     iterator->obj.guards = NULL;
     iterator->initialized = 0;
     retval.handle = zend_objects_store_put(iterator, apc_iterator_destroy, apc_iterator_free, NULL TSRMLS_CC);
