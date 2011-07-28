@@ -177,7 +177,7 @@ if test "$PHP_APC_PTHREADRWLOCK" != "no"; then
 	LIBS="$orig_LIBS"
 fi
 
-	AC_CACHE_CHECK([whether the target compiler supports builtin atomics], PHP_APC_GCC_ATOMICS, [
+	AC_CACHE_CHECK([whether the target compiler supports builtin atomics], PHP_cv_APC_GCC_ATOMICS, [
 
 			AC_TRY_LINK([],[
 					int foo = 0;
@@ -185,11 +185,11 @@ fi
 					__sync_bool_compare_and_swap(&foo, 0, 1);
 					return __sync_fetch_and_add(&foo, 1);
 				],
-				[PHP_APC_GCC_ATOMICS=yes],
-				[PHP_APC_GCC_ATOMICS=no])
+				[PHP_cv_APC_GCC_ATOMICS=yes],
+				[PHP_cv_APC_GCC_ATOMICS=no])
 		])
 
-	if test "x${PHP_APC_GCC_ATOMICS}" != "xno"; then
+	if test "x${PHP_cv_APC_GCC_ATOMICS}" != "xno"; then
 			AC_DEFINE(HAVE_ATOMIC_OPERATIONS, 1,
 				[Define this if your target compiler supports builtin atomics])
 		else
