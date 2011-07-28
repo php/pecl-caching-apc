@@ -63,6 +63,10 @@
 #include "zend_vm.h"
 #endif
 
+#ifndef IS_CONSTANT_TYPE_MASK
+#define IS_CONSTANT_TYPE_MASK (~IS_CONSTANT_INDEX)
+#endif
+
 #include "rfc1867.h"
 
 #endif

@@ -28,6 +28,7 @@
 #include "apc_globals.h"
 #include "apc_bin.h"
 #include "apc_zend.h"
+#include "apc_php.h"
 #include "apc_sma.h"
 #include "apc_pool.h"
 #include "ext/standard/md5.h"
@@ -446,7 +447,7 @@ static void apc_swizzle_zval(apc_bd_t *bd, zend_llist *ll, zval *zv TSRMLS_DC) {
         zend_hash_index_update(&APCG(copied_zvals), (ulong)zv, (void**)&zv, sizeof(zval*), NULL);
     }
 
-    switch(zv->type & ~IS_CONSTANT_INDEX) {
+    switch(zv->type & IS_CONSTANT_TYPE_MASK) {
         case IS_NULL:
         case IS_LONG:
         case IS_DOUBLE:

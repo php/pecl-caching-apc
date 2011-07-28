@@ -33,13 +33,10 @@
 #include "apc_compile.h"
 #include "apc_globals.h"
 #include "apc_zend.h"
+#include "apc_php.h"
 #include "apc_string.h"
 #include "ext/standard/php_var.h"
 #include "ext/standard/php_smart_str.h"
-
-#ifndef IS_CONSTANT_TYPE_MASK
-#define IS_CONSTANT_TYPE_MASK (~IS_CONSTANT_INDEX)
-#endif
 
 typedef void* (*ht_copy_fun_t)(void*, void*, apc_context_t* TSRMLS_DC);
 //typedef void  (*ht_free_fun_t)(void*, apc_context_t*);
