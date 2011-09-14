@@ -314,7 +314,7 @@ apc_cache_t* apc_cache_create(int size_hint, int gc_ttl, int ttl TSRMLS_DC)
 void apc_cache_destroy(apc_cache_t* cache TSRMLS_DC)
 {
     DESTROY_LOCK(cache->header->lock);
-#ifdef NONBLOCKING_LOCK_AVAILABLE
+#if NONBLOCKING_LOCK_AVAILABLE
     DESTROY_LOCK(cache->header->wrlock);
 #endif
     apc_efree(cache TSRMLS_CC);
