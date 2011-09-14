@@ -81,7 +81,15 @@ apc_windows_cs_rwlock_t *apc_windows_cs_create(apc_windows_cs_rwlock_t *lock TSR
 
 void apc_windows_cs_destroy(apc_windows_cs_rwlock_t *lock)
 {
-    pRtlDeleteResource(lock);
+    __try
+    {
+        pRtlDeleteResource(lock);
+    }
+        __except(GetExceptionCode() == EXCEPTION_ACCESS_VIOLATION ?
+               EXCEPTION_EXECUTE_HANDLER : EXCEPTION_CONTINUE_SEARCH)
+    {
+        /* Ignore exception (resource was freed during shutdown of another thread) */
+    }
     FreeLibrary(ntdll);
     return;
 }
