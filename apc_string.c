@@ -65,7 +65,7 @@ static void apc_dummy_interned_strings_restore_for_php(TSRMLS_D)
 {
 }
 
-char *apc_new_interned_string(char *arKey, int nKeyLength TSRMLS_DC)
+const char *apc_new_interned_string(const char *arKey, int nKeyLength TSRMLS_DC)
 {
     ulong h;
     uint nIndex;

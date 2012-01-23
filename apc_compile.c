@@ -280,7 +280,7 @@ static char *apc_string_pmemcpy(char *str, size_t len, apc_pool* pool TSRMLS_DC)
 {	
 #ifdef ZEND_ENGINE_2_4
     if (pool->type != APC_UNPOOL) {
-        char * ret = apc_new_interned_string(str, len TSRMLS_CC);
+        char * ret = (char*)apc_new_interned_string((const char*)str, len TSRMLS_CC);
         if (ret) {
             return ret;
         }

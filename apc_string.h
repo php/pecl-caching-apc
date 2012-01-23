@@ -35,7 +35,7 @@
 void apc_interned_strings_init(TSRMLS_D);
 void apc_interned_strings_shutdown(TSRMLS_D);
 
-char *apc_new_interned_string(char *arKey, int nKeyLength TSRMLS_DC);
+const char *apc_new_interned_string(const char *arKey, int nKeyLength TSRMLS_DC);
 
 #endif
 
