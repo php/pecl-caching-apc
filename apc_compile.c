@@ -1019,6 +1019,9 @@ static void apc_fixup_op_array_jumps(zend_op_array *dst, zend_op_array *src )
             case ZEND_JMP_SET:
 #endif
 #ifdef ZEND_ENGINE_2_4
+            case ZEND_JMP_SET_VAR:
+#endif
+#ifdef ZEND_ENGINE_2_4
                 zo->op2.jmp_addr = dst->opcodes + (zo->op2.jmp_addr - src->opcodes);
 #else
                 zo->op2.u.jmp_addr = dst->opcodes + (zo->op2.u.jmp_addr - src->opcodes);
@@ -1127,6 +1130,9 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_con
             case ZEND_JMPNZ_EX:
 #ifdef ZEND_ENGINE_2_3
             case ZEND_JMP_SET:
+#endif
+#ifdef ZEND_ENGINE_2_4
+            case ZEND_JMP_SET_VAR:
 #endif
                 if(flags != NULL) {
                     flags->has_jumps = 1;
@@ -1583,6 +1589,9 @@ static int my_prepare_op_array_for_execution(zend_op_array* dst, zend_op_array* 
                 case ZEND_JMPNZ_EX:
 #ifdef ZEND_ENGINE_2_3
                 case ZEND_JMP_SET:
+#endif
+#ifdef ZEND_ENGINE_2_4
+                case ZEND_JMP_SET_VAR:
 #endif
 #ifdef ZEND_ENGINE_2_4
                     dzo->op2.jmp_addr = dst->opcodes +
