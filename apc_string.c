@@ -29,6 +29,7 @@
 
 #include "apc.h"
 #include "apc_globals.h"
+#include "apc_zend.h"
 #include "apc_php.h"
 #include "apc_lock.h"
 
@@ -147,7 +148,7 @@ static void apc_copy_internal_strings(TSRMLS_D)
         }
 
 		if (ce->name) {
-			ce->name = apc_new_interned_string(ce->name, ce->name_length+1 TSRMLS_CC);
+			ZEND_STR_INTERN_DUP(ce->name, ce->name_length)
 		}
 
         q = ce->properties_info.pListHead;
@@ -159,7 +160,7 @@ static void apc_copy_internal_strings(TSRMLS_D)
             }
 
             if (info->name) {
-                info->name = apc_new_interned_string(info->name, info->name_length+1 TSRMLS_CC);
+				ZEND_STR_INTERN_DUP(info->name, info->name_length)
             }
 
             q = q->pListNext;
