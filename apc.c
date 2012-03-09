@@ -64,7 +64,7 @@ void* apc_erealloc(void* p, size_t n TSRMLS_DC)
 {
     void *new;
     new = realloc(p, n);
-    if (p == NULL) {
+    if (new == NULL) {
         apc_error("apc_erealloc: realloc failed to allocate %u bytes:" TSRMLS_CC, n);
         return NULL;
     }
