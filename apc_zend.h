@@ -179,19 +179,6 @@ static inline int _apc_opcode_handler_decode(zend_op *opline)
 # define ZEND_CE_BUILTIN_FUNCTIONS(ce)  (ce)->builtin_functions
 #endif
 
-#ifdef ZEND_ENGINE_2_4
-
-#define ZEND_STR_INTERN_DUP(str, len) \
-	do { \
-		const char *tmp = (str); \
-		tmp = apc_new_interned_string(tmp, len+1 TSRMLS_CC); \
-		if ((str) == tmp) { \
-			(str) = zend_strndup(tmp, len); \
-		} \
-	} while (0); \
-
-#endif
-
 #endif  /* APC_ZEND_H */
 
 /*

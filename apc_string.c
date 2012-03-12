@@ -29,12 +29,12 @@
 
 #include "apc.h"
 #include "apc_globals.h"
-#include "apc_zend.h"
 #include "apc_php.h"
 #include "apc_lock.h"
 
 #ifdef ZEND_ENGINE_2_4
 
+#ifndef ZTS
 typedef struct _apc_interned_strings_data_t {
     char *interned_strings_start;
     char *interned_strings_end;
@@ -65,9 +65,11 @@ static void apc_dummy_interned_strings_snapshot_for_php(TSRMLS_D)
 static void apc_dummy_interned_strings_restore_for_php(TSRMLS_D)
 {
 }
+#endif
 
 const char *apc_new_interned_string(const char *arKey, int nKeyLength TSRMLS_DC)
 {
+#ifndef ZTS
     ulong h;
     uint nIndex;
     Bucket *p;
@@ -125,8 +127,12 @@ const char *apc_new_interned_string(const char *arKey, int nKeyLength TSRMLS_DC)
     APCSG(interned_strings).nNumOfElements++;
 
     return p->arKey;
+#else
+    return zend_new_interned_string(arKey, nKeyLength, 0 TSRMLS_CC);
+#endif
 }
 
+#ifndef ZTS
 static void apc_copy_internal_strings(TSRMLS_D)
 {
     Bucket *p, *q;
@@ -148,7 +154,7 @@ static void apc_copy_internal_strings(TSRMLS_D)
         }
 
 		if (ce->name) {
-			ZEND_STR_INTERN_DUP(ce->name, ce->name_length)
+            ce->name = apc_new_interned_string(ce->name, ce->name_length TSRMLS_CC);
 		}
 
         q = ce->properties_info.pListHead;
@@ -160,7 +166,7 @@ static void apc_copy_internal_strings(TSRMLS_D)
             }
 
             if (info->name) {
-				ZEND_STR_INTERN_DUP(info->name, info->name_length)
+                info->name = apc_new_interned_string(info->name, info->name_length TSRMLS_CC);
             }
 
             q = q->pListNext;
@@ -240,6 +246,7 @@ void apc_interned_strings_shutdown(TSRMLS_D)
 
     DESTROY_LOCK(APCSG(lock));
 }
+#endif
 
 #endif
 

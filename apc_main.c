@@ -491,7 +491,7 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
     apc_context_t ctxt = {0,};
     int bailout=0;
     const char* filename = NULL;
-
+__debugbreak();
     if (!APCG(enabled) || apc_cache_busy(apc_cache)) {
         return old_compile_file(h, type TSRMLS_CC);
     }
@@ -842,7 +842,9 @@ int apc_module_init(int module_number TSRMLS_DC)
 #endif
 
 #ifdef ZEND_ENGINE_2_4
+#ifndef ZTS
     apc_interned_strings_init(TSRMLS_C);
+#endif
 #endif
 
     APCG(initialized) = 1;
@@ -888,7 +890,9 @@ int apc_module_shutdown(TSRMLS_D)
     }
 
 #ifdef ZEND_ENGINE_2_4
+#ifndef ZTS
     apc_interned_strings_shutdown(TSRMLS_C);
+#endif
 #endif
 
     apc_cache_destroy(apc_cache TSRMLS_CC);
