@@ -279,12 +279,14 @@ static zval* my_unserialize_object(zval* dst, const zval* src, apc_context_t* ct
 static char *apc_string_pmemcpy(char *str, size_t len, apc_pool* pool TSRMLS_DC)
 {	
 #ifdef ZEND_ENGINE_2_4
+#ifndef ZTS
     if (pool->type != APC_UNPOOL) {
         char * ret = (char*)apc_new_interned_string((const char*)str, len TSRMLS_CC);
         if (ret) {
             return ret;
         }
     }
+#endif
 #endif
     return apc_pmemcpy(str, len, pool TSRMLS_CC);
 }
@@ -887,17 +889,18 @@ static APC_HOTSPOT HashTable* my_copy_hashtable_ex(HashTable* dst,
             CHECK((newp = (Bucket*) apc_pmemcpy(curr, sizeof(Bucket), pool TSRMLS_CC)));
         } else if (IS_INTERNED(curr->arKey)) {
             CHECK((newp = (Bucket*) apc_pmemcpy(curr, sizeof(Bucket), pool TSRMLS_CC)));
+#ifndef ZTS
         } else if (pool->type != APC_UNPOOL) {
             char *arKey;
 
+            CHECK((newp = (Bucket*) apc_pmemcpy(curr, sizeof(Bucket), pool TSRMLS_CC)));
             arKey = apc_new_interned_string(curr->arKey, curr->nKeyLength TSRMLS_CC);
             if (!arKey) {
-                CHECK((newp = (Bucket*) apc_pmemcpy(curr, (sizeof(Bucket) + curr->nKeyLength), pool TSRMLS_CC)));
-                newp->arKey = ((char*)newp) + sizeof(Bucket);
+                CHECK((newp->arKey = (char*) apc_pmemcpy(curr->arKey, curr->nKeyLength, pool TSRMLS_CC)));
             } else {
-                CHECK((newp = (Bucket*) apc_pmemcpy(curr, sizeof(Bucket), pool TSRMLS_CC)));
                 newp->arKey = arKey;
             }
+#endif
         } else {
             CHECK((newp = (Bucket*) apc_pmemcpy(curr, sizeof(Bucket), pool TSRMLS_CC)));
             CHECK((newp->arKey = (char*) apc_pmemcpy(curr->arKey, curr->nKeyLength, pool TSRMLS_CC)));
