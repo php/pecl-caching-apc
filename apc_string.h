@@ -32,8 +32,10 @@
 
 #include "apc.h"
 
+#ifndef ZTS
 void apc_interned_strings_init(TSRMLS_D);
 void apc_interned_strings_shutdown(TSRMLS_D);
+#endif
 
 const char *apc_new_interned_string(const char *arKey, int nKeyLength TSRMLS_DC);
 
