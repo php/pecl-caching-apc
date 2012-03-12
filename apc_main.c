@@ -491,7 +491,7 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
     apc_context_t ctxt = {0,};
     int bailout=0;
     const char* filename = NULL;
-__debugbreak();
+
     if (!APCG(enabled) || apc_cache_busy(apc_cache)) {
         return old_compile_file(h, type TSRMLS_CC);
     }
