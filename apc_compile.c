@@ -899,8 +899,8 @@ static APC_HOTSPOT HashTable* my_copy_hashtable_ex(HashTable* dst,
                 newp->arKey = arKey;
             }
         } else {
-            CHECK((newp = (Bucket*) apc_pmemcpy(curr, (sizeof(Bucket) + curr->nKeyLength), pool TSRMLS_CC)));
-            newp->arKey = ((char*)newp) + sizeof(Bucket);
+            CHECK((newp = (Bucket*) apc_pmemcpy(curr, sizeof(Bucket), pool TSRMLS_CC)));
+            CHECK((newp->arKey = (char*) apc_pmemcpy(curr->arKey, curr->nKeyLength, pool TSRMLS_CC)));
         }        
 #else
         CHECK((newp = (Bucket*) apc_pmemcpy(curr,
