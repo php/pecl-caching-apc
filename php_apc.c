@@ -1260,7 +1260,7 @@ PHP_FUNCTION(apc_compile_file) {
 
             orig_current_execute_data = EG(current_execute_data);
             zend_try {
-                if (apc_compile_cache_entry(keys[i], &file_handle, ZEND_INCLUDE, t, &op_arrays[i], &cache_entries[i] TSRMLS_CC) != SUCCESS) {
+                if (apc_compile_cache_entry(&keys[i], &file_handle, ZEND_INCLUDE, t, &op_arrays[i], &cache_entries[i] TSRMLS_CC) != SUCCESS) {
                     op_arrays[i] = NULL;
                     cache_entries[i] = NULL;
                     add_assoc_long(return_value, Z_STRVAL_PP(hentry), -2);  /* -2: input or cache insertion error */

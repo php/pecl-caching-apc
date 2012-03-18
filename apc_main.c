@@ -391,7 +391,7 @@ default_compile:
 /* }}} */
 
 /* {{{ apc_compile_cache_entry  */
-zend_bool apc_compile_cache_entry(apc_cache_key_t key, zend_file_handle* h, int type, time_t t, zend_op_array** op_array, apc_cache_entry_t** cache_entry TSRMLS_DC) {
+zend_bool apc_compile_cache_entry(apc_cache_key_t *key, zend_file_handle* h, int type, time_t t, zend_op_array** op_array, apc_cache_entry_t** cache_entry TSRMLS_DC) {
     int num_functions, num_classes;
     apc_function_t* alloc_functions;
     zend_op_array* alloc_op_array;
@@ -437,7 +437,7 @@ zend_bool apc_compile_cache_entry(apc_cache_key_t key, zend_file_handle* h, int 
             while((n = php_stream_read(stream, (char*)buf, sizeof(buf))) > 0) {
                 PHP_MD5Update(&context, buf, n);
             }
-            PHP_MD5Final(key.md5, &context);
+            PHP_MD5Final(key->md5, &context);
             php_stream_close(stream);
             if(n<0) {
                 apc_warning("Error while reading '%s' for md5 generation." TSRMLS_CC, filename);
@@ -459,7 +459,7 @@ zend_bool apc_compile_cache_entry(apc_cache_key_t key, zend_file_handle* h, int 
     }
 
     path = h->opened_path;
-    if(!path && key.type == APC_CACHE_KEY_FPFILE) path = (char*)key.data.fpfile.fullpath;
+    if(!path && key->type == APC_CACHE_KEY_FPFILE) path = (char*)key->data.fpfile.fullpath;
     if(!path) path=h->filename;
 
     apc_debug("2. h->opened_path=[%s]  h->filename=[%s]\n" TSRMLS_CC, h->opened_path?h->opened_path:"null",h->filename);
@@ -607,7 +607,7 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
 #endif
 
     zend_try {
-        if (apc_compile_cache_entry(key, h, type, t, &op_array, &cache_entry TSRMLS_CC) == SUCCESS) {
+        if (apc_compile_cache_entry(&key, h, type, t, &op_array, &cache_entry TSRMLS_CC) == SUCCESS) {
             ctxt.pool = cache_entry->pool;
             ctxt.copy = APC_COPY_IN_OPCODE;
             if (apc_cache_insert(apc_cache, key, cache_entry, &ctxt, t TSRMLS_CC) != 1) {

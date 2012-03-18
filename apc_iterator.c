@@ -118,7 +118,7 @@ static apc_iterator_item_t* apc_iterator_item_ctor(apc_iterator_t *iterator, slo
     }
     if (APC_ITER_MD5 & iterator->format) {
         if(slot->value->type == APC_CACHE_ENTRY_FILE) {
-            if(slot->key.md5) {
+            if(APCG(file_md5) && slot->key.md5) {
                 make_digest(md5str, slot->key.md5);
                 add_assoc_string(item->value, "md5", md5str, 1);
             }
