@@ -287,7 +287,7 @@ extern apc_cache_entry_t* apc_cache_make_file_entry(const char* filename,
                                                     TSRMLS_DC);
 
 
-zend_bool apc_compile_cache_entry(apc_cache_key_t key, zend_file_handle* h, int type, time_t t, zend_op_array** op_array_pp, apc_cache_entry_t** cache_entry_pp TSRMLS_DC);
+zend_bool apc_compile_cache_entry(apc_cache_key_t *key, zend_file_handle* h, int type, time_t t, zend_op_array** op_array_pp, apc_cache_entry_t** cache_entry_pp TSRMLS_DC);
 
 /*
  * apc_cache_make_user_entry creates an apc_cache_entry_t object given an info string
