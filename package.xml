@@ -70,9 +70,10 @@
     <email>pierre@php.net</email>
     <active>yes</active>
   </developer>
-  <date>2012-04-11</date>
+
+  <date>2012-??-??</date>
   <version>
-    <release>3.1.10</release>
+    <release>3.1.11</release>
     <api>3.1.0</api>
   </version>
   <stability>
@@ -81,10 +82,10 @@
   </stability>
   <license uri="http://www.php.net/license">PHP License</license>
   <notes>
-- Add PHP 5.4 support (Dmitry, Anatoliy, Pierre)
-- Fixed bug #22679: Fix apc_bin_dump for constants. Use IS_CONSTANT_TYPE_MASK to handle all the constants, including the unqalified ones (instead of ~IS_CONSTANT_INDEX check)
-- Fixed bug #23822, php crashes on apache restart
-</notes>
+- Fixed bug #59829 APC should not try to canonicalize file URLs 
+- Fixed bug #61799 Typo in 'SEARCH' regex of apc.php
+  </notes>
+
   <contents>
     <dir name="/">
       <file role="doc" name="CHANGELOG"/>
@@ -208,6 +209,25 @@
    -->
   </extsrcrelease>
   <changelog>
+
+  <release>
+  <date>2012-04-11</date>
+  <version>
+    <release>3.1.10</release>
+    <api>3.1.0</api>
+  </version>
+  <stability>
+    <release>beta</release>
+    <api>stable</api>
+  </stability>
+  <license uri="http://www.php.net/license">PHP License</license>
+  <notes>
+- Add PHP 5.4 support (Dmitry, Anatoliy, Pierre)
+- Fixed bug #22679: Fix apc_bin_dump for constants. Use IS_CONSTANT_TYPE_MASK to handle all the constants, including the unqalified ones (instead of ~IS_CONSTANT_INDEX check)
+- Fixed bug #23822, php crashes on apache restart
+  </notes>
+  </release>
+
   <release>
   <date>2011-05-15</date>
   <version>
@@ -221,7 +241,7 @@
   <license uri="http://www.php.net/license">PHP License</license>
   <notes>
  - Fix regression introduced in 3.1.8 (#22687)
-</notes>
+  </notes>
   </release>
     <release>
       <date>2011-05-03</date>
