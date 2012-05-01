@@ -944,7 +944,7 @@ int apc_cache_make_file_key(apc_cache_key_t* key,
 
     len = strlen(filename);
     if(APCG(fpstat)==0) {
-        if(IS_ABSOLUTE_PATH(filename,len)) {
+        if(IS_ABSOLUTE_PATH(filename,len) || strstr(filename, "://")) {
             key->data.fpfile.fullpath = filename;
             key->data.fpfile.fullpath_len = len;
             key->h = string_nhash_8(key->data.fpfile.fullpath, key->data.fpfile.fullpath_len);
