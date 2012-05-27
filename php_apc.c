@@ -724,6 +724,10 @@ PHP_FUNCTION(apc_inc) {
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|lz", &strkey, &strkey_len, &(args.step), &success) == FAILURE) {
         return;
     }
+    
+	if (success) {
+		zval_dtor(success);
+	}
 
     if(_apc_update(strkey, strkey_len, inc_updater, &args TSRMLS_CC)) {
         if(success) ZVAL_TRUE(success);
@@ -747,6 +751,10 @@ PHP_FUNCTION(apc_dec) {
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|lz", &strkey, &strkey_len, &(args.step), &success) == FAILURE) {
         return;
     }
+    
+	if (success) {
+		zval_dtor(success);
+	}
 
     args.step = args.step * -1;
 
