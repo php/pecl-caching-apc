@@ -154,7 +154,7 @@ static void apc_copy_internal_strings(TSRMLS_D)
         }
 
 		if (ce->name) {
-            ce->name = apc_new_interned_string(ce->name, ce->name_length TSRMLS_CC);
+            ce->name = apc_new_interned_string(ce->name, ce->name_length+1 TSRMLS_CC);
 		}
 
         q = ce->properties_info.pListHead;
@@ -166,7 +166,7 @@ static void apc_copy_internal_strings(TSRMLS_D)
             }
 
             if (info->name) {
-                info->name = apc_new_interned_string(info->name, info->name_length TSRMLS_CC);
+                info->name = apc_new_interned_string(info->name, info->name_length+1 TSRMLS_CC);
             }
 
             q = q->pListNext;
