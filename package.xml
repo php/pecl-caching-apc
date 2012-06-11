@@ -84,6 +84,7 @@
   <notes>
 - Fixed bug #59829 APC should not try to canonicalize file URLs 
 - Fixed bug #61799 Typo in 'SEARCH' regex of apc.php
+- Fixed bugs #61824,61912,61956,62190,62230 ext/DOM memory corruption (cschneid)
   </notes>
 
   <contents>

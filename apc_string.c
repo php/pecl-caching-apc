@@ -91,17 +91,18 @@ const char *apc_new_interned_string(const char *arKey, int nKeyLength TSRMLS_DC)
         p = p->pNext;
     }
    
-    if (APCSG(interned_strings_top) + ZEND_MM_ALIGNED_SIZE(sizeof(Bucket) + nKeyLength) >=
+    if (APCSG(interned_strings_top) + ZEND_MM_ALIGNED_SIZE(sizeof(Bucket) + nKeyLength + 1) >=
         APCSG(interned_strings_end)) {
         /* no memory */
         return NULL;
     }
 
     p = (Bucket *) APCSG(interned_strings_top);
-    APCSG(interned_strings_top) += ZEND_MM_ALIGNED_SIZE(sizeof(Bucket) + nKeyLength);
+    APCSG(interned_strings_top) += ZEND_MM_ALIGNED_SIZE(sizeof(Bucket) + nKeyLength + 1);
 
     p->arKey = (char*)(p+1);
     memcpy(p->arKey, arKey, nKeyLength);
+    ((char *)p->arKey)[nKeyLength] = '\0';
     p->nKeyLength = nKeyLength;
     p->h = h;
     p->pData = &p->pDataPtr;
