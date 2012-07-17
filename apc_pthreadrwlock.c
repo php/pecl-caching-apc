@@ -26,10 +26,9 @@
 pthread_rwlock_t *apc_pthreadrwlock_create(pthread_rwlock_t *lock TSRMLS_DC) 
 {
     int result;
-    pthread_rwlockattr_t* attr;
-    attr = malloc(sizeof(pthread_rwlockattr_t));
+    pthread_rwlockattr_t attr;
 
-    result = pthread_rwlockattr_init(attr);
+    result = pthread_rwlockattr_init(&attr);
     if(result == ENOMEM) {
         apc_error("pthread rwlock error: Insufficient memory exists to create the rwlock attribute object." TSRMLS_CC);
     } else if(result == EINVAL) {
@@ -39,10 +38,10 @@ pthread_rwlock_t *apc_pthreadrwlock_create(pthread_rwlock_t *lock TSRMLS_DC)
     }
 
 #ifdef	__USE_UNIX98
-	pthread_rwlockattr_setkind_np(attr, PTHREAD_RWLOCK_PREFER_WRITER_NONRECURSIVE_NP);
+	pthread_rwlockattr_setkind_np(&attr, PTHREAD_RWLOCK_PREFER_WRITER_NONRECURSIVE_NP);
 #endif
 
-    result = pthread_rwlockattr_setpshared(attr, PTHREAD_PROCESS_SHARED);
+    result = pthread_rwlockattr_setpshared(&attr, PTHREAD_PROCESS_SHARED);
     if(result == EINVAL) {
         apc_error("pthread rwlock error: attr is not an initialized rwlock attribute object, or pshared is not a valid process-shared state setting." TSRMLS_CC);
     } else if(result == EFAULT) {
@@ -51,9 +50,12 @@ pthread_rwlock_t *apc_pthreadrwlock_create(pthread_rwlock_t *lock TSRMLS_DC)
         apc_error("pthread rwlock error: pshared was set to PTHREAD_PROCESS_SHARED." TSRMLS_CC);
     }
 
-    if(pthread_rwlock_init(lock, attr)) { 
+    if(pthread_rwlock_init(lock, &attr)) { 
         apc_error("unable to initialize pthread rwlock" TSRMLS_CC);
     }
+
+    pthread_rwlockattr_destroy(&attr);
+
     return lock;
 }
 
