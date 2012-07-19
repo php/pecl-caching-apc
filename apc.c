@@ -34,6 +34,7 @@
 #include "apc.h"
 #include "apc_zend.h"
 #include "apc_cache.h"
+#include "apc_globals.h"
 #include "php.h"
 
 #if HAVE_PCRE || HAVE_BUNDLED_PCRE
@@ -340,6 +341,14 @@ int apc_search_paths(const char* filename, const char* path, apc_fileinfo_t* fil
                 fileinfo->fullpath = (char*) fileinfo->path_buf;
                 found = 1;
                 break;
+            }
+        }
+        /* in cli mode PHP explicitly checks the cwd, so we should as well */
+        if(APCG(enable_cli) && !strcmp(sapi_module.name, "cli")) {
+            snprintf(fileinfo->path_buf, sizeof(fileinfo->path_buf), ".%c%s", DEFAULT_SLASH, path_for_open);
+            if (APC_URL_STAT(wrapper, fileinfo->path_buf, &fileinfo->st_buf) == 0) {
+                fileinfo->fullpath = (char*) fileinfo->path_buf;
+                found = 1;
             }
         }
     } else {
