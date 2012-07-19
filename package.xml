@@ -56,7 +56,7 @@
     <name>Brian Shire</name>
     <user>shire</user>
     <email>shire@php.net</email>
-    <active>yes</active>
+    <active>no</active>
   </developer>
   <developer>
     <name>Kalle Sommer Nielsen</name>
@@ -82,7 +82,9 @@
   </stability>
   <license uri="http://www.php.net/license">PHP License</license>
   <notes>
+- In cli mode with stat=0 and canonicalize=1 make sure pwd is searched
 - Fixed bug #59829 APC should not try to canonicalize file URLs 
+- Fixed bug #62398 stat=0 replaces an include/require filename with empty string
 - Fixed bug #61799 Typo in 'SEARCH' regex of apc.php
 - Fixed bugs #61824,61912,61956,62190,62230 ext/DOM memory corruption (cschneid)
   </notes>
