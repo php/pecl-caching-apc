@@ -83,6 +83,7 @@
   <license uri="http://www.php.net/license">PHP License</license>
   <notes>
 - In cli mode with stat=0 and canonicalize=1 make sure pwd is searched
+- Fixed bug #62302 apc.include_once_override=1 made everything crash
 - Fixed bug #59829 APC should not try to canonicalize file URLs 
 - Fixed bug #62398 stat=0 replaces an include/require filename with empty string
 - Fixed bug #61799 Typo in 'SEARCH' regex of apc.php

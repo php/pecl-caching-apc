@@ -140,7 +140,7 @@ static inline int _apc_opcode_handler_decode(zend_op *opline)
 # if PHP_MAJOR_VERSION >= 6
 #  define APC_OPCODE_HANDLER_COUNT          ((25 * 152) + 1)
 # elif defined(ZEND_ENGINE_2_4)
-#  define APC_OPCODE_HANDLER_COUNT          ((25 * 157) + 1) /* 3 new opcodes in 5.4? - separate, bind_trais, add_trait */
+#  define APC_OPCODE_HANDLER_COUNT          ((25 * 159) + 1) /* 5 new opcodes in 5.4 - qm_assign_var, jmp_set_var, separate, bind_trais, add_trait */
 # elif PHP_MAJOR_VERSION >= 5 && PHP_MINOR_VERSION >= 3
 #  define APC_OPCODE_HANDLER_COUNT          ((25 * 154) + 1) /* 3 new opcodes in 5.3 - unused, lambda, jmp_set */
 # else
