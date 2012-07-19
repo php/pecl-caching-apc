@@ -1271,6 +1271,7 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_con
                             dzo->op1.literal = (zend_literal*) apc_pool_alloc(pool, sizeof(zend_literal));
                             Z_STRLEN_P(dzo->op1.zv) = strlen(fullpath);
                             Z_STRVAL_P(dzo->op1.zv) = apc_pstrdup(fullpath, pool TSRMLS_CC);
+                            Z_TYPE_P(dzo->op1.zv) = IS_STRING;
                             Z_SET_REFCOUNT_P(dzo->op1.zv, 2);
                             Z_SET_ISREF_P(dzo->op1.zv);
                             dzo->op1.literal->hash_value = zend_hash_func(Z_STRVAL_P(dzo->op1.zv), Z_STRLEN_P(dzo->op1.zv)+1);
