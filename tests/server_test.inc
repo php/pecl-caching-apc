@@ -82,3 +82,17 @@ function get_response($fp, $data_only = true)
 	return $s;
 }
 
+
+function run_test_simple($host, $port) {
+	$fp = fsockopen($host, $port, $errno, $errstr, 0.5);
+	if (!$fp) {
+	  die("connect failed");
+	}
+
+	$send = "GET / HTTP/1.1\nHost: {$host}\r\n\r\n";
+
+	if(fwrite($fp, $send)) {
+		echo get_response($fp);
+	}
+}
+
