@@ -3,7 +3,7 @@ APC: bug #62398 (php 5.4)
 --SKIPIF--
 <?php
     require_once(dirname(__FILE__) . '/skipif.inc'); 
-    if (PHP_MAGOR_VERSION < 5 && PHP_MINOR_VERSION < 4) {
+    if (PHP_MAJOR_VERSION < 5 && PHP_MINOR_VERSION < 4) {
 		die('skip for PHP >= 5.4');
 	}
 --FILE--

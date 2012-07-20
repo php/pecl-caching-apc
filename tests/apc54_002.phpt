@@ -3,7 +3,7 @@ APC: interned strings same method names (php 5.4 nts)
 --SKIPIF--
 <?php
     require_once(dirname(__FILE__) . '/skipif.inc'); 
-    if (PHP_MAGOR_VERSION < 5 && PHP_MINOR_VERSION < 4) {
+    if (PHP_MAJOR_VERSION < 5 && PHP_MINOR_VERSION < 4) {
 		die('skip PHP 5.4 only');
 	}
 	if (PHP_ZTS) {
