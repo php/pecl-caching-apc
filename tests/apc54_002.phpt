@@ -52,22 +52,9 @@ list($host, $port) = explode(':', PHP_CLI_SERVER_ADDRESS);
 $port = intval($port)?:80;
 
 for ($i = 0; $i < 10; $i++) {
-	run_test($host, $port);
+	run_test_simple();
 }
 echo 'done';
-
-function run_test($host, $port) {
-	$fp = fsockopen($host, $port, $errno, $errstr, 0.5);
-	if (!$fp) {
-	  die("connect failed");
-	}
-
-	$send = "GET / HTTP/1.1\nHost: {$host}\r\n\r\n";
-
-	if(fwrite($fp, $send)) {
-		echo get_response($fp);
-	}
-}
 
 --EXPECT--
 hello class one

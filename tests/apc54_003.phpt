@@ -24,11 +24,8 @@ $args = array(
 
 server_start($file, $args);
 
-list($host, $port) = explode(':', PHP_CLI_SERVER_ADDRESS);
-$port = intval($port)?:80;
-
 for ($i = 0; $i < 10; $i++) {
-	run_test_simple($host, $port);
+	run_test_simple();
 }
 echo 'done';
 

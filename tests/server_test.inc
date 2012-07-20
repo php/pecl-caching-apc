@@ -4,7 +4,8 @@ define ("PHP_CLI_SERVER_HOSTNAME", "localhost");
 define ("PHP_CLI_SERVER_PORT", 8964);
 define ("PHP_CLI_SERVER_ADDRESS", PHP_CLI_SERVER_HOSTNAME.":".PHP_CLI_SERVER_PORT);
 
-function server_start($code = 'echo "Hello world";', $php_opts = array(), $no_router = FALSE) {
+function server_start($code = 'echo "Hello world";', $php_opts = array(), $no_router = FALSE)
+{
 	$php_executable = getenv('TEST_PHP_EXECUTABLE');
 	$doc_root = __DIR__;
 	$router = "index.php";
@@ -83,10 +84,14 @@ function get_response($fp, $data_only = true)
 }
 
 
-function run_test_simple($host, $port) {
+function run_test_simple()
+{
+	list($host, $port) = explode(':', PHP_CLI_SERVER_ADDRESS);
+	$port = intval($port)?:80;
+
 	$fp = fsockopen($host, $port, $errno, $errstr, 0.5);
 	if (!$fp) {
-	  die("connect failed");
+	  die(sprintf("connect failed errno=%d errstr='%s'", $errno, $errstr));
 	}
 
 	$send = "GET / HTTP/1.1\nHost: {$host}\r\n\r\n";
@@ -96,3 +101,14 @@ function run_test_simple($host, $port) {
 	}
 }
 
+function run_test($host, $port, $send)
+{
+	$fp = fsockopen($host, $port, $errno, $errstr, 0.5);
+	if (!$fp) {
+	  die("connect failed");
+	}
+
+	if(fwrite($fp, $send)) {
+		echo get_response($fp);
+	}
+}
