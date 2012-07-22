@@ -36,7 +36,7 @@ function server_start($code = 'echo "Hello world";', $php_opts = array(), $no_ro
 	} else {
 		$cmd = "exec {$php_executable} -n $php_args -t {$doc_root} -S " . PHP_CLI_SERVER_ADDRESS;
 		if (!$no_router) {
-			$cmd .= " {$router}";
+			$cmd .= " {$doc_root}/{$router}";
 		}
 		$cmd .= " 2>/dev/null";
 
