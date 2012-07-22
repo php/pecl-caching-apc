@@ -19,7 +19,7 @@ $args = array(
 $file = <<<FL
 class userstream {
 	public \$position = 0;
-	public \$data = "If you can read this, it worked";
+	public \$data = "If you can read this, it worked\n";
 	
 	function stream_open(\$path, \$mode, \$options, &\$opened_path)
 	{
@@ -91,3 +91,13 @@ echo 'done';
 ?>
 --EXPECT--
 If you can read this, it worked
+If you can read this, it worked
+If you can read this, it worked
+If you can read this, it worked
+If you can read this, it worked
+If you can read this, it worked
+If you can read this, it worked
+If you can read this, it worked
+If you can read this, it worked
+If you can read this, it worked
+done
