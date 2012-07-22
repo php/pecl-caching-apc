@@ -3,8 +3,8 @@ APC: Bug #62190	Couldn't fetch DOMProcessingInstruction with APC and native obj 
 --SKIPIF--
 <?php
     require_once(dirname(__FILE__) . '/skipif.inc'); 
-    if (PHP_MAJOR_VERSION < 5 && PHP_MINOR_VERSION < 4) {
-		die('skip PHP 5.4 only');
+    if (PHP_MAJOR_VERSION < 5 || (PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION < 4)) {
+		die('skip PHP 5.4+ only');
 	}
 --FILE--
 <?php
