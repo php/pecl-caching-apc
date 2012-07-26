@@ -38,7 +38,6 @@ function server_start($code = 'echo "Hello world";', $php_opts = array(), $no_ro
 		if (!$no_router) {
 			$cmd .= " {$doc_root}/{$router}";
 		}
-		$cmd .= " 2>/dev/null";
 
 		$handle = proc_open($cmd, $descriptorspec, $pipes, $doc_root);
 	}
@@ -46,12 +45,8 @@ function server_start($code = 'echo "Hello world";', $php_opts = array(), $no_ro
 	// note: even when server prints 'Listening on localhost:8964...Press Ctrl-C to quit.'
 	//       it might not be listening yet...need to wait until fsockopen() call returns
     $i = 0;
-    while (($i++ < 5) && !($fp = @fsockopen(PHP_CLI_SERVER_HOSTNAME, PHP_CLI_SERVER_PORT))) {
+    while (($i++ < 5) && !connection_test()) {
         usleep(10000);
-    }
-
-    if ($fp) {
-        fclose($fp);
     }
 
 	register_shutdown_function(
@@ -84,6 +79,31 @@ function get_response($fp, $data_only = true)
 }
 
 
+function connection_test()
+{
+	list($host, $port) = explode(':', PHP_CLI_SERVER_ADDRESS);
+	$port = intval($port)?:80;
+
+	$fp = @fsockopen($host, $port, $errno, $errstr, 0.5);
+	if (!$fp) {
+		return false;
+	}
+
+	$send = "GET / HTTP/1.1\nHost: {$host}\r\n\r\n";
+
+	/* will not out here, just test if the connection has worked*/
+	if(@fwrite($fp, $send)) {
+		get_response($fp);
+		fclose($fp);
+
+		return true;
+	}
+
+	@fclose($fp);
+
+	return false;
+}
+
 function run_test_simple()
 {
 	list($host, $port) = explode(':', PHP_CLI_SERVER_ADDRESS);
@@ -99,6 +119,8 @@ function run_test_simple()
 	if(fwrite($fp, $send)) {
 		echo get_response($fp);
 	}
+
+	fclose($fp);
 }
 
 function run_test($host, $port, $send)
@@ -111,4 +133,6 @@ function run_test($host, $port, $send)
 	if(fwrite($fp, $send)) {
 		echo get_response($fp);
 	}
+
+	fclose($fp);
 }
