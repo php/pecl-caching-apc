@@ -317,6 +317,7 @@ void apc_cache_destroy(apc_cache_t* cache TSRMLS_DC)
 #if NONBLOCKING_LOCK_AVAILABLE
     DESTROY_LOCK(cache->header->wrlock);
 #endif
+    apc_sma_free(cache->shmaddr TSRMLS_CC);
     apc_efree(cache TSRMLS_CC);
 }
 /* }}} */
