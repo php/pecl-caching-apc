@@ -998,6 +998,11 @@ int apc_request_init(TSRMLS_D)
 
 int apc_request_shutdown(TSRMLS_D)
 {
+    /* As long as regex is compiled per request, it must be freed accordingly.*/
+    if (APCG(compiled_filters)) {
+        apc_regex_destroy_array(APCG(compiled_filters));
+    }
+
 #if APC_HAVE_LOOKUP_HOOKS
     if(APCG(lazy_class_table)) {
         zend_hash_destroy(APCG(lazy_class_table));
