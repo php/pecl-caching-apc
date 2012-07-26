@@ -998,10 +998,6 @@ int apc_request_init(TSRMLS_D)
 
 int apc_request_shutdown(TSRMLS_D)
 {
-    /* As long as regex is compiled per request, it must be freed accordingly.*/
-    if (APCG(compiled_filters)) {
-        apc_regex_destroy_array(APCG(compiled_filters));
-    }
 
 #if APC_HAVE_LOOKUP_HOOKS
     if(APCG(lazy_class_table)) {
@@ -1019,6 +1015,13 @@ int apc_request_shutdown(TSRMLS_D)
 #ifdef APC_FILEHITS
     zval_ptr_dtor(&APCG(filehits));
 #endif
+
+    /* As long as regex is compiled per request, it must be freed accordingly.*/
+    if (APCG(compiled_filters) && APCG(filters)) {
+        apc_regex_destroy_array(APCG(compiled_filters));
+        APCG(compiled_filters) = NULL;
+    }
+
     return 0;
 }
 

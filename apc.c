@@ -474,8 +474,12 @@ void apc_regex_destroy_array(void* p TSRMLS_DC)
 {
     if (p != NULL) {
         apc_regex* regs = (apc_regex*) p;
-        pefree(regs->preg, 1);
-        pefree(regs->nreg, 1);
+        if (regs->preg) {
+            pefree(regs->preg, 1);
+        }
+        if (regs->nreg) {
+            pefree(regs->nreg, 1);
+        }
         apc_efree(regs TSRMLS_CC);
     }
 }
