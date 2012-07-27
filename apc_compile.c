@@ -1100,6 +1100,7 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_con
         p = dst->literals = (zend_literal*) apc_pool_alloc(pool, (sizeof(zend_literal) * src->last_literal));
         end = p + src->last_literal;
         while (p < end) {
+            assert(q->constant.type >= IS_NULL && q->constant.type <= IS_CALLABLE);
             *p = *q;
             my_copy_zval(&p->constant, &q->constant, ctxt TSRMLS_CC);
             p++;
@@ -1818,6 +1819,9 @@ void apc_free_class_entry_after_execution(zend_class_entry* src TSRMLS_DC)
     /* my_destroy_hashtable() does not play nice with refcounts */
 
 #ifdef ZEND_ENGINE_2_4
+    if (!IS_INTERNED(src->name)) {
+        apc_php_free(src->name TSRMLS_CC);
+    }
     if (src->default_static_members_table) {
        int i;
 
@@ -1855,6 +1859,13 @@ void apc_free_class_entry_after_execution(zend_class_entry* src TSRMLS_DC)
     zend_hash_clean(&src->default_properties);
 #endif
     zend_hash_clean(&src->constants_table);
+
+    /* XXX definitely more cleanup should be on hash tables
+           (refer to my_copy_hashtable_ex) */
+    apc_php_free(src->function_table.arBuckets TSRMLS_CC);
+    apc_php_free(src->properties_info.arBuckets TSRMLS_CC);
+    apc_php_free(src->constants_table.arBuckets TSRMLS_CC);
+    apc_php_free(src TSRMLS_CC);
 
     /* TODO: more cleanup */
 }
