@@ -1018,7 +1018,7 @@ int apc_request_shutdown(TSRMLS_D)
 
     /* As long as regex is compiled per request, it must be freed accordingly.*/
     if (APCG(compiled_filters) && APCG(filters)) {
-        apc_regex_destroy_array(APCG(compiled_filters));
+        apc_regex_destroy_array(APCG(compiled_filters) TSRMLS_CC);
         APCG(compiled_filters) = NULL;
     }
 
