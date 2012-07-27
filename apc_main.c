@@ -133,7 +133,6 @@ static int install_class(apc_class_t cl, apc_context_t* ctxt, int lazy TSRMLS_DC
     zend_class_entry* class_entry = cl.class_entry;
     zend_class_entry* parent = NULL;
     int status;
-    zend_class_entry** allocated_ce = NULL;
 
     /* Special case for mangled names. Mangled names are unique to a file.
      * There is no way two classes with the same mangled name will occur,
@@ -162,16 +161,6 @@ static int install_class(apc_class_t cl, apc_context_t* ctxt, int lazy TSRMLS_DC
         return status;
     }
 
-    /*
-     * XXX: We need to free this somewhere...
-     */
-    allocated_ce = apc_php_malloc(sizeof(zend_class_entry*) TSRMLS_CC);
-
-    if(!allocated_ce) {
-        return FAILURE;
-    }
-
-    *allocated_ce =
     class_entry =
         apc_copy_class_entry_for_execution(cl.class_entry, ctxt TSRMLS_CC);
 
@@ -213,20 +202,19 @@ static int install_class(apc_class_t cl, apc_context_t* ctxt, int lazy TSRMLS_DC
             class_entry->parent = parent;
             zend_do_inheritance(class_entry, parent TSRMLS_CC);
         }
-
-
     }
 
     status = zend_hash_add(EG(class_table),
                            cl.name,
                            cl.name_len+1,
-                           allocated_ce,
+                           &class_entry,
                            sizeof(zend_class_entry*),
                            NULL);
 
     if (status == FAILURE) {
         apc_error("Cannot redeclare class %s" TSRMLS_CC, cl.name);
     }
+
     return status;
 }
 /* }}} */
