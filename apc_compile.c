@@ -46,6 +46,12 @@ typedef void (*ht_fixup_fun_t)(Bucket*, zend_class_entry*, zend_class_entry*);
 
 #define CHECK(p) { if ((p) == NULL) return NULL; }
 
+enum {
+    APC_FREE_HASHTABLE_FUNCS,
+    APC_FREE_HASHTABLE_PROPS,
+    APC_FREE_HASHTABLE_STATIC_PROPS,
+};
+
 /* {{{ internal function declarations */
 
 static zend_function* my_bitwise_copy_function(zend_function*, zend_function*, apc_context_t* TSRMLS_DC);
@@ -831,6 +837,51 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
     }
 
     return dst;
+}
+/* }}} */
+
+
+/* {{{ my_free_hashtable */
+static void my_free_hashtable(HashTable* ht, int type TSRMLS_DC)
+{
+    Bucket *curr = NULL;
+    Bucket *prev = NULL;
+
+    assert(ht != NULL);
+
+    prev = ht->pListHead;
+    while (prev != NULL) {
+        curr = prev;
+        prev = prev->pListNext;
+
+#ifdef ZEND_ENGINE_2_4
+        if (!IS_INTERNED(curr->arKey)) {
+            apc_php_free((char*)curr->arKey TSRMLS_CC);
+        } 
+#else
+        apc_php_free(curr->arKey TSRMLS_CC);
+#endif
+        switch (type) {
+            case APC_FREE_HASHTABLE_FUNCS:
+                do {
+                    zend_function *fn;
+                    fn = (zend_function *)curr->pData;
+
+                    apc_php_free(fn->op_array.refcount TSRMLS_CC);
+                    efree(curr->pData);
+                } while (0);
+                break;
+
+            case APC_FREE_HASHTABLE_PROPS:
+            case APC_FREE_HASHTABLE_STATIC_PROPS:
+            default:
+                efree(curr->pData);
+                break;
+        }
+        apc_php_free(curr TSRMLS_CC);
+    }
+
+    apc_php_free(ht->arBuckets TSRMLS_CC);
 }
 /* }}} */
 
@@ -1860,11 +1911,9 @@ void apc_free_class_entry_after_execution(zend_class_entry* src TSRMLS_DC)
 #endif
     zend_hash_clean(&src->constants_table);
 
-    /* XXX definitely more cleanup should be on hash tables
-           (refer to my_copy_hashtable_ex) */
-    apc_php_free(src->function_table.arBuckets TSRMLS_CC);
-    apc_php_free(src->properties_info.arBuckets TSRMLS_CC);
-    apc_php_free(src->constants_table.arBuckets TSRMLS_CC);
+    my_free_hashtable(&src->function_table, APC_FREE_HASHTABLE_FUNCS TSRMLS_CC);
+    my_free_hashtable(&src->properties_info, APC_FREE_HASHTABLE_PROPS TSRMLS_CC);
+    my_free_hashtable(&src->constants_table, APC_FREE_HASHTABLE_STATIC_PROPS TSRMLS_CC);
     apc_php_free(src TSRMLS_CC);
 
     /* TODO: more cleanup */
