@@ -90,7 +90,7 @@ static int install_function(apc_function_t fn, apc_context_t* ctxt, int lazy TSR
                               fn.name,
                               fn.name_len+1,
                               func,
-                              sizeof(fn.function[0]),
+                              sizeof(zend_function),
                               NULL);
         efree(func);
     }
@@ -362,6 +362,7 @@ static zend_op_array* cached_compile(zend_file_handle* h,
 
 default_compile:
 
+    /* XXX more cleanup in uninstall class, and uninstall_function() should be here too */
     if(cache_entry->data.file.classes) {
         for(ii = 0; ii < i ; ii++) {
             uninstall_class(cache_entry->data.file.classes[ii] TSRMLS_CC);
@@ -551,6 +552,10 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
             if (h->type != ZEND_HANDLE_FILENAME) {
                 zend_llist_add_element(&CG(open_files), h); 
             }
+
+            /* XXX op_array->refcount is still leaked here on each request. This is because
+                we prevent garbage collection, but zend_execute_scripts tries to free this
+                on the stack and we record the pointer nowhere. */
             return op_array;
         }
         if(APCG(report_autofilter)) {
@@ -914,14 +919,14 @@ static void apc_deactivate(TSRMLS_D)
      */
     while (apc_stack_size(APCG(cache_stack)) > 0) {
         int i;
-        zend_class_entry* zce = NULL;
-        void ** centry = (void*)(&zce);
-        zend_class_entry** pzce = NULL;
-
         apc_cache_entry_t* cache_entry =
             (apc_cache_entry_t*) apc_stack_pop(APCG(cache_stack));
 
         if (cache_entry->data.file.classes) {
+            zend_class_entry* zce = NULL;
+            void ** centry = (void*)(&zce);
+            zend_class_entry** pzce = NULL;
+
             for (i = 0; cache_entry->data.file.classes[i].class_entry != NULL; i++) {
                 centry = (void**)&pzce; /* a triple indirection to get zend_class_entry*** */
                 if(zend_hash_find(EG(class_table), 
@@ -942,8 +947,36 @@ static void apc_deactivate(TSRMLS_D)
                     cache_entry->data.file.classes[i].name_len+1);
 
                 apc_free_class_entry_after_execution(zce TSRMLS_CC);
+                zce = NULL;
             }
         }
+        if (cache_entry->data.file.functions) {
+            zend_function fn, *pfn = NULL;
+
+            for (i = 0; cache_entry->data.file.functions[i].function != NULL; i++) {
+
+                if (zend_hash_find(EG(function_table),
+                            cache_entry->data.file.functions[i].name,
+                            cache_entry->data.file.functions[i].name_len+1,
+                            (void**)&pfn) == FAILURE) {
+                    continue;
+                }
+
+                fn = *pfn;
+
+                zend_hash_del(EG(function_table),
+                        cache_entry->data.file.functions[i].name,
+                        cache_entry->data.file.functions[i].name_len+1);
+                apc_free_function_after_execution(&fn TSRMLS_CC);
+
+                pfn = NULL;
+            }
+        }
+
+        /* XXX need also to free the file op_array->refcount copied from 
+            cache_entry->data.file.op_array for execution but got lost
+            in zend_execute_scripts */
+
         apc_cache_release(apc_cache, cache_entry TSRMLS_CC);
     }
 }

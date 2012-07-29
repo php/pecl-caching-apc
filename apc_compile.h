@@ -117,11 +117,13 @@ extern zend_function* apc_copy_function_for_execution(zend_function* src, apc_co
 extern zend_class_entry* apc_copy_class_entry_for_execution(zend_class_entry* src, apc_context_t* ctxt TSRMLS_DC);
 
 /*
- * The "free-after-execution" function performs a cursory clean up of the class data
+ * The "free-after-execution" function performs a cursory clean up of the item data
  * This is required to minimize memory leak warnings and to ensure correct destructor
  * ordering of some variables.
  */
 extern void apc_free_class_entry_after_execution(zend_class_entry* src TSRMLS_DC);
+extern void apc_free_function_after_execution(zend_function* src TSRMLS_DC);
+extern void apc_free_op_array_after_execution(zend_op_array *src TSRMLS_DC);
 
 /*
  * Optimization callback definition and registration function. 

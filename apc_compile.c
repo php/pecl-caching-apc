@@ -867,7 +867,7 @@ static void my_free_hashtable(HashTable* ht, int type TSRMLS_DC)
                     zend_function *fn;
                     fn = (zend_function *)curr->pData;
 
-                    apc_php_free(fn->op_array.refcount TSRMLS_CC);
+                    apc_free_op_array_after_execution(&fn->op_array TSRMLS_CC);
                     efree(curr->pData);
                 } while (0);
                 break;
@@ -1717,6 +1717,15 @@ zend_op_array* apc_copy_op_array_for_execution(zend_op_array* dst, zend_op_array
 }
 /* }}} */
 
+/* {{{ apc_free_op_array_after_execution */
+void apc_free_op_array_after_execution(zend_op_array *src TSRMLS_DC)
+{
+    if (NULL != src->refcount) {
+        apc_php_free(src->refcount TSRMLS_CC);
+    }
+}
+/* }}} */
+
 /* {{{ apc_copy_function_for_execution */
 zend_function* apc_copy_function_for_execution(zend_function* src, apc_context_t* ctxt TSRMLS_DC)
 {
@@ -1732,8 +1741,22 @@ zend_function* apc_copy_function_for_execution(zend_function* src, apc_context_t
 /* {{{ apc_copy_function_for_execution_ex */
 zend_function* apc_copy_function_for_execution_ex(void *dummy, zend_function* src, apc_context_t* ctxt TSRMLS_DC)
 {
-    if(src->type==ZEND_INTERNAL_FUNCTION || src->type==ZEND_OVERLOADED_FUNCTION) return src;
+    if(src->type==ZEND_INTERNAL_FUNCTION || src->type==ZEND_OVERLOADED_FUNCTION) {
+        return src;
+    }
+
     return apc_copy_function_for_execution(src, ctxt TSRMLS_CC);
+}
+/* }}} */
+
+/* {{{ apc_free_function_after_execution */
+void apc_free_function_after_execution(zend_function* src TSRMLS_DC)
+{
+    if(src->type==ZEND_INTERNAL_FUNCTION || src->type==ZEND_OVERLOADED_FUNCTION) {
+        return src;
+    }
+
+    apc_free_op_array_after_execution(&src->op_array TSRMLS_CC);
 }
 /* }}} */
 

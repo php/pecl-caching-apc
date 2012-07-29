@@ -86,7 +86,7 @@
 - fixed filter regex freeing on request shutdown (Anatoliy)
 - fixed cache sma freeing on module shutdown (Anatoliy)
 - fixed interned strings storage freeing on module shutdown (Anatoily)
-- improved class entry cleanup (Anatoliy)
+- improved class/function per request cleanup (Anatoliy)
   </notes>
 
   <contents>
