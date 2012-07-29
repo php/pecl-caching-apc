@@ -553,9 +553,9 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
                 zend_llist_add_element(&CG(open_files), h); 
             }
 
-            /* XXX op_array->refcount is still leaked here on each request. This is because
-                we prevent garbage collection, but zend_execute_scripts tries to free this
-                on the stack and we record the pointer nowhere. */
+            /* save this to free on rshutdown */
+            cache_entry->data.file.exec_refcount = op_array->refcount;
+
             return op_array;
         }
         if(APCG(report_autofilter)) {
@@ -973,9 +973,11 @@ static void apc_deactivate(TSRMLS_D)
             }
         }
 
-        /* XXX need also to free the file op_array->refcount copied from 
-            cache_entry->data.file.op_array for execution but got lost
-            in zend_execute_scripts */
+        /* This is a very special case of apc_free_op_array_after_execution.
+           File related op_array->refcount allocated on unpool for execution
+           and would never be freed in zend_execute_scripts() */
+        apc_php_free(cache_entry->data.file.exec_refcount TSRMLS_CC);
+        cache_entry->data.file.exec_refcount = NULL;
 
         apc_cache_release(apc_cache, cache_entry TSRMLS_CC);
     }

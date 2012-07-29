@@ -133,6 +133,7 @@ typedef union _apc_cache_entry_value_t {
         apc_function_t* functions;  /* array of apc_function_t's */
         apc_class_t* classes;       /* array of apc_class_t's */
         long halt_offset;           /* value of __COMPILER_HALT_OFFSET__ for the file */
+        zend_uint *exec_refcount;   /* refcount member of zend_op_array refreshed before execution */
     } file;
     struct {
         char *info;
