@@ -1933,10 +1933,10 @@ void apc_free_class_entry_after_execution(zend_class_entry* src TSRMLS_DC)
 #endif
     zend_hash_clean(&src->constants_table);
 
-    my_free_hashtable(&src->function_table, APC_FREE_HASHTABLE_FUNCS TSRMLS_CC);
+   /* my_free_hashtable(&src->function_table, APC_FREE_HASHTABLE_FUNCS TSRMLS_CC);
     my_free_hashtable(&src->properties_info, APC_FREE_HASHTABLE_PROPS TSRMLS_CC);
     my_free_hashtable(&src->constants_table, APC_FREE_HASHTABLE_STATIC_PROPS TSRMLS_CC);
-    apc_php_free(src TSRMLS_CC);
+    apc_php_free(src TSRMLS_CC);*/
 
     /* TODO: more cleanup */
 }
