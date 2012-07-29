@@ -1753,7 +1753,7 @@ zend_function* apc_copy_function_for_execution_ex(void *dummy, zend_function* sr
 void apc_free_function_after_execution(zend_function* src TSRMLS_DC)
 {
     if(src->type==ZEND_INTERNAL_FUNCTION || src->type==ZEND_OVERLOADED_FUNCTION) {
-        return src;
+        return;
     }
 
     apc_free_op_array_after_execution(&src->op_array TSRMLS_CC);
