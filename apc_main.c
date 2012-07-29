@@ -950,7 +950,7 @@ static void apc_deactivate(TSRMLS_D)
                 zce = NULL;
             }
         }
-        if (cache_entry->data.file.functions) {
+        if (0 && cache_entry->data.file.functions) {
             zend_function fn, *pfn = NULL;
 
             for (i = 0; cache_entry->data.file.functions[i].function != NULL; i++) {
