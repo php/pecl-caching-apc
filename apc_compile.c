@@ -864,21 +864,28 @@ static void my_free_hashtable(HashTable* ht, int type TSRMLS_DC)
         switch (type) {
             case APC_FREE_HASHTABLE_FUNCS:
                 do {
+#if 0
+                    /* XXX need to check where else the method is referenced,
+                        the refcount leak is still there */
                     zend_function *fn;
                     fn = (zend_function *)curr->pData;
 
                     apc_free_op_array_after_execution(&fn->op_array TSRMLS_CC);
+#endif
                     efree(curr->pData);
                 } while (0);
                 break;
 
             case APC_FREE_HASHTABLE_PROPS:
             case APC_FREE_HASHTABLE_STATIC_PROPS:
-            default:
                 efree(curr->pData);
                 break;
         }
-        apc_php_free(curr TSRMLS_CC);
+
+        /* XXX check if this must be ignored for any class method */
+        if (type != APC_FREE_HASHTABLE_FUNCS) {
+            apc_php_free(curr TSRMLS_CC);
+        }
     }
 
     apc_php_free(ht->arBuckets TSRMLS_CC);
@@ -1151,7 +1158,13 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_con
         p = dst->literals = (zend_literal*) apc_pool_alloc(pool, (sizeof(zend_literal) * src->last_literal));
         end = p + src->last_literal;
         while (p < end) {
-            assert(q->constant.type >= IS_NULL && q->constant.type <= IS_CALLABLE);
+            /*assert(q->constant.type >= IS_NULL && q->constant.type <= IS_CALLABLE);*/
+            /* XXX this could be a dirty workaround, check why some zvals have wrong type */
+            /*if(q->constant.type < IS_NULL && q->constant.type > IS_CALLABLE) {
+                src->last_literal--;
+                q++;
+                continue;
+            }*/
             *p = *q;
             my_copy_zval(&p->constant, &q->constant, ctxt TSRMLS_CC);
             p++;
@@ -1933,10 +1946,11 @@ void apc_free_class_entry_after_execution(zend_class_entry* src TSRMLS_DC)
 #endif
     zend_hash_clean(&src->constants_table);
 
-   /* my_free_hashtable(&src->function_table, APC_FREE_HASHTABLE_FUNCS TSRMLS_CC);
+#ifdef ZEND_ENGINE_2_4
+    my_free_hashtable(&src->function_table, APC_FREE_HASHTABLE_FUNCS TSRMLS_CC);
     my_free_hashtable(&src->properties_info, APC_FREE_HASHTABLE_PROPS TSRMLS_CC);
     my_free_hashtable(&src->constants_table, APC_FREE_HASHTABLE_STATIC_PROPS TSRMLS_CC);
-    apc_php_free(src TSRMLS_CC);*/
+#endif
 
     /* TODO: more cleanup */
 }

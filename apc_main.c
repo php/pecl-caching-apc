@@ -950,7 +950,7 @@ static void apc_deactivate(TSRMLS_D)
                 zce = NULL;
             }
         }
-        if (0 && cache_entry->data.file.functions) {
+        if (cache_entry->data.file.functions) {
             zend_function fn, *pfn = NULL;
 
             for (i = 0; cache_entry->data.file.functions[i].function != NULL; i++) {
@@ -963,18 +963,19 @@ static void apc_deactivate(TSRMLS_D)
                 }
 
                 fn = *pfn;
-
                 zend_hash_del(EG(function_table),
                         cache_entry->data.file.functions[i].name,
                         cache_entry->data.file.functions[i].name_len+1);
+#if 0
                 apc_free_function_after_execution(&fn TSRMLS_CC);
-
+                efree(fn);
+#endif
                 pfn = NULL;
             }
         }
 
         /* This is a very special case of apc_free_op_array_after_execution.
-           File related op_array->refcount allocated on unpool for execution
+           File related op_array->refcount is allocated on unpool for execution
            and would never be freed in zend_execute_scripts() */
         apc_php_free(cache_entry->data.file.exec_refcount TSRMLS_CC);
         cache_entry->data.file.exec_refcount = NULL;
