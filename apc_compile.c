@@ -405,7 +405,11 @@ static zend_op* my_copy_zend_op(zend_op* dst, zend_op* src, apc_context_t* ctxt 
 
     my_check_znode(dst->result_type & ~EXT_TYPE_UNUSED, ctxt TSRMLS_CC);
     my_check_znode(dst->op1_type, ctxt TSRMLS_CC);
-    my_check_znode(dst->op2_type, ctxt TSRMLS_CC);
+
+    /* ZEND_BIND_TRAITS opcode don't set the op2 at all, so ommit its check */
+    if (dst->opcode != ZEND_BIND_TRAITS) {
+        my_check_znode(dst->op2_type, ctxt TSRMLS_CC);
+    }
 
     return dst;
 }
@@ -712,6 +716,55 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
 #endif
 #ifdef ZEND_ENGINE_2_3
 	dst->__callstatic = NULL;
+#endif
+
+#ifdef ZEND_ENGINE_2_4
+    /* XXX split this into functions */
+    if (src->trait_aliases) {
+        int num_trait_aliases = 0;
+
+        /* get how much trait aliases we've got */
+        i = 0;
+        while (src->trait_aliases[i]) {i++;}
+        num_trait_aliases = i;
+
+        /* copy all the trait aliases */
+        CHECK(dst->trait_aliases = (zend_trait_alias **) apc_pool_alloc(pool, sizeof(zend_trait_alias *)*num_trait_aliases));
+        i = 0;
+        while (src->trait_aliases[i]) {
+            CHECK(dst->trait_aliases[i] = (zend_trait_alias *) apc_pool_alloc(pool, sizeof(zend_trait_alias)));
+            memcpy(dst->trait_aliases[i], src->trait_aliases[i], sizeof(src->trait_aliases[i]));
+
+            CHECK((dst->trait_aliases[i]->alias = apc_pstrdup(src->trait_aliases[i]->alias, pool TSRMLS_CC)));
+            dst->trait_aliases[i]->alias_len = src->trait_aliases[i]->alias_len;
+
+            if (src->trait_aliases[i]->function) {
+                dst->trait_aliases[i]->function = my_copy_function(NULL, src->trait_aliases[i]->function, ctxt TSRMLS_CC);
+            }
+
+            /* copy the trait methods */
+            CHECK(dst->trait_aliases[i]->trait_method = 
+                 (zend_trait_method_reference *)apc_pool_alloc(pool, sizeof(zend_trait_method_reference)));
+            memcpy(dst->trait_aliases[i]->trait_method, src->trait_aliases[i]->trait_method,
+                    sizeof(src->trait_aliases[i]->trait_method));
+
+            CHECK((dst->trait_aliases[i]->trait_method->method_name = 
+                        apc_pstrdup(src->trait_aliases[i]->trait_method->method_name, pool TSRMLS_CC)));
+            dst->trait_aliases[i]->trait_method->mname_len = src->trait_aliases[i]->trait_method->mname_len;
+
+            CHECK((dst->trait_aliases[i]->trait_method->class_name = 
+                        apc_pstrdup(src->trait_aliases[i]->trait_method->class_name, pool TSRMLS_CC)));
+            dst->trait_aliases[i]->trait_method->cname_len = src->trait_aliases[i]->trait_method->cname_len;
+
+            if (src->trait_aliases[i]->trait_method->ce) {
+                dst->trait_aliases[i]->trait_method->ce = my_copy_class_entry(NULL,
+                        src->trait_aliases[i]->trait_method->ce,
+                        ctxt TSRMLS_CC);
+            }
+
+            i++;
+        }
+    }
 #endif
 
     /* unset function proxies */
@@ -1890,6 +1943,25 @@ zend_class_entry* apc_copy_class_entry_for_execution(zend_class_entry* src, apc_
     }
 #endif
 
+#ifdef ZEND_ENGINE_2_4
+    if (src->trait_aliases) {
+        i = 0;
+        while (src->trait_aliases[i]) {
+            memcpy(dst->trait_aliases[i], src->trait_aliases[i], sizeof(src->trait_aliases));
+            CHECK((dst->trait_aliases[i]->alias = apc_pstrdup(src->trait_aliases[i]->alias, ctxt->pool TSRMLS_CC)));
+
+            memcpy(dst->trait_aliases[i]->trait_method, src->trait_aliases[i]->trait_method,
+                sizeof(src->trait_aliases[i]->trait_method[0]));
+            CHECK((dst->trait_aliases[i]->trait_method->method_name = 
+                apc_pstrdup(src->trait_aliases[i]->trait_method->method_name, ctxt->pool TSRMLS_CC)));
+            CHECK((dst->trait_aliases[i]->trait_method->class_name = 
+                apc_pstrdup(src->trait_aliases[i]->trait_method->class_name, ctxt->pool TSRMLS_CC)));
+
+            i++;
+        } 
+    } 
+#endif
+
     return dst;
 }
 /* }}} */
@@ -1947,9 +2019,14 @@ void apc_free_class_entry_after_execution(zend_class_entry* src TSRMLS_DC)
     zend_hash_clean(&src->constants_table);
 
 #ifdef ZEND_ENGINE_2_4
+#if 0
+    /* XXX function freeing seems to be still a fail even in 5.4 as well, so let it down for now */
     my_free_hashtable(&src->function_table, APC_FREE_HASHTABLE_FUNCS TSRMLS_CC);
+#endif
+
     my_free_hashtable(&src->properties_info, APC_FREE_HASHTABLE_PROPS TSRMLS_CC);
     my_free_hashtable(&src->constants_table, APC_FREE_HASHTABLE_STATIC_PROPS TSRMLS_CC);
+    src->trait_aliases = NULL; /* XXX free all the traits stuff */
 #endif
 
     /* TODO: more cleanup */
