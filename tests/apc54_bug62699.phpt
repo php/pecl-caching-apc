@@ -16,10 +16,14 @@ trait A {
     public function test() {
         var_dump(__TRAIT__);
     }
+	public function tast() {
+		var_dump(__TRAIT__);
+	}
 }
 class Foo {
     use A {
         A::test as test2;
+        A::tast as public;
     }
     public function test() {
         var_dump(__CLASS__);
@@ -28,6 +32,7 @@ class Foo {
 \$foo = new Foo;
 \$foo->test();
 \$foo->test2();
+\$foo->tast();
 FL;
 
 $args = array(
@@ -53,22 +58,32 @@ echo 'done';
 --EXPECT--
 string(3) "Foo"
 string(1) "A"
-string(3) "Foo"
 string(1) "A"
 string(3) "Foo"
 string(1) "A"
-string(3) "Foo"
 string(1) "A"
 string(3) "Foo"
 string(1) "A"
-string(3) "Foo"
 string(1) "A"
 string(3) "Foo"
 string(1) "A"
-string(3) "Foo"
 string(1) "A"
 string(3) "Foo"
 string(1) "A"
+string(1) "A"
 string(3) "Foo"
+string(1) "A"
+string(1) "A"
+string(3) "Foo"
+string(1) "A"
+string(1) "A"
+string(3) "Foo"
+string(1) "A"
+string(1) "A"
+string(3) "Foo"
+string(1) "A"
+string(1) "A"
+string(3) "Foo"
+string(1) "A"
 string(1) "A"
 done
