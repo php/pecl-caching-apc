@@ -317,7 +317,11 @@ void apc_cache_destroy(apc_cache_t* cache TSRMLS_DC)
 #if NONBLOCKING_LOCK_AVAILABLE
     DESTROY_LOCK(cache->header->wrlock);
 #endif
-    apc_sma_free(cache->shmaddr TSRMLS_CC);
+
+	/* XXX this is definitely a leak, but freeing this causes all the apache
+		children to freeze. It might be because the segment is shared between
+		several processes. To figure out is how to free this safely. */
+    /*apc_sma_free(cache->shmaddr TSRMLS_CC);*/
     apc_efree(cache TSRMLS_CC);
 }
 /* }}} */
