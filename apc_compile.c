@@ -374,6 +374,12 @@ static APC_HOTSPOT zval* my_copy_zval(zval* dst, const zval* src, apc_context_t*
             dst = my_unserialize_object(dst, src, ctxt TSRMLS_CC);
         }
         break;
+#ifdef ZEND_ENGINE_2_4
+    case IS_CALLABLE:
+        /* XXX implement this */
+        assert(0);
+        break;
+#endif
 
     default:
         assert(0);
@@ -1213,13 +1219,6 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_con
         p = dst->literals = (zend_literal*) apc_pool_alloc(pool, (sizeof(zend_literal) * src->last_literal));
         end = p + src->last_literal;
         while (p < end) {
-            /*assert(q->constant.type >= IS_NULL && q->constant.type <= IS_CALLABLE);*/
-            /* XXX this could be a dirty workaround, check why some zvals have wrong type */
-            /*if(q->constant.type < IS_NULL && q->constant.type > IS_CALLABLE) {
-                src->last_literal--;
-                q++;
-                continue;
-            }*/
             *p = *q;
             my_copy_zval(&p->constant, &q->constant, ctxt TSRMLS_CC);
             p++;
