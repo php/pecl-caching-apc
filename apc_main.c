@@ -977,8 +977,12 @@ static void apc_deactivate(TSRMLS_D)
         /* This is a very special case of apc_free_op_array_after_execution.
            File related op_array->refcount is allocated on unpool for execution
            and would never be freed in zend_execute_scripts() */
-        apc_php_free(cache_entry->data.file.exec_refcount TSRMLS_CC);
-        cache_entry->data.file.exec_refcount = NULL;
+#ifdef ZEND_ENGINE_2_4
+		if (cache_entry->data.file.exec_refcount) {
+			apc_php_free(cache_entry->data.file.exec_refcount TSRMLS_CC);
+			cache_entry->data.file.exec_refcount = NULL;
+		}
+#endif
 
         apc_cache_release(apc_cache, cache_entry TSRMLS_CC);
     }
