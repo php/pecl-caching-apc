@@ -950,6 +950,7 @@ static void apc_deactivate(TSRMLS_D)
                 zce = NULL;
             }
         }
+#if 0
         if (cache_entry->data.file.functions) {
             zend_function fn, *pfn = NULL;
 
@@ -982,6 +983,7 @@ static void apc_deactivate(TSRMLS_D)
 			apc_php_free(cache_entry->data.file.exec_refcount TSRMLS_CC);
 			cache_entry->data.file.exec_refcount = NULL;
 		}
+#endif
 #endif
 
         apc_cache_release(apc_cache, cache_entry TSRMLS_CC);

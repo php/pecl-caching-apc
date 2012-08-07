@@ -1980,9 +1980,11 @@ void apc_free_class_entry_after_execution(zend_class_entry* src TSRMLS_DC)
     /* my_destroy_hashtable() does not play nice with refcounts */
 
 #ifdef ZEND_ENGINE_2_4
+#if 0
     if (!IS_INTERNED(src->name)) {
         apc_php_free(src->name TSRMLS_CC);
     }
+#endif
     if (src->default_static_members_table) {
        int i;
 
@@ -2025,11 +2027,11 @@ void apc_free_class_entry_after_execution(zend_class_entry* src TSRMLS_DC)
 #if 0
     /* XXX function freeing seems to be still a fail even in 5.4 as well, so let it down for now */
     my_free_hashtable(&src->function_table, APC_FREE_HASHTABLE_FUNCS TSRMLS_CC);
-#endif
 
     my_free_hashtable(&src->properties_info, APC_FREE_HASHTABLE_PROPS TSRMLS_CC);
     my_free_hashtable(&src->constants_table, APC_FREE_HASHTABLE_STATIC_PROPS TSRMLS_CC);
     src->trait_aliases = NULL; /* XXX free all the traits stuff */
+#endif
 #endif
 
     /* TODO: more cleanup */
