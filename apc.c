@@ -296,6 +296,20 @@ static int apc_restat(apc_fileinfo_t *fileinfo TSRMLS_DC)
 #endif
 /* }}} */
 
+#define IS_COMMON_WRAPPER(fname, len) \
+     ((len) >= 5 && strncmp((fname), "file:", 5) == 0 || \
+     (len) >= 5 && strncmp((fname), "http:", 5) == 0 || \
+     (len) >= 4 && strncmp((fname), "ftp:", 4) == 0 || \
+     (len) >= 4 && strncmp((fname), "php:", 4) == 0 || \
+     (len) >= 5 && strncmp((fname), "zlib:", 5) == 0 || \
+     (len) >= 5 && strncmp((fname), "data:", 5) == 0 || \
+     (len) >= 5 && strncmp((fname), "glob:", 5) == 0 || \
+     (len) >= 5 && strncmp((fname), "phar:", 5) == 0 || \
+     (len) >= 5 && strncmp((fname), "ssh2:", 5) == 0 || \
+     (len) >= 4 && strncmp((fname), "rar:", 4) == 0 || \
+     (len) >= 4 && strncmp((fname), "ogg:", 4) == 0 || \
+     (len) >= 7 && strncmp((fname), "expect:", 7) == 0)
+
 int apc_search_paths(const char* filename, const char* path, apc_fileinfo_t* fileinfo TSRMLS_DC)
 {
     char** paths = NULL;
@@ -305,18 +319,51 @@ int apc_search_paths(const char* filename, const char* path, apc_fileinfo_t* fil
     int i;
     php_stream_wrapper *wrapper = NULL;
     char *path_for_open = NULL;
+    int is_user_wrapper = 0;
+    int filename_len = strlen(filename);
 
     assert(filename && fileinfo);
 
+    /* Prevent tries to stat userspace stream wrappers when reading opcodes
+        right after the file was compiled. The core stream wrappers should be
+        already loaded, so looking for them should be ok (not sure about phar) */
+    if (!IS_ABSOLUTE_PATH(filename, filename_len) && 
+        !IS_RELATIVE_PATH(filename, filename_len) &&
+        !IS_COMMON_WRAPPER(filename, filename_len)) {
+        char *p = filename;
+        int n = 0;
+
+        /* If we're here, it's most likely a userspace stream wrapper. Extract
+            it's protocol ant check if it's already been registered. */
+
+        for (; isalnum((int)*p) || *p == '+' || *p == '-' || *p == '.'; p++) {
+            n++;
+        }
+
+        if ((*p == ':') && (n > 1) && (!strncmp("//", p+1, 2) || (n == 4 && !memcmp("data:", path, 5)))) {
+            char *tmp = estrndup(filename, n); 
+
+            if (!zend_hash_exists(php_stream_get_url_stream_wrappers_hash(), tmp, n + 1)) {
+                return 0;
+            }
+            efree(tmp);
+        }
+    }
 
     wrapper = php_stream_locate_url_wrapper(filename, &path_for_open, 0 TSRMLS_CC);
 
-    if(!wrapper || !wrapper->wops || !wrapper->wops->url_stat) {
+    if(!wrapper || !wrapper->wops) {
+        return -1;
+    }
+
+    is_user_wrapper = (NULL != wrapper->wops->label) && (strncmp(wrapper->wops->label, "user-space", 11) == 0);
+
+    if (!is_user_wrapper && !wrapper->wops->url_stat) {
         return -1;
     }
 
     if(wrapper != &php_plain_files_wrapper) {
-        if(APC_URL_STAT(wrapper, path_for_open, &fileinfo->st_buf) == 0) {
+        if(!is_user_wrapper && APC_URL_STAT(wrapper, path_for_open, &fileinfo->st_buf) == 0) {
             fileinfo->fullpath = COPY_IF_CHANGED(path_for_open);
             return apc_restat(fileinfo TSRMLS_CC);
         }
