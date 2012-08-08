@@ -207,6 +207,9 @@ static void apc_swizzle_op_array(apc_bd_t *bd, zend_llist *ll, zend_op_array *op
         }
 #endif
         switch (op_array->opcodes[i].opcode) {
+#ifdef ZEND_ENGINE_2_3
+            case ZEND_GOTO:
+#endif
             case ZEND_JMP:
 #ifdef ZEND_ENGINE_2_4
                 apc_swizzle_ptr(bd, ll, &op_array->opcodes[i].op1.jmp_addr);
@@ -218,6 +221,12 @@ static void apc_swizzle_op_array(apc_bd_t *bd, zend_llist *ll, zend_op_array *op
             case ZEND_JMPNZ:
             case ZEND_JMPZ_EX:
             case ZEND_JMPNZ_EX:
+#ifdef ZEND_ENGINE_2_3
+            case ZEND_JMP_SET:
+#endif
+#ifdef ZEND_ENGINE_2_4
+            case ZEND_JMP_SET_VAR:
+#endif
 #ifdef ZEND_ENGINE_2_4
                 apc_swizzle_ptr(bd, ll, &op_array->opcodes[i].op2.jmp_addr);
 #else
