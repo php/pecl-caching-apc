@@ -213,6 +213,7 @@ static void apc_swizzle_op_array(apc_bd_t *bd, zend_llist *ll, zend_op_array *op
 #else
                 apc_swizzle_ptr(bd, ll, &op_array->opcodes[i].op1.u.jmp_addr);
 #endif
+                break;
             case ZEND_JMPZ:
             case ZEND_JMPNZ:
             case ZEND_JMPZ_EX:
