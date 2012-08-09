@@ -11,7 +11,7 @@
   | If you did not receive a copy of the PHP license and are unable to   |
   | obtain it through the world-wide-web, please send a note to          |
   | license@php.net so we can mail you a copy immediately.               |
-  +----------------------------------------------------------------------+
+     +----------------------------------------------------------------------+
   | Authors: Daniel Cowgill <dcowgill@communityconnect.com>              |
   |          Rasmus Lerdorf <rasmus@php.net>                             |
   |          Arun C. Murthy <arunc@yahoo-inc.com>                        |
@@ -725,53 +725,21 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
 #endif
 
 #ifdef ZEND_ENGINE_2_4
-    /* XXX split this into functions */
     if (src->trait_aliases) {
         int num_trait_aliases = 0;
 
         /* get how much trait aliases we've got */
-        i = 0;
-        while (src->trait_aliases[i]) {i++;}
-        num_trait_aliases = i;
+        while (src->trait_aliases[num_trait_aliases]) {num_trait_aliases++;}
 
         /* copy all the trait aliases */
-        CHECK(dst->trait_aliases = (zend_trait_alias **) apc_pool_alloc(pool, sizeof(zend_trait_alias *)*num_trait_aliases));
+        CHECK(dst->trait_aliases = (zend_trait_alias **) apc_pool_alloc(pool, sizeof(zend_trait_alias *)*(num_trait_aliases+1)));
+
         i = 0;
-        while (src->trait_aliases[i]) {
-            CHECK(dst->trait_aliases[i] = (zend_trait_alias *) apc_pool_alloc(pool, sizeof(zend_trait_alias)));
-            memcpy(dst->trait_aliases[i], src->trait_aliases[i], sizeof(src->trait_aliases[i]));
-
-            if (src->trait_aliases[i]->alias) {
-                CHECK((dst->trait_aliases[i]->alias = apc_pstrdup(src->trait_aliases[i]->alias, pool TSRMLS_CC)));
-                dst->trait_aliases[i]->alias_len = src->trait_aliases[i]->alias_len;
-            }
-
-            if (src->trait_aliases[i]->function) {
-                dst->trait_aliases[i]->function = my_copy_function(NULL, src->trait_aliases[i]->function, ctxt TSRMLS_CC);
-            }
-
-            /* copy the trait methods */
-            CHECK(dst->trait_aliases[i]->trait_method = 
-                 (zend_trait_method_reference *)apc_pool_alloc(pool, sizeof(zend_trait_method_reference)));
-            memcpy(dst->trait_aliases[i]->trait_method, src->trait_aliases[i]->trait_method,
-                    sizeof(src->trait_aliases[i]->trait_method));
-
-            CHECK((dst->trait_aliases[i]->trait_method->method_name = 
-                        apc_pstrdup(src->trait_aliases[i]->trait_method->method_name, pool TSRMLS_CC)));
-            dst->trait_aliases[i]->trait_method->mname_len = src->trait_aliases[i]->trait_method->mname_len;
-
-            CHECK((dst->trait_aliases[i]->trait_method->class_name = 
-                        apc_pstrdup(src->trait_aliases[i]->trait_method->class_name, pool TSRMLS_CC)));
-            dst->trait_aliases[i]->trait_method->cname_len = src->trait_aliases[i]->trait_method->cname_len;
-
-            if (src->trait_aliases[i]->trait_method->ce) {
-                dst->trait_aliases[i]->trait_method->ce = my_copy_class_entry(NULL,
-                        src->trait_aliases[i]->trait_method->ce,
-                        ctxt TSRMLS_CC);
-            }
-
+        while (src->trait_aliases[i] && i < num_trait_aliases) {
+            dst->trait_aliases[i] = apc_copy_trait_alias(NULL, src->trait_aliases[i], ctxt TSRMLS_CC);
             i++;
         }
+        dst->trait_aliases[i] = NULL;
     }
 #endif
 
@@ -1946,22 +1914,19 @@ zend_class_entry* apc_copy_class_entry_for_execution(zend_class_entry* src, apc_
 
 #ifdef ZEND_ENGINE_2_4
     if (src->trait_aliases) {
+        int num_trait_aliases = 0;
+
+        /* get how much trait aliases we've got */
+        while (src->trait_aliases[num_trait_aliases]) {num_trait_aliases++;}
+
+        /* copy all the trait aliases */
+        CHECK(dst->trait_aliases = (zend_trait_alias **) apc_pool_alloc(ctxt->pool, sizeof(zend_trait_alias *)*(num_trait_aliases+1)));
         i = 0;
         while (src->trait_aliases[i]) {
-            memcpy(dst->trait_aliases[i], src->trait_aliases[i], sizeof(src->trait_aliases));
-
-            if (src->trait_aliases[i]->alias) {
-                CHECK((dst->trait_aliases[i]->alias = apc_pstrdup(src->trait_aliases[i]->alias, ctxt->pool TSRMLS_CC)));
-            }
-            memcpy(dst->trait_aliases[i]->trait_method, src->trait_aliases[i]->trait_method,
-                sizeof(src->trait_aliases[i]->trait_method[0]));
-            CHECK((dst->trait_aliases[i]->trait_method->method_name = 
-                apc_pstrdup(src->trait_aliases[i]->trait_method->method_name, ctxt->pool TSRMLS_CC)));
-            CHECK((dst->trait_aliases[i]->trait_method->class_name = 
-                apc_pstrdup(src->trait_aliases[i]->trait_method->class_name, ctxt->pool TSRMLS_CC)));
-
+            dst->trait_aliases[i] = apc_copy_trait_alias_for_execution(src->trait_aliases[i], ctxt TSRMLS_CC);
             i++;
-        } 
+        }
+        dst->trait_aliases[i] = NULL;
     } 
 #endif
 
@@ -2331,6 +2296,76 @@ apc_optimize_function_t apc_register_optimizer(apc_optimize_function_t optimizer
     return old_optimizer;
 }
 /* }}} */
+
+#ifdef ZEND_ENGINE_2_4
+/* {{{ apc_copy_trait_alias */
+zend_trait_alias* apc_copy_trait_alias(zend_trait_alias *dst, zend_trait_alias *src, apc_context_t *ctxt TSRMLS_DC)
+{
+    if (!dst) {
+        CHECK(dst = (zend_trait_alias *) apc_pool_alloc(ctxt->pool, sizeof(zend_trait_alias)));
+    }
+    memcpy(dst, src, sizeof(zend_trait_alias));
+
+    if (src->alias) {
+        CHECK((dst->alias = apc_pstrdup(src->alias, ctxt->pool TSRMLS_CC)));
+        dst->alias_len = src->alias_len;
+    }
+
+    if (src->function) {
+        CHECK(dst->function = my_copy_function(NULL, src->function, ctxt TSRMLS_CC));
+    }
+
+    CHECK(dst->trait_method = 
+         (zend_trait_method_reference *)apc_pool_alloc(ctxt->pool, sizeof(zend_trait_method_reference)));
+    memcpy(dst->trait_method, src->trait_method, sizeof(zend_trait_method_reference));
+
+    if (src->trait_method->method_name) {
+        CHECK((dst->trait_method->method_name = 
+                    apc_pstrdup(src->trait_method->method_name, ctxt->pool TSRMLS_CC)));
+        dst->trait_method->mname_len = src->trait_method->mname_len;
+    }
+
+    if (src->trait_method->class_name) {
+        CHECK((dst->trait_method->class_name = 
+                    apc_pstrdup(src->trait_method->class_name, ctxt->pool TSRMLS_CC)));
+        dst->trait_method->cname_len = src->trait_method->cname_len;
+    }
+    if (src->trait_method->ce) {
+        dst->trait_method->ce = my_copy_class_entry(NULL, src->trait_method->ce, ctxt TSRMLS_CC);
+    }
+
+    return dst;
+}
+/* }}} */
+
+/* {{{ apc_copy_trait_alias_for_execution */
+zend_trait_alias* apc_copy_trait_alias_for_execution(zend_trait_alias *src, apc_context_t *ctxt TSRMLS_DC)
+{
+    zend_trait_alias *dst = (zend_trait_alias *) apc_pool_alloc(ctxt->pool, sizeof(zend_trait_alias));
+
+    memcpy(dst, src, sizeof(zend_trait_alias));
+
+    if (src->alias) {
+        CHECK((dst->alias = apc_pstrdup(src->alias, ctxt->pool TSRMLS_CC)));
+    }
+
+    dst->trait_method = (zend_trait_method_reference *) apc_pool_alloc(ctxt->pool, sizeof(zend_trait_method_reference));
+    memcpy(dst->trait_method, src->trait_method, sizeof(zend_trait_method_reference));
+    if (src->trait_method->method_name) {
+        CHECK((dst->trait_method->method_name = apc_pstrdup(src->trait_method->method_name, ctxt->pool TSRMLS_CC)));
+    }
+
+    if (src->trait_method->class_name) {
+        CHECK((dst->trait_method->class_name = apc_pstrdup(src->trait_method->class_name, ctxt->pool TSRMLS_CC)));
+    }
+    if (src->trait_method->ce) {
+        dst->trait_method->ce = apc_copy_class_entry_for_execution(src->trait_method->ce, ctxt TSRMLS_CC);
+    }
+
+    return dst;
+}
+/* }}} */
+#endif
 
 /*
  * Local variables:
