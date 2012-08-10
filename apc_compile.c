@@ -242,10 +242,18 @@ static zval* my_serialize_object(zval* dst, const zval* src, apc_context_t* ctxt
     apc_pool* pool = ctxt->pool;
     apc_serialize_t serialize = APC_SERIALIZER_NAME(php);
     void *config = NULL;
+    zval tmp;
 
     if(APCG(serializer)) { /* TODO: move to ctxt */
         serialize = APCG(serializer)->serialize;
         config = APCG(serializer)->config;
+    }
+
+    if (src->type & IS_CONSTANT_TYPE_MASK) {
+        /* builtin serializer doesn't handle CONSTANT type well */
+        tmp = *src;
+        tmp.type = src->type & ~IS_CONSTANT_INDEX;
+        src = &tmp;
     }
 
     if(serialize((unsigned char**)&buf.c, &buf.len, src, config TSRMLS_CC)) {
