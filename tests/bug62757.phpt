@@ -7,6 +7,7 @@ apc.stat=0
 apc.cache_by_default=1
 apc.filters=
 apc.serializer=php
+report_memleaks=0
 --FILE--
 <?php
 $filename = dirname(__FILE__) . '/bug62757_file.php';
