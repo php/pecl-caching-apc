@@ -578,7 +578,7 @@ static zend_property_info* my_copy_property_info(zend_property_info* dst, zend_p
          * string of the form:
          *      \0<classname>\0<membername>\0
          */
-        CHECK((dst->name = apc_string_pmemcpy(src->name, src->name_length+1, pool TSRMLS_CC)));
+        CHECK((dst->name = apc_string_pmemcpy((char *)src->name, src->name_length+1, pool TSRMLS_CC)));
     }
 
 #if defined(ZEND_ENGINE_2) && PHP_MINOR_VERSION > 0
@@ -989,7 +989,7 @@ static APC_HOTSPOT HashTable* my_copy_hashtable_ex(HashTable* dst,
             char *arKey;
 
             CHECK((newp = (Bucket*) apc_pmemcpy(curr, sizeof(Bucket), pool TSRMLS_CC)));
-            arKey = apc_new_interned_string(curr->arKey, curr->nKeyLength TSRMLS_CC);
+            arKey = (char *)apc_new_interned_string(curr->arKey, curr->nKeyLength TSRMLS_CC);
             if (!arKey) {
                 CHECK((newp->arKey = (char*) apc_pmemcpy(curr->arKey, curr->nKeyLength, pool TSRMLS_CC)));
             } else {
@@ -1413,7 +1413,7 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_con
         for(i = 0; i <  src->last_var; i++) dst->vars[i].name = NULL;
 
         for(i = 0; i <  src->last_var; i++) {
-            CHECK(dst->vars[i].name = apc_string_pmemcpy(src->vars[i].name,
+            CHECK(dst->vars[i].name = apc_string_pmemcpy((char *)src->vars[i].name,
                                 src->vars[i].name_len + 1,
                                 pool TSRMLS_CC));
         }
