@@ -95,6 +95,7 @@ extern apc_class_t* apc_copy_new_classes(zend_op_array* op_array, int old_count,
 extern zval* apc_copy_zval(zval* dst, const zval* src, apc_context_t* ctxt TSRMLS_DC);
 #ifdef ZEND_ENGINE_2_4
 extern zend_trait_alias* apc_copy_trait_alias(zend_trait_alias *dst, zend_trait_alias *src, apc_context_t *ctxt TSRMLS_DC);
+extern zend_trait_precedence* apc_copy_trait_precedence(zend_trait_precedence *dst, zend_trait_precedence *src, apc_context_t *ctxt TSRMLS_DC);
 #endif
 
 #if 0
@@ -120,6 +121,7 @@ extern zend_function* apc_copy_function_for_execution(zend_function* src, apc_co
 extern zend_class_entry* apc_copy_class_entry_for_execution(zend_class_entry* src, apc_context_t* ctxt TSRMLS_DC);
 #ifdef ZEND_ENGINE_2_4
 extern zend_trait_alias* apc_copy_trait_alias_for_execution(zend_trait_alias *src, apc_context_t *ctxt TSRMLS_DC);
+extern zend_trait_precedence* apc_copy_trait_precedence_for_execution(zend_trait_precedence *src, apc_context_t *ctxt TSRMLS_DC);
 #endif
 
 /*
