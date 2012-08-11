@@ -82,11 +82,11 @@
   </stability>
   <license uri="http://www.php.net/license">PHP License</license>
   <notes>
+- fixed handling of userspace stream wrappers simulating file inclusion/requiring (Anatoliy)
+- fixed bug #62699 trait aliases and precedences handling (Anatoliy)
 - added cli built-in server tests (Anatoliy)
 - fixed filter regex freeing on request shutdown (Anatoliy)
-- fixed cache sma freeing on module shutdown (Anatoliy)
 - fixed interned strings storage freeing on module shutdown (Anatoily)
-- improved class/function per request cleanup (Anatoliy)
   </notes>
 
   <contents>
