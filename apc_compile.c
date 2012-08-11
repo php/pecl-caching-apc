@@ -2442,8 +2442,9 @@ zend_trait_precedence* apc_copy_trait_precedence(zend_trait_precedence *dst, zen
             (zend_class_entry **) apc_pool_alloc(ctxt->pool, sizeof(zend_class_entry *)*(num_classes+1)));
 
         while (src->exclude_from_classes[i] && i < num_classes) {
-            dst->exclude_from_classes[i] =
-                apc_copy_class_entry(NULL, src->exclude_from_classes[i], ctxt TSRMLS_CC);
+            char *name = (char *) src->exclude_from_classes[i];
+
+            dst->exclude_from_classes[i] = (zend_class_entry *) apc_pstrdup(name, ctxt->pool TSRMLS_CC);
             i++;
         }
         dst->exclude_from_classes[i] = NULL;
@@ -2471,8 +2472,9 @@ zend_trait_precedence* apc_copy_trait_precedence_for_execution(zend_trait_preced
             (zend_class_entry **) apc_pool_alloc(ctxt->pool, sizeof(zend_class_entry *)*(num_classes+1)));
 
         while (src->exclude_from_classes[i] && i < num_classes) {
-            dst->exclude_from_classes[i] =
-                apc_copy_class_entry_for_execution(src->exclude_from_classes[i], ctxt TSRMLS_CC);
+            char *name = (char *) src->exclude_from_classes[i];
+
+            dst->exclude_from_classes[i] = (zend_class_entry *) apc_pstrdup(name, ctxt->pool TSRMLS_CC);
             i++;
         }
         dst->exclude_from_classes[i] = NULL;
