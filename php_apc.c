@@ -1500,7 +1500,7 @@ PHP_FUNCTION(apc_bin_loadfile) {
     char *filename;
     int filename_len;
     zval *zcontext = NULL;
-    long flags;
+    long flags = 0;
     php_stream_context *context = NULL;
     php_stream *stream;
     char *data;
