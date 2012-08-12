@@ -910,7 +910,6 @@ int apc_process_shutdown(TSRMLS_D)
 }
 /* }}} */
 
-
 /* {{{ apc_deactivate */
 static void apc_deactivate(TSRMLS_D)
 {
@@ -1056,7 +1055,6 @@ int apc_request_shutdown(TSRMLS_D)
 }
 
 /* }}} */
-
 
 /*
  * Local variables:

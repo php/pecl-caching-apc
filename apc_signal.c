@@ -184,6 +184,7 @@ void apc_shutdown_signals(TSRMLS_D)
         apc_signal_info.installed = 0; /* just in case */
     }
 }
+/* }}} */
 
 #endif  /* HAVE_SIGACTION */
 

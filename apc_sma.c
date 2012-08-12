@@ -115,7 +115,6 @@ struct block_t {
     #define RESET_CANARY(v)
 #endif
 
-
 /* {{{ MINBLOCKSIZE */
 #define MINBLOCKSIZE (ALIGNWORD(1) + ALIGNWORD(sizeof(block_t)))
 /* }}} */
@@ -576,7 +575,7 @@ void apc_sma_free(void* p TSRMLS_DC)
 /* }}} */
 
 #ifdef APC_MEMPROTECT
-/* {{{ */
+/* {{{ apc_sma_protect */
 void* apc_sma_protect(void *p)
 {
     unsigned int i = 0;
@@ -605,7 +604,7 @@ void* apc_sma_protect(void *p)
 }
 /* }}} */
 
-/* {{{ */
+/* {{{ apc_sma_unprotect */
 void* apc_sma_unprotect(void *p)
 {
     unsigned int i = 0;
@@ -634,8 +633,11 @@ void* apc_sma_unprotect(void *p)
 }
 /* }}} */
 #else
-/* {{{ */
+/* {{{ apc_sma_protect */
 void* apc_sma_protect(void *p) { return p; }
+/* }}} */
+
+/* {{{ apc_sma_unprotect */
 void* apc_sma_unprotect(void *p) { return p; }
 /* }}} */
 #endif
@@ -746,7 +748,6 @@ zend_bool apc_sma_get_avail_size(size_t size)
     return 0;
 }
 /* }}} */
-
 
 #if ALLOC_DISTRIBUTION
 size_t *apc_sma_get_alloc_distribution(void) {

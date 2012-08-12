@@ -232,7 +232,6 @@ char** apc_tokenize(const char* s, char delim TSRMLS_DC)
 
 /* }}} */
 
-
 /* {{{ apc_win32_restat */
 #ifdef PHP_WIN32
 static int apc_restat(apc_fileinfo_t *fileinfo TSRMLS_DC)
@@ -681,7 +680,6 @@ static unsigned long crc32gen(int n)
 
 /* }}} */
 
-
 /* {{{ apc_flip_hash() */
 HashTable* apc_flip_hash(HashTable *hash) {
     zval **entry, *data;
@@ -711,7 +709,6 @@ HashTable* apc_flip_hash(HashTable *hash) {
     return new_hash;
 }
 /* }}} */
-
 
 /*
  * Local variables:

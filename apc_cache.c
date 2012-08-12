@@ -99,7 +99,6 @@ static inline unsigned long murmurhash(const char *skey, size_t keylen)
 #endif
 /* }}} */
 
-
 /* {{{ make_prime */
 static int const primes[] = {
   257, /*   256 */
@@ -539,7 +538,6 @@ int *apc_cache_insert_mult(apc_cache_t* cache, apc_cache_key_t* keys, apc_cache_
     return rval;
 }
 /* }}} */
-
 
 /* {{{ apc_cache_user_insert */
 int apc_cache_user_insert(apc_cache_t* cache, apc_cache_key_t key, apc_cache_entry_t* value, apc_context_t* ctxt, time_t t, int exclusive TSRMLS_DC)
@@ -1174,7 +1172,7 @@ apc_cache_entry_t* apc_cache_make_user_entry(const char* info, int info_len, con
 }
 /* }}} */
 
-/* {{{ */
+/* {{{ apc_cache_link_info */
 static zval* apc_cache_link_info(apc_cache_t *cache, slot_t* p TSRMLS_DC)
 {
     zval *link = NULL;
