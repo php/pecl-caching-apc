@@ -41,7 +41,6 @@ extern int _apc_store(char *strkey, int strkey_len, const zval *val, const uint 
 
 #define APC_BINDUMP_DEBUG 0
 
-
 #if APC_BINDUMP_DEBUG
 
 #define SWIZZLE(bd, ptr)  \
@@ -83,7 +82,6 @@ extern int _apc_store(char *strkey, int strkey_len, const zval *val, const uint 
 
 #endif
 
-
 static void *apc_bd_alloc(size_t size TSRMLS_DC);
 static void apc_bd_free(void *ptr TSRMLS_DC);
 static void *apc_bd_alloc_ex(void *ptr_new, size_t size TSRMLS_DC);
@@ -109,13 +107,11 @@ static void apc_swizzle_arg_info_array(apc_bd_t *bd, zend_llist *ll, const zend_
 static apc_bd_t* apc_swizzle_bd(apc_bd_t* bd, zend_llist *ll TSRMLS_DC);
 static int apc_unswizzle_bd(apc_bd_t *bd, int flags TSRMLS_DC);
 
-
 /* {{{ apc_bd_alloc
  *  callback for copy_* functions */
 static void *apc_bd_alloc(size_t size TSRMLS_DC) {
     return apc_bd_alloc_ex(NULL, size TSRMLS_CC);
 } /* }}} */
-
 
 /* {{{ apc_bd_free
  *  callback for copy_* functions */
@@ -128,7 +124,6 @@ static void apc_bd_free(void *ptr TSRMLS_DC) {
     APCG(apc_bd_alloc_ptr) = (void*)((size_t)APCG(apc_bd_alloc_ptr) - *size);
     zend_hash_index_del(&APCG(apc_bd_alloc_list), (ulong)ptr);
 } /* }}} */
-
 
 /* {{{ apc_bd_alloc_ex
  *  set ranges or allocate a block of data from an already (e)malloc'd range.
@@ -158,7 +153,6 @@ static void *apc_bd_alloc_ex(void *ptr_new, size_t size TSRMLS_DC) {
     return rval;
 } /* }}} */
 
-
 /* {{{ _apc_swizzle_ptr */
 static void _apc_swizzle_ptr(apc_bd_t *bd, zend_llist *ll, void **ptr, const char* file, int line TSRMLS_DC) {
     if(*ptr) {
@@ -174,7 +168,6 @@ static void _apc_swizzle_ptr(apc_bd_t *bd, zend_llist *ll, void **ptr, const cha
         }
     }
 } /* }}} */
-
 
 /* {{{ apc_swizzle_op_array */
 static void apc_swizzle_op_array(apc_bd_t *bd, zend_llist *ll, zend_op_array *op_array TSRMLS_DC) {
@@ -192,6 +185,15 @@ static void apc_swizzle_op_array(apc_bd_t *bd, zend_llist *ll, zend_op_array *op
     apc_swizzle_ptr(bd, ll, &op_array->function_name);
     apc_swizzle_ptr(bd, ll, &op_array->filename);
     apc_swizzle_ptr(bd, ll, &op_array->refcount);
+#ifdef ZEND_ENGINE_2_4
+    if (op_array->last_literal) {
+        int i = 0;
+        apc_swizzle_ptr(bd, ll, &(op_array->literals));
+        for (; i<op_array->last_literal; i++) {
+            apc_swizzle_zval(bd, ll, &((op_array->literals[i]).constant));
+        }
+    }
+#endif
 
     /* swizzle op_array */
     for(i=0; i < op_array->last; i++) {
@@ -204,6 +206,16 @@ static void apc_swizzle_op_array(apc_bd_t *bd, zend_llist *ll, zend_op_array *op
         }
         if(op_array->opcodes[i].op2.op_type == IS_CONST) {
             apc_swizzle_zval(bd, ll, &op_array->opcodes[i].op2.u.constant TSRMLS_CC);
+        }
+#else 
+        if (op_array->opcodes[i].op1_type == IS_CONST) {
+            apc_swizzle_ptr(bd, ll, &op_array->opcodes[i].op1.literal);
+        }
+        if (op_array->opcodes[i].op2_type == IS_CONST) {
+            apc_swizzle_ptr(bd, ll, &op_array->opcodes[i].op2.literal);
+        }
+        if (op_array->opcodes[i].result_type == IS_CONST) {
+            apc_swizzle_ptr(bd, ll, &op_array->opcodes[i].result.literal);
         }
 #endif
         switch (op_array->opcodes[i].opcode) {
@@ -273,7 +285,6 @@ static void apc_swizzle_op_array(apc_bd_t *bd, zend_llist *ll, zend_op_array *op
 
 } /* }}} */
 
-
 /* {{{ apc_swizzle_function */
 static void apc_swizzle_function(apc_bd_t *bd, zend_llist *ll, zend_function *func TSRMLS_DC) {
     apc_swizzle_op_array(bd, ll, &func->op_array TSRMLS_CC);
@@ -283,7 +294,6 @@ static void apc_swizzle_function(apc_bd_t *bd, zend_llist *ll, zend_function *fu
     }
 #endif
 } /* }}} */
-
 
 /* {{{ apc_swizzle_class_entry */
 static void apc_swizzle_class_entry(apc_bd_t *bd, zend_llist *ll, zend_class_entry *ce TSRMLS_DC) {
@@ -368,7 +378,6 @@ static void apc_swizzle_class_entry(apc_bd_t *bd, zend_llist *ll, zend_class_ent
     }
 } /* }}} */
 
-
 /* {{{ apc_swizzle_property_info */
 static void apc_swizzle_property_info(apc_bd_t *bd, zend_llist *ll, zend_property_info *pi TSRMLS_DC) {
     apc_swizzle_ptr(bd, ll, &pi->name);
@@ -379,14 +388,12 @@ static void apc_swizzle_property_info(apc_bd_t *bd, zend_llist *ll, zend_propert
 #endif
 } /* }}} */
 
-
 /* {{{ apc_swizzle_function_entry */
 static void apc_swizzle_function_entry(apc_bd_t *bd, zend_llist *ll, const zend_function_entry *fe TSRMLS_DC) {
     apc_swizzle_ptr(bd, ll, &fe->fname);
     apc_swizzle_arg_info_array(bd, ll, fe->arg_info, fe->num_args TSRMLS_CC);
     apc_swizzle_ptr(bd, ll, &fe->arg_info);
 } /* }}} */
-
 
 /* {{{ apc_swizzle_arg_info_array */
 static void apc_swizzle_arg_info_array(apc_bd_t *bd, zend_llist *ll, const zend_arg_info* arg_info_array, uint num_args TSRMLS_DC) {
@@ -400,7 +407,6 @@ static void apc_swizzle_arg_info_array(apc_bd_t *bd, zend_llist *ll, const zend_
     }
 
 } /* }}} */
-
 
 /* {{{ apc_swizzle_hashtable */
 static void apc_swizzle_hashtable(apc_bd_t *bd, zend_llist *ll, HashTable *ht, apc_swizzle_cb_t swizzle_cb, int is_ptr TSRMLS_DC) {
@@ -442,7 +448,6 @@ static void apc_swizzle_hashtable(apc_bd_t *bd, zend_llist *ll, HashTable *ht, a
     apc_swizzle_ptr(bd, ll, &ht->arBuckets);
 } /* }}} */
 
-
 /* {{{ apc_swizzle_zval */
 static void apc_swizzle_zval(apc_bd_t *bd, zend_llist *ll, zval *zv TSRMLS_DC) {
 
@@ -476,7 +481,6 @@ static void apc_swizzle_zval(apc_bd_t *bd, zend_llist *ll, zval *zv TSRMLS_DC) {
             assert(0); /* shouldn't happen */
     }
 } /* }}} */
-
 
 /* {{{ apc_swizzle_bd */
 static apc_bd_t* apc_swizzle_bd(apc_bd_t* bd, zend_llist *ll TSRMLS_DC) {
@@ -540,7 +544,6 @@ static apc_bd_t* apc_swizzle_bd(apc_bd_t* bd, zend_llist *ll TSRMLS_DC) {
     return bd;
 } /* }}} */
 
-
 /* {{{ apc_unswizzle_bd */
 static int apc_unswizzle_bd(apc_bd_t *bd, int flags TSRMLS_DC) {
     int i;
@@ -595,7 +598,6 @@ static int apc_unswizzle_bd(apc_bd_t *bd, int flags TSRMLS_DC) {
 
     return 0;
 } /* }}} */
-
 
 /* {{{ apc_bin_checkfilter */
 static int apc_bin_checkfilter(HashTable *filter, const char *key, uint key_len) {
@@ -835,7 +837,6 @@ apc_bd_t* apc_bin_dump(HashTable *files, HashTable *user_vars TSRMLS_DC) {
     return bd;
 } /* }}} */
 
-
 /* {{{ apc_bin_load */
 int apc_bin_load(apc_bd_t *bd, int flags TSRMLS_DC) {
 
@@ -985,7 +986,6 @@ failure:
     HANDLE_UNBLOCK_INTERRUPTIONS();
     return -1;
 } /* }}} */
-
 
 /*
  * Local variables:
