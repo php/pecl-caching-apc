@@ -667,6 +667,7 @@ zend_class_entry* apc_copy_class_entry(zend_class_entry* dst, zend_class_entry* 
 {
     return my_copy_class_entry(dst, src, ctxt TSRMLS_CC);
 }
+/* }}} */
 
 /* {{{ my_copy_class_entry */
 static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_entry* src, apc_context_t* ctxt TSRMLS_DC)
@@ -899,7 +900,6 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
     return dst;
 }
 /* }}} */
-
 
 /* {{{ my_free_hashtable */
 static void my_free_hashtable(HashTable* ht, int type TSRMLS_DC)
@@ -1451,7 +1451,6 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_con
     return dst;
 }
 /* }}} */
-
 
 /* {{{ apc_copy_new_functions */
 apc_function_t* apc_copy_new_functions(int old_count, apc_context_t* ctxt TSRMLS_DC)
@@ -2091,8 +2090,6 @@ void apc_do_halt_compiler_register(const char *filename, long halt_offset TSRMLS
 }
 /* }}} */
 
-
-
 /* {{{ my_fixup_function */
 static void my_fixup_function(Bucket *p, zend_class_entry *src, zend_class_entry *dst)
 {
@@ -2179,7 +2176,6 @@ static void my_fixup_hashtable(HashTable *ht, ht_fixup_fun_t fixup, zend_class_e
     }
 }
 /* }}} */
-
 
 /* {{{ my_check_copy_function */
 static int my_check_copy_function(Bucket* p, va_list args)
