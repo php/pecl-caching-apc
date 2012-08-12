@@ -82,11 +82,15 @@
   </stability>
   <license uri="http://www.php.net/license">PHP License</license>
   <notes>
-- fixed handling of userspace stream wrappers simulating file inclusion/requiring (Anatoliy)
-- fixed bug #62699 trait aliases and precedences handling (Anatoliy)
-- added cli built-in server tests (Anatoliy)
-- fixed filter regex freeing on request shutdown (Anatoliy)
-- fixed interned strings storage freeing on module shutdown (Anatoily)
+- Fixed bug #62802 (Crash when use apc_bin_dump/load) (Laruence)
+- Fixed bug #62757 (php-fpm carshed when used apc_bin_dumpfile with apc.serializer) (Laruence)
+- Fixed bug #62765 (apc_bin_dumpfile report Fatal error when there is "goto" in function) (Laruence)
+- Fixed bug #61133 (segfault in tests/apc_bin_002.phpt) (Laruence)
+- Fixed handling of userspace stream wrappers simulating file inclusion/requiring (Anatoliy)
+- Fixed bug #62699 trait aliases and precedences handling (Anatoliy)
+- Added cli built-in server tests (Anatoliy)
+- Fixed filter regex freeing on request shutdown (Anatoliy)
+- Fixed interned strings storage freeing on module shutdown (Anatoily)
   </notes>
 
   <contents>
@@ -181,6 +185,12 @@
         <file role="test" name="iterator_005.phpt"/>
         <file role="test" name="iterator_006.phpt"/>
         <file role="test" name="iterator_007.phpt"/>
+        <file role="test" name="bug38779.phpt"/>
+        <file role="test" name="bug61398.phpt"/>
+        <file role="test" name="bug61398_2.phpt"/>
+        <file role="test" name="bug62757.phpt"/>
+        <file role="test" name="bug62765.phpt"/>
+        <file role="test" name="bug62802.phpt"/>
         <file role="test" name="php_5_3_ns.inc"/>
         <file role="test" name="skipif.inc"/>
       </dir>
