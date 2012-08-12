@@ -296,18 +296,18 @@ static int apc_restat(apc_fileinfo_t *fileinfo TSRMLS_DC)
 /* }}} */
 
 #define IS_COMMON_WRAPPER(fname, len) \
-     ((len) >= 5 && strncmp((fname), "file:", 5) == 0 || \
-     (len) >= 5 && strncmp((fname), "http:", 5) == 0 || \
-     (len) >= 4 && strncmp((fname), "ftp:", 4) == 0 || \
-     (len) >= 4 && strncmp((fname), "php:", 4) == 0 || \
-     (len) >= 5 && strncmp((fname), "zlib:", 5) == 0 || \
-     (len) >= 5 && strncmp((fname), "data:", 5) == 0 || \
-     (len) >= 5 && strncmp((fname), "glob:", 5) == 0 || \
-     (len) >= 5 && strncmp((fname), "phar:", 5) == 0 || \
-     (len) >= 5 && strncmp((fname), "ssh2:", 5) == 0 || \
-     (len) >= 4 && strncmp((fname), "rar:", 4) == 0 || \
-     (len) >= 4 && strncmp((fname), "ogg:", 4) == 0 || \
-     (len) >= 7 && strncmp((fname), "expect:", 7) == 0)
+     (((len) >= 5 && strncmp((fname), "file:", 5) == 0) || \
+      ((len) >= 5 && strncmp((fname), "http:", 5) == 0) || \
+      ((len) >= 4 && strncmp((fname), "ftp:", 4) == 0)  || \
+      ((len) >= 4 && strncmp((fname), "php:", 4) == 0)  || \
+      ((len) >= 5 && strncmp((fname), "zlib:", 5) == 0) || \
+      ((len) >= 5 && strncmp((fname), "data:", 5) == 0) || \
+      ((len) >= 5 && strncmp((fname), "glob:", 5) == 0) || \
+      ((len) >= 5 && strncmp((fname), "phar:", 5) == 0) || \
+      ((len) >= 5 && strncmp((fname), "ssh2:", 5) == 0) || \
+      ((len) >= 4 && strncmp((fname), "rar:", 4) == 0)  || \
+      ((len) >= 4 && strncmp((fname), "ogg:", 4) == 0)  || \
+      ((len) >= 7 && strncmp((fname), "expect:", 7) == 0))
 
 int apc_search_paths(const char* filename, const char* path, apc_fileinfo_t* fileinfo TSRMLS_DC)
 {
