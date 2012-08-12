@@ -35,7 +35,6 @@
 #include <valgrind/memcheck.h>
 #endif
 
-
 /* {{{ forward references */
 static apc_pool* apc_unpool_create(apc_pool_type type, apc_malloc_t, apc_free_t, apc_protect_t, apc_unprotect_t TSRMLS_DC);
 static apc_pool* apc_realpool_create(apc_pool_type type, apc_malloc_t, apc_free_t, apc_protect_t, apc_unprotect_t TSRMLS_DC);
@@ -133,7 +132,6 @@ static apc_pool* apc_unpool_create(apc_pool_type type,
     return &(upool->parent);
 }
 /* }}} */
-
 
 /*{{{ apc_realpool implementation */
 
@@ -388,6 +386,7 @@ static void apc_realpool_free(apc_pool *pool, void *p TSRMLS_DC)
 }
 /* }}} */
 
+/* {{{ apc_realpool_cleanup */
 static void apc_realpool_cleanup(apc_pool *pool TSRMLS_DC) 
 {
     pool_block *entry;
@@ -405,6 +404,7 @@ static void apc_realpool_cleanup(apc_pool *pool TSRMLS_DC)
         entry = tmp;
     }
 }
+/* }}} */
 
 /* {{{ apc_realpool_create */
 static apc_pool* apc_realpool_create(apc_pool_type type, apc_malloc_t allocate, apc_free_t deallocate, 
@@ -462,6 +462,8 @@ static apc_pool* apc_realpool_create(apc_pool_type type, apc_malloc_t allocate, 
     return &(rpool->parent);
 }
 
+
+/* }}} */
 
 /* }}} */
 

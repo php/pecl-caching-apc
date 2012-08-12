@@ -31,7 +31,6 @@
 zend_class_entry *apc_iterator_ce;
 zend_object_handlers apc_iterator_object_handlers;
 
-
 /* {{{ apc_iterator_item */
 static apc_iterator_item_t* apc_iterator_item_ctor(apc_iterator_t *iterator, slot_t **slot_pp TSRMLS_DC) {
     zval *zvalue;
@@ -700,7 +699,7 @@ int apc_iterator_init(int module_number TSRMLS_DC) {
 }
 /* }}} */
 
-
+/* {{{ apc_iterator_delete */
 int apc_iterator_delete(zval *zobj TSRMLS_DC) {
     apc_iterator_t *iterator;
     zend_class_entry *ce = Z_OBJCE_P(zobj);
@@ -729,6 +728,7 @@ int apc_iterator_delete(zval *zobj TSRMLS_DC) {
 
     return 1;
 }
+/* }}} */
 
 
 /*
