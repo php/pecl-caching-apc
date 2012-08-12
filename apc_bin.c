@@ -315,6 +315,7 @@ static void apc_swizzle_class_entry(apc_bd_t *bd, zend_llist *ll, zend_class_ent
     apc_swizzle_hashtable(bd, ll, &ce->function_table, (apc_swizzle_cb_t)apc_swizzle_function, 0 TSRMLS_CC);
 #ifdef ZEND_ENGINE_2_4
     if (ce->default_properties_table) {
+        apc_swizzle_ptr(bd, ll, &ce->default_properties_table);
         for (i = 0; i < ce->default_properties_count; i++) {
             if (ce->default_properties_table[i]) {
                 apc_swizzle_ptr(bd, ll, &ce->default_properties_table[i]);
@@ -332,6 +333,7 @@ static void apc_swizzle_class_entry(apc_bd_t *bd, zend_llist *ll, zend_class_ent
 
 #ifdef ZEND_ENGINE_2_4
     if (ce->default_static_members_table) {
+        apc_swizzle_ptr(bd, ll, &ce->default_static_members_table);
         for (i = 0; i < ce->default_static_members_count; i++) {
             if (ce->default_static_members_table[i]) {
                 apc_swizzle_ptr(bd, ll, &ce->default_static_members_table[i]);
