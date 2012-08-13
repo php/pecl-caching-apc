@@ -692,7 +692,7 @@ static int apc_load_data(const char *data_file TSRMLS_DC)
 
         if(p) {
             p[0] = '\0';
-            key_len = strlen(key);
+            key_len = strlen(key)+1;
 
             data = data_unserialize(data_file TSRMLS_CC);
             if(data) {
@@ -816,6 +816,12 @@ int apc_module_init(int module_number TSRMLS_DC)
 
     apc_pool_init();
 
+#ifdef ZEND_ENGINE_2_4
+#ifndef ZTS
+    apc_interned_strings_init(TSRMLS_C);
+#endif
+#endif
+
     apc_data_preload(TSRMLS_C);
 
 #if APC_HAVE_LOOKUP_HOOKS
@@ -832,12 +838,6 @@ int apc_module_init(int module_number TSRMLS_DC)
         apc_warning("Lazy function/class loading not available with this version of PHP, please disable APC lazy loading." TSRMLS_CC);
         APCG(lazy_functions) = APCG(lazy_classes) = 0;
     }
-#endif
-
-#ifdef ZEND_ENGINE_2_4
-#ifndef ZTS
-    apc_interned_strings_init(TSRMLS_C);
-#endif
 #endif
 
     APCG(initialized) = 1;
