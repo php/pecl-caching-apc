@@ -121,7 +121,7 @@ static int ZEND_FASTCALL apc_op_ZEND_INCLUDE_OR_EVAL(ZEND_OPCODE_HANDLER_ARGS)
     APC_ZEND_OPLINE
     zval *freeop1 = NULL;
     zval *inc_filename = NULL, tmp_inc_filename;
-    char realpath[MAXPATHLEN];
+    char realpath[MAXPATHLEN] = {0};
     php_stream_wrapper *wrapper;
     char *path_for_open;
     char *full_path = NULL;
