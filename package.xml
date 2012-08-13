@@ -216,6 +216,7 @@
         <file role="test" name="apc54_010.phpt"/>
         <file role="test" name="apc54_011.phpt"/>
         <file role="test" name="apc54_012.phpt"/>
+        <file role="test" name="apc54_013.phpt"/>
         <file role="test" name="apc54_bug62502.phpt"/>
         <file role="test" name="apc54_bug62699_2.phpt"/>
         <file role="test" name="apc54_bug62699.phpt"/>
