@@ -28,6 +28,12 @@
     <email>gopalv@php.net</email>
     <active>yes</active>
   </lead>
+  <lead>
+    <name>Xinchen Hui</name>
+    <user>laruence</user>
+    <email>laruence@php.net</email>
+    <active>yes</active>
+  </lead>
   <developer>
     <name>Edin Kadribasic</name>
     <user>edink</user>
@@ -70,12 +76,6 @@
     <email>pierre@php.net</email>
     <active>yes</active>
   </developer>
-  <leader>
-    <name>Xinchen Hui</name>
-    <user>laruence</user>
-    <email>laruence@php.net</email>
-    <active>yes</active>
-  </leader>
 
   <date>2012-07-19</date>
   <version>
