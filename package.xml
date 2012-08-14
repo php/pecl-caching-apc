@@ -226,6 +226,7 @@
         <file role="test" name="server_test.inc"/>
         <file role="test" name="php_5_3_ns.inc"/>
         <file role="test" name="skipif.inc"/>
+        <file role="test" name="data/abc.data"/>
       </dir>
     </dir>
   </contents>
