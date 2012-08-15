@@ -717,7 +717,7 @@ apc_bd_t* apc_bin_dump(HashTable *files, HashTable *user_vars TSRMLS_DC) {
         apc_warning("Unable to allocate memory for pool." TSRMLS_CC);
         return NULL;
     }
-    ctxt.copy = APC_COPY_IN_USER;  /* avoid stupid ALLOC_ZVAL calls here, hack */
+    ctxt.copy = APC_COPY_IN_OPCODE; /* avoid stupid ALLOC_ZVAL calls here, hack */
     apc_bd_alloc_ex((void*)((long)bd + sizeof(apc_bd_t)), bd->size - sizeof(apc_bd_t) -1 TSRMLS_CC);
     bd->num_entries = count;
     bd->entries = apc_bd_alloc_ex(NULL, sizeof(apc_bd_entry_t) * count TSRMLS_CC);

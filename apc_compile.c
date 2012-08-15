@@ -242,27 +242,14 @@ static zval* my_serialize_object(zval* dst, const zval* src, apc_context_t* ctxt
     apc_pool* pool = ctxt->pool;
     apc_serialize_t serialize = APC_SERIALIZER_NAME(php);
     void *config = NULL;
-    zval tmp;
 
     if(APCG(serializer)) { /* TODO: move to ctxt */
         serialize = APCG(serializer)->serialize;
         config = APCG(serializer)->config;
     }
 
-    if (src->type == IS_CONSTANT_ARRAY) {
-        /* some serializer can not handle IS_CONSTANT_ARRAY */
-        tmp = *src;
-        tmp.type = IS_ARRAY;
-        src = &tmp;
-    }
-
     if(serialize((unsigned char**)&buf.c, &buf.len, src, config TSRMLS_CC)) {
-        /*
-         * for constant array, we fake it to be a object, then it will always be unserialized 
-         * this is a little hack, but is the easiest way to fix constant array issue
-         * dst->type = src->type & ~IS_CONSTANT_INDEX; 
-         */
-        dst->type = IS_OBJECT;
+        dst->type = src->type & ~IS_CONSTANT_INDEX; 
         dst->value.str.len = buf.len;
         CHECK(dst->value.str.val = apc_pmemcpy(buf.c, (buf.len + 1), pool TSRMLS_CC));
     }
