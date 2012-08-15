@@ -538,7 +538,7 @@ PHP_FUNCTION(apc_sma_info)
 }
 /* }}} */
 
-/* {{{ */
+/* {{{ _apc_update  */
 int _apc_update(char *strkey, int strkey_len, apc_cache_updater_t updater, void* data TSRMLS_DC) 
 {
     if(!APCG(enabled)) {
@@ -959,7 +959,6 @@ PHP_FUNCTION(apc_exists) {
 }
 /* }}} */
 
-
 /* {{{ proto mixed apc_delete(mixed keys)
  */
 PHP_FUNCTION(apc_delete) {
@@ -1059,6 +1058,7 @@ PHP_FUNCTION(apc_delete_file) {
 }
 /* }}} */
 
+/* {{{ _apc_define_constants */
 static void _apc_define_constants(zval *constants, zend_bool case_sensitive TSRMLS_DC) {
     char *const_key;
     unsigned int const_key_len;
@@ -1099,6 +1099,7 @@ static void _apc_define_constants(zval *constants, zend_bool case_sensitive TSRM
         zend_hash_move_forward_ex(Z_ARRVAL_P(constants), &pos);
     }
 }
+/* }}} */
 
 /* {{{ proto mixed apc_define_constants(string key, array constants [, bool case_sensitive])
  */
@@ -1390,6 +1391,7 @@ PHP_FUNCTION(apc_bin_dump) {
 
     return;
 }
+/* }}} */
 
 /* {{{ proto mixed apc_bin_dumpfile(array files, array user_vars, string filename, [int flags [, resource context]])
     Output a binary dump of the given files and user variables from the APC cache to the named file.
@@ -1464,6 +1466,7 @@ PHP_FUNCTION(apc_bin_dumpfile) {
 
     RETURN_LONG(numbytes);
 }
+/* }}} */
 
 /* {{{ proto mixed apc_bin_load(string data, [int flags])
     Load the given binary dump into the APC file/user cache.
@@ -1492,6 +1495,7 @@ PHP_FUNCTION(apc_bin_load) {
 
     RETURN_TRUE;
 }
+/* }}} */
 
 /* {{{ proto mixed apc_bin_loadfile(string filename, [resource context, [int flags]])
     Load the given binary dump from the named file into the APC file/user cache.

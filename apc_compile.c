@@ -11,7 +11,7 @@
   | If you did not receive a copy of the PHP license and are unable to   |
   | obtain it through the world-wide-web, please send a note to          |
   | license@php.net so we can mail you a copy immediately.               |
-     +----------------------------------------------------------------------+
+  +----------------------------------------------------------------------+
   | Authors: Daniel Cowgill <dcowgill@communityconnect.com>              |
   |          Rasmus Lerdorf <rasmus@php.net>                             |
   |          Arun C. Murthy <arunc@yahoo-inc.com>                        |
@@ -282,6 +282,7 @@ static zval* my_unserialize_object(zval* dst, const zval* src, apc_context_t* ct
 }
 /* }}} */
 
+/* {{{ apc_string_pmemcpy */
 static char *apc_string_pmemcpy(char *str, size_t len, apc_pool* pool TSRMLS_DC)
 {	
 #ifdef ZEND_ENGINE_2_4
@@ -296,6 +297,7 @@ static char *apc_string_pmemcpy(char *str, size_t len, apc_pool* pool TSRMLS_DC)
 #endif
     return apc_pmemcpy(str, len, pool TSRMLS_CC);
 }
+/* }}} */
 
 /* {{{ my_copy_zval */
 static APC_HOTSPOT zval* my_copy_zval(zval* dst, const zval* src, apc_context_t* ctxt TSRMLS_DC)
@@ -1860,7 +1862,6 @@ zend_class_entry* apc_copy_class_entry_for_execution(zend_class_entry* src, apc_
 
     /* For derived classes, we must also copy the function hashtable (although
      * we can merely bitwise copy the functions it contains) */
-
     my_copy_hashtable(&dst->function_table,
                       &src->function_table,
                       (ht_copy_fun_t) apc_copy_function_for_execution_ex,

@@ -329,7 +329,7 @@ int apc_search_paths(const char* filename, const char* path, apc_fileinfo_t* fil
     if (!IS_ABSOLUTE_PATH(filename, filename_len) && 
         !IS_RELATIVE_PATH(filename, filename_len) &&
         !IS_COMMON_WRAPPER(filename, filename_len)) {
-        char *p = filename;
+        char *p = (char *)filename;
         int n = 0;
 
         /* If we're here, it's most likely a userspace stream wrapper. Extract

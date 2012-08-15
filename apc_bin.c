@@ -13,6 +13,7 @@
   | license@php.net so we can mail you a copy immediately.               |
   +----------------------------------------------------------------------+
   | Authors: Brian Shire <shire@php.net>                                 |
+  |          Xinchen Hui <laruence@php.net>                              |
   +----------------------------------------------------------------------+
 
  */
@@ -207,7 +208,7 @@ static void apc_swizzle_op_array(apc_bd_t *bd, zend_llist *ll, zend_op_array *op
         if(op_array->opcodes[i].op2.op_type == IS_CONST) {
             apc_swizzle_zval(bd, ll, &op_array->opcodes[i].op2.u.constant TSRMLS_CC);
         }
-#else 
+#else
         if (op_array->opcodes[i].op1_type == IS_CONST) {
             apc_swizzle_ptr(bd, ll, &op_array->opcodes[i].op1.literal);
         }
@@ -460,7 +461,7 @@ static void apc_swizzle_zval(apc_bd_t *bd, zend_llist *ll, zval *zv TSRMLS_DC) {
         zend_hash_index_update(&APCG(copied_zvals), (ulong)zv, (void**)&zv, sizeof(zval*), NULL);
     }
 
-    switch(zv->type & IS_CONSTANT_TYPE_MASK) {
+    switch(Z_TYPE_P(zv) & IS_CONSTANT_TYPE_MASK) {
         case IS_NULL:
         case IS_LONG:
         case IS_DOUBLE:
@@ -660,12 +661,10 @@ static inline void apc_bin_fixup_class_entry(zend_class_entry *ce) {
 
 /* {{{ apc_bin_dump */
 apc_bd_t* apc_bin_dump(HashTable *files, HashTable *user_vars TSRMLS_DC) {
-
-    int i;
     uint fcount;
     slot_t *sp;
     apc_bd_entry_t *ep;
-    int count=0;
+    int i, count=0;
     apc_bd_t *bd;
     zend_llist ll;
     zend_function *efp, *sfp;
@@ -734,13 +733,39 @@ apc_bd_t* apc_bin_dump(HashTable *files, HashTable *user_vars TSRMLS_DC) {
                 ep->val.user.info = apc_bd_alloc(sp->value->data.user.info_len TSRMLS_CC);
                 memcpy(ep->val.user.info, sp->value->data.user.info, sp->value->data.user.info_len);
                 ep->val.user.info_len = sp->value->data.user.info_len;
-                ep->val.user.val = apc_copy_zval(NULL, sp->value->data.user.val, &ctxt TSRMLS_CC);
+                if ((Z_TYPE_P(sp->value->data.user.val) == IS_ARRAY && APCG(serializer))
+                        || Z_TYPE_P(sp->value->data.user.val) == IS_OBJECT) {
+                    /* avoiding hash copy, hack */
+                    uint type = Z_TYPE_P(sp->value->data.user.val);
+                    Z_TYPE_P(sp->value->data.user.val) = IS_STRING;
+                    ep->val.user.val = apc_copy_zval(NULL, sp->value->data.user.val, &ctxt TSRMLS_CC);
+                    Z_TYPE_P(ep->val.user.val) = IS_OBJECT;
+                    sp->value->data.user.val->type = type;
+                } else if (Z_TYPE_P(sp->value->data.user.val) == IS_ARRAY && !APCG(serializer)) {
+                    /* this is a little complicated, we have to unserialize it first, then serialize it again */
+                    zval *garbage;
+                    ctxt.copy = APC_COPY_OUT_USER;
+                    garbage = apc_copy_zval(NULL, sp->value->data.user.val, &ctxt TSRMLS_CC);
+                    APCG(serializer) = apc_find_serializer("php" TSRMLS_CC);
+                    ctxt.copy = APC_COPY_IN_USER;
+                    ep->val.user.val = apc_copy_zval(NULL, garbage, &ctxt TSRMLS_CC);
+                    ep->val.user.val->type = IS_OBJECT;
+                    /* a memleak can not be avoided: zval_ptr_dtor(&garbage); */
+                    APCG(serializer) = NULL;
+                    ctxt.copy = APC_COPY_IN_OPCODE;
+                } else {
+                    ep->val.user.val = apc_copy_zval(NULL, sp->value->data.user.val, &ctxt TSRMLS_CC);
+                }
                 ep->val.user.ttl = sp->value->data.user.ttl;
 
                 /* swizzle pointers */
                 apc_swizzle_ptr(bd, &ll, &bd->entries[count].val.user.info);
                 zend_hash_clean(&APCG(copied_zvals));
-                apc_swizzle_zval(bd, &ll, bd->entries[count].val.user.val TSRMLS_CC);
+                if (ep->val.user.val->type == IS_OBJECT) {
+                    apc_swizzle_ptr(bd, &ll, &bd->entries[count].val.user.val->value.str.val TSRMLS_CC);
+                } else {
+                    apc_swizzle_zval(bd, &ll, bd->entries[count].val.user.val TSRMLS_CC);
+                }
                 apc_swizzle_ptr(bd, &ll, &bd->entries[count].val.user.val);
 
                 count++;
@@ -841,7 +866,6 @@ apc_bd_t* apc_bin_dump(HashTable *files, HashTable *user_vars TSRMLS_DC) {
 
 /* {{{ apc_bin_load */
 int apc_bin_load(apc_bd_t *bd, int flags TSRMLS_DC) {
-
     apc_bd_entry_t *ep;
     uint i, i2;
     int ret;
@@ -967,8 +991,25 @@ int apc_bin_load(apc_bd_t *bd, int flags TSRMLS_DC) {
 
                 break;
             case APC_CACHE_KEY_USER:
-                ctxt.copy = APC_COPY_IN_USER;
-                _apc_store(ep->val.user.info, ep->val.user.info_len, ep->val.user.val, ep->val.user.ttl, 0 TSRMLS_CC);
+                {
+                    zval *data;
+                    uint use_copy = 0;
+                    switch (Z_TYPE_P(ep->val.user.val)) {
+                        case IS_OBJECT:
+                            ctxt.copy = APC_COPY_OUT_USER;
+                            data = apc_copy_zval(NULL, ep->val.user.val, &ctxt TSRMLS_CC);
+                            use_copy = 1;
+                        break;
+                        default:
+                            data = ep->val.user.val;
+                        break;
+                    }
+                    ctxt.copy = APC_COPY_IN_USER;
+                    _apc_store(ep->val.user.info, ep->val.user.info_len, data, ep->val.user.ttl, 0 TSRMLS_CC);
+                    if (use_copy) {
+                        zval_ptr_dtor(&data);
+                    }
+                }
                 break;
             default:
                 break;
