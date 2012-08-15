@@ -188,9 +188,13 @@ static void apc_iterator_destroy(void *object, zend_object_handle handle TSRMLS_
     while (apc_stack_size(iterator->stack) > 0) {
         apc_iterator_item_dtor(apc_stack_pop(iterator->stack));
     }
+    apc_stack_destroy(iterator->stack TSRMLS_CC);
+
+#ifdef ITERATOR_PCRE
     if (iterator->regex) {
         efree(iterator->regex);
     }
+#endif
     if (iterator->search_hash) {
         zend_hash_destroy(iterator->search_hash);
         efree(iterator->search_hash);
@@ -263,6 +267,10 @@ static int apc_iterator_search_match(apc_iterator_t *iterator, slot_t **slot) {
         if (!rval && fname_key) {
             rval = zend_hash_exists(iterator->search_hash, fname_key, fname_key_len+1);
         }
+    }
+
+    if (fname_key) {
+        efree(fname_key);
     }
 
     return rval;

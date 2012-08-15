@@ -104,7 +104,8 @@
 - Added cli built-in server tests (Anatoliy)
 - Fixed filter regex freeing on request shutdown (Anatoliy)
 - Fixed interned strings storage freeing on module shutdown (Anatoily)
-- Fixed bug #61742 preload_path does not work due to incorrect string length
+- Fixed bug #61742 preload_path does not work due to incorrect string length (Anatoliy)
+- Fixed several memory leaks it APCIterator (Anatoliy)
   </notes>
 
   <contents>
@@ -222,6 +223,10 @@
         <file role="test" name="apc54_015.phpt"/>
         <file role="test" name="apc54_016.phpt"/>
         <file role="test" name="apc54_017.phpt"/>
+        <file role="test" name="apc54_018.phpt"/>
+        <file role="test" name="apc54_019.phpt"/>
+        <file role="test" name="apc54_020.phpt"/>
+        <file role="test" name="apc54_021.phpt"/>
         <file role="test" name="apc54_bug62699_2.phpt"/>
         <file role="test" name="apc54_bug62699.phpt"/>
         <file role="test" name="apc54_error_010_2.phpt"/>
