@@ -191,7 +191,7 @@ static void apc_swizzle_op_array(apc_bd_t *bd, zend_llist *ll, zend_op_array *op
         int i = 0;
         apc_swizzle_ptr(bd, ll, &(op_array->literals));
         for (; i<op_array->last_literal; i++) {
-            apc_swizzle_zval(bd, ll, &((op_array->literals[i]).constant));
+            apc_swizzle_zval(bd, ll, &((op_array->literals[i]).constant) TSRMLS_CC);
         }
     }
 #endif
@@ -762,7 +762,7 @@ apc_bd_t* apc_bin_dump(HashTable *files, HashTable *user_vars TSRMLS_DC) {
                 apc_swizzle_ptr(bd, &ll, &bd->entries[count].val.user.info);
                 zend_hash_clean(&APCG(copied_zvals));
                 if (ep->val.user.val->type == IS_OBJECT) {
-                    apc_swizzle_ptr(bd, &ll, &bd->entries[count].val.user.val->value.str.val TSRMLS_CC);
+                    apc_swizzle_ptr(bd, &ll, &bd->entries[count].val.user.val->value.str.val);
                 } else {
                     apc_swizzle_zval(bd, &ll, bd->entries[count].val.user.val TSRMLS_CC);
                 }
