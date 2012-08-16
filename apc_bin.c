@@ -33,7 +33,6 @@
 #include "apc_sma.h"
 #include "apc_pool.h"
 #include "ext/standard/md5.h"
-#include "ext/standard/crc32.h"
 
 extern apc_cache_t* apc_cache;
 extern apc_cache_t* apc_user_cache;
@@ -487,12 +486,13 @@ static void apc_swizzle_zval(apc_bd_t *bd, zend_llist *ll, zval *zv TSRMLS_DC) {
 
 /* {{{ apc_swizzle_bd */
 static apc_bd_t* apc_swizzle_bd(apc_bd_t* bd, zend_llist *ll TSRMLS_DC) {
-    int count, i;
+    unsigned int i;
+    int count;
     PHP_MD5_CTX context;
     unsigned char digest[16];
     register php_uint32 crc;
     php_uint32 crcinit = 0;
-    char *crc_p;
+    unsigned char *crc_p;
     void ***ptr;
     void ***ptr_list;
 
@@ -526,22 +526,20 @@ static apc_bd_t* apc_swizzle_bd(apc_bd_t* bd, zend_llist *ll TSRMLS_DC) {
         bd->num_swizzled_ptrs = 0;
         bd->swizzled_ptrs = NULL;
     }
-    ((char*)bd)[bd->size-1] = 0;  /* silence null termination for zval strings */
+    ((unsigned char*)bd)[((bd->size >= 1) ? (bd->size-1) : 0)] = 0;  /* silence null termination for zval strings */
     efree(ptr_list);
     bd->swizzled = 1;
 
     /* Generate MD5/CRC32 checksum */
-    for(i=0; i<16; i++) { bd->md5[i] = 0; }
+    memset(bd->md5, 0, 16);
     bd->crc=0;
+
     PHP_MD5Init(&context);
     PHP_MD5Update(&context, (const unsigned char*)bd, bd->size);
     PHP_MD5Final(digest, &context);
-    crc = crcinit^0xFFFFFFFF;
-    crc_p = (char*)bd;
-    for(i=bd->size; i--; ++crc_p) {
-      crc = ((crc >> 8) & 0x00FFFFFF) ^ crc32tab[(crc ^ (*crc_p)) & 0xFF ];
-    }
-    memcpy(bd->md5, digest, 16);
+    crc = apc_crc32((unsigned char*)bd, bd->size);
+
+    memmove(bd->md5, digest, 16);
     bd->crc = crc;
 
     return bd;
@@ -549,20 +547,21 @@ static apc_bd_t* apc_swizzle_bd(apc_bd_t* bd, zend_llist *ll TSRMLS_DC) {
 
 /* {{{ apc_unswizzle_bd */
 static int apc_unswizzle_bd(apc_bd_t *bd, int flags TSRMLS_DC) {
-    int i;
+    unsigned int i;
     unsigned char md5_orig[16];
     unsigned char digest[16];
     PHP_MD5_CTX context;
     register php_uint32 crc;
     php_uint32 crcinit = 0;
     php_uint32 crc_orig;
-    char *crc_p;
+    unsigned char *crc_p;
 
     /* Verify the md5 or crc32 before we unswizzle */
-    memcpy(md5_orig, bd->md5, 16);
-    for(i=0; i<16; i++) { bd->md5[i] = 0; }
+    memmove(md5_orig, bd->md5, 16);
+    memset(bd->md5, 0, 16);
     crc_orig = bd->crc;
     bd->crc=0;
+
     if(flags & APC_BIN_VERIFY_MD5) {
         PHP_MD5Init(&context);
         PHP_MD5Update(&context, (const unsigned char*)bd, bd->size);
@@ -573,11 +572,7 @@ static int apc_unswizzle_bd(apc_bd_t *bd, int flags TSRMLS_DC) {
         }
     }
     if(flags & APC_BIN_VERIFY_CRC32) {
-        crc = crcinit^0xFFFFFFFF;
-        crc_p = (char*)bd;
-        for(i=bd->size; i--; ++crc_p) {
-          crc = ((crc >> 8) & 0x00FFFFFF) ^ crc32tab[(crc ^ (*crc_p)) & 0xFF ];
-        }
+        crc = apc_crc32((unsigned char*)bd, bd->size);
         if(crc_orig != crc) {
             apc_error("CRC32 checksum of binary dump failed." TSRMLS_CC);
             return -1;
@@ -668,7 +663,7 @@ apc_bd_t* apc_bin_dump(HashTable *files, HashTable *user_vars TSRMLS_DC) {
     apc_bd_t *bd;
     zend_llist ll;
     zend_function *efp, *sfp;
-    long size=0;
+    size_t size=0;
     apc_context_t ctxt;
     void *pool_ptr;
 
@@ -708,7 +703,7 @@ apc_bd_t* apc_bin_dump(HashTable *files, HashTable *user_vars TSRMLS_DC) {
 
     size += sizeof(apc_bd_t) +1;  /* +1 for null termination */
     bd = emalloc(size);
-    bd->size = size;
+    bd->size = (unsigned int)size;
     pool_ptr = emalloc(sizeof(apc_pool));
     apc_bd_alloc_ex(pool_ptr, sizeof(apc_pool) TSRMLS_CC);
     ctxt.pool = apc_pool_create(APC_UNPOOL, apc_bd_alloc, apc_bd_free, NULL, NULL TSRMLS_CC);  /* ideally the pool wouldn't be alloc'd as part of this */

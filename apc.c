@@ -640,9 +640,9 @@ static unsigned int crc32tab[] = {
     /* 252 */  0xb7bd5c3b, 0x8c3ec470, 0xc0ba6cad, 0xfb39f4e6,
 };
 
-unsigned int apc_crc32(const char* buf, int len)
+unsigned int apc_crc32(const unsigned char* buf, unsigned int len)
 {
-    int i;
+    unsigned int i;
     int k;
     unsigned int crc;
 
@@ -651,6 +651,7 @@ unsigned int apc_crc32(const char* buf, int len)
 
     for (i = 0; i < len; i++) {
         k = (crc ^ buf[i]) & 0x000000FF;
+        assert(k >= 0 && k <= 255);
         crc = ((crc >> 8) & 0x00FFFFFF) ^ crc32tab[k];
     }
 

@@ -101,7 +101,7 @@ extern void apc_regex_destroy_array(void* p TSRMLS_DC);
 extern int apc_regex_match_array(void* p, const char* input);
 
 /* apc_crc32: returns the CRC-32 checksum of the first len bytes in buf */
-extern unsigned int apc_crc32(const char* buf, int len);
+extern unsigned int apc_crc32(const unsigned char* buf, unsigned int len);
 
 /* apc_flip_hash flips keys and values for faster searching */
 extern HashTable* apc_flip_hash(HashTable *hash); 

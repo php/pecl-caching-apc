@@ -107,6 +107,7 @@
 - Fixed interned strings storage freeing on module shutdown (Anatoily)
 - Fixed bug #61742 preload_path does not work due to incorrect string length (Anatoliy)
 - Fixed several memory leaks it APCIterator (Anatoliy)
+- Fixed potential overflows in bin dumps (Anatoliy)
   </notes>
 
   <contents>
