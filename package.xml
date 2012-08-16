@@ -76,6 +76,7 @@
   </stability>
   <license uri="http://www.php.net/license">PHP License</license>
   <notes>
+- Fixed bug (apc_bin_dump doesn't swizzle bucket arKey in HashTable) (Laruence)
 - Fixed bug #62825 (php carshed OR return PHP Fatal error when used apc_bin_dump after apc_store) (Laruence)
 - Fixed bug due to Conditional "jump or move depends on uninitialised value(s)" in apc_op_ZEND_INCLUDE_OR_EVAL and apc_bin_dump (Laruence)
 - Fixed bug #62802 (Crash when use apc_bin_dump/load) (Laruence)
