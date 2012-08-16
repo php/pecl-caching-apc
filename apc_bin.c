@@ -427,6 +427,12 @@ static void apc_swizzle_hashtable(apc_bd_t *bd, zend_llist *ll, HashTable *ht, a
         }
 #ifdef ZEND_ENGINE_2_4
         if ((*bp_prev)->nKeyLength) {
+            if (IS_INTERNED((*bp_prev)->arKey)) {
+                /* we should dump that internal string out */
+                char *tmp = apc_bd_alloc((*bp_prev)->nKeyLength TSRMLS_CC);
+                memcpy(tmp, (*bp_prev)->arKey, (*bp_prev)->nKeyLength);
+                (*bp_prev)->arKey = tmp;
+            }
             apc_swizzle_ptr(bd, ll, &(*bp_prev)->arKey);
         }
 #endif
