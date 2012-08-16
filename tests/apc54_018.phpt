@@ -42,7 +42,7 @@ array(11) {
   ["type"]=>
   string(4) "user"
   ["key"]=>
-  string(42) "test-niko-asdfasdfasdfkjasdflkasjdfasf5675"
+  string(42) "test-niko-asdfasdfasdfkjasdflkasjdfasf%d"
   ["value"]=>
   string(3200) "%s"
   ["num_hits"]=>
@@ -58,7 +58,7 @@ array(11) {
   ["ref_count"]=>
   int(0)
   ["mem_size"]=>
-  int(4184)
+  int(%d)
   ["ttl"]=>
   int(0)
 }
@@ -67,7 +67,7 @@ array(11) {
   ["type"]=>
   string(4) "user"
   ["key"]=>
-  string(42) "test-niko-asdfasdfasdfkjasdflkasjdfasf5675"
+  string(42) "test-niko-asdfasdfasdfkjasdflkasjdfasf%d"
   ["value"]=>
   string(3200) "%s"
   ["num_hits"]=>
@@ -83,7 +83,7 @@ array(11) {
   ["ref_count"]=>
   int(0)
   ["mem_size"]=>
-  int(4184)
+  int(%d)
   ["ttl"]=>
   int(0)
 }
@@ -92,7 +92,7 @@ array(11) {
   ["type"]=>
   string(4) "user"
   ["key"]=>
-  string(42) "test-niko-asdfasdfasdfkjasdflkasjdfasf5675"
+  string(42) "test-niko-asdfasdfasdfkjasdflkasjdfasf%d"
   ["value"]=>
   string(3200) "%s"
   ["num_hits"]=>
@@ -108,7 +108,7 @@ array(11) {
   ["ref_count"]=>
   int(0)
   ["mem_size"]=>
-  int(4184)
+  int(%d)
   ["ttl"]=>
   int(0)
 }
