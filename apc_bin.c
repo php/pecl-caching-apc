@@ -425,9 +425,11 @@ static void apc_swizzle_hashtable(apc_bd_t *bd, zend_llist *ll, HashTable *ht, a
         } else {
             swizzle_cb(bd, ll, (void**)(*bp_prev)->pData TSRMLS_CC);
         }
+#ifdef ZEND_ENGINE_2_4
         if ((*bp_prev)->nKeyLength) {
             apc_swizzle_ptr(bd, ll, &(*bp_prev)->arKey);
         }
+#endif
         apc_swizzle_ptr(bd, ll, &(*bp_prev)->pData);
         if((*bp_prev)->pDataPtr) {
             apc_swizzle_ptr(bd, ll, &(*bp_prev)->pDataPtr);
