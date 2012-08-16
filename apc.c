@@ -333,7 +333,7 @@ int apc_search_paths(const char* filename, const char* path, apc_fileinfo_t* fil
         int n = 0;
 
         /* If we're here, it's most likely a userspace stream wrapper. Extract
-            it's protocol ant check if it's already been registered. */
+            it's protocol and check if it's already been registered. */
 
         for (; isalnum((int)*p) || *p == '+' || *p == '-' || *p == '.'; p++) {
             n++;
@@ -343,7 +343,7 @@ int apc_search_paths(const char* filename, const char* path, apc_fileinfo_t* fil
             char *tmp = estrndup(filename, n); 
 
             if (!zend_hash_exists(php_stream_get_url_stream_wrappers_hash(), tmp, n + 1)) {
-                return 0;
+                return -1;
             }
             efree(tmp);
         }

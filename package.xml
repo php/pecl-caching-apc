@@ -5,18 +5,6 @@
   <summary>Alternative PHP Cache</summary>
   <description>APC is a free, open, and robust framework for caching and optimizing PHP intermediate code.</description>
   <lead>
-    <name>Daniel Cowgill</name>
-    <user>dcowgill</user>
-    <email>dan@mail.communityconnect.com</email>
-    <active>no</active>
-  </lead>
-  <lead>
-    <name>George Schlossnagle</name>
-    <user>gschlossnagle</user>
-    <email>george@omniti.com</email>
-    <active>no</active>
-  </lead>
-  <lead>
     <name>Rasmus Lerdorf</name>
     <user>rasmus</user>
     <email>rasmus@php.net</email>
@@ -34,12 +22,6 @@
     <email>laruence@php.net</email>
     <active>yes</active>
   </lead>
-  <developer>
-    <name>Edin Kadribasic</name>
-    <user>edink</user>
-    <email>edink@emini.dk</email>
-    <active>no</active>
-  </developer>
   <developer>
     <name>Ilia Alshanetsky</name>
     <user>iliaa</user>
@@ -100,7 +82,7 @@
 - Fixed bug #62757 (php-fpm carshed when used apc_bin_dumpfile with apc.serializer) (Laruence)
 - Fixed bug #62765 (apc_bin_dumpfile report Fatal error when there is "goto" in function) (Laruence)
 - Fixed bug #61133 (segfault in tests/apc_bin_002.phpt) (Laruence)
-- Fixed handling of userspace stream wrappers simulating file inclusion/requiring (Anatoliy)
+- Fixed handling of userspace stream wrappers simulating file inclusion/requiring (Anatoliy, Rasmus)
 - Fixed bug #62699 trait aliases and precedences handling (Anatoliy)
 - Added cli built-in server tests (Anatoliy)
 - Fixed filter regex freeing on request shutdown (Anatoliy)
