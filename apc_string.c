@@ -206,48 +206,52 @@ void apc_interned_strings_init(TSRMLS_D)
     int count = APCG(shm_strings_buffer) / (sizeof(Bucket) + sizeof(Bucket*) * 2);
 
     apc_interned_strings_data = (apc_interned_strings_data_t*) apc_sma_malloc(APCG(shm_strings_buffer) TSRMLS_CC);
-    memset((void *)apc_interned_strings_data, 0, APCG(shm_strings_buffer));
+    if (apc_interned_strings_data) {
+        memset((void *)apc_interned_strings_data, 0, APCG(shm_strings_buffer));
 
-    CREATE_LOCK(APCSG(lock));
+        CREATE_LOCK(APCSG(lock));
 
-    zend_hash_init(&APCSG(interned_strings), count, NULL, NULL, 1);
-    APCSG(interned_strings).nTableMask = APCSG(interned_strings).nTableSize - 1;
-    APCSG(interned_strings).arBuckets = (Bucket**)((char*)apc_interned_strings_data + sizeof(apc_interned_strings_data_t));
-   
-    APCSG(interned_strings_start) = (char*)APCSG(interned_strings).arBuckets + APCSG(interned_strings).nTableSize * sizeof(Bucket *);
-    APCSG(interned_strings_end)   = (char*)apc_interned_strings_data + APCG(shm_strings_buffer);
-    APCSG(interned_strings_top)   = APCSG(interned_strings_start);
+        zend_hash_init(&APCSG(interned_strings), count, NULL, NULL, 1);
+        APCSG(interned_strings).nTableMask = APCSG(interned_strings).nTableSize - 1;
+        APCSG(interned_strings).arBuckets = (Bucket**)((char*)apc_interned_strings_data + sizeof(apc_interned_strings_data_t));
 
-    old_interned_strings_start = CG(interned_strings_start);
-    old_interned_strings_end = CG(interned_strings_end);
-    old_new_interned_string = zend_new_interned_string;
-    old_interned_strings_snapshot = zend_interned_strings_snapshot;
-    old_interned_strings_restore = zend_interned_strings_restore;
+        APCSG(interned_strings_start) = (char*)APCSG(interned_strings).arBuckets + APCSG(interned_strings).nTableSize * sizeof(Bucket *);
+        APCSG(interned_strings_end)   = (char*)apc_interned_strings_data + APCG(shm_strings_buffer);
+        APCSG(interned_strings_top)   = APCSG(interned_strings_start);
 
-    CG(interned_strings_start) = APCSG(interned_strings_start);
-    CG(interned_strings_end) = APCSG(interned_strings_end);
-    zend_new_interned_string = apc_dummy_new_interned_string_for_php;
-    zend_interned_strings_snapshot = apc_dummy_interned_strings_snapshot_for_php;
-    zend_interned_strings_restore = apc_dummy_interned_strings_restore_for_php;
+        old_interned_strings_start = CG(interned_strings_start);
+        old_interned_strings_end = CG(interned_strings_end);
+        old_new_interned_string = zend_new_interned_string;
+        old_interned_strings_snapshot = zend_interned_strings_snapshot;
+        old_interned_strings_restore = zend_interned_strings_restore;
 
-    apc_copy_internal_strings(TSRMLS_C);
+        CG(interned_strings_start) = APCSG(interned_strings_start);
+        CG(interned_strings_end) = APCSG(interned_strings_end);
+        zend_new_interned_string = apc_dummy_new_interned_string_for_php;
+        zend_interned_strings_snapshot = apc_dummy_interned_strings_snapshot_for_php;
+        zend_interned_strings_restore = apc_dummy_interned_strings_restore_for_php;
+
+        apc_copy_internal_strings(TSRMLS_C);
+    }
 }
 
 void apc_interned_strings_shutdown(TSRMLS_D)
 {	
-    zend_hash_clean(CG(function_table));
-    zend_hash_clean(CG(class_table));
-    zend_hash_clean(EG(zend_constants));
+    if (apc_interned_strings_data) {
+        zend_hash_clean(CG(function_table));
+        zend_hash_clean(CG(class_table));
+        zend_hash_clean(EG(zend_constants));
 
-    CG(interned_strings_start) = old_interned_strings_start;
-    CG(interned_strings_end) = old_interned_strings_end;
-    zend_new_interned_string = old_new_interned_string;
-    zend_interned_strings_snapshot = old_interned_strings_snapshot;
-    zend_interned_strings_restore = old_interned_strings_restore;
+        CG(interned_strings_start) = old_interned_strings_start;
+        CG(interned_strings_end) = old_interned_strings_end;
+        zend_new_interned_string = old_new_interned_string;
+        zend_interned_strings_snapshot = old_interned_strings_snapshot;
+        zend_interned_strings_restore = old_interned_strings_restore;
 
-    apc_sma_free(apc_interned_strings_data TSRMLS_CC);
+        apc_sma_free(apc_interned_strings_data TSRMLS_CC);
 
-    DESTROY_LOCK(APCSG(lock));
+        DESTROY_LOCK(APCSG(lock));
+    }
 }
 #endif
 
