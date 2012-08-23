@@ -248,8 +248,6 @@ void apc_interned_strings_shutdown(TSRMLS_D)
         zend_interned_strings_snapshot = old_interned_strings_snapshot;
         zend_interned_strings_restore = old_interned_strings_restore;
 
-        apc_sma_free(apc_interned_strings_data TSRMLS_CC);
-
         DESTROY_LOCK(APCSG(lock));
     }
 }
