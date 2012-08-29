@@ -520,12 +520,15 @@ void apc_regex_destroy_array(void* p TSRMLS_DC)
 {
     if (p != NULL) {
         apc_regex* regs = (apc_regex*) p;
+/* XXX add more tests and activate when it works properly on all SAPIs*/
+#if 0
         if (regs->preg) {
             pefree(regs->preg, 1);
         }
         if (regs->nreg) {
             pefree(regs->nreg, 1);
         }
+#endif
         apc_efree(regs TSRMLS_CC);
     }
 }
