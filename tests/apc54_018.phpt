@@ -42,9 +42,9 @@ array(11) {
   ["type"]=>
   string(4) "user"
   ["key"]=>
-  string(42) "test-niko-asdfasdfasdfkjasdflkasjdfasf%d"
+  string(42) "test-niko-asdfasdfasdfkjasdflkasjdfasf5675"
   ["value"]=>
-  string(3200) "%s"
+  string(%d) "%s"
   ["num_hits"]=>
   int(0)
   ["mtime"]=>
@@ -67,9 +67,9 @@ array(11) {
   ["type"]=>
   string(4) "user"
   ["key"]=>
-  string(42) "test-niko-asdfasdfasdfkjasdflkasjdfasf%d"
+  string(42) "test-niko-asdfasdfasdfkjasdflkasjdfasf5675"
   ["value"]=>
-  string(3200) "%s"
+  string(%d) "%s"
   ["num_hits"]=>
   int(0)
   ["mtime"]=>
@@ -92,9 +92,159 @@ array(11) {
   ["type"]=>
   string(4) "user"
   ["key"]=>
-  string(42) "test-niko-asdfasdfasdfkjasdflkasjdfasf%d"
+  string(42) "test-niko-asdfasdfasdfkjasdflkasjdfasf5675"
   ["value"]=>
-  string(3200) "%s"
+  string(%d) "%s"
+  ["num_hits"]=>
+  int(0)
+  ["mtime"]=>
+  int(%d)
+  ["creation_time"]=>
+  int(%d)
+  ["deletion_time"]=>
+  int(0)
+  ["access_time"]=>
+  int(%d)
+  ["ref_count"]=>
+  int(0)
+  ["mem_size"]=>
+  int(%d)
+  ["ttl"]=>
+  int(0)
+}
+int(50000)
+array(11) {
+  ["type"]=>
+  string(4) "user"
+  ["key"]=>
+  string(42) "test-niko-asdfasdfasdfkjasdflkasjdfasf5675"
+  ["value"]=>
+  string(%d) "%s"
+  ["num_hits"]=>
+  int(0)
+  ["mtime"]=>
+  int(%d)
+  ["creation_time"]=>
+  int(%d)
+  ["deletion_time"]=>
+  int(0)
+  ["access_time"]=>
+  int(%d)
+  ["ref_count"]=>
+  int(0)
+  ["mem_size"]=>
+  int(%d)
+  ["ttl"]=>
+  int(0)
+}
+int(50000)
+array(11) {
+  ["type"]=>
+  string(4) "user"
+  ["key"]=>
+  string(42) "test-niko-asdfasdfasdfkjasdflkasjdfasf5675"
+  ["value"]=>
+  string(%d) "%s"
+  ["num_hits"]=>
+  int(0)
+  ["mtime"]=>
+  int(%d)
+  ["creation_time"]=>
+  int(%d)
+  ["deletion_time"]=>
+  int(0)
+  ["access_time"]=>
+  int(%d)
+  ["ref_count"]=>
+  int(0)
+  ["mem_size"]=>
+  int(%d)
+  ["ttl"]=>
+  int(0)
+}
+int(50000)
+array(11) {
+  ["type"]=>
+  string(4) "user"
+  ["key"]=>
+  string(42) "test-niko-asdfasdfasdfkjasdflkasjdfasf5675"
+  ["value"]=>
+  string(%d) "%s"
+  ["num_hits"]=>
+  int(0)
+  ["mtime"]=>
+  int(%d)
+  ["creation_time"]=>
+  int(%d)
+  ["deletion_time"]=>
+  int(0)
+  ["access_time"]=>
+  int(%d)
+  ["ref_count"]=>
+  int(0)
+  ["mem_size"]=>
+  int(%d)
+  ["ttl"]=>
+  int(0)
+}
+int(50000)
+array(11) {
+  ["type"]=>
+  string(4) "user"
+  ["key"]=>
+  string(42) "test-niko-asdfasdfasdfkjasdflkasjdfasf5675"
+  ["value"]=>
+  string(%d) "%s"
+  ["num_hits"]=>
+  int(0)
+  ["mtime"]=>
+  int(%d)
+  ["creation_time"]=>
+  int(%d)
+  ["deletion_time"]=>
+  int(0)
+  ["access_time"]=>
+  int(%d)
+  ["ref_count"]=>
+  int(0)
+  ["mem_size"]=>
+  int(%d)
+  ["ttl"]=>
+  int(0)
+}
+int(50000)
+array(11) {
+  ["type"]=>
+  string(4) "user"
+  ["key"]=>
+  string(42) "test-niko-asdfasdfasdfkjasdflkasjdfasf5675"
+  ["value"]=>
+  string(%d) "%s"
+  ["num_hits"]=>
+  int(0)
+  ["mtime"]=>
+  int(%d)
+  ["creation_time"]=>
+  int(%d)
+  ["deletion_time"]=>
+  int(0)
+  ["access_time"]=>
+  int(%d)
+  ["ref_count"]=>
+  int(0)
+  ["mem_size"]=>
+  int(%d)
+  ["ttl"]=>
+  int(0)
+}
+int(50000)
+array(11) {
+  ["type"]=>
+  string(4) "user"
+  ["key"]=>
+  string(42) "test-niko-asdfasdfasdfkjasdflkasjdfasf5675"
+  ["value"]=>
+  string(%d) "%s"
   ["num_hits"]=>
   int(0)
   ["mtime"]=>

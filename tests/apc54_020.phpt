@@ -84,11 +84,11 @@ array(12) {
   ["creation_time"]=>
   int(%d)
   ["deletion_time"]=>
-  int(%d)
+  int(0)
   ["access_time"]=>
   int(%d)
   ["ref_count"]=>
-  int(%d)
+  int(0)
   ["mem_size"]=>
   int(%d)
 }
@@ -110,11 +110,11 @@ array(12) {
   ["creation_time"]=>
   int(%d)
   ["deletion_time"]=>
-  int(%d)
+  int(0)
   ["access_time"]=>
   int(%d)
   ["ref_count"]=>
-  int(%d)
+  int(0)
   ["mem_size"]=>
   int(%d)
 }
@@ -136,11 +136,11 @@ array(12) {
   ["creation_time"]=>
   int(%d)
   ["deletion_time"]=>
-  int(%d)
+  int(0)
   ["access_time"]=>
   int(%d)
   ["ref_count"]=>
-  int(%d)
+  int(0)
   ["mem_size"]=>
   int(%d)
 }
@@ -162,11 +162,11 @@ array(12) {
   ["creation_time"]=>
   int(%d)
   ["deletion_time"]=>
-  int(%d)
+  int(0)
   ["access_time"]=>
   int(%d)
   ["ref_count"]=>
-  int(%d)
+  int(0)
   ["mem_size"]=>
   int(%d)
 }
@@ -188,11 +188,11 @@ array(12) {
   ["creation_time"]=>
   int(%d)
   ["deletion_time"]=>
-  int(%d)
+  int(0)
   ["access_time"]=>
   int(%d)
   ["ref_count"]=>
-  int(%d)
+  int(0)
   ["mem_size"]=>
   int(%d)
 }
@@ -214,11 +214,11 @@ array(12) {
   ["creation_time"]=>
   int(%d)
   ["deletion_time"]=>
-  int(%d)
+  int(0)
   ["access_time"]=>
   int(%d)
   ["ref_count"]=>
-  int(%d)
+  int(0)
   ["mem_size"]=>
   int(%d)
 }
@@ -240,11 +240,11 @@ array(12) {
   ["creation_time"]=>
   int(%d)
   ["deletion_time"]=>
-  int(%d)
+  int(0)
   ["access_time"]=>
   int(%d)
   ["ref_count"]=>
-  int(%d)
+  int(0)
   ["mem_size"]=>
   int(%d)
 }
@@ -266,11 +266,11 @@ array(12) {
   ["creation_time"]=>
   int(%d)
   ["deletion_time"]=>
-  int(%d)
+  int(0)
   ["access_time"]=>
   int(%d)
   ["ref_count"]=>
-  int(%d)
+  int(0)
   ["mem_size"]=>
   int(%d)
 }
@@ -292,11 +292,11 @@ array(12) {
   ["creation_time"]=>
   int(%d)
   ["deletion_time"]=>
-  int(%d)
+  int(0)
   ["access_time"]=>
   int(%d)
   ["ref_count"]=>
-  int(%d)
+  int(0)
   ["mem_size"]=>
   int(%d)
 }
@@ -318,11 +318,531 @@ array(12) {
   ["creation_time"]=>
   int(%d)
   ["deletion_time"]=>
-  int(%d)
+  int(0)
   ["access_time"]=>
   int(%d)
   ["ref_count"]=>
+  int(0)
+  ["mem_size"]=>
   int(%d)
+}
+array(12) {
+  ["type"]=>
+  string(4) "file"
+  ["filename"]=>
+  string(%d) "%sfile.php"
+  ["device"]=>
+  int(%d)
+  ["inode"]=>
+  int(%d)
+  ["key"]=>
+  string(%d) "%d %d"
+  ["num_hits"]=>
+  int(0)
+  ["mtime"]=>
+  int(%d)
+  ["creation_time"]=>
+  int(%d)
+  ["deletion_time"]=>
+  int(0)
+  ["access_time"]=>
+  int(%d)
+  ["ref_count"]=>
+  int(0)
+  ["mem_size"]=>
+  int(%d)
+}
+array(12) {
+  ["type"]=>
+  string(4) "file"
+  ["filename"]=>
+  string(%d) "%sfile.php"
+  ["device"]=>
+  int(%d)
+  ["inode"]=>
+  int(%d)
+  ["key"]=>
+  string(%d) "%d %d"
+  ["num_hits"]=>
+  int(0)
+  ["mtime"]=>
+  int(%d)
+  ["creation_time"]=>
+  int(%d)
+  ["deletion_time"]=>
+  int(0)
+  ["access_time"]=>
+  int(%d)
+  ["ref_count"]=>
+  int(0)
+  ["mem_size"]=>
+  int(%d)
+}
+array(12) {
+  ["type"]=>
+  string(4) "file"
+  ["filename"]=>
+  string(%d) "%sfile.php"
+  ["device"]=>
+  int(%d)
+  ["inode"]=>
+  int(%d)
+  ["key"]=>
+  string(%d) "%d %d"
+  ["num_hits"]=>
+  int(0)
+  ["mtime"]=>
+  int(%d)
+  ["creation_time"]=>
+  int(%d)
+  ["deletion_time"]=>
+  int(0)
+  ["access_time"]=>
+  int(%d)
+  ["ref_count"]=>
+  int(0)
+  ["mem_size"]=>
+  int(%d)
+}
+array(12) {
+  ["type"]=>
+  string(4) "file"
+  ["filename"]=>
+  string(%d) "%sfile.php"
+  ["device"]=>
+  int(%d)
+  ["inode"]=>
+  int(%d)
+  ["key"]=>
+  string(%d) "%d %d"
+  ["num_hits"]=>
+  int(0)
+  ["mtime"]=>
+  int(%d)
+  ["creation_time"]=>
+  int(%d)
+  ["deletion_time"]=>
+  int(0)
+  ["access_time"]=>
+  int(%d)
+  ["ref_count"]=>
+  int(0)
+  ["mem_size"]=>
+  int(%d)
+}
+array(12) {
+  ["type"]=>
+  string(4) "file"
+  ["filename"]=>
+  string(%d) "%sfile.php"
+  ["device"]=>
+  int(%d)
+  ["inode"]=>
+  int(%d)
+  ["key"]=>
+  string(%d) "%d %d"
+  ["num_hits"]=>
+  int(0)
+  ["mtime"]=>
+  int(%d)
+  ["creation_time"]=>
+  int(%d)
+  ["deletion_time"]=>
+  int(0)
+  ["access_time"]=>
+  int(%d)
+  ["ref_count"]=>
+  int(0)
+  ["mem_size"]=>
+  int(%d)
+}
+array(12) {
+  ["type"]=>
+  string(4) "file"
+  ["filename"]=>
+  string(%d) "%sfile.php"
+  ["device"]=>
+  int(%d)
+  ["inode"]=>
+  int(%d)
+  ["key"]=>
+  string(%d) "%d %d"
+  ["num_hits"]=>
+  int(0)
+  ["mtime"]=>
+  int(%d)
+  ["creation_time"]=>
+  int(%d)
+  ["deletion_time"]=>
+  int(0)
+  ["access_time"]=>
+  int(%d)
+  ["ref_count"]=>
+  int(0)
+  ["mem_size"]=>
+  int(%d)
+}
+array(12) {
+  ["type"]=>
+  string(4) "file"
+  ["filename"]=>
+  string(%d) "%sfile.php"
+  ["device"]=>
+  int(%d)
+  ["inode"]=>
+  int(%d)
+  ["key"]=>
+  string(%d) "%d %d"
+  ["num_hits"]=>
+  int(0)
+  ["mtime"]=>
+  int(%d)
+  ["creation_time"]=>
+  int(%d)
+  ["deletion_time"]=>
+  int(0)
+  ["access_time"]=>
+  int(%d)
+  ["ref_count"]=>
+  int(0)
+  ["mem_size"]=>
+  int(%d)
+}
+array(12) {
+  ["type"]=>
+  string(4) "file"
+  ["filename"]=>
+  string(%d) "%sfile.php"
+  ["device"]=>
+  int(%d)
+  ["inode"]=>
+  int(%d)
+  ["key"]=>
+  string(%d) "%d %d"
+  ["num_hits"]=>
+  int(0)
+  ["mtime"]=>
+  int(%d)
+  ["creation_time"]=>
+  int(%d)
+  ["deletion_time"]=>
+  int(0)
+  ["access_time"]=>
+  int(%d)
+  ["ref_count"]=>
+  int(0)
+  ["mem_size"]=>
+  int(%d)
+}
+array(12) {
+  ["type"]=>
+  string(4) "file"
+  ["filename"]=>
+  string(%d) "%sfile.php"
+  ["device"]=>
+  int(%d)
+  ["inode"]=>
+  int(%d)
+  ["key"]=>
+  string(%d) "%d %d"
+  ["num_hits"]=>
+  int(0)
+  ["mtime"]=>
+  int(%d)
+  ["creation_time"]=>
+  int(%d)
+  ["deletion_time"]=>
+  int(0)
+  ["access_time"]=>
+  int(%d)
+  ["ref_count"]=>
+  int(0)
+  ["mem_size"]=>
+  int(%d)
+}
+array(12) {
+  ["type"]=>
+  string(4) "file"
+  ["filename"]=>
+  string(%d) "%sfile.php"
+  ["device"]=>
+  int(%d)
+  ["inode"]=>
+  int(%d)
+  ["key"]=>
+  string(%d) "%d %d"
+  ["num_hits"]=>
+  int(0)
+  ["mtime"]=>
+  int(%d)
+  ["creation_time"]=>
+  int(%d)
+  ["deletion_time"]=>
+  int(0)
+  ["access_time"]=>
+  int(%d)
+  ["ref_count"]=>
+  int(0)
+  ["mem_size"]=>
+  int(%d)
+}
+array(12) {
+  ["type"]=>
+  string(4) "file"
+  ["filename"]=>
+  string(%d) "%sfile.php"
+  ["device"]=>
+  int(%d)
+  ["inode"]=>
+  int(%d)
+  ["key"]=>
+  string(%d) "%d %d"
+  ["num_hits"]=>
+  int(0)
+  ["mtime"]=>
+  int(%d)
+  ["creation_time"]=>
+  int(%d)
+  ["deletion_time"]=>
+  int(0)
+  ["access_time"]=>
+  int(%d)
+  ["ref_count"]=>
+  int(0)
+  ["mem_size"]=>
+  int(%d)
+}
+array(12) {
+  ["type"]=>
+  string(4) "file"
+  ["filename"]=>
+  string(%d) "%sfile.php"
+  ["device"]=>
+  int(%d)
+  ["inode"]=>
+  int(%d)
+  ["key"]=>
+  string(%d) "%d %d"
+  ["num_hits"]=>
+  int(0)
+  ["mtime"]=>
+  int(%d)
+  ["creation_time"]=>
+  int(%d)
+  ["deletion_time"]=>
+  int(0)
+  ["access_time"]=>
+  int(%d)
+  ["ref_count"]=>
+  int(0)
+  ["mem_size"]=>
+  int(%d)
+}
+array(12) {
+  ["type"]=>
+  string(4) "file"
+  ["filename"]=>
+  string(%d) "%sfile.php"
+  ["device"]=>
+  int(%d)
+  ["inode"]=>
+  int(%d)
+  ["key"]=>
+  string(%d) "%d %d"
+  ["num_hits"]=>
+  int(0)
+  ["mtime"]=>
+  int(%d)
+  ["creation_time"]=>
+  int(%d)
+  ["deletion_time"]=>
+  int(0)
+  ["access_time"]=>
+  int(%d)
+  ["ref_count"]=>
+  int(0)
+  ["mem_size"]=>
+  int(%d)
+}
+array(12) {
+  ["type"]=>
+  string(4) "file"
+  ["filename"]=>
+  string(%d) "%sfile.php"
+  ["device"]=>
+  int(%d)
+  ["inode"]=>
+  int(%d)
+  ["key"]=>
+  string(%d) "%d %d"
+  ["num_hits"]=>
+  int(0)
+  ["mtime"]=>
+  int(%d)
+  ["creation_time"]=>
+  int(%d)
+  ["deletion_time"]=>
+  int(0)
+  ["access_time"]=>
+  int(%d)
+  ["ref_count"]=>
+  int(0)
+  ["mem_size"]=>
+  int(%d)
+}
+array(12) {
+  ["type"]=>
+  string(4) "file"
+  ["filename"]=>
+  string(%d) "%sfile.php"
+  ["device"]=>
+  int(%d)
+  ["inode"]=>
+  int(%d)
+  ["key"]=>
+  string(%d) "%d %d"
+  ["num_hits"]=>
+  int(0)
+  ["mtime"]=>
+  int(%d)
+  ["creation_time"]=>
+  int(%d)
+  ["deletion_time"]=>
+  int(0)
+  ["access_time"]=>
+  int(%d)
+  ["ref_count"]=>
+  int(0)
+  ["mem_size"]=>
+  int(%d)
+}
+array(12) {
+  ["type"]=>
+  string(4) "file"
+  ["filename"]=>
+  string(%d) "%sfile.php"
+  ["device"]=>
+  int(%d)
+  ["inode"]=>
+  int(%d)
+  ["key"]=>
+  string(%d) "%d %d"
+  ["num_hits"]=>
+  int(0)
+  ["mtime"]=>
+  int(%d)
+  ["creation_time"]=>
+  int(%d)
+  ["deletion_time"]=>
+  int(0)
+  ["access_time"]=>
+  int(%d)
+  ["ref_count"]=>
+  int(0)
+  ["mem_size"]=>
+  int(%d)
+}
+array(12) {
+  ["type"]=>
+  string(4) "file"
+  ["filename"]=>
+  string(%d) "%sfile.php"
+  ["device"]=>
+  int(%d)
+  ["inode"]=>
+  int(%d)
+  ["key"]=>
+  string(%d) "%d %d"
+  ["num_hits"]=>
+  int(0)
+  ["mtime"]=>
+  int(%d)
+  ["creation_time"]=>
+  int(%d)
+  ["deletion_time"]=>
+  int(0)
+  ["access_time"]=>
+  int(%d)
+  ["ref_count"]=>
+  int(0)
+  ["mem_size"]=>
+  int(%d)
+}
+array(12) {
+  ["type"]=>
+  string(4) "file"
+  ["filename"]=>
+  string(%d) "%sfile.php"
+  ["device"]=>
+  int(%d)
+  ["inode"]=>
+  int(%d)
+  ["key"]=>
+  string(%d) "%d %d"
+  ["num_hits"]=>
+  int(0)
+  ["mtime"]=>
+  int(%d)
+  ["creation_time"]=>
+  int(%d)
+  ["deletion_time"]=>
+  int(0)
+  ["access_time"]=>
+  int(%d)
+  ["ref_count"]=>
+  int(0)
+  ["mem_size"]=>
+  int(%d)
+}
+array(12) {
+  ["type"]=>
+  string(4) "file"
+  ["filename"]=>
+  string(%d) "%sfile.php"
+  ["device"]=>
+  int(%d)
+  ["inode"]=>
+  int(%d)
+  ["key"]=>
+  string(%d) "%d %d"
+  ["num_hits"]=>
+  int(0)
+  ["mtime"]=>
+  int(%d)
+  ["creation_time"]=>
+  int(%d)
+  ["deletion_time"]=>
+  int(0)
+  ["access_time"]=>
+  int(%d)
+  ["ref_count"]=>
+  int(0)
+  ["mem_size"]=>
+  int(%d)
+}
+array(12) {
+  ["type"]=>
+  string(4) "file"
+  ["filename"]=>
+  string(%d) "%sfile.php"
+  ["device"]=>
+  int(%d)
+  ["inode"]=>
+  int(%d)
+  ["key"]=>
+  string(%d) "%d %d"
+  ["num_hits"]=>
+  int(0)
+  ["mtime"]=>
+  int(%d)
+  ["creation_time"]=>
+  int(%d)
+  ["deletion_time"]=>
+  int(0)
+  ["access_time"]=>
+  int(%d)
+  ["ref_count"]=>
+  int(0)
   ["mem_size"]=>
   int(%d)
 }

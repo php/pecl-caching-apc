@@ -119,4 +119,184 @@ Next exception 'RuntimeException' with message 'Exception message' in %sindex.ph
 Stack trace:
 #0 {main}
   thrown in <b>%sindex.php</b> on line <b>2</b><br />
+<br />
+<b>Fatal error</b>:  Uncaught exception 'Exception' in %sindex.php:2
+Stack trace:
+#0 {main}
+
+Next exception 'RuntimeException' with message 'Exception message' in %sindex.php:2
+Stack trace:
+#0 {main}
+  thrown in <b>%sindex.php</b> on line <b>2</b><br />
+<br />
+<b>Fatal error</b>:  Uncaught exception 'Exception' in %sindex.php:2
+Stack trace:
+#0 {main}
+
+Next exception 'RuntimeException' with message 'Exception message' in %sindex.php:2
+Stack trace:
+#0 {main}
+  thrown in <b>%sindex.php</b> on line <b>2</b><br />
+<br />
+<b>Fatal error</b>:  Uncaught exception 'Exception' in %sindex.php:2
+Stack trace:
+#0 {main}
+
+Next exception 'RuntimeException' with message 'Exception message' in %sindex.php:2
+Stack trace:
+#0 {main}
+  thrown in <b>%sindex.php</b> on line <b>2</b><br />
+<br />
+<b>Fatal error</b>:  Uncaught exception 'Exception' in %sindex.php:2
+Stack trace:
+#0 {main}
+
+Next exception 'RuntimeException' with message 'Exception message' in %sindex.php:2
+Stack trace:
+#0 {main}
+  thrown in <b>%sindex.php</b> on line <b>2</b><br />
+<br />
+<b>Fatal error</b>:  Uncaught exception 'Exception' in %sindex.php:2
+Stack trace:
+#0 {main}
+
+Next exception 'RuntimeException' with message 'Exception message' in %sindex.php:2
+Stack trace:
+#0 {main}
+  thrown in <b>%sindex.php</b> on line <b>2</b><br />
+<br />
+<b>Fatal error</b>:  Uncaught exception 'Exception' in %sindex.php:2
+Stack trace:
+#0 {main}
+
+Next exception 'RuntimeException' with message 'Exception message' in %sindex.php:2
+Stack trace:
+#0 {main}
+  thrown in <b>%sindex.php</b> on line <b>2</b><br />
+<br />
+<b>Fatal error</b>:  Uncaught exception 'Exception' in %sindex.php:2
+Stack trace:
+#0 {main}
+
+Next exception 'RuntimeException' with message 'Exception message' in %sindex.php:2
+Stack trace:
+#0 {main}
+  thrown in <b>%sindex.php</b> on line <b>2</b><br />
+<br />
+<b>Fatal error</b>:  Uncaught exception 'Exception' in %sindex.php:2
+Stack trace:
+#0 {main}
+
+Next exception 'RuntimeException' with message 'Exception message' in %sindex.php:2
+Stack trace:
+#0 {main}
+  thrown in <b>%sindex.php</b> on line <b>2</b><br />
+<br />
+<b>Fatal error</b>:  Uncaught exception 'Exception' in %sindex.php:2
+Stack trace:
+#0 {main}
+
+Next exception 'RuntimeException' with message 'Exception message' in %sindex.php:2
+Stack trace:
+#0 {main}
+  thrown in <b>%sindex.php</b> on line <b>2</b><br />
+<br />
+<b>Fatal error</b>:  Uncaught exception 'Exception' in %sindex.php:2
+Stack trace:
+#0 {main}
+
+Next exception 'RuntimeException' with message 'Exception message' in %sindex.php:2
+Stack trace:
+#0 {main}
+  thrown in <b>%sindex.php</b> on line <b>2</b><br />
+<br />
+<b>Fatal error</b>:  Uncaught exception 'Exception' in %sindex.php:2
+Stack trace:
+#0 {main}
+
+Next exception 'RuntimeException' with message 'Exception message' in %sindex.php:2
+Stack trace:
+#0 {main}
+  thrown in <b>%sindex.php</b> on line <b>2</b><br />
+<br />
+<b>Fatal error</b>:  Uncaught exception 'Exception' in %sindex.php:2
+Stack trace:
+#0 {main}
+
+Next exception 'RuntimeException' with message 'Exception message' in %sindex.php:2
+Stack trace:
+#0 {main}
+  thrown in <b>%sindex.php</b> on line <b>2</b><br />
+<br />
+<b>Fatal error</b>:  Uncaught exception 'Exception' in %sindex.php:2
+Stack trace:
+#0 {main}
+
+Next exception 'RuntimeException' with message 'Exception message' in %sindex.php:2
+Stack trace:
+#0 {main}
+  thrown in <b>%sindex.php</b> on line <b>2</b><br />
+<br />
+<b>Fatal error</b>:  Uncaught exception 'Exception' in %sindex.php:2
+Stack trace:
+#0 {main}
+
+Next exception 'RuntimeException' with message 'Exception message' in %sindex.php:2
+Stack trace:
+#0 {main}
+  thrown in <b>%sindex.php</b> on line <b>2</b><br />
+<br />
+<b>Fatal error</b>:  Uncaught exception 'Exception' in %sindex.php:2
+Stack trace:
+#0 {main}
+
+Next exception 'RuntimeException' with message 'Exception message' in %sindex.php:2
+Stack trace:
+#0 {main}
+  thrown in <b>%sindex.php</b> on line <b>2</b><br />
+<br />
+<b>Fatal error</b>:  Uncaught exception 'Exception' in %sindex.php:2
+Stack trace:
+#0 {main}
+
+Next exception 'RuntimeException' with message 'Exception message' in %sindex.php:2
+Stack trace:
+#0 {main}
+  thrown in <b>%sindex.php</b> on line <b>2</b><br />
+<br />
+<b>Fatal error</b>:  Uncaught exception 'Exception' in %sindex.php:2
+Stack trace:
+#0 {main}
+
+Next exception 'RuntimeException' with message 'Exception message' in %sindex.php:2
+Stack trace:
+#0 {main}
+  thrown in <b>%sindex.php</b> on line <b>2</b><br />
+<br />
+<b>Fatal error</b>:  Uncaught exception 'Exception' in %sindex.php:2
+Stack trace:
+#0 {main}
+
+Next exception 'RuntimeException' with message 'Exception message' in %sindex.php:2
+Stack trace:
+#0 {main}
+  thrown in <b>%sindex.php</b> on line <b>2</b><br />
+<br />
+<b>Fatal error</b>:  Uncaught exception 'Exception' in %sindex.php:2
+Stack trace:
+#0 {main}
+
+Next exception 'RuntimeException' with message 'Exception message' in %sindex.php:2
+Stack trace:
+#0 {main}
+  thrown in <b>%sindex.php</b> on line <b>2</b><br />
+<br />
+<b>Fatal error</b>:  Uncaught exception 'Exception' in %sindex.php:2
+Stack trace:
+#0 {main}
+
+Next exception 'RuntimeException' with message 'Exception message' in %sindex.php:2
+Stack trace:
+#0 {main}
+  thrown in <b>%sindex.php</b> on line <b>2</b><br />
 done

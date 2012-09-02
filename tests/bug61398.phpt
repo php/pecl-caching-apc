@@ -70,4 +70,44 @@ echo 'done';
 <b>Parse error</b>:  syntax error, unexpected 'l' (T_STRING) in <b>Loader://qqq.php</b> on line <b>2</b><br />
 <br />
 <b>Parse error</b>:  syntax error, unexpected 'l' (T_STRING) in <b>Loader://qqq.php</b> on line <b>2</b><br />
+<br />
+<b>Parse error</b>:  syntax error, unexpected 'l' (T_STRING) in <b>Loader://qqq.php</b> on line <b>2</b><br />
+<br />
+<b>Parse error</b>:  syntax error, unexpected 'l' (T_STRING) in <b>Loader://qqq.php</b> on line <b>2</b><br />
+<br />
+<b>Parse error</b>:  syntax error, unexpected 'l' (T_STRING) in <b>Loader://qqq.php</b> on line <b>2</b><br />
+<br />
+<b>Parse error</b>:  syntax error, unexpected 'l' (T_STRING) in <b>Loader://qqq.php</b> on line <b>2</b><br />
+<br />
+<b>Parse error</b>:  syntax error, unexpected 'l' (T_STRING) in <b>Loader://qqq.php</b> on line <b>2</b><br />
+<br />
+<b>Parse error</b>:  syntax error, unexpected 'l' (T_STRING) in <b>Loader://qqq.php</b> on line <b>2</b><br />
+<br />
+<b>Parse error</b>:  syntax error, unexpected 'l' (T_STRING) in <b>Loader://qqq.php</b> on line <b>2</b><br />
+<br />
+<b>Parse error</b>:  syntax error, unexpected 'l' (T_STRING) in <b>Loader://qqq.php</b> on line <b>2</b><br />
+<br />
+<b>Parse error</b>:  syntax error, unexpected 'l' (T_STRING) in <b>Loader://qqq.php</b> on line <b>2</b><br />
+<br />
+<b>Parse error</b>:  syntax error, unexpected 'l' (T_STRING) in <b>Loader://qqq.php</b> on line <b>2</b><br />
+<br />
+<b>Parse error</b>:  syntax error, unexpected 'l' (T_STRING) in <b>Loader://qqq.php</b> on line <b>2</b><br />
+<br />
+<b>Parse error</b>:  syntax error, unexpected 'l' (T_STRING) in <b>Loader://qqq.php</b> on line <b>2</b><br />
+<br />
+<b>Parse error</b>:  syntax error, unexpected 'l' (T_STRING) in <b>Loader://qqq.php</b> on line <b>2</b><br />
+<br />
+<b>Parse error</b>:  syntax error, unexpected 'l' (T_STRING) in <b>Loader://qqq.php</b> on line <b>2</b><br />
+<br />
+<b>Parse error</b>:  syntax error, unexpected 'l' (T_STRING) in <b>Loader://qqq.php</b> on line <b>2</b><br />
+<br />
+<b>Parse error</b>:  syntax error, unexpected 'l' (T_STRING) in <b>Loader://qqq.php</b> on line <b>2</b><br />
+<br />
+<b>Parse error</b>:  syntax error, unexpected 'l' (T_STRING) in <b>Loader://qqq.php</b> on line <b>2</b><br />
+<br />
+<b>Parse error</b>:  syntax error, unexpected 'l' (T_STRING) in <b>Loader://qqq.php</b> on line <b>2</b><br />
+<br />
+<b>Parse error</b>:  syntax error, unexpected 'l' (T_STRING) in <b>Loader://qqq.php</b> on line <b>2</b><br />
+<br />
+<b>Parse error</b>:  syntax error, unexpected 'l' (T_STRING) in <b>Loader://qqq.php</b> on line <b>2</b><br />
 done

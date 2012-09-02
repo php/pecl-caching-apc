@@ -67,4 +67,44 @@ echo 'done';
 <b>Fatal error</b>:  Foo and A define the same property ($foo) in the composition of Foo. However, the definition differs and is considered incompatible. Class was composed in <b>%sindex.php</b> on line <b>11</b><br />
 <br />
 <b>Fatal error</b>:  Foo and A define the same property ($foo) in the composition of Foo. However, the definition differs and is considered incompatible. Class was composed in <b>%sindex.php</b> on line <b>11</b><br />
+<br />
+<b>Fatal error</b>:  Foo and A define the same property ($foo) in the composition of Foo. However, the definition differs and is considered incompatible. Class was composed in <b>%sindex.php</b> on line <b>11</b><br />
+<br />
+<b>Fatal error</b>:  Foo and A define the same property ($foo) in the composition of Foo. However, the definition differs and is considered incompatible. Class was composed in <b>%sindex.php</b> on line <b>11</b><br />
+<br />
+<b>Fatal error</b>:  Foo and A define the same property ($foo) in the composition of Foo. However, the definition differs and is considered incompatible. Class was composed in <b>%sindex.php</b> on line <b>11</b><br />
+<br />
+<b>Fatal error</b>:  Foo and A define the same property ($foo) in the composition of Foo. However, the definition differs and is considered incompatible. Class was composed in <b>%sindex.php</b> on line <b>11</b><br />
+<br />
+<b>Fatal error</b>:  Foo and A define the same property ($foo) in the composition of Foo. However, the definition differs and is considered incompatible. Class was composed in <b>%sindex.php</b> on line <b>11</b><br />
+<br />
+<b>Fatal error</b>:  Foo and A define the same property ($foo) in the composition of Foo. However, the definition differs and is considered incompatible. Class was composed in <b>%sindex.php</b> on line <b>11</b><br />
+<br />
+<b>Fatal error</b>:  Foo and A define the same property ($foo) in the composition of Foo. However, the definition differs and is considered incompatible. Class was composed in <b>%sindex.php</b> on line <b>11</b><br />
+<br />
+<b>Fatal error</b>:  Foo and A define the same property ($foo) in the composition of Foo. However, the definition differs and is considered incompatible. Class was composed in <b>%sindex.php</b> on line <b>11</b><br />
+<br />
+<b>Fatal error</b>:  Foo and A define the same property ($foo) in the composition of Foo. However, the definition differs and is considered incompatible. Class was composed in <b>%sindex.php</b> on line <b>11</b><br />
+<br />
+<b>Fatal error</b>:  Foo and A define the same property ($foo) in the composition of Foo. However, the definition differs and is considered incompatible. Class was composed in <b>%sindex.php</b> on line <b>11</b><br />
+<br />
+<b>Fatal error</b>:  Foo and A define the same property ($foo) in the composition of Foo. However, the definition differs and is considered incompatible. Class was composed in <b>%sindex.php</b> on line <b>11</b><br />
+<br />
+<b>Fatal error</b>:  Foo and A define the same property ($foo) in the composition of Foo. However, the definition differs and is considered incompatible. Class was composed in <b>%sindex.php</b> on line <b>11</b><br />
+<br />
+<b>Fatal error</b>:  Foo and A define the same property ($foo) in the composition of Foo. However, the definition differs and is considered incompatible. Class was composed in <b>%sindex.php</b> on line <b>11</b><br />
+<br />
+<b>Fatal error</b>:  Foo and A define the same property ($foo) in the composition of Foo. However, the definition differs and is considered incompatible. Class was composed in <b>%sindex.php</b> on line <b>11</b><br />
+<br />
+<b>Fatal error</b>:  Foo and A define the same property ($foo) in the composition of Foo. However, the definition differs and is considered incompatible. Class was composed in <b>%sindex.php</b> on line <b>11</b><br />
+<br />
+<b>Fatal error</b>:  Foo and A define the same property ($foo) in the composition of Foo. However, the definition differs and is considered incompatible. Class was composed in <b>%sindex.php</b> on line <b>11</b><br />
+<br />
+<b>Fatal error</b>:  Foo and A define the same property ($foo) in the composition of Foo. However, the definition differs and is considered incompatible. Class was composed in <b>%sindex.php</b> on line <b>11</b><br />
+<br />
+<b>Fatal error</b>:  Foo and A define the same property ($foo) in the composition of Foo. However, the definition differs and is considered incompatible. Class was composed in <b>%sindex.php</b> on line <b>11</b><br />
+<br />
+<b>Fatal error</b>:  Foo and A define the same property ($foo) in the composition of Foo. However, the definition differs and is considered incompatible. Class was composed in <b>%sindex.php</b> on line <b>11</b><br />
+<br />
+<b>Fatal error</b>:  Foo and A define the same property ($foo) in the composition of Foo. However, the definition differs and is considered incompatible. Class was composed in <b>%sindex.php</b> on line <b>11</b><br />
 done

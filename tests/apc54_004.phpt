@@ -31,23 +31,63 @@ echo 'done';
 
 --EXPECTF--
 <br />
-<b>Notice</b>:  Undefined property: stdClass::$qwerty in <b>%sindex.php</b> on line <b>3</b><br />
+<b>Notice</b>:  Undefined property: stdClass::$qwerty in <b>/home/weltling/dws/src/apc_trunk/tests/index.php</b> on line <b>3</b><br />
 <br />
-<b>Notice</b>:  Undefined property: stdClass::$qwerty in <b>%sindex.php</b> on line <b>3</b><br />
+<b>Notice</b>:  Undefined property: stdClass::$qwerty in <b>/home/weltling/dws/src/apc_trunk/tests/index.php</b> on line <b>3</b><br />
 <br />
-<b>Notice</b>:  Undefined property: stdClass::$qwerty in <b>%sindex.php</b> on line <b>3</b><br />
+<b>Notice</b>:  Undefined property: stdClass::$qwerty in <b>/home/weltling/dws/src/apc_trunk/tests/index.php</b> on line <b>3</b><br />
 <br />
-<b>Notice</b>:  Undefined property: stdClass::$qwerty in <b>%sindex.php</b> on line <b>3</b><br />
+<b>Notice</b>:  Undefined property: stdClass::$qwerty in <b>/home/weltling/dws/src/apc_trunk/tests/index.php</b> on line <b>3</b><br />
 <br />
-<b>Notice</b>:  Undefined property: stdClass::$qwerty in <b>%sindex.php</b> on line <b>3</b><br />
+<b>Notice</b>:  Undefined property: stdClass::$qwerty in <b>/home/weltling/dws/src/apc_trunk/tests/index.php</b> on line <b>3</b><br />
 <br />
-<b>Notice</b>:  Undefined property: stdClass::$qwerty in <b>%sindex.php</b> on line <b>3</b><br />
+<b>Notice</b>:  Undefined property: stdClass::$qwerty in <b>/home/weltling/dws/src/apc_trunk/tests/index.php</b> on line <b>3</b><br />
 <br />
-<b>Notice</b>:  Undefined property: stdClass::$qwerty in <b>%sindex.php</b> on line <b>3</b><br />
+<b>Notice</b>:  Undefined property: stdClass::$qwerty in <b>/home/weltling/dws/src/apc_trunk/tests/index.php</b> on line <b>3</b><br />
 <br />
-<b>Notice</b>:  Undefined property: stdClass::$qwerty in <b>%sindex.php</b> on line <b>3</b><br />
+<b>Notice</b>:  Undefined property: stdClass::$qwerty in <b>/home/weltling/dws/src/apc_trunk/tests/index.php</b> on line <b>3</b><br />
 <br />
-<b>Notice</b>:  Undefined property: stdClass::$qwerty in <b>%sindex.php</b> on line <b>3</b><br />
+<b>Notice</b>:  Undefined property: stdClass::$qwerty in <b>/home/weltling/dws/src/apc_trunk/tests/index.php</b> on line <b>3</b><br />
 <br />
-<b>Notice</b>:  Undefined property: stdClass::$qwerty in <b>%sindex.php</b> on line <b>3</b><br />
+<b>Notice</b>:  Undefined property: stdClass::$qwerty in <b>/home/weltling/dws/src/apc_trunk/tests/index.php</b> on line <b>3</b><br />
+<br />
+<b>Notice</b>:  Undefined property: stdClass::$qwerty in <b>/home/weltling/dws/src/apc_trunk/tests/index.php</b> on line <b>3</b><br />
+<br />
+<b>Notice</b>:  Undefined property: stdClass::$qwerty in <b>/home/weltling/dws/src/apc_trunk/tests/index.php</b> on line <b>3</b><br />
+<br />
+<b>Notice</b>:  Undefined property: stdClass::$qwerty in <b>/home/weltling/dws/src/apc_trunk/tests/index.php</b> on line <b>3</b><br />
+<br />
+<b>Notice</b>:  Undefined property: stdClass::$qwerty in <b>/home/weltling/dws/src/apc_trunk/tests/index.php</b> on line <b>3</b><br />
+<br />
+<b>Notice</b>:  Undefined property: stdClass::$qwerty in <b>/home/weltling/dws/src/apc_trunk/tests/index.php</b> on line <b>3</b><br />
+<br />
+<b>Notice</b>:  Undefined property: stdClass::$qwerty in <b>/home/weltling/dws/src/apc_trunk/tests/index.php</b> on line <b>3</b><br />
+<br />
+<b>Notice</b>:  Undefined property: stdClass::$qwerty in <b>/home/weltling/dws/src/apc_trunk/tests/index.php</b> on line <b>3</b><br />
+<br />
+<b>Notice</b>:  Undefined property: stdClass::$qwerty in <b>/home/weltling/dws/src/apc_trunk/tests/index.php</b> on line <b>3</b><br />
+<br />
+<b>Notice</b>:  Undefined property: stdClass::$qwerty in <b>/home/weltling/dws/src/apc_trunk/tests/index.php</b> on line <b>3</b><br />
+<br />
+<b>Notice</b>:  Undefined property: stdClass::$qwerty in <b>/home/weltling/dws/src/apc_trunk/tests/index.php</b> on line <b>3</b><br />
+<br />
+<b>Notice</b>:  Undefined property: stdClass::$qwerty in <b>/home/weltling/dws/src/apc_trunk/tests/index.php</b> on line <b>3</b><br />
+<br />
+<b>Notice</b>:  Undefined property: stdClass::$qwerty in <b>/home/weltling/dws/src/apc_trunk/tests/index.php</b> on line <b>3</b><br />
+<br />
+<b>Notice</b>:  Undefined property: stdClass::$qwerty in <b>/home/weltling/dws/src/apc_trunk/tests/index.php</b> on line <b>3</b><br />
+<br />
+<b>Notice</b>:  Undefined property: stdClass::$qwerty in <b>/home/weltling/dws/src/apc_trunk/tests/index.php</b> on line <b>3</b><br />
+<br />
+<b>Notice</b>:  Undefined property: stdClass::$qwerty in <b>/home/weltling/dws/src/apc_trunk/tests/index.php</b> on line <b>3</b><br />
+<br />
+<b>Notice</b>:  Undefined property: stdClass::$qwerty in <b>/home/weltling/dws/src/apc_trunk/tests/index.php</b> on line <b>3</b><br />
+<br />
+<b>Notice</b>:  Undefined property: stdClass::$qwerty in <b>/home/weltling/dws/src/apc_trunk/tests/index.php</b> on line <b>3</b><br />
+<br />
+<b>Notice</b>:  Undefined property: stdClass::$qwerty in <b>/home/weltling/dws/src/apc_trunk/tests/index.php</b> on line <b>3</b><br />
+<br />
+<b>Notice</b>:  Undefined property: stdClass::$qwerty in <b>/home/weltling/dws/src/apc_trunk/tests/index.php</b> on line <b>3</b><br />
+<br />
+<b>Notice</b>:  Undefined property: stdClass::$qwerty in <b>/home/weltling/dws/src/apc_trunk/tests/index.php</b> on line <b>3</b><br />
 done

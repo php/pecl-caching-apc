@@ -3,16 +3,19 @@
 define ("PHP_CLI_SERVER_HOSTNAME", "localhost");
 define ("PHP_CLI_SERVER_PORT", 8964);
 define ("PHP_CLI_SERVER_ADDRESS", PHP_CLI_SERVER_HOSTNAME.":".PHP_CLI_SERVER_PORT);
+define ("NUM_SERVERS", 3);
 
-function server_start($code = 'echo "Hello world";', $php_opts = array(), $no_router = FALSE)
+/* XXX incapsulate all this globals into a class when have a favourable minute */
+$doc_root = __DIR__;
+$router = "index.php";
+$handles = array();
+$ports = array();
+
+function server_start_one($host, $port, $code = 'echo "Hello world";', $php_opts = array(), $no_router = FALSE)
 {
-	$php_executable = getenv('TEST_PHP_EXECUTABLE');
-	$doc_root = __DIR__;
-	$router = "index.php";
+	global $doc_root, $router, $handles, $ports;
 
-	if ($code) {
-		file_put_contents($doc_root . '/' . $router, '<?php ' . $code . ' ?>');
-	}
+	$php_executable = getenv('TEST_PHP_EXECUTABLE');
 
 	$descriptorspec = array(
 		0 => STDIN,
@@ -27,17 +30,18 @@ function server_start($code = 'echo "Hello world";', $php_opts = array(), $no_ro
 	}
 
 	if (substr(PHP_OS, 0, 3) == 'WIN') {
-		$cmd = "{$php_executable} -n $php_args -t {$doc_root} -S " . PHP_CLI_SERVER_ADDRESS;
+		$cmd = "{$php_executable} -n $php_args -t {$doc_root} -S $host:$port";
 		if (!$no_router) {
 			$cmd .= " {$router}";
 		}
 
 		$handle = proc_open(addslashes($cmd), $descriptorspec, $pipes, $doc_root, NULL, array("bypass_shell" => true,  "suppress_errors" => true));
 	} else {
-		$cmd = "exec {$php_executable} -n $php_args -t {$doc_root} -S " . PHP_CLI_SERVER_ADDRESS;
+		$cmd = "exec {$php_executable} -n $php_args -t {$doc_root} -S $host:$port";
 		if (!$no_router) {
 			$cmd .= " {$doc_root}/{$router}";
 		}
+		$cmd .= " 2>/dev/null";
 
 		$handle = proc_open($cmd, $descriptorspec, $pipes, $doc_root);
 	}
@@ -45,16 +49,35 @@ function server_start($code = 'echo "Hello world";', $php_opts = array(), $no_ro
 	// note: even when server prints 'Listening on localhost:8964...Press Ctrl-C to quit.'
 	//       it might not be listening yet...need to wait until fsockopen() call returns
     $i = 0;
-    while (($i++ < 5) && !connection_test()) {
+    while (($i++ < 10) && !connection_test($host, $port)) {
         usleep(10000);
     }
 
+	return $handle;
+}
+
+function server_start($code = 'echo "Hello world";', $php_opts = array(), $no_router = FALSE)
+{
+	global $doc_root, $router, $handles, $ports;
+
+
+	if ($code) {
+		file_put_contents($doc_root . '/' . $router, '<?php ' . $code . ' ?>');
+	}
+
+	for ($i = 0; $i < NUM_SERVERS; $i++) {
+		$h = server_start_one(PHP_CLI_SERVER_HOSTNAME, PHP_CLI_SERVER_PORT+$i, $code, $php_opts, $no_router);
+		$handles[] = $h;
+	}	
+
 	register_shutdown_function(
-		function($handle) use($router) {
-			proc_terminate($handle);
+		function($handles) use($router) {
+			foreach ($handles as $handle) {
+				proc_terminate($handle);
+			}
 			@unlink(__DIR__ . "/{$router}");
 		},
-			$handle
+			$handles
 		);
 	// don't bother sleeping, server is already up
 	// server can take a variable amount of time to be up, so just sleeping a guessed amount of time
@@ -79,9 +102,8 @@ function get_response($fp, $data_only = true)
 }
 
 
-function connection_test()
+function connection_test($host, $port)
 {
-	list($host, $port) = explode(':', PHP_CLI_SERVER_ADDRESS);
 	$port = intval($port)?:80;
 
 	$fp = @fsockopen($host, $port, $errno, $errstr, 0.5);
@@ -106,28 +128,18 @@ function connection_test()
 
 function run_test_simple()
 {
-	list($host, $port) = explode(':', PHP_CLI_SERVER_ADDRESS);
-	$port = intval($port)?:80;
+	$send = "GET / HTTP/1.1\nHost: " . PHP_CLI_SERVER_HOSTNAME . "\r\n\r\n";
 
-	$fp = fsockopen($host, $port, $errno, $errstr, 0.5);
-	if (!$fp) {
-	  die(sprintf("connect failed errno=%d errstr='%s'", $errno, $errstr));
+	for ($i = 0; $i < NUM_SERVERS; $i++) {
+		run_test(PHP_CLI_SERVER_HOSTNAME, PHP_CLI_SERVER_PORT+$i, $send);
 	}
-
-	$send = "GET / HTTP/1.1\nHost: {$host}\r\n\r\n";
-
-	if(fwrite($fp, $send)) {
-		echo get_response($fp);
-	}
-
-	fclose($fp);
 }
 
 function run_test($host, $port, $send)
 {
 	$fp = fsockopen($host, $port, $errno, $errstr, 0.5);
 	if (!$fp) {
-	  die("connect failed");
+	  die(sprintf("connect failed errno=%d errstr='%s'", $errno, $errstr));
 	}
 
 	if(fwrite($fp, $send)) {

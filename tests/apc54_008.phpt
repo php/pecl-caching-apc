@@ -33,9 +33,368 @@ for ($i = 0; $i < 10; $i++) {
 }
 echo 'done';
 
-
 --EXPECT--
 object(DOMNameSpaceNode)#3 (8) {
+  ["nodeName"]=>
+  string(9) "xmlns:xml"
+  ["nodeValue"]=>
+  string(36) "http://www.w3.org/XML/1998/namespace"
+  ["nodeType"]=>
+  int(18)
+  ["prefix"]=>
+  string(3) "xml"
+  ["localName"]=>
+  string(3) "xml"
+  ["namespaceURI"]=>
+  string(36) "http://www.w3.org/XML/1998/namespace"
+  ["ownerDocument"]=>
+  string(22) "(object value omitted)"
+  ["parentNode"]=>
+  string(22) "(object value omitted)"
+}
+xmlobject(DOMNameSpaceNode)#3 (8) {
+  ["nodeName"]=>
+  string(9) "xmlns:xml"
+  ["nodeValue"]=>
+  string(36) "http://www.w3.org/XML/1998/namespace"
+  ["nodeType"]=>
+  int(18)
+  ["prefix"]=>
+  string(3) "xml"
+  ["localName"]=>
+  string(3) "xml"
+  ["namespaceURI"]=>
+  string(36) "http://www.w3.org/XML/1998/namespace"
+  ["ownerDocument"]=>
+  string(22) "(object value omitted)"
+  ["parentNode"]=>
+  string(22) "(object value omitted)"
+}
+xmlobject(DOMNameSpaceNode)#3 (8) {
+  ["nodeName"]=>
+  string(9) "xmlns:xml"
+  ["nodeValue"]=>
+  string(36) "http://www.w3.org/XML/1998/namespace"
+  ["nodeType"]=>
+  int(18)
+  ["prefix"]=>
+  string(3) "xml"
+  ["localName"]=>
+  string(3) "xml"
+  ["namespaceURI"]=>
+  string(36) "http://www.w3.org/XML/1998/namespace"
+  ["ownerDocument"]=>
+  string(22) "(object value omitted)"
+  ["parentNode"]=>
+  string(22) "(object value omitted)"
+}
+xmlobject(DOMNameSpaceNode)#3 (8) {
+  ["nodeName"]=>
+  string(9) "xmlns:xml"
+  ["nodeValue"]=>
+  string(36) "http://www.w3.org/XML/1998/namespace"
+  ["nodeType"]=>
+  int(18)
+  ["prefix"]=>
+  string(3) "xml"
+  ["localName"]=>
+  string(3) "xml"
+  ["namespaceURI"]=>
+  string(36) "http://www.w3.org/XML/1998/namespace"
+  ["ownerDocument"]=>
+  string(22) "(object value omitted)"
+  ["parentNode"]=>
+  string(22) "(object value omitted)"
+}
+xmlobject(DOMNameSpaceNode)#3 (8) {
+  ["nodeName"]=>
+  string(9) "xmlns:xml"
+  ["nodeValue"]=>
+  string(36) "http://www.w3.org/XML/1998/namespace"
+  ["nodeType"]=>
+  int(18)
+  ["prefix"]=>
+  string(3) "xml"
+  ["localName"]=>
+  string(3) "xml"
+  ["namespaceURI"]=>
+  string(36) "http://www.w3.org/XML/1998/namespace"
+  ["ownerDocument"]=>
+  string(22) "(object value omitted)"
+  ["parentNode"]=>
+  string(22) "(object value omitted)"
+}
+xmlobject(DOMNameSpaceNode)#3 (8) {
+  ["nodeName"]=>
+  string(9) "xmlns:xml"
+  ["nodeValue"]=>
+  string(36) "http://www.w3.org/XML/1998/namespace"
+  ["nodeType"]=>
+  int(18)
+  ["prefix"]=>
+  string(3) "xml"
+  ["localName"]=>
+  string(3) "xml"
+  ["namespaceURI"]=>
+  string(36) "http://www.w3.org/XML/1998/namespace"
+  ["ownerDocument"]=>
+  string(22) "(object value omitted)"
+  ["parentNode"]=>
+  string(22) "(object value omitted)"
+}
+xmlobject(DOMNameSpaceNode)#3 (8) {
+  ["nodeName"]=>
+  string(9) "xmlns:xml"
+  ["nodeValue"]=>
+  string(36) "http://www.w3.org/XML/1998/namespace"
+  ["nodeType"]=>
+  int(18)
+  ["prefix"]=>
+  string(3) "xml"
+  ["localName"]=>
+  string(3) "xml"
+  ["namespaceURI"]=>
+  string(36) "http://www.w3.org/XML/1998/namespace"
+  ["ownerDocument"]=>
+  string(22) "(object value omitted)"
+  ["parentNode"]=>
+  string(22) "(object value omitted)"
+}
+xmlobject(DOMNameSpaceNode)#3 (8) {
+  ["nodeName"]=>
+  string(9) "xmlns:xml"
+  ["nodeValue"]=>
+  string(36) "http://www.w3.org/XML/1998/namespace"
+  ["nodeType"]=>
+  int(18)
+  ["prefix"]=>
+  string(3) "xml"
+  ["localName"]=>
+  string(3) "xml"
+  ["namespaceURI"]=>
+  string(36) "http://www.w3.org/XML/1998/namespace"
+  ["ownerDocument"]=>
+  string(22) "(object value omitted)"
+  ["parentNode"]=>
+  string(22) "(object value omitted)"
+}
+xmlobject(DOMNameSpaceNode)#3 (8) {
+  ["nodeName"]=>
+  string(9) "xmlns:xml"
+  ["nodeValue"]=>
+  string(36) "http://www.w3.org/XML/1998/namespace"
+  ["nodeType"]=>
+  int(18)
+  ["prefix"]=>
+  string(3) "xml"
+  ["localName"]=>
+  string(3) "xml"
+  ["namespaceURI"]=>
+  string(36) "http://www.w3.org/XML/1998/namespace"
+  ["ownerDocument"]=>
+  string(22) "(object value omitted)"
+  ["parentNode"]=>
+  string(22) "(object value omitted)"
+}
+xmlobject(DOMNameSpaceNode)#3 (8) {
+  ["nodeName"]=>
+  string(9) "xmlns:xml"
+  ["nodeValue"]=>
+  string(36) "http://www.w3.org/XML/1998/namespace"
+  ["nodeType"]=>
+  int(18)
+  ["prefix"]=>
+  string(3) "xml"
+  ["localName"]=>
+  string(3) "xml"
+  ["namespaceURI"]=>
+  string(36) "http://www.w3.org/XML/1998/namespace"
+  ["ownerDocument"]=>
+  string(22) "(object value omitted)"
+  ["parentNode"]=>
+  string(22) "(object value omitted)"
+}
+xmlobject(DOMNameSpaceNode)#3 (8) {
+  ["nodeName"]=>
+  string(9) "xmlns:xml"
+  ["nodeValue"]=>
+  string(36) "http://www.w3.org/XML/1998/namespace"
+  ["nodeType"]=>
+  int(18)
+  ["prefix"]=>
+  string(3) "xml"
+  ["localName"]=>
+  string(3) "xml"
+  ["namespaceURI"]=>
+  string(36) "http://www.w3.org/XML/1998/namespace"
+  ["ownerDocument"]=>
+  string(22) "(object value omitted)"
+  ["parentNode"]=>
+  string(22) "(object value omitted)"
+}
+xmlobject(DOMNameSpaceNode)#3 (8) {
+  ["nodeName"]=>
+  string(9) "xmlns:xml"
+  ["nodeValue"]=>
+  string(36) "http://www.w3.org/XML/1998/namespace"
+  ["nodeType"]=>
+  int(18)
+  ["prefix"]=>
+  string(3) "xml"
+  ["localName"]=>
+  string(3) "xml"
+  ["namespaceURI"]=>
+  string(36) "http://www.w3.org/XML/1998/namespace"
+  ["ownerDocument"]=>
+  string(22) "(object value omitted)"
+  ["parentNode"]=>
+  string(22) "(object value omitted)"
+}
+xmlobject(DOMNameSpaceNode)#3 (8) {
+  ["nodeName"]=>
+  string(9) "xmlns:xml"
+  ["nodeValue"]=>
+  string(36) "http://www.w3.org/XML/1998/namespace"
+  ["nodeType"]=>
+  int(18)
+  ["prefix"]=>
+  string(3) "xml"
+  ["localName"]=>
+  string(3) "xml"
+  ["namespaceURI"]=>
+  string(36) "http://www.w3.org/XML/1998/namespace"
+  ["ownerDocument"]=>
+  string(22) "(object value omitted)"
+  ["parentNode"]=>
+  string(22) "(object value omitted)"
+}
+xmlobject(DOMNameSpaceNode)#3 (8) {
+  ["nodeName"]=>
+  string(9) "xmlns:xml"
+  ["nodeValue"]=>
+  string(36) "http://www.w3.org/XML/1998/namespace"
+  ["nodeType"]=>
+  int(18)
+  ["prefix"]=>
+  string(3) "xml"
+  ["localName"]=>
+  string(3) "xml"
+  ["namespaceURI"]=>
+  string(36) "http://www.w3.org/XML/1998/namespace"
+  ["ownerDocument"]=>
+  string(22) "(object value omitted)"
+  ["parentNode"]=>
+  string(22) "(object value omitted)"
+}
+xmlobject(DOMNameSpaceNode)#3 (8) {
+  ["nodeName"]=>
+  string(9) "xmlns:xml"
+  ["nodeValue"]=>
+  string(36) "http://www.w3.org/XML/1998/namespace"
+  ["nodeType"]=>
+  int(18)
+  ["prefix"]=>
+  string(3) "xml"
+  ["localName"]=>
+  string(3) "xml"
+  ["namespaceURI"]=>
+  string(36) "http://www.w3.org/XML/1998/namespace"
+  ["ownerDocument"]=>
+  string(22) "(object value omitted)"
+  ["parentNode"]=>
+  string(22) "(object value omitted)"
+}
+xmlobject(DOMNameSpaceNode)#3 (8) {
+  ["nodeName"]=>
+  string(9) "xmlns:xml"
+  ["nodeValue"]=>
+  string(36) "http://www.w3.org/XML/1998/namespace"
+  ["nodeType"]=>
+  int(18)
+  ["prefix"]=>
+  string(3) "xml"
+  ["localName"]=>
+  string(3) "xml"
+  ["namespaceURI"]=>
+  string(36) "http://www.w3.org/XML/1998/namespace"
+  ["ownerDocument"]=>
+  string(22) "(object value omitted)"
+  ["parentNode"]=>
+  string(22) "(object value omitted)"
+}
+xmlobject(DOMNameSpaceNode)#3 (8) {
+  ["nodeName"]=>
+  string(9) "xmlns:xml"
+  ["nodeValue"]=>
+  string(36) "http://www.w3.org/XML/1998/namespace"
+  ["nodeType"]=>
+  int(18)
+  ["prefix"]=>
+  string(3) "xml"
+  ["localName"]=>
+  string(3) "xml"
+  ["namespaceURI"]=>
+  string(36) "http://www.w3.org/XML/1998/namespace"
+  ["ownerDocument"]=>
+  string(22) "(object value omitted)"
+  ["parentNode"]=>
+  string(22) "(object value omitted)"
+}
+xmlobject(DOMNameSpaceNode)#3 (8) {
+  ["nodeName"]=>
+  string(9) "xmlns:xml"
+  ["nodeValue"]=>
+  string(36) "http://www.w3.org/XML/1998/namespace"
+  ["nodeType"]=>
+  int(18)
+  ["prefix"]=>
+  string(3) "xml"
+  ["localName"]=>
+  string(3) "xml"
+  ["namespaceURI"]=>
+  string(36) "http://www.w3.org/XML/1998/namespace"
+  ["ownerDocument"]=>
+  string(22) "(object value omitted)"
+  ["parentNode"]=>
+  string(22) "(object value omitted)"
+}
+xmlobject(DOMNameSpaceNode)#3 (8) {
+  ["nodeName"]=>
+  string(9) "xmlns:xml"
+  ["nodeValue"]=>
+  string(36) "http://www.w3.org/XML/1998/namespace"
+  ["nodeType"]=>
+  int(18)
+  ["prefix"]=>
+  string(3) "xml"
+  ["localName"]=>
+  string(3) "xml"
+  ["namespaceURI"]=>
+  string(36) "http://www.w3.org/XML/1998/namespace"
+  ["ownerDocument"]=>
+  string(22) "(object value omitted)"
+  ["parentNode"]=>
+  string(22) "(object value omitted)"
+}
+xmlobject(DOMNameSpaceNode)#3 (8) {
+  ["nodeName"]=>
+  string(9) "xmlns:xml"
+  ["nodeValue"]=>
+  string(36) "http://www.w3.org/XML/1998/namespace"
+  ["nodeType"]=>
+  int(18)
+  ["prefix"]=>
+  string(3) "xml"
+  ["localName"]=>
+  string(3) "xml"
+  ["namespaceURI"]=>
+  string(36) "http://www.w3.org/XML/1998/namespace"
+  ["ownerDocument"]=>
+  string(22) "(object value omitted)"
+  ["parentNode"]=>
+  string(22) "(object value omitted)"
+}
+xmlobject(DOMNameSpaceNode)#3 (8) {
   ["nodeName"]=>
   string(9) "xmlns:xml"
   ["nodeValue"]=>

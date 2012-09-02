@@ -73,4 +73,64 @@ object(Closure)#2 (0) {
 string(11) "hello world"
 object(Closure)#2 (0) {
 }
+string(11) "hello world"
+object(Closure)#2 (0) {
+}
+string(11) "hello world"
+object(Closure)#2 (0) {
+}
+string(11) "hello world"
+object(Closure)#2 (0) {
+}
+string(11) "hello world"
+object(Closure)#2 (0) {
+}
+string(11) "hello world"
+object(Closure)#2 (0) {
+}
+string(11) "hello world"
+object(Closure)#2 (0) {
+}
+string(11) "hello world"
+object(Closure)#2 (0) {
+}
+string(11) "hello world"
+object(Closure)#2 (0) {
+}
+string(11) "hello world"
+object(Closure)#2 (0) {
+}
+string(11) "hello world"
+object(Closure)#2 (0) {
+}
+string(11) "hello world"
+object(Closure)#2 (0) {
+}
+string(11) "hello world"
+object(Closure)#2 (0) {
+}
+string(11) "hello world"
+object(Closure)#2 (0) {
+}
+string(11) "hello world"
+object(Closure)#2 (0) {
+}
+string(11) "hello world"
+object(Closure)#2 (0) {
+}
+string(11) "hello world"
+object(Closure)#2 (0) {
+}
+string(11) "hello world"
+object(Closure)#2 (0) {
+}
+string(11) "hello world"
+object(Closure)#2 (0) {
+}
+string(11) "hello world"
+object(Closure)#2 (0) {
+}
+string(11) "hello world"
+object(Closure)#2 (0) {
+}
 done

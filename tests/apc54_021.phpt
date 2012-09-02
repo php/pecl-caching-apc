@@ -1,5 +1,5 @@
 --TEST--
-APC: APCIterater file + apc_delete_file() (php 5.4)
+APC: APCIterator file + apc_delete_file() (php 5.4)
 --SKIPIF--
 <?php
     require_once(dirname(__FILE__) . '/skipif.inc'); 
@@ -68,6 +68,26 @@ echo 'done';
 --CLEAN--
 unlink(dirname(__FILE__) . '/file.php');
 --EXPECT--
+bool(true)
+bool(true)
+bool(true)
+bool(true)
+bool(true)
+bool(true)
+bool(true)
+bool(true)
+bool(true)
+bool(true)
+bool(true)
+bool(true)
+bool(true)
+bool(true)
+bool(true)
+bool(true)
+bool(true)
+bool(true)
+bool(true)
+bool(true)
 bool(true)
 bool(true)
 bool(true)

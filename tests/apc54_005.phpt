@@ -93,4 +93,124 @@ Stack trace:
 #0 %sindex.php(6): {closure}(8, 'Undefined prope...', '%s', 6, Array)
 #1 {main}
   thrown in <b>%sindex.php</b> on line <b>6</b><br />
+<br />
+<b>Fatal error</b>:  Uncaught exception 'ErrorException' with message 'Undefined property: stdClass::$qwerty' in %sindex.php:6
+Stack trace:
+#0 %sindex.php(6): {closure}(8, 'Undefined prope...', '%s', 6, Array)
+#1 {main}
+  thrown in <b>%sindex.php</b> on line <b>6</b><br />
+<br />
+<b>Fatal error</b>:  Uncaught exception 'ErrorException' with message 'Undefined property: stdClass::$qwerty' in %sindex.php:6
+Stack trace:
+#0 %sindex.php(6): {closure}(8, 'Undefined prope...', '%s', 6, Array)
+#1 {main}
+  thrown in <b>%sindex.php</b> on line <b>6</b><br />
+<br />
+<b>Fatal error</b>:  Uncaught exception 'ErrorException' with message 'Undefined property: stdClass::$qwerty' in %sindex.php:6
+Stack trace:
+#0 %sindex.php(6): {closure}(8, 'Undefined prope...', '%s', 6, Array)
+#1 {main}
+  thrown in <b>%sindex.php</b> on line <b>6</b><br />
+<br />
+<b>Fatal error</b>:  Uncaught exception 'ErrorException' with message 'Undefined property: stdClass::$qwerty' in %sindex.php:6
+Stack trace:
+#0 %sindex.php(6): {closure}(8, 'Undefined prope...', '%s', 6, Array)
+#1 {main}
+  thrown in <b>%sindex.php</b> on line <b>6</b><br />
+<br />
+<b>Fatal error</b>:  Uncaught exception 'ErrorException' with message 'Undefined property: stdClass::$qwerty' in %sindex.php:6
+Stack trace:
+#0 %sindex.php(6): {closure}(8, 'Undefined prope...', '%s', 6, Array)
+#1 {main}
+  thrown in <b>%sindex.php</b> on line <b>6</b><br />
+<br />
+<b>Fatal error</b>:  Uncaught exception 'ErrorException' with message 'Undefined property: stdClass::$qwerty' in %sindex.php:6
+Stack trace:
+#0 %sindex.php(6): {closure}(8, 'Undefined prope...', '%s', 6, Array)
+#1 {main}
+  thrown in <b>%sindex.php</b> on line <b>6</b><br />
+<br />
+<b>Fatal error</b>:  Uncaught exception 'ErrorException' with message 'Undefined property: stdClass::$qwerty' in %sindex.php:6
+Stack trace:
+#0 %sindex.php(6): {closure}(8, 'Undefined prope...', '%s', 6, Array)
+#1 {main}
+  thrown in <b>%sindex.php</b> on line <b>6</b><br />
+<br />
+<b>Fatal error</b>:  Uncaught exception 'ErrorException' with message 'Undefined property: stdClass::$qwerty' in %sindex.php:6
+Stack trace:
+#0 %sindex.php(6): {closure}(8, 'Undefined prope...', '%s', 6, Array)
+#1 {main}
+  thrown in <b>%sindex.php</b> on line <b>6</b><br />
+<br />
+<b>Fatal error</b>:  Uncaught exception 'ErrorException' with message 'Undefined property: stdClass::$qwerty' in %sindex.php:6
+Stack trace:
+#0 %sindex.php(6): {closure}(8, 'Undefined prope...', '%s', 6, Array)
+#1 {main}
+  thrown in <b>%sindex.php</b> on line <b>6</b><br />
+<br />
+<b>Fatal error</b>:  Uncaught exception 'ErrorException' with message 'Undefined property: stdClass::$qwerty' in %sindex.php:6
+Stack trace:
+#0 %sindex.php(6): {closure}(8, 'Undefined prope...', '%s', 6, Array)
+#1 {main}
+  thrown in <b>%sindex.php</b> on line <b>6</b><br />
+<br />
+<b>Fatal error</b>:  Uncaught exception 'ErrorException' with message 'Undefined property: stdClass::$qwerty' in %sindex.php:6
+Stack trace:
+#0 %sindex.php(6): {closure}(8, 'Undefined prope...', '%s', 6, Array)
+#1 {main}
+  thrown in <b>%sindex.php</b> on line <b>6</b><br />
+<br />
+<b>Fatal error</b>:  Uncaught exception 'ErrorException' with message 'Undefined property: stdClass::$qwerty' in %sindex.php:6
+Stack trace:
+#0 %sindex.php(6): {closure}(8, 'Undefined prope...', '%s', 6, Array)
+#1 {main}
+  thrown in <b>%sindex.php</b> on line <b>6</b><br />
+<br />
+<b>Fatal error</b>:  Uncaught exception 'ErrorException' with message 'Undefined property: stdClass::$qwerty' in %sindex.php:6
+Stack trace:
+#0 %sindex.php(6): {closure}(8, 'Undefined prope...', '%s', 6, Array)
+#1 {main}
+  thrown in <b>%sindex.php</b> on line <b>6</b><br />
+<br />
+<b>Fatal error</b>:  Uncaught exception 'ErrorException' with message 'Undefined property: stdClass::$qwerty' in %sindex.php:6
+Stack trace:
+#0 %sindex.php(6): {closure}(8, 'Undefined prope...', '%s', 6, Array)
+#1 {main}
+  thrown in <b>%sindex.php</b> on line <b>6</b><br />
+<br />
+<b>Fatal error</b>:  Uncaught exception 'ErrorException' with message 'Undefined property: stdClass::$qwerty' in %sindex.php:6
+Stack trace:
+#0 %sindex.php(6): {closure}(8, 'Undefined prope...', '%s', 6, Array)
+#1 {main}
+  thrown in <b>%sindex.php</b> on line <b>6</b><br />
+<br />
+<b>Fatal error</b>:  Uncaught exception 'ErrorException' with message 'Undefined property: stdClass::$qwerty' in %sindex.php:6
+Stack trace:
+#0 %sindex.php(6): {closure}(8, 'Undefined prope...', '%s', 6, Array)
+#1 {main}
+  thrown in <b>%sindex.php</b> on line <b>6</b><br />
+<br />
+<b>Fatal error</b>:  Uncaught exception 'ErrorException' with message 'Undefined property: stdClass::$qwerty' in %sindex.php:6
+Stack trace:
+#0 %sindex.php(6): {closure}(8, 'Undefined prope...', '%s', 6, Array)
+#1 {main}
+  thrown in <b>%sindex.php</b> on line <b>6</b><br />
+<br />
+<b>Fatal error</b>:  Uncaught exception 'ErrorException' with message 'Undefined property: stdClass::$qwerty' in %sindex.php:6
+Stack trace:
+#0 %sindex.php(6): {closure}(8, 'Undefined prope...', '%s', 6, Array)
+#1 {main}
+  thrown in <b>%sindex.php</b> on line <b>6</b><br />
+<br />
+<b>Fatal error</b>:  Uncaught exception 'ErrorException' with message 'Undefined property: stdClass::$qwerty' in %sindex.php:6
+Stack trace:
+#0 %sindex.php(6): {closure}(8, 'Undefined prope...', '%s', 6, Array)
+#1 {main}
+  thrown in <b>%sindex.php</b> on line <b>6</b><br />
+<br />
+<b>Fatal error</b>:  Uncaught exception 'ErrorException' with message 'Undefined property: stdClass::$qwerty' in %sindex.php:6
+Stack trace:
+#0 %sindex.php(6): {closure}(8, 'Undefined prope...', '%s', 6, Array)
+#1 {main}
+  thrown in <b>%sindex.php</b> on line <b>6</b><br />
 done

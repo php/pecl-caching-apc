@@ -71,4 +71,44 @@ echo 'done';
 <b>Fatal error</b>:  Failed to evaluate a trait precedence (test). Method of trait foo was defined to be excluded multiple times in <b>%sindex.php</b> on line <b>15</b><br />
 <br />
 <b>Fatal error</b>:  Failed to evaluate a trait precedence (test). Method of trait foo was defined to be excluded multiple times in <b>%sindex.php</b> on line <b>15</b><br />
+<br />
+<b>Fatal error</b>:  Failed to evaluate a trait precedence (test). Method of trait foo was defined to be excluded multiple times in <b>%sindex.php</b> on line <b>15</b><br />
+<br />
+<b>Fatal error</b>:  Failed to evaluate a trait precedence (test). Method of trait foo was defined to be excluded multiple times in <b>%sindex.php</b> on line <b>15</b><br />
+<br />
+<b>Fatal error</b>:  Failed to evaluate a trait precedence (test). Method of trait foo was defined to be excluded multiple times in <b>%sindex.php</b> on line <b>15</b><br />
+<br />
+<b>Fatal error</b>:  Failed to evaluate a trait precedence (test). Method of trait foo was defined to be excluded multiple times in <b>%sindex.php</b> on line <b>15</b><br />
+<br />
+<b>Fatal error</b>:  Failed to evaluate a trait precedence (test). Method of trait foo was defined to be excluded multiple times in <b>%sindex.php</b> on line <b>15</b><br />
+<br />
+<b>Fatal error</b>:  Failed to evaluate a trait precedence (test). Method of trait foo was defined to be excluded multiple times in <b>%sindex.php</b> on line <b>15</b><br />
+<br />
+<b>Fatal error</b>:  Failed to evaluate a trait precedence (test). Method of trait foo was defined to be excluded multiple times in <b>%sindex.php</b> on line <b>15</b><br />
+<br />
+<b>Fatal error</b>:  Failed to evaluate a trait precedence (test). Method of trait foo was defined to be excluded multiple times in <b>%sindex.php</b> on line <b>15</b><br />
+<br />
+<b>Fatal error</b>:  Failed to evaluate a trait precedence (test). Method of trait foo was defined to be excluded multiple times in <b>%sindex.php</b> on line <b>15</b><br />
+<br />
+<b>Fatal error</b>:  Failed to evaluate a trait precedence (test). Method of trait foo was defined to be excluded multiple times in <b>%sindex.php</b> on line <b>15</b><br />
+<br />
+<b>Fatal error</b>:  Failed to evaluate a trait precedence (test). Method of trait foo was defined to be excluded multiple times in <b>%sindex.php</b> on line <b>15</b><br />
+<br />
+<b>Fatal error</b>:  Failed to evaluate a trait precedence (test). Method of trait foo was defined to be excluded multiple times in <b>%sindex.php</b> on line <b>15</b><br />
+<br />
+<b>Fatal error</b>:  Failed to evaluate a trait precedence (test). Method of trait foo was defined to be excluded multiple times in <b>%sindex.php</b> on line <b>15</b><br />
+<br />
+<b>Fatal error</b>:  Failed to evaluate a trait precedence (test). Method of trait foo was defined to be excluded multiple times in <b>%sindex.php</b> on line <b>15</b><br />
+<br />
+<b>Fatal error</b>:  Failed to evaluate a trait precedence (test). Method of trait foo was defined to be excluded multiple times in <b>%sindex.php</b> on line <b>15</b><br />
+<br />
+<b>Fatal error</b>:  Failed to evaluate a trait precedence (test). Method of trait foo was defined to be excluded multiple times in <b>%sindex.php</b> on line <b>15</b><br />
+<br />
+<b>Fatal error</b>:  Failed to evaluate a trait precedence (test). Method of trait foo was defined to be excluded multiple times in <b>%sindex.php</b> on line <b>15</b><br />
+<br />
+<b>Fatal error</b>:  Failed to evaluate a trait precedence (test). Method of trait foo was defined to be excluded multiple times in <b>%sindex.php</b> on line <b>15</b><br />
+<br />
+<b>Fatal error</b>:  Failed to evaluate a trait precedence (test). Method of trait foo was defined to be excluded multiple times in <b>%sindex.php</b> on line <b>15</b><br />
+<br />
+<b>Fatal error</b>:  Failed to evaluate a trait precedence (test). Method of trait foo was defined to be excluded multiple times in <b>%sindex.php</b> on line <b>15</b><br />
 done
