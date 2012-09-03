@@ -65,7 +65,7 @@
     <active>yes</active>
   </developer>
 
-  <date>2012-??-??</date>
+  <date>2012-09-03</date>
   <version>
     <release>3.1.13</release>
     <api>3.1.0</api>
@@ -76,6 +76,7 @@
   </stability>
   <license uri="http://www.php.net/license">PHP License</license>
   <notes>
+- fix num. segfaults by revert rev. 326820 and issue reported in bug #69972
   </notes>
 
   <contents>
