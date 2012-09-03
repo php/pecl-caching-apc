@@ -64,10 +64,9 @@
     <email>ab@php.net</email>
     <active>yes</active>
   </developer>
-
-  <date>2012-09-03</date>
+  <date>2012-??-??</date>
   <version>
-    <release>3.1.13</release>
+    <release>3.1.14-dev</release>
     <api>3.1.0</api>
   </version>
   <stability>
@@ -78,7 +77,6 @@
   <notes>
 - fix num. segfaults by revert rev. 326820 and issue reported in bug #69972
   </notes>
-
   <contents>
     <dir name="/">
       <file role="doc" name="CHANGELOG"/>
@@ -235,19 +233,33 @@
    -->
   </extsrcrelease>
   <changelog>
-
-  <release>
-  <date>2012-08-16</date>
-  <version>
-    <release>3.1.12</release>
-    <api>3.1.0</api>
-  </version>
-  <stability>
-    <release>beta</release>
-    <api>stable</api>
-  </stability>
-  <license uri="http://www.php.net/license">PHP License</license>
-  <notes>
+    <release>
+      <date>2012-09-03</date>
+      <version>
+        <release>3.1.13</release>
+        <api>3.1.0</api>
+      </version>
+      <stability>
+        <release>beta</release>
+        <api>stable</api>
+      </stability>
+      <license uri="http://www.php.net/license">PHP License</license>
+      <notes>
+- fix num. segfaults by revert rev. 326820 and issue reported in bug #69972
+  </notes>
+    </release>
+    <release>
+      <date>2012-08-16</date>
+      <version>
+        <release>3.1.12</release>
+        <api>3.1.0</api>
+      </version>
+      <stability>
+        <release>beta</release>
+        <api>stable</api>
+      </stability>
+      <license uri="http://www.php.net/license">PHP License</license>
+      <notes>
 - Fixed bug (apc_bin_dump doesn't swizzle bucket arKey in HashTable) (Laruence)
 - Fixed bug #62825 (php carshed OR return PHP Fatal error when used apc_bin_dump after apc_store) (Laruence)
 - Fixed bug due to Conditional "jump or move depends on uninitialised value(s)" in apc_op_ZEND_INCLUDE_OR_EVAL and apc_bin_dump (Laruence)
@@ -264,20 +276,19 @@
 - Fixed several memory leaks it APCIterator (Anatoliy)
 - Fixed potential overflows in bin dumps (Anatoliy)
   </notes>
-  </release>
-
-  <release>
-  <date>2012-07-19</date>
-  <version>
-    <release>3.1.11</release>
-    <api>3.1.0</api>
-  </version>
-  <stability>
-    <release>beta</release>
-    <api>stable</api>
-  </stability>
-  <license uri="http://www.php.net/license">PHP License</license>
-  <notes>
+    </release>
+    <release>
+      <date>2012-07-19</date>
+      <version>
+        <release>3.1.11</release>
+        <api>3.1.0</api>
+      </version>
+      <stability>
+        <release>beta</release>
+        <api>stable</api>
+      </stability>
+      <license uri="http://www.php.net/license">PHP License</license>
+      <notes>
 - In cli mode with stat=0 and canonicalize=1 make sure cwd is searched
 - Fixed bug #62302 apc.include_once_override=1 made everything crash
 - Fixed bug #59829 APC should not try to canonicalize file URLs 
@@ -287,41 +298,39 @@
 - Partial fix for bug #61360 concerning concerning serializer leak (anatoliy)
 - Partial fix for bug #61360 concerning rwlock atribute leak (Anatoliy)
   </notes>
-  </release>
-
-  <release>
-  <date>2012-04-11</date>
-  <version>
-    <release>3.1.10</release>
-    <api>3.1.0</api>
-  </version>
-  <stability>
-    <release>beta</release>
-    <api>stable</api>
-  </stability>
-  <license uri="http://www.php.net/license">PHP License</license>
-  <notes>
+    </release>
+    <release>
+      <date>2012-04-11</date>
+      <version>
+        <release>3.1.10</release>
+        <api>3.1.0</api>
+      </version>
+      <stability>
+        <release>beta</release>
+        <api>stable</api>
+      </stability>
+      <license uri="http://www.php.net/license">PHP License</license>
+      <notes>
 - Add PHP 5.4 support (Dmitry, Anatoliy, Pierre)
 - Fixed bug #22679: Fix apc_bin_dump for constants. Use IS_CONSTANT_TYPE_MASK to handle all the constants, including the unqalified ones (instead of ~IS_CONSTANT_INDEX check)
 - Fixed bug #23822, php crashes on apache restart
   </notes>
-  </release>
-
-  <release>
-  <date>2011-05-15</date>
-  <version>
-    <release>3.1.9</release>
-    <api>3.1.0</api>
-  </version>
-  <stability>
-    <release>stable</release>
-    <api>stable</api>
-  </stability>
-  <license uri="http://www.php.net/license">PHP License</license>
-  <notes>
+    </release>
+    <release>
+      <date>2011-05-15</date>
+      <version>
+        <release>3.1.9</release>
+        <api>3.1.0</api>
+      </version>
+      <stability>
+        <release>stable</release>
+        <api>stable</api>
+      </stability>
+      <license uri="http://www.php.net/license">PHP License</license>
+      <notes>
  - Fix regression introduced in 3.1.8 (#22687)
   </notes>
-  </release>
+    </release>
     <release>
       <date>2011-05-03</date>
       <version>
