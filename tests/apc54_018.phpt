@@ -42,7 +42,7 @@ array(11) {
   ["type"]=>
   string(4) "user"
   ["key"]=>
-  string(42) "test-niko-asdfasdfasdfkjasdflkasjdfasf5675"
+  string(42) "test-niko-asdfasdfasdfkjasdflkasjdfasf%d"
   ["value"]=>
   string(%d) "%s"
   ["num_hits"]=>
@@ -67,7 +67,7 @@ array(11) {
   ["type"]=>
   string(4) "user"
   ["key"]=>
-  string(42) "test-niko-asdfasdfasdfkjasdflkasjdfasf5675"
+  string(42) "test-niko-asdfasdfasdfkjasdflkasjdfasf%d"
   ["value"]=>
   string(%d) "%s"
   ["num_hits"]=>
@@ -92,7 +92,7 @@ array(11) {
   ["type"]=>
   string(4) "user"
   ["key"]=>
-  string(42) "test-niko-asdfasdfasdfkjasdflkasjdfasf5675"
+  string(42) "test-niko-asdfasdfasdfkjasdflkasjdfasf%d"
   ["value"]=>
   string(%d) "%s"
   ["num_hits"]=>
@@ -117,7 +117,7 @@ array(11) {
   ["type"]=>
   string(4) "user"
   ["key"]=>
-  string(42) "test-niko-asdfasdfasdfkjasdflkasjdfasf5675"
+  string(42) "test-niko-asdfasdfasdfkjasdflkasjdfasf%d"
   ["value"]=>
   string(%d) "%s"
   ["num_hits"]=>
@@ -142,7 +142,7 @@ array(11) {
   ["type"]=>
   string(4) "user"
   ["key"]=>
-  string(42) "test-niko-asdfasdfasdfkjasdflkasjdfasf5675"
+  string(42) "test-niko-asdfasdfasdfkjasdflkasjdfasf%d"
   ["value"]=>
   string(%d) "%s"
   ["num_hits"]=>
@@ -167,7 +167,7 @@ array(11) {
   ["type"]=>
   string(4) "user"
   ["key"]=>
-  string(42) "test-niko-asdfasdfasdfkjasdflkasjdfasf5675"
+  string(42) "test-niko-asdfasdfasdfkjasdflkasjdfasf%d"
   ["value"]=>
   string(%d) "%s"
   ["num_hits"]=>
@@ -192,7 +192,7 @@ array(11) {
   ["type"]=>
   string(4) "user"
   ["key"]=>
-  string(42) "test-niko-asdfasdfasdfkjasdflkasjdfasf5675"
+  string(42) "test-niko-asdfasdfasdfkjasdflkasjdfasf%d"
   ["value"]=>
   string(%d) "%s"
   ["num_hits"]=>
@@ -217,7 +217,7 @@ array(11) {
   ["type"]=>
   string(4) "user"
   ["key"]=>
-  string(42) "test-niko-asdfasdfasdfkjasdflkasjdfasf5675"
+  string(42) "test-niko-asdfasdfasdfkjasdflkasjdfasf%d"
   ["value"]=>
   string(%d) "%s"
   ["num_hits"]=>
@@ -242,7 +242,7 @@ array(11) {
   ["type"]=>
   string(4) "user"
   ["key"]=>
-  string(42) "test-niko-asdfasdfasdfkjasdflkasjdfasf5675"
+  string(42) "test-niko-asdfasdfasdfkjasdflkasjdfasf%d"
   ["value"]=>
   string(%d) "%s"
   ["num_hits"]=>
