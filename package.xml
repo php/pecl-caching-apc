@@ -75,7 +75,7 @@
   </stability>
   <license uri="http://www.php.net/license">PHP License</license>
   <notes>
-- fix num. segfaults by revert rev. 326820 and issue reported in bug #69972
+- fix num. segfaults by revert rev. 326820 and issue reported in bug #62972
   </notes>
   <contents>
     <dir name="/">
