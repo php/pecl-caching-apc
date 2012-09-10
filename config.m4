@@ -250,28 +250,6 @@ if test "$PHP_APC" != "no"; then
 		AC_DEFINE(APC_MEMPROTECT, 1, [ shm/mmap memory protection ])
 	fi
 
-  AC_CACHE_CHECK(for zend_set_lookup_function_hook, php_cv_zend_set_lookup_function_hook,
-  [
-    orig_cflags=$CFLAGS
-    CFLAGS="$INCLUDES $EXTRA_INCLUDES"
-    AC_TRY_COMPILE([
-#include "main/php.h"
-#include "Zend/zend_API.h"
-    ], [#ifndef zend_set_lookup_function_hook
-	(void) zend_set_lookup_function_hook;
-#endif], [
-      php_cv_zend_set_lookup_function_hook=yes
-    ],[
-      php_cv_zend_set_lookup_function_hook=no
-    ])
-    CFLAGS=$orig_cflags
-  ])
-  if test "$php_cv_zend_set_lookup_function_hook" = "yes"; then
-    AC_DEFINE(APC_HAVE_LOOKUP_HOOKS, 1, [ ])
-  else
-    AC_DEFINE(APC_HAVE_LOOKUP_HOOKS, 0, [ ])
-  fi
-
   AC_CHECK_FUNCS(sigaction)
   AC_CACHE_CHECK(for union semun, php_cv_semun,
   [
