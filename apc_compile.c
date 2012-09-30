@@ -753,7 +753,7 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
 
         /* copy all the trait precedences */
         CHECK(dst->trait_precedences =
-                (zend_trait_precedence **) apc_pool_alloc(pool, sizeof(zend_trait_alias *)*(num_trait_precedences+1)));
+                (zend_trait_precedence **) apc_pool_alloc(pool, sizeof(zend_trait_precedence *)*(num_trait_precedences+1)));
 
         i = 0;
         while (src->trait_precedences[i] && i < num_trait_precedences) {
@@ -1954,7 +1954,7 @@ zend_class_entry* apc_copy_class_entry_for_execution(zend_class_entry* src, apc_
 
         /* copy all the trait precedences */
         CHECK(dst->trait_precedences = 
-                (zend_trait_precedence **) apc_pool_alloc(ctxt->pool, sizeof(zend_trait_alias *)*(num_trait_precedences+1)));
+                (zend_trait_precedence **) apc_pool_alloc(ctxt->pool, sizeof(zend_trait_precedence *)*(num_trait_precedences+1)));
         i = 0;
         while (src->trait_precedences[i]) {
             dst->trait_precedences[i] =
