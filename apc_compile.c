@@ -45,6 +45,7 @@ typedef int (*ht_check_copy_fun_t)(Bucket*, va_list);
 typedef void (*ht_fixup_fun_t)(Bucket*, zend_class_entry*, zend_class_entry*);
 
 #define CHECK(p) { if ((p) == NULL) return NULL; }
+#define IS_TAILED(container,member) ((char*)(container)+sizeof(*container) == (char*)(container->member))
 
 enum {
     APC_FREE_HASHTABLE_FUNCS,
@@ -904,7 +905,7 @@ static void my_free_hashtable(HashTable* ht, int type TSRMLS_DC)
         prev = prev->pListNext;
 
 #ifdef ZEND_ENGINE_2_4
-        if (!IS_INTERNED(curr->arKey)) {
+        if (!IS_INTERNED(curr->arKey) && !IS_TAILED(curr, arKey)) {
             apc_php_free((char*)curr->arKey TSRMLS_CC);
         } 
 #else
@@ -1000,17 +1001,20 @@ static APC_HOTSPOT HashTable* my_copy_hashtable_ex(HashTable* dst,
         } else if (pool->type != APC_UNPOOL) {
             char *arKey;
 
-            CHECK((newp = (Bucket*) apc_pmemcpy(curr, sizeof(Bucket), pool TSRMLS_CC)));
             arKey = (char *)apc_new_interned_string(curr->arKey, curr->nKeyLength TSRMLS_CC);
             if (!arKey) {
-                CHECK((newp->arKey = (char*) apc_pmemcpy(curr->arKey, curr->nKeyLength, pool TSRMLS_CC)));
+                /* this is ugly, but the old arkey[1] is gone, so we allocate all of the bytes as a tail-fragment (see IS_TAILED) */
+                CHECK((newp = (Bucket*) apc_pmemcpy(curr, sizeof(Bucket) + curr->nKeyLength, pool TSRMLS_CC)));
+                newp->arKey = (const char*)(newp+1); 
             } else {
+                CHECK((newp = (Bucket*) apc_pmemcpy(curr, sizeof(Bucket), pool TSRMLS_CC)));
                 newp->arKey = arKey;
             }
 #endif
         } else {
-            CHECK((newp = (Bucket*) apc_pmemcpy(curr, sizeof(Bucket), pool TSRMLS_CC)));
-            CHECK((newp->arKey = (char*) apc_pmemcpy(curr->arKey, curr->nKeyLength, pool TSRMLS_CC)));
+            /* I repeat, this is ugly */
+            CHECK((newp = (Bucket*) apc_pmemcpy(curr, sizeof(Bucket) + curr->nKeyLength, pool TSRMLS_CC)));
+            newp->arKey = (const char*)(newp+1);
         }
 #else
         CHECK((newp = (Bucket*) apc_pmemcpy(curr,
