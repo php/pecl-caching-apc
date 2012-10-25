@@ -620,7 +620,7 @@ static zval* data_unserialize(const char *filename TSRMLS_DC)
     struct stat sb;
     char *contents, *tmp;
     FILE *fp;
-    php_unserialize_data_t var_hash;
+    php_unserialize_data_t var_hash = {0,};
 
     if(VCWD_STAT(filename, &sb) == -1) {
         return NULL;
@@ -722,8 +722,12 @@ static int apc_walk_dir(const char *path TSRMLS_DC)
 void apc_data_preload(TSRMLS_D)
 {
     if(!APCG(preload_path)) return;
-
+#ifndef ZTS
     apc_walk_dir(APCG(preload_path) TSRMLS_CC);
+#else 
+    apc_error("Cannot load data from apc.preload_path=%s in thread-safe mode" TSRMLS_CC, APCG(preload_path));
+#endif
+
 }
 /* }}} */
 
