@@ -207,6 +207,8 @@ extern int apc_cache_user_insert(T cache, apc_cache_key_t key,
 extern int *apc_cache_insert_mult(apc_cache_t* cache, apc_cache_key_t* keys,
                             apc_cache_entry_t** values, apc_context_t *ctxt, time_t t, int num_entries TSRMLS_DC);
 
+extern apc_cache_entry_t* apc_get_cache_entry(zend_file_handle* h TSRMLS_DC);
+
 /*
  * apc_cache_find searches for a cache entry by filename, and returns a
  * pointer to the entry if found, NULL otherwise.

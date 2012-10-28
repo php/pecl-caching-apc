@@ -450,6 +450,27 @@ freepool:
 }
 /* }}} */
 
+/* {{{ apc_get_cache_entry
+   Fetches the cache entry for a file */
+apc_cache_entry_t* apc_get_cache_entry(zend_file_handle* h TSRMLS_DC)
+{
+    apc_cache_key_t key;
+    time_t t;
+
+    if (!APCG(enabled) || apc_cache_busy(apc_cache)) {
+        return NULL;
+    }
+
+    t = apc_time();
+
+    if (!apc_cache_make_file_key(&key, h->filename, PG(include_path), t TSRMLS_CC)) {
+        return NULL;
+    }
+    return apc_cache_find(apc_cache, key, t TSRMLS_CC);
+
+}
+/* }}} */
+
 /* {{{ my_compile_file
    Overrides zend_compile_file */
 static zend_op_array* my_compile_file(zend_file_handle* h,

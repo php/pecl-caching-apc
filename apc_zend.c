@@ -122,9 +122,11 @@ static int ZEND_FASTCALL apc_op_ZEND_INCLUDE_OR_EVAL(ZEND_OPCODE_HANDLER_ARGS)
     zval *freeop1 = NULL;
     zval *inc_filename = NULL, tmp_inc_filename;
     php_stream_wrapper *wrapper;
-    char *path_for_open, realpath[MAXPATHLEN];
+    char *path_for_open, realpath_storage[MAXPATHLEN], *realpath;
     int ret = 0;
     apc_opflags_t* flags = NULL;
+    zend_file_handle file_handle;
+    apc_cache_entry_t* cache_entry;
 
 #ifdef ZEND_ENGINE_2_4
     if (opline->extended_value != ZEND_INCLUDE_ONCE &&
@@ -149,14 +151,39 @@ static int ZEND_FASTCALL apc_op_ZEND_INCLUDE_OR_EVAL(ZEND_OPCODE_HANDLER_ARGS)
         inc_filename = &tmp_inc_filename;
     }
 
+    /* Check to see if this is a regular file and bail if it isn't */
     wrapper = php_stream_locate_url_wrapper(Z_STRVAL_P(inc_filename), &path_for_open, 0 TSRMLS_CC);
-
-    if (wrapper != &php_plain_files_wrapper || !IS_ABSOLUTE_PATH(path_for_open, strlen(path_for_open)) || !VCWD_REALPATH(path_for_open, realpath)) {
-        /* Fallback to original handler */
+    if (wrapper != &php_plain_files_wrapper) {
         if (inc_filename == &tmp_inc_filename) {
             zval_dtor(&tmp_inc_filename);
         }
         return apc_original_opcode_handlers[APC_OPCODE_HANDLER_DECODE(opline)](ZEND_OPCODE_HANDLER_ARGS_PASSTHRU);
+    }
+
+    /* 
+       Before we do anything else, we can check to see if we have a cached version of this
+       file, in which case we can skip the realpath - this also means that we will be checking 
+       the correct realpath for this cache entry since it is possible that the inode existed in
+       a different directory at the time it was cached. Some deploy systems will do tricky things
+       where they rename directories and move a symlink around.
+     */
+    file_handle.filename = inc_filename->value.str.val;
+    file_handle.free_filename = 0;
+    file_handle.type = ZEND_HANDLE_FILENAME;
+    file_handle.opened_path = NULL;
+    file_handle.handle.fp = NULL;
+    cache_entry = apc_get_cache_entry(&file_handle);
+    if (cache_entry) {
+        realpath = cache_entry->data.file.filename;
+    } else {
+        if (!IS_ABSOLUTE_PATH(path_for_open, strlen(path_for_open)) || !VCWD_REALPATH(path_for_open, realpath_storage)) {
+            /* Fallback to original handler */
+            if (inc_filename == &tmp_inc_filename) {
+                zval_dtor(&tmp_inc_filename);
+            }
+            return apc_original_opcode_handlers[APC_OPCODE_HANDLER_DECODE(opline)](ZEND_OPCODE_HANDLER_ARGS_PASSTHRU);
+        }
+        realpath = realpath_storage;
     }
 
     if (zend_hash_exists(&EG(included_files), realpath, strlen(realpath) + 1)) {
