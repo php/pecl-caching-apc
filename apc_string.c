@@ -74,6 +74,10 @@ const char *apc_new_interned_string(const char *arKey, int nKeyLength TSRMLS_DC)
     uint nIndex;
     Bucket *p;
 
+    if (!apc_interned_strings_data) {
+        return NULL;
+    }
+
     if (arKey >= APCSG(interned_strings_start) && arKey < APCSG(interned_strings_end)) {
         return arKey;
     }
