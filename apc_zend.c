@@ -172,7 +172,7 @@ static int ZEND_FASTCALL apc_op_ZEND_INCLUDE_OR_EVAL(ZEND_OPCODE_HANDLER_ARGS)
     file_handle.type = ZEND_HANDLE_FILENAME;
     file_handle.opened_path = NULL;
     file_handle.handle.fp = NULL;
-    cache_entry = apc_get_cache_entry(&file_handle);
+    cache_entry = apc_get_cache_entry(&file_handle TSRMLS_CC);
     if (cache_entry) {
         realpath = cache_entry->data.file.filename;
     } else {
