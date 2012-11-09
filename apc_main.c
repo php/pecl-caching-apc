@@ -468,7 +468,7 @@ zend_bool apc_compile_cache_entry(apc_cache_key_t *key, zend_file_handle* h, int
         if(h->opened_path) {
             filename = h->opened_path;
         } else {
-            filename = h->filename;
+            filename = (char *)h->filename;
         }
         stream = php_stream_open_wrapper(filename, "rb", REPORT_ERRORS | ENFORCE_SAFE_MODE, NULL);
         if(stream) {
@@ -510,8 +510,12 @@ zend_bool apc_compile_cache_entry(apc_cache_key_t *key, zend_file_handle* h, int
     }
 
     path = h->opened_path;
-    if(!path && key->type == APC_CACHE_KEY_FPFILE) path = (char*)key->data.fpfile.fullpath;
-    if(!path) path=h->filename;
+    if (!path && key->type == APC_CACHE_KEY_FPFILE) {
+        path = (char*)key->data.fpfile.fullpath;
+    }
+    if (!path) {
+        path = (char *)h->filename;
+    }
 
     apc_debug("2. h->opened_path=[%s]  h->filename=[%s]\n" TSRMLS_CC, h->opened_path?h->opened_path:"null",h->filename);
 
