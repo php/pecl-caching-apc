@@ -124,7 +124,6 @@ static int ZEND_FASTCALL apc_op_ZEND_INCLUDE_OR_EVAL(ZEND_OPCODE_HANDLER_ARGS)
     php_stream_wrapper *wrapper;
     char *path_for_open, realpath_storage[MAXPATHLEN], *realpath;
     int ret = 0;
-    apc_opflags_t* flags = NULL;
     zend_file_handle file_handle;
     apc_cache_entry_t* cache_entry;
 
