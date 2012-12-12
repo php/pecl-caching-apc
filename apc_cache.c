@@ -945,6 +945,8 @@ int apc_cache_make_file_key(apc_cache_key_t* key,
         goto cleanup;
     }
 
+    memset(key->md5, 0, 16);
+
     len = strlen(filename);
     if(APCG(fpstat)==0) {
         if(IS_ABSOLUTE_PATH(filename,len) || strstr(filename, "://")) {

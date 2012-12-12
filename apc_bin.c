@@ -788,6 +788,7 @@ apc_bd_t* apc_bin_dump(HashTable *files, HashTable *user_vars TSRMLS_DC) {
                 if(apc_bin_checkfilter(files, sp->key.data.fpfile.fullpath, sp->key.data.fpfile.fullpath_len+1)) {
                     ep = &bd->entries[count];
                     ep->type = sp->key.type;
+                    memmove(ep->file_md5, sp->key.md5, 16);
                     ep->val.file.filename = apc_bd_alloc(strlen(sp->value->data.file.filename) + 1 TSRMLS_CC);
                     strcpy(ep->val.file.filename, sp->value->data.file.filename);
                     ep->val.file.op_array = apc_copy_op_array(NULL, sp->value->data.file.op_array, &ctxt TSRMLS_CC);
@@ -981,6 +982,7 @@ int apc_bin_load(apc_bd_t *bd, int flags TSRMLS_DC) {
                 if (!apc_cache_make_file_key(&cache_key, ep->val.file.filename, PG(include_path), t TSRMLS_CC)) {
                     goto failure;
                 }
+                memmove(cache_key.md5, ep->file_md5, 16);
 
                 if ((ret = apc_cache_insert(apc_cache, cache_key, cache_entry, &ctxt, t TSRMLS_CC)) != 1) {
                     if(ret==-1) {
