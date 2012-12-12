@@ -52,17 +52,17 @@ $args = array(
 
 server_start($file, $args);
 for ($u = 0; $u < 10; $u++) {
-/* dump the test file on one instance */
-$send = "GET /?do=dump HTTP/1.1\n" .
-		"Host: " . PHP_CLI_SERVER_HOSTNAME . "\n" .
-		"\r\n\r\n";
-run_test(PHP_CLI_SERVER_HOSTNAME, PHP_CLI_SERVER_PORT, $send);
+	/* dump the test file on one instance */
+	$send = "GET /?do=dump HTTP/1.1\n" .
+			"Host: " . PHP_CLI_SERVER_HOSTNAME . "\n" .
+			"\r\n\r\n";
+	run_test(PHP_CLI_SERVER_HOSTNAME, PHP_CLI_SERVER_PORT, $send);
 
-/* and load it on another */
-$send = "GET /?do=load HTTP/1.1\n" .
-		"Host: " . PHP_CLI_SERVER_HOSTNAME . "\n" .
-		"\r\n\r\n";
-run_test(PHP_CLI_SERVER_HOSTNAME, PHP_CLI_SERVER_PORT+1, $send);
+	/* and load it on another */
+	$send = "GET /?do=load HTTP/1.1\n" .
+			"Host: " . PHP_CLI_SERVER_HOSTNAME . "\n" .
+			"\r\n\r\n";
+	run_test(PHP_CLI_SERVER_HOSTNAME, PHP_CLI_SERVER_PORT+1, $send);
 }
 echo 'done';
 
@@ -70,8 +70,8 @@ echo 'done';
 <?php
 	$script = dirname(__FILE__) . '/bug63491.test.php';
 	$bin = dirname(__FILE__) . '/bug63491.test.bin';
-	//unlink($script);
-	//unlink($bin);
+	unlink($script);
+	unlink($bin);
 --EXPECT--
 dumping
 all good 
