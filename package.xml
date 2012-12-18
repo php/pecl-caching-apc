@@ -77,6 +77,7 @@
   <notes>
    - Fixed bug #63434 (Segfault if apc.shm_strings_buffer excceed apc.shm_size) (Laruence)
    - Fixed bug #63070 (apc.include_once_override bug) (Laruence)
+   - Fixed bug #62151 (Stat files only require read access only, windows). (Pierre)
    - fix num. segfaults by revert rev. 326820 and issue reported in bug #62972
   </notes>
   <contents>

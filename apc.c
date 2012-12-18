@@ -239,9 +239,9 @@ static int apc_restat(apc_fileinfo_t *fileinfo TSRMLS_DC)
     HANDLE hFile;
     BY_HANDLE_FILE_INFORMATION hInfo;
 
-    hFile = CreateFile(fileinfo->fullpath, GENERIC_WRITE, FILE_SHARE_WRITE|FILE_SHARE_READ, NULL, OPEN_ALWAYS, FILE_FLAG_BACKUP_SEMANTICS, NULL);
+    hFile = CreateFile(fileinfo->fullpath, GENERIC_READ, FILE_SHARE_WRITE|FILE_SHARE_READ, NULL, OPEN_ALWAYS, FILE_FLAG_BACKUP_SEMANTICS, NULL);
 
-    if (!hFile) {
+    if (hFile == INVALID_HANDLE_VALUE) {
         apc_debug("Cannot create a file HANDLE for %s\n" TSRMLS_CC, fileinfo->fullpath);
         return -1;
     }
