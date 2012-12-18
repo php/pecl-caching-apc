@@ -502,7 +502,6 @@ static apc_bd_t* apc_swizzle_bd(apc_bd_t* bd, zend_llist *ll TSRMLS_DC) {
     PHP_MD5_CTX context;
     unsigned char digest[16];
     register php_uint32 crc;
-    php_uint32 crcinit = 0;
     void ***ptr;
     void ***ptr_list;
 
@@ -562,7 +561,6 @@ static int apc_unswizzle_bd(apc_bd_t *bd, int flags TSRMLS_DC) {
     unsigned char digest[16];
     PHP_MD5_CTX context;
     register php_uint32 crc;
-    php_uint32 crcinit = 0;
     php_uint32 crc_orig;
 
     /* Verify the md5 or crc32 before we unswizzle */
