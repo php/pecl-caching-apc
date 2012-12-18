@@ -187,10 +187,10 @@ static void apc_swizzle_op_array(apc_bd_t *bd, zend_llist *ll, zend_op_array *op
     apc_swizzle_ptr(bd, ll, &op_array->refcount);
 #ifdef ZEND_ENGINE_2_4
     if (op_array->last_literal) {
-        int i = 0;
+        int j = 0;
         apc_swizzle_ptr(bd, ll, &(op_array->literals));
-        for (; i<op_array->last_literal; i++) {
-            apc_swizzle_zval(bd, ll, &((op_array->literals[i]).constant) TSRMLS_CC);
+        for (; j<op_array->last_literal; j++) {
+            apc_swizzle_zval(bd, ll, &((op_array->literals[j]).constant) TSRMLS_CC);
         }
     }
 #endif

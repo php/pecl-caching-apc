@@ -17,8 +17,11 @@ $files = array( 'apc_009.php',
                 'nofile.php',
               );
 
-file_put_contents(dirname(__FILE__).'/apc_009-1.php', '<?php echo "test file";');
-file_put_contents(dirname(__FILE__).'/apc_009-2.php', '<?php syntaxerrorhere!');
+$olddir = getcwd();
+chdir(__DIR__);
+
+file_put_contents(__DIR__ . '/apc_009-1.php', '<?php echo "test file";');
+file_put_contents(__DIR__ . '/apc_009-2.php', '<?php syntaxerrorhere!');
 
 apc_compile_file($files[0]);
 check_file($files[0]);
@@ -60,7 +63,7 @@ function check_file($files) {
     }
   }
 }
-
+chdir($olddir);
 ?>
 ===DONE===
 <?php exit(0); ?>
