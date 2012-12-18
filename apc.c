@@ -312,7 +312,7 @@ static int apc_restat(apc_fileinfo_t *fileinfo TSRMLS_DC)
 int apc_search_paths(const char* filename, const char* path, apc_fileinfo_t* fileinfo TSRMLS_DC)
 {
     char** paths = NULL;
-    char *exec_fname;
+    const char *exec_fname;
     int exec_fname_length;
     int found = 0;
     int i;
