@@ -792,6 +792,7 @@ static int apc_load_data(const char *data_file TSRMLS_DC)
     return 0;
 }
 
+#ifndef ZTS
 static int apc_walk_dir(const char *path TSRMLS_DC)
 {
     char file[MAXPATHLEN]={0,};
@@ -823,6 +824,7 @@ static int apc_walk_dir(const char *path TSRMLS_DC)
 
     return 1;
 }
+#endif
 
 void apc_data_preload(TSRMLS_D)
 {
