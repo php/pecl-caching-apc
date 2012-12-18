@@ -548,7 +548,6 @@ void apc_sma_free(void* p TSRMLS_DC)
 {
     uint i;
     size_t offset;
-    size_t d_size;
 
     if (p == NULL) {
         return;
@@ -561,7 +560,7 @@ void apc_sma_free(void* p TSRMLS_DC)
         offset = (size_t)((char *)p - SMA_ADDR(i));
         if (p >= (void*)SMA_ADDR(i) && offset < sma_segsize) {
             LOCK(SMA_LCK(i));
-            d_size = sma_deallocate(SMA_HDR(i), offset);
+            sma_deallocate(SMA_HDR(i), offset);
             UNLOCK(SMA_LCK(i));
 #ifdef VALGRIND_FREELIKE_BLOCK
             VALGRIND_FREELIKE_BLOCK(p, 0);
