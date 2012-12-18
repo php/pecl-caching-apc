@@ -369,7 +369,6 @@ void apc_compiler_func_table_dtor_hook(void *pDest) {
         function_add_ref(func);
         zend_hash_next_index_insert(APCG(compiler_hook_func_table), func, sizeof(zend_function), NULL);
     } 
-    return zend_function_dtor(func);
 }
 /* }}} */
 
@@ -382,7 +381,6 @@ void apc_compiler_class_table_dtor_hook(void *pDest) {
         ++(*pce)->refcount;
         zend_hash_next_index_insert(APCG(compiler_hook_class_table), pce, sizeof(zend_class_entry *), NULL);
     }
-    return destroy_zend_class(pce);
 }
 /* }}} */
 
@@ -854,7 +852,9 @@ static int _apc_register_serializer(const char* name, apc_serialize_t serialize,
             serializer->serialize = serialize;
             serializer->unserialize = unserialize;
             serializer->config = config;
-            apc_serializers[i+1].name = NULL;
+            if (i < APC_MAX_SERIALIZERS - 1) {
+                apc_serializers[i+1].name = NULL;
+            }
             return 1;
         }
     }
