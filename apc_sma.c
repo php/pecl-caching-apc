@@ -394,7 +394,7 @@ void apc_sma_init(int numseg, size_t segsize, char *mmap_file_mask TSRMLS_DC)
         first->prev_size = 0;
         SET_CANARY(first);
 #ifdef __APC_SMA_DEBUG__
-        block->id = -1;
+        first->id = -1;
 #endif
         empty = BLOCKAT(first->fnext);
         empty->size = header->avail - ALIGNWORD(sizeof(block_t));
