@@ -343,6 +343,7 @@ int apc_search_paths(const char* filename, const char* path, apc_fileinfo_t* fil
             char *tmp = estrndup(filename, n); 
 
             if (!zend_hash_exists(php_stream_get_url_stream_wrappers_hash(), tmp, n + 1)) {
+                efree(tmp);
                 return -1;
             }
             efree(tmp);
