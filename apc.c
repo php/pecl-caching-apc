@@ -340,9 +340,12 @@ int apc_search_paths(const char* filename, const char* path, apc_fileinfo_t* fil
         }
 
         if ((*p == ':') && (n > 1) && (!strncmp("//", p+1, 2) || (n == 4 && !memcmp("data:", path, 5)))) {
-            if (!zend_hash_exists(php_stream_get_url_stream_wrappers_hash(), filename, n + 1)) {
+            char *tmp = estrndup(filename, n); 
+
+            if (!zend_hash_exists(php_stream_get_url_stream_wrappers_hash(), tmp, n + 1)) {
                 return -1;
             }
+            efree(tmp);
         }
     }
 
