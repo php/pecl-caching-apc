@@ -75,7 +75,7 @@
   </stability>
   <license uri="http://www.php.net/license">PHP License</license>
   <notes>
-   - 
+   - Fixed PHP 5.5 compatibility (related to traits refactoring) (Remi)
   </notes>
   <contents>
     <dir name="/">
