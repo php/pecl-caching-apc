@@ -59,7 +59,9 @@ apc_segment_t apc_mmap(char *file_mask, size_t size TSRMLS_DC)
 
     int fd = -1;
     int flags = MAP_SHARED | MAP_NOSYNC;
+#ifdef APC_MEMPROTECT
     int remap = 1;
+#endif
 
     /* If no filename was provided, do an anonymous mmap */
     if(!file_mask || (file_mask && !strlen(file_mask))) {
@@ -68,7 +70,9 @@ apc_segment_t apc_mmap(char *file_mask, size_t size TSRMLS_DC)
 #else
         fd = -1;
         flags = MAP_SHARED | MAP_ANON;
+#ifdef APC_MEMPROTECT
         remap = 0;
+#endif
 #endif
     } else if(!strcmp(file_mask,"/dev/zero")) { 
         fd = open("/dev/zero", O_RDWR, S_IRUSR | S_IWUSR);
@@ -76,7 +80,9 @@ apc_segment_t apc_mmap(char *file_mask, size_t size TSRMLS_DC)
             apc_error("apc_mmap: open on /dev/zero failed:" TSRMLS_CC);
             goto error;
         }
+#ifdef APC_MEMPROTECT
         remap = 0; /* cannot remap */
+#endif
     } else if(strstr(file_mask,".shm")) {
         /*
          * If the filemask contains .shm we try to do a POSIX-compliant shared memory
