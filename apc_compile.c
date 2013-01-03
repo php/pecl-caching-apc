@@ -2469,9 +2469,11 @@ zend_trait_alias* apc_copy_trait_alias(zend_trait_alias *dst, zend_trait_alias *
         dst->alias_len = src->alias_len;
     }
 
+#ifndef ZEND_ENGINE_2_5
     if (src->function) {
         CHECK(dst->function = my_copy_function(NULL, src->function, ctxt TSRMLS_CC));
     }
+#endif
 
     APC_COPY_TRAIT_METHOD(dst->trait_method, src->trait_method);
 
@@ -2506,9 +2508,11 @@ zend_trait_precedence* apc_copy_trait_precedence(zend_trait_precedence *dst, zen
     }
     memcpy(dst, src, sizeof(zend_trait_precedence));
 
+#ifndef ZEND_ENGINE_2_5
     if (src->function) {
         CHECK(dst->function = my_copy_function(NULL, src->function, ctxt TSRMLS_CC));
     } 
+#endif
 
     if (src->exclude_from_classes && *src->exclude_from_classes) {
         int i = 0, num_classes = 0;
