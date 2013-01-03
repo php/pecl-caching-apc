@@ -79,7 +79,6 @@
   </notes>
   <contents>
     <dir name="/">
-      <file role="doc" name="CHANGELOG"/>
       <file role="doc" name="INSTALL"/>
       <file role="doc" name="LICENSE"/>
       <file role="doc" name="NOTICE"/>
