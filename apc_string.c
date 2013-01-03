@@ -105,7 +105,7 @@ const char *apc_new_interned_string(const char *arKey, int nKeyLength TSRMLS_DC)
     APCSG(interned_strings_top) += ZEND_MM_ALIGNED_SIZE(sizeof(Bucket) + nKeyLength + 1);
 
     p->arKey = (char*)(p+1);
-    memcpy(p->arKey, arKey, nKeyLength);
+    memcpy((char*)p->arKey, arKey, nKeyLength);
     ((char *)p->arKey)[nKeyLength] = '\0';
     p->nKeyLength = nKeyLength;
     p->h = h;
