@@ -71,7 +71,7 @@
   </version>
   <stability>
     <release>beta</release>
-    <api>stable</ap>
+    <api>stable</api>
   </stability>
   <license uri="http://www.php.net/license">PHP License</license>
   <notes>
