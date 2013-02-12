@@ -368,8 +368,8 @@ void apc_compiler_func_table_dtor_hook(void *pDest) {
         TSRMLS_FETCH();
         function_add_ref(func);
         zend_hash_next_index_insert(APCG(compiler_hook_func_table), func, sizeof(zend_function), NULL);
-        zend_function_dtor(func);
     } 
+    zend_function_dtor(func);
 }
 /* }}} */
 
