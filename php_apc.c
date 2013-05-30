@@ -594,7 +594,7 @@ int _apc_store(char *strkey, int strkey_len, const zval *val, const unsigned int
     ctxt.pool = apc_pool_create(APC_SMALL_POOL, apc_sma_malloc, apc_sma_free, apc_sma_protect, apc_sma_unprotect TSRMLS_CC);
     if (!ctxt.pool) {
         HANDLE_UNBLOCK_INTERRUPTIONS();
-        apc_warning("Unable to allocate memory for pool." TSRMLS_CC);
+        apc_warning("apc_store: Unable to allocate memory for pool." TSRMLS_CC);
         return 0;
     }
     ctxt.copy = APC_COPY_IN_USER;
@@ -843,7 +843,7 @@ PHP_FUNCTION(apc_fetch) {
 
     ctxt.pool = apc_pool_create(APC_UNPOOL, apc_php_malloc, apc_php_free, NULL, NULL TSRMLS_CC);
     if (!ctxt.pool) {
-        apc_warning("Unable to allocate memory for pool." TSRMLS_CC);
+        apc_warning("apc_fetch: Unable to allocate memory for pool." TSRMLS_CC);
         RETURN_FALSE;
     }
     ctxt.copy = APC_COPY_OUT_USER;

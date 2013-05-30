@@ -715,7 +715,7 @@ apc_bd_t* apc_bin_dump(HashTable *files, HashTable *user_vars TSRMLS_DC) {
     apc_bd_alloc_ex(pool_ptr, sizeof(apc_pool) TSRMLS_CC);
     ctxt.pool = apc_pool_create(APC_UNPOOL, apc_bd_alloc, apc_bd_free, NULL, NULL TSRMLS_CC);  /* ideally the pool wouldn't be alloc'd as part of this */
     if (!ctxt.pool) { /* TODO need to cleanup */
-        apc_warning("Unable to allocate memory for pool." TSRMLS_CC);
+        apc_warning("apc_bin_dump: Unable to allocate memory for pool." TSRMLS_CC);
         return NULL;
     }
     ctxt.copy = APC_COPY_IN_OPCODE; /* avoid stupid ALLOC_ZVAL calls here, hack */
@@ -891,7 +891,7 @@ int apc_bin_load(apc_bd_t *bd, int flags TSRMLS_DC) {
     for(i = 0; i < bd->num_entries; i++) {
         ctxt.pool = apc_pool_create(APC_SMALL_POOL, apc_sma_malloc, apc_sma_free, apc_sma_protect, apc_sma_unprotect TSRMLS_CC);
         if (!ctxt.pool) { /* TODO need to cleanup previous pools */
-            apc_warning("Unable to allocate memory for pool." TSRMLS_CC);
+            apc_warning("apc_bin_load: Unable to allocate memory for pool." TSRMLS_CC);
             goto failure;
         }
         ep = &bd->entries[i];

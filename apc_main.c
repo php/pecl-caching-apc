@@ -460,7 +460,7 @@ zend_bool apc_compile_cache_entry(apc_cache_key_t *key, zend_file_handle* h, int
                                                  apc_sma_protect, apc_sma_unprotect TSRMLS_CC);
     if (!ctxt.pool) {
         UNLOAD_COMPILER_TABLES_HOOKS();
-        apc_warning("Unable to allocate memory for pool." TSRMLS_CC);
+        apc_warning("apc_compile_cache_entry: Unable to allocate memory for pool." TSRMLS_CC);
         return FAILURE;
     }
     ctxt.copy = APC_COPY_IN_OPCODE;
@@ -624,7 +624,7 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
         ctxt.pool = apc_pool_create(APC_UNPOOL, apc_php_malloc, apc_php_free,
                                                 apc_sma_protect, apc_sma_unprotect TSRMLS_CC);
         if (!ctxt.pool) {
-            apc_warning("Unable to allocate memory for pool." TSRMLS_CC);
+            apc_warning("my_compile_file: Unable to allocate memory for pool." TSRMLS_CC);
             return old_compile_file(h, type TSRMLS_CC);
         }
         ctxt.copy = APC_COPY_OUT_OPCODE;
