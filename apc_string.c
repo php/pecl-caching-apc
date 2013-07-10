@@ -207,7 +207,7 @@ static void apc_copy_internal_strings(TSRMLS_D)
 
 void apc_interned_strings_init(TSRMLS_D)
 {
-    if (APCG(shm_strings_buffer) < APCG(shm_size)) {
+    if (APCG(shm_strings_buffer) && APCG(shm_strings_buffer) < APCG(shm_size)) {
         int count = APCG(shm_strings_buffer) / (sizeof(Bucket) + sizeof(Bucket*) * 2);
 
         apc_interned_strings_data = (apc_interned_strings_data_t*) apc_sma_malloc(APCG(shm_strings_buffer) TSRMLS_CC);
