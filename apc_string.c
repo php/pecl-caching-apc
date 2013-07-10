@@ -238,7 +238,7 @@ void apc_interned_strings_init(TSRMLS_D)
 
             apc_copy_internal_strings(TSRMLS_C);
         } 
-    } else {
+    } else if (APCG(shm_strings_buffer)) {
         php_error_docref(NULL TSRMLS_CC, E_WARNING, "apc.shm_strings_buffer '%ld' exceed apc.shm_size '%ld'", APCG(shm_strings_buffer), APCG(shm_size));
     }
 }
