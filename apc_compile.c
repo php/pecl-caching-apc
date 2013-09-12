@@ -1261,10 +1261,8 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_con
             case ZEND_FETCH_RW:
             case ZEND_FETCH_UNSET:
                 if (flags != NULL) {
-                    if (PG(auto_globals_jit)) {
-                        /* The fetch is only required if auto_globals_jit=1  */
 #ifdef ZEND_ENGINE_2_4
-                        if((zo->extended_value & ZEND_FETCH_TYPE_MASK) == ZEND_FETCH_GLOBAL &&
+                        if ((zo->extended_value & ZEND_FETCH_TYPE_MASK) == ZEND_FETCH_GLOBAL &&
                                 zo->op1_type == IS_CONST && 
                                 Z_TYPE_P(zo->op1.zv) == IS_STRING) {
                             if (Z_STRVAL_P(zo->op1.zv)[0] == '_') {
@@ -1272,45 +1270,46 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_con
 if (!strcmp(Z_STRVAL_P(zo->op1.zv), #member)) \
     flags->member = 1 /* no ';' here */
 #else
-                                if (zo->op2.u.EA.type == ZEND_FETCH_GLOBAL &&
-                                        zo->op1.op_type == IS_CONST && 
-                                        zo->op1.u.constant.type == IS_STRING) {
-                                    znode * varname = &zo->op1;
-                                    if (varname->u.constant.value.str.val[0] == '_') {
+                        if (zo->op2.u.EA.type == ZEND_FETCH_GLOBAL &&
+                                zo->op1.op_type == IS_CONST && 
+                                zo->op1.u.constant.type == IS_STRING) {
+                            znode * varname = &zo->op1;
+                            if (PG(auto_globals_jit)) {
+                                /* The fetch is only required if auto_globals_jit=1  */
+                                if (varname->u.constant.value.str.val[0] == '_') {
 # define SET_IF_AUTOGLOBAL(member) \
 if (!strcmp(varname->u.constant.value.str.val, #member)) \
     flags->member = 1 /* no ';' here */
 #endif
-                                        SET_IF_AUTOGLOBAL(_GET);
-                                        else SET_IF_AUTOGLOBAL(_POST);
-                                        else SET_IF_AUTOGLOBAL(_COOKIE);
-                                        else SET_IF_AUTOGLOBAL(_SERVER);
-                                        else SET_IF_AUTOGLOBAL(_ENV);
-                                        else SET_IF_AUTOGLOBAL(_FILES);
-                                        else SET_IF_AUTOGLOBAL(_REQUEST);
-                                        else SET_IF_AUTOGLOBAL(_SESSION);
+                                    SET_IF_AUTOGLOBAL(_GET);
+                                    else SET_IF_AUTOGLOBAL(_POST);
+                                    else SET_IF_AUTOGLOBAL(_COOKIE);
+                                    else SET_IF_AUTOGLOBAL(_SERVER);
+                                    else SET_IF_AUTOGLOBAL(_ENV);
+                                    else SET_IF_AUTOGLOBAL(_FILES);
+                                    else SET_IF_AUTOGLOBAL(_REQUEST);
+                                    else SET_IF_AUTOGLOBAL(_SESSION);
 #ifdef ZEND_ENGINE_2_4
-                                        else if(zend_is_auto_global(
-                                                    Z_STRVAL_P(zo->op1.zv),
-                                                    Z_STRLEN_P(zo->op1.zv)
-                                                    TSRMLS_CC))
+                                    else if (zend_is_auto_global(
+                                                Z_STRVAL_P(zo->op1.zv),
+                                                Z_STRLEN_P(zo->op1.zv)
+                                                TSRMLS_CC))
 #else
-                                            else if(zend_is_auto_global(
-                                                        varname->u.constant.value.str.val,
-                                                        varname->u.constant.value.str.len
-                                                        TSRMLS_CC))
+                                    else if (zend_is_auto_global(
+                                                varname->u.constant.value.str.val,
+                                                varname->u.constant.value.str.len
+                                                TSRMLS_CC))
 #endif
-                                            {
-                                                flags->unknown_global = 1;
-                                            }
+                                    {
+                                        flags->unknown_global = 1;
                                     }
                                 }
+                            }
 #ifdef ZEND_ENGINE_2_4
                             /* GLOBALS is always JIT */
-                            } else SET_IF_AUTOGLOBAL(GLOBALS);
-#else
-                        }
+                           SET_IF_AUTOGLOBAL(GLOBALS);
 #endif
+                        }
                     }
                 break;
             case ZEND_RECV_INIT:
