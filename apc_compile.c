@@ -1265,7 +1265,9 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_con
                         if ((zo->extended_value & ZEND_FETCH_TYPE_MASK) == ZEND_FETCH_GLOBAL &&
                                 zo->op1_type == IS_CONST && 
                                 Z_TYPE_P(zo->op1.zv) == IS_STRING) {
-                            if (Z_STRVAL_P(zo->op1.zv)[0] == '_') {
+                            if (PG(auto_globals_jit)) {
+                                /* The fetch is only required if auto_globals_jit=1  */
+                                if (Z_STRVAL_P(zo->op1.zv)[0] == '_') {
 # define SET_IF_AUTOGLOBAL(member) \
 if (!strcmp(Z_STRVAL_P(zo->op1.zv), #member)) \
     flags->member = 1 /* no ';' here */
