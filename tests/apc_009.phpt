@@ -2,6 +2,7 @@
 APC: apc_delete_file test
 --SKIPIF--
 <?php require_once(dirname(__FILE__) . '/skipif.inc'); ?>
+<?php if (version_compare(PHP_VERSION, "5.4.0") < 0) { die ("skip __DIR__ is not supported"); } ?>
 --INI--
 apc.enabled=1
 apc.enable_cli=1

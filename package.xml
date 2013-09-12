@@ -76,6 +76,7 @@
   <license uri="http://www.php.net/license">PHP License</license>
   <notes>
    - Fixed PHP 5.5 compatibility (related to traits refactoring) (Remi)
+   - Fixed bug #65405 (APC fails to propagate $GLOBALS when auto_globals_jit=Off) (Laruence)
   </notes>
   <contents>
     <dir name="/">
