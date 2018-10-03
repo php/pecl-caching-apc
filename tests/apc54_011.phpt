@@ -2,7 +2,7 @@
 APC: Bug #61219	method not found on 2nd request (php 5.4)
 --SKIPIF--
 <?php
-    require_once(dirname(__FILE__) . '/skipif.inc'); 
+    require_once(dirname(__FILE__) . '/skipif.inc');
     if (PHP_MAJOR_VERSION < 5 || (PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION < 4)) {
 		die('skip PHP 5.4+ only');
 	}
@@ -16,14 +16,14 @@ $file = <<<FL
 class hello
 {
     function __construct(\$p)
-    {   
+    {
         \$this->testme(\$p);
-    }   
+    }
 
     function testme(\$p)
-    {   
+    {
         echo "testme \$p\n";
-    }   
+    }
 }
 
 \$h = new hello(\$there);

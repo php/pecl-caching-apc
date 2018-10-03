@@ -1,5 +1,5 @@
 --TEST--
-APC: apc_store/fetch with bools 
+APC: apc_store/fetch with bools
 --SKIPIF--
 <?php require_once(dirname(__FILE__) . '/skipif.inc'); ?>
 --INI--

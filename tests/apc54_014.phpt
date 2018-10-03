@@ -2,7 +2,7 @@
 APC: Bug #61742 preload_path does not work due to incorrect string length (variant 1) (php 5.4)
 --SKIPIF--
 <?php
-    require_once(dirname(__FILE__) . '/skipif.inc'); 
+    require_once(dirname(__FILE__) . '/skipif.inc');
     if (PHP_MAJOR_VERSION < 5 || (PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION < 4)) {
 		die('skip PHP 5.4+ only');
 	}

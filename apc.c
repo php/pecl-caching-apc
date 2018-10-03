@@ -284,7 +284,7 @@ static int apc_restat(apc_fileinfo_t *fileinfo TSRMLS_DC)
             (IS_SLASH(filename[1]) || \
                 (filename[1] == '.' && \
                     IS_SLASH(filename[2])))))
-    
+
 /* {{{ stupid stringifcation */
 #if DEFAULT_SLASH == '/'
     #define DEFAULT_SLASH_STRING "/"
@@ -326,7 +326,7 @@ int apc_search_paths(const char* filename, const char* path, apc_fileinfo_t* fil
     /* Prevent tries to stat userspace stream wrappers when reading opcodes
         right after the file was compiled. The core stream wrappers should be
         already loaded, so looking for them should be ok (not sure about phar) */
-    if (!IS_ABSOLUTE_PATH(filename, filename_len) && 
+    if (!IS_ABSOLUTE_PATH(filename, filename_len) &&
         !IS_RELATIVE_PATH(filename, filename_len) &&
         !IS_COMMON_WRAPPER(filename, filename_len)) {
         char *p = (char *)filename;
@@ -340,7 +340,7 @@ int apc_search_paths(const char* filename, const char* path, apc_fileinfo_t* fil
         }
 
         if ((*p == ':') && (n > 1) && (!strncmp("//", p+1, 2) || (n == 4 && !memcmp("data:", path, 5)))) {
-            char *tmp = estrndup(filename, n); 
+            char *tmp = estrndup(filename, n);
 
             if (!zend_hash_exists(php_stream_get_url_stream_wrappers_hash(), tmp, n + 1)) {
                 efree(tmp);
@@ -370,7 +370,7 @@ int apc_search_paths(const char* filename, const char* path, apc_fileinfo_t* fil
         return -1; /* cannot stat */
     }
 
-    if (IS_ABSOLUTE_PATH(path_for_open, strlen(path_for_open)) && 
+    if (IS_ABSOLUTE_PATH(path_for_open, strlen(path_for_open)) &&
             APC_URL_STAT(wrapper, path_for_open, &fileinfo->st_buf) == 0) {
         fileinfo->fullpath = COPY_IF_CHANGED(path_for_open);
         return apc_restat(fileinfo TSRMLS_CC);
@@ -401,7 +401,7 @@ int apc_search_paths(const char* filename, const char* path, apc_fileinfo_t* fil
     } else {
         /* read cwd and try to fake up fullpath */
         fileinfo->path_buf[0] = '\0';
-        if(VCWD_GETCWD(fileinfo->path_buf, sizeof(fileinfo->path_buf))) { 
+        if(VCWD_GETCWD(fileinfo->path_buf, sizeof(fileinfo->path_buf))) {
             strlcat(fileinfo->path_buf, DEFAULT_SLASH_STRING, sizeof(fileinfo->path_buf));
             strlcat(fileinfo->path_buf, path_for_open, sizeof(fileinfo->path_buf));
             if (APC_URL_STAT(wrapper, fileinfo->path_buf, &fileinfo->st_buf) == 0) {
@@ -695,7 +695,7 @@ HashTable* apc_flip_hash(HashTable *hash) {
 
     MAKE_STD_ZVAL(data);
     ZVAL_LONG(data, 1);
-    
+
     new_hash = emalloc(sizeof(HashTable));
     zend_hash_init(new_hash, hash->nTableSize, NULL, ZVAL_PTR_DTOR, 0);
 

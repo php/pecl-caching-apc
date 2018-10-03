@@ -6,7 +6,7 @@
 3.1.1 : 2008-12-12
 
 - PHP4 compatibilty break
-- apc_pool allocator (Gopal) 
+- apc_pool allocator (Gopal)
 - doubly-linked sma allocator (Shire)
 - php 5.3 gc compatibility (Gopal)
 - APCIterator for easy access (Shire)
@@ -35,7 +35,7 @@
 - Fix apc_add() cache expunge bug (Rasmus)
 - Added parameter to apc_fetch to determine success/failure when fetching booleans (shire)
 - Fix misc. memleaks (shire)
-  
+
 3.0.16: 2007-12-26
 - Fix for longstanding cache-full crash (Christian Seiler)
   http://news.php.net/php.pecl.dev/4951 for the details
@@ -49,12 +49,12 @@
 - Added rfc1867 prefix, name, and freq ini options (Shire)
 - Allow deletion of individual user cache entries via apc.php (Sara)
 - Fix overzealous cleanup during RSHUTDOWN (Gopal)
-- Fix memory alignment and locking issues (Gopal) 
+- Fix memory alignment and locking issues (Gopal)
 - Make apc_compile insert/replace entries (Shire)
 - Make mixed inheritance recompile & cache afresh  (Gopal)
 - Make nostat mode search include_path for canonicalization (Gopal)
 - ZTS & other compile fixes (Gopal, Edin, Shire)
-  
+
 3.0.14: 2007-03-21
 - Build fix (Shire)
 - Don't hook the upload hook if APC is disabled (Rasmus)
@@ -76,7 +76,7 @@
 - APC info changes - cache insert rate, hit and miss rates (Shire)
 - Fix apc_load_constants (Gopal)
 - Rewrite dump opcode code to use vld (Gopal)
-- Use apc_[ewn]print functions for error reporting (Shire) 
+- Use apc_[ewn]print functions for error reporting (Shire)
 - Auto global fixes and refactoring (Gopal, Shire)
 - Fix memory leaks in object serialization (Ilia)
 - Memory cleanup code for destructor order (Gopal)
@@ -94,7 +94,7 @@
 3.0.12: 2006-09-05
 - PHP 5.2 compatibility (Gopal)
 - TSRM fixes (Gopal)
-- Add extra flags to op_array->reserved to improve op array 
+- Add extra flags to op_array->reserved to improve op array
   processing code (Gopal)
 - Fix crashes in optimizer and cli mode (Ilia)
 - Optimizer fixes for PHP5 (Ilia, Gopal)
@@ -207,10 +207,10 @@ Cache corruption fix in cache-full cleanup code (Gopal)
 - enhanced reader-writer lock support [rg 2001-05-07]
 
 1.0.9:
-- fixed (?) memory alignment bug on 64 bit archiecures 
-- added many cache visibiliy functions 
-- added opional fcntl locks under shm version 
-- numerous bug fixes 
+- fixed (?) memory alignment bug on 64 bit archiecures
+- added many cache visibiliy functions
+- added opional fcntl locks under shm version
+- numerous bug fixes
 
 1.0.8:
 - added ability to detect and decompile compiled files placed as 'source'

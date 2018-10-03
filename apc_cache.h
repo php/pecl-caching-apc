@@ -168,7 +168,7 @@ struct apc_cache_entry_t {
  * unreliability of our reference counting mechanism (see apc_cache_release).
  *
  * ttl is the maximum time a cache entry can idle in a slot in case the slot
- * is needed.  This helps in cleaning up the cache and ensuring that entries 
+ * is needed.  This helps in cleaning up the cache and ensuring that entries
  * hit frequently stay cached and ones not hit very often eventually disappear.
  */
 extern T apc_cache_create(int size_hint, int gc_ttl, int ttl TSRMLS_DC);
@@ -332,7 +332,7 @@ struct cache_header_t {
 };
 /* }}} */
 
-typedef void (*apc_expunge_cb_t)(T cache, size_t n TSRMLS_DC); 
+typedef void (*apc_expunge_cb_t)(T cache, size_t n TSRMLS_DC);
 
 /* {{{ struct definition: apc_cache_t */
 struct apc_cache_t {

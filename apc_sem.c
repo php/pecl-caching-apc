@@ -119,7 +119,7 @@ void apc_sem_lock(int semid TSRMLS_DC)
     }
 }
 
-int apc_sem_nonblocking_lock(int semid TSRMLS_DC) 
+int apc_sem_nonblocking_lock(int semid TSRMLS_DC)
 {
     struct sembuf op;
 

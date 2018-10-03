@@ -2,7 +2,7 @@
 Symfony ProcessTest#testCallbackIsExecutedForOutput
 --SKIPIF--
 <?php
-    require_once(dirname(__FILE__) . '/../skipif.inc'); 
+    require_once(dirname(__FILE__) . '/../skipif.inc');
     if (PHP_MAJOR_VERSION < 5 || (PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION < 4)) {
 		die('skip PHP 5.4+ only');
 	}
@@ -38,7 +38,7 @@ function assertTrue($val) {
 	// crashes instantiating PHPUnit_Framework_Constraint_IsTrue
 	isTrue();
 	// crash is before getting here
-	
+
 	//assertThat($val, isTrue());
 }
 

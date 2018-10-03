@@ -47,24 +47,24 @@ void dump(zend_op_array *op_array TSRMLS_DC)
 
 #ifdef PHP_WIN32
   handle = GetModuleHandle(NULL);
-  
+
   if (!handle) {
 	apc_warning("unable to fetch current module handle." TSRMLS_CC);
   }
 #endif
-  
+
   dump_op_array = (vld_dump_f) DL_FETCH_SYMBOL(handle, "vld_dump_oparray");
-  
+
 #ifdef PHP_WIN32
   DL_UNLOAD(handle);
 #endif
 
   if(dump_op_array) {
     dump_op_array(op_array TSRMLS_CC);
-  
+
     return;
   }
-  
+
   apc_warning("vld is not installed or something even worse." TSRMLS_CC);
 #endif
 }

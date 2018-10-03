@@ -23,7 +23,7 @@
 
 #ifdef APC_PTHREADMUTEX_LOCKS
 
-pthread_mutex_t *apc_pthreadmutex_create(pthread_mutex_t *lock TSRMLS_DC) 
+pthread_mutex_t *apc_pthreadmutex_create(pthread_mutex_t *lock TSRMLS_DC)
 {
     int result;
     pthread_mutexattr_t* attr;
@@ -55,7 +55,7 @@ pthread_mutex_t *apc_pthreadmutex_create(pthread_mutex_t *lock TSRMLS_DC)
         apc_error("pthread mutex error: pshared was set to PTHREAD_PROCESS_SHARED." TSRMLS_CC);
     }
 
-    if(pthread_mutex_init(lock, attr)) { 
+    if(pthread_mutex_init(lock, attr)) {
         apc_error("unable to initialize pthread lock" TSRMLS_CC);
     }
     return lock;

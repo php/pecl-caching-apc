@@ -50,7 +50,7 @@ static apc_iterator_item_t* apc_iterator_item_ctor(apc_iterator_t *iterator, slo
     } else if (slot->key.type == APC_CACHE_KEY_USER) {
         item->key = estrndup((char*)slot->key.data.user.identifier, slot->key.data.user.identifier_len);
         item->key_len = slot->key.data.user.identifier_len;
-        item->filename_key = item->key; 
+        item->filename_key = item->key;
     } else if (slot->key.type == APC_CACHE_KEY_FPFILE) {
         item->key = estrndup((char*)slot->key.data.fpfile.fullpath, slot->key.data.fpfile.fullpath_len);
         item->key_len = slot->key.data.fpfile.fullpath_len;
@@ -261,7 +261,7 @@ static int apc_iterator_search_match(apc_iterator_t *iterator, slot_t **slot) {
         rval = (pcre_exec(iterator->re, NULL, key, strlen(key), 0, 0, NULL, 0) >= 0);
     }
 #endif
-            
+
     if (iterator->search_hash) {
         rval = zend_hash_exists(iterator->search_hash, key, key_len);
         if (!rval && fname_key) {

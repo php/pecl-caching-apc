@@ -29,7 +29,7 @@
  /* Allows apc to install signal handlers and maintain signalling
     to already registered handlers. Registers all signals that
     coredump by default and unmaps the shared memory segment
-    before the coredump. Note: PHP module init is called before 
+    before the coredump. Note: PHP module init is called before
     signals are set by Apache and thus apc_set_signals should
     be called in request init (RINIT)
   */
@@ -48,13 +48,13 @@ static int apc_register_signal(int signo, void (*handler)(int, siginfo_t*, void*
 static void apc_rehandle_signal(int signo, siginfo_t *siginfo, void *context);
 static void apc_core_unmap(int signo, siginfo_t *siginfo, void *context);
 
-/* {{{ apc_core_unmap 
- *  Coredump signal handler, unmaps shm and calls previously installed handlers 
+/* {{{ apc_core_unmap
+ *  Coredump signal handler, unmaps shm and calls previously installed handlers
  */
-static void apc_core_unmap(int signo, siginfo_t *siginfo, void *context) 
+static void apc_core_unmap(int signo, siginfo_t *siginfo, void *context)
 {
     TSRMLS_FETCH();
-	
+
     apc_sma_cleanup(TSRMLS_C);
     apc_rehandle_signal(signo, siginfo, context);
 
@@ -87,8 +87,8 @@ static void apc_rehandle_signal(int signo, siginfo_t *siginfo, void *context)
 } /* }}} */
 
 /* {{{ apc_register_signal
- *  Set a handler for a previously installed signal and save so we can 
- *  callback when handled 
+ *  Set a handler for a previously installed signal and save so we can
+ *  callback when handled
  */
 static int apc_register_signal(int signo, void (*handler)(int, siginfo_t*, void*) TSRMLS_DC)
 {
@@ -132,7 +132,7 @@ static int apc_register_signal(int signo, void (*handler)(int, siginfo_t*, void*
 
 /* {{{ apc_set_signals
  *  Install our signal handlers */
-void apc_set_signals(TSRMLS_D) 
+void apc_set_signals(TSRMLS_D)
 {
     if (APCG(coredump_unmap) && apc_signal_info.installed == 0) {
         /* ISO C standard signals that coredump */
@@ -173,7 +173,7 @@ void apc_set_signals(TSRMLS_D)
 
 /* {{{ apc_set_signals
  *  cleanup signals for shutdown */
-void apc_shutdown_signals(TSRMLS_D) 
+void apc_shutdown_signals(TSRMLS_D)
 {
     int i=0;
     if (apc_signal_info.installed > 0) {

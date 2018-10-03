@@ -67,7 +67,7 @@
 #if defined(APC_SEM_LOCKS)
 # define APC_LOCK_TYPE "IPC Semaphore"
 # define RDLOCK_AVAILABLE 0
-# define NONBLOCKING_LOCK_AVAILABLE 1 
+# define NONBLOCKING_LOCK_AVAILABLE 1
 # define apc_lck_t int
 # define apc_lck_create(a,b,c,d) d=apc_sem_create((b),(c) TSRMLS_CC)
 # define apc_lck_destroy(a)    apc_sem_destroy(a)
@@ -80,7 +80,7 @@
 # define APC_LOCK_TYPE "pthread mutex Locks"
 # define RDLOCK_AVAILABLE 0
 # define NONBLOCKING_LOCK_AVAILABLE 1
-# define apc_lck_t pthread_mutex_t 
+# define apc_lck_t pthread_mutex_t
 # define apc_lck_create(a,b,c,d) apc_pthreadmutex_create((pthread_mutex_t*)&d TSRMLS_CC)
 # define apc_lck_destroy(a)    apc_pthreadmutex_destroy(&a)
 # define apc_lck_lock(a)       apc_pthreadmutex_lock(&a TSRMLS_CC)
@@ -92,7 +92,7 @@
 # define APC_LOCK_TYPE "pthread read/write Locks"
 # define RDLOCK_AVAILABLE 1
 # define NONBLOCKING_LOCK_AVAILABLE 1
-# define apc_lck_t pthread_rwlock_t 
+# define apc_lck_t pthread_rwlock_t
 # define apc_lck_create(a,b,c,d) apc_pthreadrwlock_create((pthread_rwlock_t*)&d TSRMLS_CC)
 # define apc_lck_destroy(a)    apc_pthreadrwlock_destroy(&a)
 # define apc_lck_lock(a)       apc_pthreadrwlock_lock(&a TSRMLS_CC)
@@ -104,7 +104,7 @@
 # define APC_LOCK_TYPE "spin Locks"
 # define RDLOCK_AVAILABLE 0
 # define NONBLOCKING_LOCK_AVAILABLE APC_SLOCK_NONBLOCKING_LOCK_AVAILABLE
-# define apc_lck_t slock_t 
+# define apc_lck_t slock_t
 # define apc_lck_create(a,b,c,d) apc_slock_create((slock_t*)&(d))
 # define apc_lck_destroy(a)    apc_slock_destroy(&a)
 # define apc_lck_lock(a)       apc_slock_lock(&a TSRMLS_CC)

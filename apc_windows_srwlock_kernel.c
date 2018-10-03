@@ -58,7 +58,7 @@ tRtlDumpResource              pRtlDumpResource = 0;
 HINSTANCE ntdll;
 
 void apc_windows_cs_status(apc_windows_cs_rwlock_t *lock );
-apc_windows_cs_rwlock_t *apc_windows_cs_create(apc_windows_cs_rwlock_t *lock TSRMLS_DC) 
+apc_windows_cs_rwlock_t *apc_windows_cs_create(apc_windows_cs_rwlock_t *lock TSRMLS_DC)
 {
     ntdll = LoadLibrary("ntdll.dll");
     if (ntdll == 0) {
@@ -71,7 +71,7 @@ apc_windows_cs_rwlock_t *apc_windows_cs_create(apc_windows_cs_rwlock_t *lock TSR
     pRtlAcquireResourceShared = (tRtlAcquireResourceShared) GetProcAddress(ntdll, "RtlAcquireResourceShared");
     pRtlReleaseResource = (tRtlReleaseResource) GetProcAddress(ntdll, "RtlReleaseResource");
     pRtlDumpResource = (tRtlReleaseResource) GetProcAddress(ntdll, "RtlDumpResource");
-    if (pRtlInitializeResource == 0 || pRtlDeleteResource == 0 || pRtlAcquireResourceExclusive == 0 || 
+    if (pRtlInitializeResource == 0 || pRtlDeleteResource == 0 || pRtlAcquireResourceExclusive == 0 ||
         pRtlAcquireResourceShared == 0 || pRtlReleaseResource == 0 || pRtlDumpResource == 0) {
         return NULL;
     }

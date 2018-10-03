@@ -2,7 +2,7 @@
 APC: APCIterater basic test on file (php 5.4)
 --SKIPIF--
 <?php
-    require_once(dirname(__FILE__) . '/skipif.inc'); 
+    require_once(dirname(__FILE__) . '/skipif.inc');
     if (version_compare(PHP_VERSION, '5.4.6', '<')) {
 		die('skip PHP 5.4.6+ only');
 	}

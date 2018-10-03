@@ -165,9 +165,9 @@ static int ZEND_FASTCALL apc_op_ZEND_INCLUDE_OR_EVAL(ZEND_OPCODE_HANDLER_ARGS)
         return apc_original_opcode_handlers[APC_OPCODE_HANDLER_DECODE(opline)](ZEND_OPCODE_HANDLER_ARGS_PASSTHRU);
     }
 
-    /* 
+    /*
        Before we do anything else, we can check to see if we have a cached version of this
-       file, in which case we can skip the realpath - this also means that we will be checking 
+       file, in which case we can skip the realpath - this also means that we will be checking
        the correct realpath for this cache entry since it is possible that the inode existed in
        a different directory at the time it was cached. Some deploy systems will do tricky things
        where they rename directories and move a symlink around.
@@ -229,7 +229,7 @@ static int ZEND_FASTCALL apc_op_ZEND_INCLUDE_OR_EVAL(ZEND_OPCODE_HANDLER_ARGS)
 void apc_zend_init(TSRMLS_D)
 {
     zend_extension dummy_ext;
-    apc_reserved_offset = zend_get_resource_handle(&dummy_ext); 
+    apc_reserved_offset = zend_get_resource_handle(&dummy_ext);
     assert(apc_reserved_offset == dummy_ext.resource_number);
     assert(apc_reserved_offset != -1);
     assert(sizeof(apc_opflags_t) <= sizeof(void*));

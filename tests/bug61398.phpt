@@ -2,7 +2,7 @@
 Bug #61398 APC fails to find class methods (based on bug #38779)
 --SKIPIF--
 <?php
-    require_once(dirname(__FILE__) . '/skipif.inc'); 
+    require_once(dirname(__FILE__) . '/skipif.inc');
     if (PHP_MAJOR_VERSION < 5 || (PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION < 4)) {
 		die('skip PHP 5.4+ only');
 	}
@@ -49,7 +49,7 @@ for ($i = 0; $i < 10; $i++) {
 }
 echo 'done';
 ?>
---EXPECTF--	
+--EXPECTF--
 <br />
 <b>Parse error</b>:  syntax error, unexpected 'l' (T_STRING) in <b>Loader://qqq.php</b> on line <b>2</b><br />
 <br />

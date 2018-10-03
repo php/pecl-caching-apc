@@ -6,10 +6,10 @@ PHP_ARG_ENABLE(apc, whether to enable APC support,
 [  --enable-apc           Enable APC support])
 
 AC_ARG_ENABLE(apc-debug,
-[  --enable-apc-debug     Enable APC debugging], 
+[  --enable-apc-debug     Enable APC debugging],
 [
   PHP_APC_DEBUG=$enableval
-], 
+],
 [
   PHP_APC_DEBUG=no
 ])
@@ -20,7 +20,7 @@ AC_ARG_ENABLE(apc-filehits,
 [
   PHP_APC_FILEHITS=$enableval
 	AC_MSG_RESULT($enableval)
-], 
+],
 [
   PHP_APC_FILEHITS=no
 	AC_MSG_RESULT(no)
@@ -72,27 +72,27 @@ if test "$PHP_APC_PTHREADMUTEX" != "no"; then
 				#include <pthread.h>
                                 main() {
 				pthread_mutex_t mutex;
-				pthread_mutexattr_t attr;	
+				pthread_mutexattr_t attr;
 
-				if(pthread_mutexattr_init(&attr)) { 
+				if(pthread_mutexattr_init(&attr)) {
 					puts("Unable to initialize pthread attributes (pthread_mutexattr_init).");
-					return -1; 
+					return -1;
 				}
-				if(pthread_mutexattr_setpshared(&attr, PTHREAD_PROCESS_SHARED)) { 
+				if(pthread_mutexattr_setpshared(&attr, PTHREAD_PROCESS_SHARED)) {
 					puts("Unable to set PTHREAD_PROCESS_SHARED (pthread_mutexattr_setpshared), your system may not support shared mutex's.");
-					return -1; 
-				}	
-				if(pthread_mutex_init(&mutex, &attr)) { 
+					return -1;
+				}
+				if(pthread_mutex_init(&mutex, &attr)) {
 					puts("Unable to initialize the mutex (pthread_mutex_init).");
-					return -1; 
+					return -1;
 				}
-				if(pthread_mutexattr_destroy(&attr)) { 
+				if(pthread_mutexattr_destroy(&attr)) {
 					puts("Unable to destroy mutex attributes (pthread_mutexattr_destroy).");
-					return -1; 
+					return -1;
 				}
-				if(pthread_mutex_destroy(&mutex)) { 
+				if(pthread_mutex_destroy(&mutex)) {
 					puts("Unable to destroy mutex (pthread_mutex_destroy).");
-					return -1; 
+					return -1;
 				}
 
 				puts("pthread mutexs are supported!");
@@ -135,27 +135,27 @@ if test "$PHP_APC_PTHREADRWLOCK" != "no"; then
 				#include <pthread.h>
                                 main() {
 				pthread_rwlock_t rwlock;
-				pthread_rwlockattr_t attr;	
+				pthread_rwlockattr_t attr;
 
-				if(pthread_rwlockattr_init(&attr)) { 
+				if(pthread_rwlockattr_init(&attr)) {
 					puts("Unable to initialize pthread attributes (pthread_rwlockattr_init).");
-					return -1; 
+					return -1;
 				}
-				if(pthread_rwlockattr_setpshared(&attr, PTHREAD_PROCESS_SHARED)) { 
+				if(pthread_rwlockattr_setpshared(&attr, PTHREAD_PROCESS_SHARED)) {
 					puts("Unable to set PTHREAD_PROCESS_SHARED (pthread_rwlockattr_setpshared), your system may not support shared rwlock's.");
-					return -1; 
-				}	
-				if(pthread_rwlock_init(&rwlock, &attr)) { 
+					return -1;
+				}
+				if(pthread_rwlock_init(&rwlock, &attr)) {
 					puts("Unable to initialize the rwlock (pthread_rwlock_init).");
-					return -1; 
+					return -1;
 				}
-				if(pthread_rwlockattr_destroy(&attr)) { 
+				if(pthread_rwlockattr_destroy(&attr)) {
 					puts("Unable to destroy rwlock attributes (pthread_rwlockattr_destroy).");
-					return -1; 
+					return -1;
 				}
-				if(pthread_rwlock_destroy(&rwlock)) { 
+				if(pthread_rwlock_destroy(&rwlock)) {
 					puts("Unable to destroy rwlock (pthread_rwlock_destroy).");
-					return -1; 
+					return -1;
 				}
 
 				puts("pthread rwlocks are supported!");
@@ -195,7 +195,7 @@ fi
 		else
 			if test "$PHP_APC_PTHREADRWLOCK" != "no"; then
 				AC_MSG_WARN([Disabling pthread rwlocks, because of missing atomic operations])
-				dnl - fall back would most likely be pthread mutexes 
+				dnl - fall back would most likely be pthread mutexes
 				PHP_APC_PTHREADRWLOCK=no
 			fi
 	fi
@@ -237,15 +237,15 @@ if test "$PHP_APC" != "no"; then
 	if test "$PHP_APC_SEM" != "no"; then
 		AC_DEFINE(APC_SEM_LOCKS, 1, [ ])
 	elif test "$PHP_APC_SPINLOCKS" != "no"; then
-		AC_DEFINE(APC_SPIN_LOCKS, 1, [ ]) 
+		AC_DEFINE(APC_SPIN_LOCKS, 1, [ ])
 	elif test "$PHP_APC_PTHREADRWLOCK" != "no"; then
-		AC_DEFINE(APC_PTHREADRW_LOCKS, 1, [ ]) 
-	elif test "$PHP_APC_PTHREADMUTEX" != "no"; then 
+		AC_DEFINE(APC_PTHREADRW_LOCKS, 1, [ ])
+	elif test "$PHP_APC_PTHREADMUTEX" != "no"; then
 		AC_DEFINE(APC_PTHREADMUTEX_LOCKS, 1, [ ])
-	else 
+	else
 		AC_DEFINE(APC_FCNTL_LOCKS, 1, [ ])
 	fi
-  
+
 	if test "$PHP_APC_MEMPROTECT" != "no"; then
 		AC_DEFINE(APC_MEMPROTECT, 1, [ shm/mmap memory protection ])
 	fi
@@ -279,7 +279,7 @@ if test "$PHP_APC" != "no"; then
   ], [
     PHP_APC_VALGRIND=yes
     AC_MSG_RESULT(yes)
-    AC_CHECK_HEADER(valgrind/memcheck.h, 
+    AC_CHECK_HEADER(valgrind/memcheck.h,
   		[AC_DEFINE([HAVE_VALGRIND_MEMCHECK_H],1, [enable valgrind memchecks])])
   ])
 
@@ -322,7 +322,7 @@ if test "$PHP_COVERAGE" = "yes"; then
   if test "$GCC" != "yes"; then
     AC_MSG_ERROR([GCC is required for --enable-coverage])
   fi
-  
+
   dnl Check if ccache is being used
   case `$php_shtool path $CC` in
     *ccache*[)] gcc_ccache=yes;;
@@ -332,7 +332,7 @@ if test "$PHP_COVERAGE" = "yes"; then
   if test "$gcc_ccache" = "yes" && (test -z "$CCACHE_DISABLE" || test "$CCACHE_DISABLE" != "1"); then
     AC_MSG_ERROR([ccache must be disabled when --enable-coverage option is used. You can disable ccache by setting environment variable CCACHE_DISABLE=1.])
   fi
-  
+
   lcov_version_list="1.5 1.6 1.7 1.9"
 
   AC_CHECK_PROG(LCOV, lcov, lcov)
@@ -351,7 +351,7 @@ if test "$PHP_COVERAGE" = "yes"; then
       done
     ])
   else
-    lcov_msg="To enable code coverage reporting you must have one of the following LCOV versions installed: $lcov_version_list"      
+    lcov_msg="To enable code coverage reporting you must have one of the following LCOV versions installed: $lcov_version_list"
     AC_MSG_ERROR([$lcov_msg])
   fi
 
@@ -379,4 +379,4 @@ if test "$PHP_COVERAGE" = "yes"; then
   CFLAGS="$CFLAGS -O0 -ggdb -fprofile-arcs -ftest-coverage"
   CXXFLAGS="$CXXFLAGS -ggdb -O0 -fprofile-arcs -ftest-coverage"
 fi
-dnl vim: set ts=2 
+dnl vim: set ts=2

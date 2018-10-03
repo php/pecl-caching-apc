@@ -127,7 +127,7 @@ static int const primes[] = {
 
 static int make_prime(int n)
 {
-    int *k = (int*)primes; 
+    int *k = (int*)primes;
     while(*k) {
         if((*k) > n) return *k;
         k++;
@@ -220,7 +220,7 @@ static void process_pending_removals(apc_cache_t* cache TSRMLS_DC)
             if (dead->value->ref_count > 0) {
                 switch(dead->value->type) {
                     case APC_CACHE_ENTRY_FILE:
-                        apc_debug("GC cache entry '%s' (dev=%d ino=%d) was on gc-list for %d seconds" TSRMLS_CC, 
+                        apc_debug("GC cache entry '%s' (dev=%d ino=%d) was on gc-list for %d seconds" TSRMLS_CC,
                             dead->value->data.file.filename, dead->key.data.file.device, dead->key.data.file.inode, gc_sec);
                         break;
                     case APC_CACHE_ENTRY_USER:
@@ -392,7 +392,7 @@ clear_all:
     } else {
         slot_t **p;
         /*
-         * If the ttl for the cache is set we walk through and delete stale 
+         * If the ttl for the cache is set we walk through and delete stale
          * entries.  For the user cache that is slightly confusing since
          * we have the individual entry ttl's we can look at, but that would be
          * too much work.  So if you want the user cache expunged, set a high
@@ -545,13 +545,13 @@ int apc_cache_user_insert(apc_cache_t* cache, apc_cache_key_t key, apc_cache_ent
     slot_t** slot;
     unsigned int keylen = key.data.user.identifier_len;
     apc_keyid_t *lastkey = &cache->header->lastkey;
-    
+
     if (!value) {
         return 0;
     }
-    
+
     if(apc_cache_busy(cache)) {
-        /* cache cleanup in progress, do not wait */ 
+        /* cache cleanup in progress, do not wait */
         return 0;
     }
 
@@ -572,40 +572,40 @@ int apc_cache_user_insert(apc_cache_t* cache, apc_cache_key_t key, apc_cache_ent
 #else
     lastkey->pid = getpid();
 #endif
-    
-    /* we do not reset lastkey after the insert. Whether it is inserted 
-     * or not, another insert in the same second is always a bad idea. 
+
+    /* we do not reset lastkey after the insert. Whether it is inserted
+     * or not, another insert in the same second is always a bad idea.
      */
 
     process_pending_removals(cache TSRMLS_CC);
-    
+
     slot = &cache->slots[key.h % cache->num_slots];
 
     while (*slot) {
-        if (((*slot)->key.h == key.h) && 
+        if (((*slot)->key.h == key.h) &&
             (!memcmp((*slot)->key.data.user.identifier, key.data.user.identifier, keylen))) {
-            /* 
-             * At this point we have found the user cache entry.  If we are doing 
+            /*
+             * At this point we have found the user cache entry.  If we are doing
              * an exclusive insert (apc_add) we are going to bail right away if
              * the user entry already exists and it has no ttl, or
              * there is a ttl and the entry has not timed out yet.
              */
             if(exclusive && (  !(*slot)->value->data.user.ttl ||
-                              ( (*slot)->value->data.user.ttl && (time_t) ((*slot)->creation_time + (*slot)->value->data.user.ttl) >= t ) 
+                              ( (*slot)->value->data.user.ttl && (time_t) ((*slot)->creation_time + (*slot)->value->data.user.ttl) >= t )
                             ) ) {
                 goto fail;
             }
             remove_slot(cache, slot TSRMLS_CC);
             break;
-        } else 
-        /* 
+        } else
+        /*
          * This is a bit nasty.  The idea here is to do runtime cleanup of the linked list of
          * slot entries so we don't always have to skip past a bunch of stale entries.  We check
          * for staleness here and get rid of them by first checking to see if the cache has a global
          * access ttl on it and removing entries that haven't been accessed for ttl seconds and secondly
          * we see if the entry has a hard ttl on it and remove it if it has been around longer than its ttl
          */
-        if((cache->ttl && (*slot)->access_time < (t - cache->ttl)) || 
+        if((cache->ttl && (*slot)->access_time < (t - cache->ttl)) ||
            ((*slot)->value->data.user.ttl && (time_t) ((*slot)->creation_time + (*slot)->value->data.user.ttl) < t)) {
             remove_slot(cache, slot TSRMLS_CC);
             continue;
@@ -615,8 +615,8 @@ int apc_cache_user_insert(apc_cache_t* cache, apc_cache_key_t key, apc_cache_ent
 
     if ((*slot = make_slot(&key, value, *slot, t TSRMLS_CC)) == NULL) {
         goto fail;
-    } 
-    
+    }
+
     value->mem_size = ctxt->pool->size;
     cache->header->mem_size += ctxt->pool->size;
 
@@ -664,7 +664,7 @@ slot_t* apc_cache_find_slot(apc_cache_t* cache, apc_cache_key_t key, time_t t TS
                 CACHE_SAFE_INC(cache, (*slot)->value->ref_count);
                 (*slot)->access_time = t;
                 prevent_garbage_collection((*slot)->value);
-                CACHE_FAST_INC(cache, cache->header->num_hits); 
+                CACHE_FAST_INC(cache, cache->header->num_hits);
                 retval = *slot;
                 CACHE_RDUNLOCK(cache);
                 return (slot_t*)retval;
@@ -686,7 +686,7 @@ slot_t* apc_cache_find_slot(apc_cache_t* cache, apc_cache_key_t key, time_t t TS
       }
       slot = &(*slot)->next;
     }
-    CACHE_FAST_INC(cache, cache->header->num_misses); 
+    CACHE_FAST_INC(cache, cache->header->num_misses);
     CACHE_RDUNLOCK(cache);
     return NULL;
 }
@@ -710,7 +710,7 @@ apc_cache_entry_t* apc_cache_user_find(apc_cache_t* cache, char *strkey, int key
 
     if(apc_cache_busy(cache))
     {
-        /* cache cleanup in progress */ 
+        /* cache cleanup in progress */
         return NULL;
     }
 
@@ -725,7 +725,7 @@ apc_cache_entry_t* apc_cache_user_find(apc_cache_t* cache, char *strkey, int key
             !memcmp((*slot)->key.data.user.identifier, strkey, keylen)) {
             /* Check to make sure this entry isn't expired by a hard TTL */
             if((*slot)->value->data.user.ttl && (time_t) ((*slot)->creation_time + (*slot)->value->data.user.ttl) < t) {
-                #if (USE_READ_LOCKS == 0) 
+                #if (USE_READ_LOCKS == 0)
                 /* this is merely a memory-friendly optimization, if we do have a write-lock
                  * might as well move this to the deleted_list right-away. Otherwise an insert
                  * of the same key wil do it (or an expunge, *eventually*).
@@ -748,7 +748,7 @@ apc_cache_entry_t* apc_cache_user_find(apc_cache_t* cache, char *strkey, int key
         }
         slot = &(*slot)->next;
     }
- 
+
     CACHE_FAST_INC(cache, cache->header->num_misses);
     CACHE_RDUNLOCK(cache);
     return NULL;
@@ -764,7 +764,7 @@ apc_cache_entry_t* apc_cache_user_exists(apc_cache_t* cache, char *strkey, int k
 
     if(apc_cache_busy(cache))
     {
-        /* cache cleanup in progress */ 
+        /* cache cleanup in progress */
         return NULL;
     }
 
@@ -803,7 +803,7 @@ int _apc_cache_user_update(apc_cache_t* cache, char *strkey, int keylen, apc_cac
 
     if(apc_cache_busy(cache))
     {
-        /* cache cleanup in progress */ 
+        /* cache cleanup in progress */
         return 0;
     }
 
@@ -858,7 +858,7 @@ int apc_cache_user_delete(apc_cache_t* cache, char *strkey, int keylen TSRMLS_DC
     slot = &cache->slots[h % cache->num_slots];
 
     while (*slot) {
-        if ((h == (*slot)->key.h) && 
+        if ((h == (*slot)->key.h) &&
             !memcmp((*slot)->key.data.user.identifier, strkey, keylen)) {
             remove_slot(cache, slot TSRMLS_CC);
             CACHE_UNLOCK(cache);
@@ -911,9 +911,9 @@ int apc_cache_delete(apc_cache_t* cache, char *filename, int filename_len TSRMLS
       }
       slot = &(*slot)->next;
     }
-    
+
     memset(&cache->header->lastkey, 0, sizeof(apc_keyid_t));
-    
+
     CACHE_UNLOCK(cache);
     return 0;
 
@@ -1005,11 +1005,11 @@ int apc_cache_make_file_key(apc_cache_key_t* key,
     /*
      * This is a bit of a hack.
      *
-     * Here I am checking to see if the file is at least 2 seconds old.  
+     * Here I am checking to see if the file is at least 2 seconds old.
      * The idea is that if the file is currently being written to then its
      * mtime is going to match or at most be 1 second off of the current
      * request time and we want to avoid caching files that have not been
-     * completely written.  Of course, people should be using atomic 
+     * completely written.  Of course, people should be using atomic
      * mechanisms to push files onto live web servers, but adding this
      * tiny safety is easier than educating the world.  This is now
      * configurable, but the default is still 2 seconds.
@@ -1024,24 +1024,24 @@ int apc_cache_make_file_key(apc_cache_key_t* key,
     key->h = (unsigned long) key->data.file.device + (unsigned long) key->data.file.inode;
 
     /*
-     * If working with content management systems that like to munge the mtime, 
+     * If working with content management systems that like to munge the mtime,
      * it might be appropriate to key off of the ctime to be immune to systems
      * that try to backdate a template.  If the mtime is set to something older
      * than the previous mtime of a template we will obviously never see this
      * "older" template.  At some point the Smarty templating system did this.
-     * I generally disagree with using the ctime here because you lose the 
+     * I generally disagree with using the ctime here because you lose the
      * ability to warm up new content by saving it to a temporary file, hitting
      * it once to cache it and then renaming it into its permanent location so
      * set the apc.stat_ctime=true to enable this check.
      */
     if(APCG(stat_ctime)) {
-        key->mtime  = (fileinfo->st_buf.sb.st_ctime > fileinfo->st_buf.sb.st_mtime) ? fileinfo->st_buf.sb.st_ctime : fileinfo->st_buf.sb.st_mtime; 
+        key->mtime  = (fileinfo->st_buf.sb.st_ctime > fileinfo->st_buf.sb.st_mtime) ? fileinfo->st_buf.sb.st_ctime : fileinfo->st_buf.sb.st_mtime;
     } else {
         key->mtime = fileinfo->st_buf.sb.st_mtime;
     }
     key->type = APC_CACHE_KEY_FILE;
 
-success: 
+success:
 
     if(fileinfo != NULL) {
         apc_php_free(fileinfo TSRMLS_CC);
@@ -1050,7 +1050,7 @@ success:
     return 1;
 
 cleanup:
-    
+
     if(fileinfo != NULL) {
         apc_php_free(fileinfo TSRMLS_CC);
     }
@@ -1215,7 +1215,7 @@ static zval* apc_cache_link_info(apc_cache_t *cache, slot_t* p TSRMLS_DC)
         if (APCG(file_md5)) {
                make_digest(md5str, p->key.md5);
                add_assoc_string(link, "md5", md5str, 1);
-        } 
+        }
     } else if(p->value->type == APC_CACHE_ENTRY_USER) {
         add_assoc_stringl(link, "info", p->value->data.user.info, p->value->data.user.info_len-1, 1);
         add_assoc_long(link, "ttl", (long)p->value->data.user.ttl);
@@ -1263,7 +1263,7 @@ zval* apc_cache_info(apc_cache_t* cache, zend_bool limited TSRMLS_DC)
     add_assoc_double(info, "num_misses", (double)cache->header->num_misses);
     add_assoc_double(info, "num_inserts", (double)cache->header->num_inserts);
     add_assoc_double(info, "expunges", (double)cache->header->expunges);
-    
+
     add_assoc_long(info, "start_time", cache->header->start_time);
     add_assoc_double(info, "mem_size", (double)cache->header->mem_size);
     add_assoc_long(info, "num_entries", cache->header->num_entries);
@@ -1308,7 +1308,7 @@ zval* apc_cache_info(apc_cache_t* cache, zend_bool limited TSRMLS_DC)
             zval *link = apc_cache_link_info(cache, p TSRMLS_CC);
             add_next_index_zval(deleted_list, link);
         }
-        
+
         add_assoc_zval(info, "cache_list", list);
         add_assoc_zval(info, "deleted_list", deleted_list);
         add_assoc_zval(info, "slot_distribution", slots);
@@ -1343,7 +1343,7 @@ zend_bool apc_cache_is_last_key(apc_cache_t* cache, apc_cache_key_t* key, time_t
     #define FROM_DIFFERENT_THREAD(k) (memcmp(&((k)->tid), &tid, sizeof(THREAD_T))!=0)
 #else
     pid_t pid = getpid();
-    #define FROM_DIFFERENT_THREAD(k) (pid != (k)->pid) 
+    #define FROM_DIFFERENT_THREAD(k) (pid != (k)->pid)
 #endif
 
 

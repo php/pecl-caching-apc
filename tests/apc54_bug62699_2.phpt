@@ -2,7 +2,7 @@
 APC: Bug #62699 Wrong behavior with traits (variant 2)
 --SKIPIF--
 <?php
-    require_once(dirname(__FILE__) . '/skipif.inc'); 
+    require_once(dirname(__FILE__) . '/skipif.inc');
     if (PHP_MAJOR_VERSION < 5 || (PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION < 4)) {
 		die('skip PHP 5.4+ only');
 	}

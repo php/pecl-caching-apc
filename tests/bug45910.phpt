@@ -2,7 +2,7 @@
 APC: Bug #63669 Cannot declare self-referencing constant
 --SKIPIF--
 <?php
-    require_once(dirname(__FILE__) . '/skipif.inc'); 
+    require_once(dirname(__FILE__) . '/skipif.inc');
     if (PHP_MAJOR_VERSION < 5 || (PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION < 4)) {
 		die('skip PHP 5.4+ only');
 	}
@@ -22,7 +22,7 @@ class foo {
 		self::CCC	=> 'b',
 		self::DDD	=>  self::AAA
 	);
-	
+
 	public static function test() {
 		var_dump(self::\$foo);
 	}

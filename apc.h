@@ -86,7 +86,7 @@ extern char** apc_tokenize(const char* s, char delim TSRMLS_DC);
 
 /* filesystem functions */
 
-typedef struct apc_fileinfo_t 
+typedef struct apc_fileinfo_t
 {
     char *fullpath;
     char path_buf[MAXPATHLEN];
@@ -104,7 +104,7 @@ extern int apc_regex_match_array(void* p, const char* input);
 extern unsigned int apc_crc32(const unsigned char* buf, unsigned int len);
 
 /* apc_flip_hash flips keys and values for faster searching */
-extern HashTable* apc_flip_hash(HashTable *hash); 
+extern HashTable* apc_flip_hash(HashTable *hash);
 
 #define APC_NEGATIVE_MATCH 1
 #define APC_POSITIVE_MATCH 2
@@ -118,14 +118,14 @@ extern HashTable* apc_flip_hash(HashTable *hash);
 # define APC_ALLOC __attribute__((malloc))
 # if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__  > 2)
 #  define APC_HOTSPOT __attribute__((hot))
-# else 
+# else
 #  define APC_HOTSPOT
 # endif
-#else 
+#else
 # define APC_UNUSED
 # define APC_USED
-# define APC_ALLOC 
-# define APC_HOTSPOT 
+# define APC_ALLOC
+# define APC_HOTSPOT
 #endif
 
 #endif

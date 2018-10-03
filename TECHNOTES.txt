@@ -4,18 +4,18 @@ This is a rapidly written braindump of how APC currently works in the
 form of a quick-start guide to start hacking on APC.
 
 1. Install and use APC a bit so you know what it does from the end-user's
-   perspective.  
-   user-space functions are all explained here: 
+   perspective.
+   user-space functions are all explained here:
 
 2. Grab the current APC code from CVS:
-    
+
     cvs -d:pserver:cvsread@cvs.php.net:/repository login
     Password: phpfi
     cvs -d:pserver:cvsread@cvs.php.net:/repository co pecl/apc
 
    apc/php_apc.c has most of the code for the user-visible stuff.  It is
-   also a regular PHP extension in the sense that there are MINIT, MINFO, 
-   MSHUTDOWN, RSHUTDOWN, etc. functions.  
+   also a regular PHP extension in the sense that there are MINIT, MINFO,
+   MSHUTDOWN, RSHUTDOWN, etc. functions.
 
 3. Build it.
 
@@ -49,8 +49,8 @@ form of a quick-start guide to start hacking on APC.
    cleanup in case the process dies.
 
    Once the region has been initialized we stick a header_t at the beginning
-   of the region.  It contains the total size in header->segsize and the number 
-   of bytes available in header->avail.  
+   of the region.  It contains the total size in header->segsize and the number
+   of bytes available in header->avail.
 
    After the header comes a bit of a hack.  A zero-sized block is inserted just
    to make things easier later on.  And then a huge block that is basically
@@ -131,7 +131,7 @@ form of a quick-start guide to start hacking on APC.
    toying with the idea of always allocating block at 2^n boundaries to make
    it more likely that they will be re-used to cut down on fragmentation further.
    That's what the POWER_OF_TWO_BLOCKSIZE you see in apc_sma.c is all about.
-  
+
    Of course, anytime we fiddle with our shared memory segment we lock using
    the locking macros, LOCK() and UNLOCK().
 
@@ -141,17 +141,17 @@ form of a quick-start guide to start hacking on APC.
    cache logic.
 
    The apc_main.c file mostly calls functions in apc_sma.c to allocate memory
-   and apc_cache.c for actual cache manipulation.  
-  
+   and apc_cache.c for actual cache manipulation.
+
    After the shared memory segment is created and the caches are initialized,
    apc_module_init() installs the my_compile_file() function overriding Zend's
    version.  I'll talk about my_compile_file() and the rest of apc_compile.c
    in the next section.  For now I will stick with apc_main.c and apc_cache.c
    and talk about the actual caches.  A cache consists of a block of shared
-   memory returned by apc_sma_allocate() via apc_sma_malloc().  You will 
+   memory returned by apc_sma_allocate() via apc_sma_malloc().  You will
    notice references to apc_emalloc().  apc_emalloc() is just a thin wrapper
    around PHP's own emalloc() function which allocates per-process memory from
-   PHP's pool-based memory allocator.  Don't confuse apc_emalloc() and 
+   PHP's pool-based memory allocator.  Don't confuse apc_emalloc() and
    apc_sma_malloc() as the first is per-process and the second is shared memory.
 
    The cache is stored in/described by this struct allocated locally using
@@ -171,8 +171,8 @@ form of a quick-start guide to start hacking on APC.
 
    At the beginning of the cache we have a header.  Remember, we are down a level now
    from the sma stuff.  The sma stuff is the low-level shared-memory allocator which
-   has its own header which is completely separate and invisible to apc_cache.c.  
-   As far as apc_cache.c is concerned the block of memory it is working with could 
+   has its own header which is completely separate and invisible to apc_cache.c.
+   As far as apc_cache.c is concerned the block of memory it is working with could
    have come from a call to malloc().
 
    The header looks like this:
@@ -287,9 +287,9 @@ form of a quick-start guide to start hacking on APC.
      struct apc_cache_key_t {
          apc_cache_key_data_t data;
          int mtime;                  /* the mtime of this cached entry */
-     };   
+     };
 
-   And we have two sets of functions to do inserts and finds.  apc_cache_user_find() 
+   And we have two sets of functions to do inserts and finds.  apc_cache_user_find()
    and apc_cache_user_insert() operate on the user cache.
 
    Ok, on to the actual cache entry.  Again, because we have two kinds of caches, we
@@ -327,7 +327,7 @@ form of a quick-start guide to start hacking on APC.
    created the opcode array.  As far as the executor is concerned, it doesn't know
    that it isn't operating in normal mode being called right after the parse/compile
    phase, so we need to recreate everything so it looks exactly like it would at
-   that point. 
+   that point.
 
 7. my_compile_file() and apc_compile.c
 
@@ -336,7 +336,7 @@ form of a quick-start guide to start hacking on APC.
    call the original compile function and return.  Otherwise we fetch the request
    time from Apache to avoid an extra syscall, create the key so we can look up
    the file in the cache.  If we find it we stick it on a local stack which we
-   use at cleanup time to make sure we return everything back to normal after a 
+   use at cleanup time to make sure we return everything back to normal after a
    request and call cached_compile() which installs the functions and classes
    associated with the op_array in this entry and then copy the op_array down
    into our memory space for execution.
@@ -350,10 +350,10 @@ form of a quick-start guide to start hacking on APC.
    the compile phase created into shared memory.  This all happens in apc_compile.c
    in the apc_copy_op_array(), apc_copy_new_functions() and apc_copy_new_classes()
    functions.  Then we make the file entry and do the insert.  Both of these
-   operations were described in the previous section.  
+   operations were described in the previous section.
 
 8. The Optimizer
-   
+
    The optimizer has been deprecated.
 
 If you made it to the end of this, you should have a pretty good idea of where things are in

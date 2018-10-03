@@ -53,7 +53,7 @@ extern void* apc_sma_malloc_ex(size_t size, size_t fragment, size_t* allocated T
 extern void* apc_sma_realloc(void* p, size_t size TSRMLS_DC);
 extern char* apc_sma_strdup(const char *s TSRMLS_DC);
 extern void apc_sma_free(void* p TSRMLS_DC);
-#if ALLOC_DISTRIBUTION 
+#if ALLOC_DISTRIBUTION
 extern size_t *apc_sma_get_alloc_distribution();
 #endif
 

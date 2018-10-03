@@ -2,7 +2,7 @@
 Symfony BrowserKit ClientTest#testInsulatedRequests #1
 --SKIPIF--
 <?php
-require_once(dirname(__FILE__) . '/../skipif.inc'); 
+require_once(dirname(__FILE__) . '/../skipif.inc');
 if (PHP_MAJOR_VERSION < 5 || (PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION < 4)) {
 	die('skip PHP 5.4+ only');
 }
@@ -16,7 +16,7 @@ apc.enable_cli=1
 // must set TEST_PHP_EXECUTABLE env var to php.exe
 
 // Crashes on Windows with APC
-// 
+//
 // Get Exit Code
 //  Linux: echo $?
 //  Windows: echo %ErrorLevel%
@@ -40,7 +40,7 @@ class TestClient {
     protected $response;
     protected $crawler;
     protected $insulated;
-    
+
     public function __construct(array $server = array(), History $history = null, CookieJar $cookieJar = null) {
         $this->setServerParameters($server);
         $this->insulated = false;
@@ -89,7 +89,7 @@ class TestClient {
 
 		return $this->crawler = $this->createCrawlerFromContent($request->getUri(), $response->getContent(), $response->getHeader('Content-Type'));
     }
-	
+
 	protected function doRequest($request)
     {
         if (null === $this->nextResponse) {
@@ -106,7 +106,7 @@ class TestClient {
         // We set the TMPDIR (for Macs) and TEMP (for Windows), because on these platforms the temp directory changes based on the user.
         $process = new PhpProcess($this->getScript($request), null, array('TMPDIR' => sys_get_temp_dir(), 'TEMP' => sys_get_temp_dir()));
 		$process->run();
-		
+
         if (!$process->isSuccessful() || !preg_match('/^O\:\d+\:/', $process->getOutput())) {
             throw new \RuntimeException('OUTPUT: '.$process->getOutput().' ERROR OUTPUT: '.$process->getErrorOutput());
         }
@@ -124,7 +124,7 @@ class TestClient {
     protected function createCrawlerFromContent($uri, $content, $type) {
 		// interestingly, just doing a test of 'new Crawler...' by itself, doesn't crash
 		$crawler = new Crawler(null, $uri);
-		
+
 		// test crashes here
         //$crawler->addContent($content, $type);
 

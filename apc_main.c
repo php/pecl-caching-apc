@@ -160,11 +160,11 @@ static int install_class(apc_class_t cl, apc_context_t* ctxt, int lazy TSRMLS_DC
         /*
          * __autoload brings in the old issues with mixed inheritance.
          * When a statically inherited class triggers autoload, it runs
-         * afoul of a potential require_once "parent.php" in the previous 
+         * afoul of a potential require_once "parent.php" in the previous
          * line, which when executed provides the parent class, but right
-         * now goes and hits __autoload which could fail. 
-         * 
-         * missing parent == re-compile. 
+         * now goes and hits __autoload which could fail.
+         *
+         * missing parent == re-compile.
          *
          * whether __autoload is enabled or not, because __autoload errors
          * cause php to die.
@@ -173,7 +173,7 @@ static int install_class(apc_class_t cl, apc_context_t* ctxt, int lazy TSRMLS_DC
          * zend_lookup_class_ex does it internally anyway!
          */
         status = zend_lookup_class_ex(cl.parent_name,
-                                    strlen(cl.parent_name), 
+                                    strlen(cl.parent_name),
 #ifdef ZEND_ENGINE_2_4
                                     NULL,
 #endif
@@ -296,7 +296,7 @@ static int copy_class_or_interface_name(apc_class_t *cl TSRMLS_DC, int num_args,
 /* {{{ apc_defined_function_hook */
 int apc_defined_function_hook(zval *internal, zval *user) {
     TSRMLS_FETCH();
-    zend_hash_apply_with_arguments(APCG(lazy_function_table) 
+    zend_hash_apply_with_arguments(APCG(lazy_function_table)
 #ifdef ZEND_ENGINE_2_3
     TSRMLS_CC
 #endif
@@ -308,7 +308,7 @@ int apc_defined_function_hook(zval *internal, zval *user) {
 /* {{{ apc_declared_class_hook */
 int apc_declared_class_hook(zval *classes, zend_uint mask, zend_uint comply) {
     TSRMLS_FETCH();
-    zend_hash_apply_with_arguments(APCG(lazy_class_table) 
+    zend_hash_apply_with_arguments(APCG(lazy_class_table)
 #ifdef ZEND_ENGINE_2_3
     TSRMLS_CC
 #endif
@@ -375,7 +375,7 @@ void apc_compiler_func_table_dtor_hook(void *pDest) {
         TSRMLS_FETCH();
         function_add_ref(func);
         zend_hash_next_index_insert(APCG(compiler_hook_func_table), func, sizeof(zend_function), NULL);
-    } 
+    }
     zend_function_dtor(func);
 }
 /* }}} */
@@ -393,7 +393,7 @@ void apc_compiler_class_table_dtor_hook(void *pDest) {
 }
 /* }}} */
 
-/* {{{ UNLOAD_COMPILER_TABLES_HOOKS() 
+/* {{{ UNLOAD_COMPILER_TABLES_HOOKS()
  */
 #define UNLOAD_COMPILER_TABLES_HOOKS() \
     do { \
@@ -456,7 +456,7 @@ zend_bool apc_compile_cache_entry(apc_cache_key_t *key, zend_file_handle* h, int
         zend_bailout();
     } zend_end_try();
 
-    ctxt.pool = apc_pool_create(APC_MEDIUM_POOL, apc_sma_malloc, apc_sma_free, 
+    ctxt.pool = apc_pool_create(APC_MEDIUM_POOL, apc_sma_malloc, apc_sma_free,
                                                  apc_sma_protect, apc_sma_unprotect TSRMLS_CC);
     if (!ctxt.pool) {
         UNLOAD_COMPILER_TABLES_HOOKS();
@@ -504,13 +504,13 @@ zend_bool apc_compile_cache_entry(apc_cache_key_t *key, zend_file_handle* h, int
         goto freepool;
     }
 
-    if (zend_hash_num_elements(APCG(compiler_hook_func_table)) 
+    if (zend_hash_num_elements(APCG(compiler_hook_func_table))
             && !(alloc_functions = apc_copy_modified_functions(APCG(compiler_hook_func_table),
                     alloc_functions, num_functions, &ctxt TSRMLS_CC))) {
         goto freepool;
     }
 
-    if (zend_hash_num_elements(APCG(compiler_hook_class_table)) 
+    if (zend_hash_num_elements(APCG(compiler_hook_class_table))
             && !(alloc_classes = apc_copy_modified_classes(APCG(compiler_hook_class_table),
                     alloc_classes, num_classes, &ctxt TSRMLS_CC))) {
         goto freepool;
@@ -529,7 +529,7 @@ zend_bool apc_compile_cache_entry(apc_cache_key_t *key, zend_file_handle* h, int
     if(!(*cache_entry = apc_cache_make_file_entry(path, alloc_op_array, alloc_functions, alloc_classes, &ctxt TSRMLS_CC))) {
         goto freepool;
     }
-        
+
     UNLOAD_COMPILER_TABLES_HOOKS();
     return SUCCESS;
 
@@ -620,7 +620,7 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
 
     if (cache_entry != NULL) {
         int dummy = 1;
-        
+
         ctxt.pool = apc_pool_create(APC_UNPOOL, apc_php_malloc, apc_php_free,
                                                 apc_sma_protect, apc_sma_unprotect TSRMLS_CC);
         if (!ctxt.pool) {
@@ -628,8 +628,8 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
             return old_compile_file(h, type TSRMLS_CC);
         }
         ctxt.copy = APC_COPY_OUT_OPCODE;
-        
-        zend_hash_add(&EG(included_files), cache_entry->data.file.filename, 
+
+        zend_hash_add(&EG(included_files), cache_entry->data.file.filename,
                             strlen(cache_entry->data.file.filename)+1,
                             (void *)&dummy, sizeof(int), NULL);
 
@@ -643,10 +643,10 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
 #endif
             /* this is an unpool, which has no cleanup - this only free's the pool header */
             apc_pool_destroy(ctxt.pool TSRMLS_CC);
-            
+
             /* We might leak fds without this hack */
             if (h->type != ZEND_HANDLE_FILENAME) {
-                zend_llist_add_element(&CG(open_files), h); 
+                zend_llist_add_element(&CG(open_files), h);
             }
 
             /* save this to free on rshutdown */
@@ -655,7 +655,7 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
             return op_array;
         }
         if(APCG(report_autofilter)) {
-            apc_warning("Autofiltering %s" TSRMLS_CC, 
+            apc_warning("Autofiltering %s" TSRMLS_CC,
                             (h->opened_path ? h->opened_path : h->filename));
             apc_warning("Recompiling %s" TSRMLS_CC, cache_entry->data.file.filename);
         }
@@ -677,7 +677,7 @@ static zend_op_array* my_compile_file(zend_file_handle* h,
                 return old_compile_file(h, type TSRMLS_CC);
             }
         }
-        if (APCG(max_file_size) < fileinfo.st_buf.sb.st_size) { 
+        if (APCG(max_file_size) < fileinfo.st_buf.sb.st_size) {
             apc_debug("File is too big %s (%ld) - bailing\n" TSRMLS_CC, h->filename, fileinfo.st_buf.sb.st_size);
             return old_compile_file(h, type TSRMLS_CC);
         }
@@ -750,7 +750,7 @@ static zval* data_unserialize(const char *filename TSRMLS_DC)
        return NULL;
     }
 
-    if(fread(contents, 1, len, fp) < 1) {	
+    if(fread(contents, 1, len, fp) < 1) {
       free(contents);
       return NULL;
     }
@@ -758,7 +758,7 @@ static zval* data_unserialize(const char *filename TSRMLS_DC)
     MAKE_STD_ZVAL(retval);
 
     PHP_VAR_UNSERIALIZE_INIT(var_hash);
-    
+
     /* I wish I could use json */
     if(!php_var_unserialize(&retval, (const unsigned char**)&tmp, (const unsigned char*)(contents+len), &var_hash TSRMLS_CC)) {
         zval_ptr_dtor(&retval);
@@ -840,7 +840,7 @@ void apc_data_preload(TSRMLS_D)
     if(!APCG(preload_path)) return;
 #ifndef ZTS
     apc_walk_dir(APCG(preload_path) TSRMLS_CC);
-#else 
+#else
     apc_error("Cannot load data from apc.preload_path=%s in thread-safe mode" TSRMLS_CC, APCG(preload_path));
 #endif
 
@@ -848,7 +848,7 @@ void apc_data_preload(TSRMLS_D)
 /* }}} */
 
 /* {{{ apc_serializer hooks */
-static int _apc_register_serializer(const char* name, apc_serialize_t serialize, 
+static int _apc_register_serializer(const char* name, apc_serialize_t serialize,
                                     apc_unserialize_t unserialize,
                                     void *config TSRMLS_DC)
 {
@@ -950,7 +950,7 @@ int apc_module_shutdown(TSRMLS_D)
      * we may have cache entries left on the stack that we need to check to make
      * sure that any functions or classes these may have added to the global function
      * and class tables are removed before we blow away the memory that hold them.
-     * 
+     *
      * This is merely to remove memory leak warnings - as the process is terminated
      * immediately after shutdown. The following while loop can be removed without
      * affecting anything else.
@@ -1021,12 +1021,12 @@ static void apc_deactivate(TSRMLS_D)
 
             for (i = 0; cache_entry->data.file.classes[i].class_entry != NULL; i++) {
                 centry = (void**)&pzce; /* a triple indirection to get zend_class_entry*** */
-                if(zend_hash_find(EG(class_table), 
+                if(zend_hash_find(EG(class_table),
                     cache_entry->data.file.classes[i].name,
                     cache_entry->data.file.classes[i].name_len+1,
                     (void**)centry) == FAILURE)
                 {
-                    /* double inclusion of conditional classes ends up failing 
+                    /* double inclusion of conditional classes ends up failing
                      * this lookup the second time around.
                      */
                     continue;

@@ -1,5 +1,5 @@
 --TEST--
-APC: APCIterator formats 
+APC: APCIterator formats
 --SKIPIF--
 <?php require_once(dirname(__FILE__) . '/skipif.inc'); ?>
 --INI--
@@ -10,7 +10,7 @@ apc.user_entries_hint=4096
 --FILE--
 <?php
 
-$formats = array( 
+$formats = array(
                   APC_ITER_TYPE,
                   APC_ITER_KEY,
                   APC_ITER_FILENAME,

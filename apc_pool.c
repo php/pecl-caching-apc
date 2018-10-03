@@ -41,8 +41,8 @@ static apc_pool* apc_realpool_create(apc_pool_type type, apc_malloc_t, apc_free_
 /* }}} */
 
 /* {{{ apc_pool_create */
-apc_pool* apc_pool_create(apc_pool_type pool_type, 
-                            apc_malloc_t allocate, 
+apc_pool* apc_pool_create(apc_pool_type pool_type,
+                            apc_malloc_t allocate,
                             apc_free_t deallocate,
                             apc_protect_t protect,
                             apc_unprotect_t unprotect
@@ -53,7 +53,7 @@ apc_pool* apc_pool_create(apc_pool_type pool_type,
                                             protect, unprotect TSRMLS_CC);
     }
 
-    return apc_realpool_create(pool_type, allocate, deallocate, 
+    return apc_realpool_create(pool_type, allocate, deallocate,
                                           protect,  unprotect TSRMLS_CC);
 }
 /* }}} */
@@ -78,7 +78,7 @@ struct _apc_unpool {
     /* apc_unpool is a lie! */
 };
 
-static void* apc_unpool_alloc(apc_pool* pool, size_t size TSRMLS_DC) 
+static void* apc_unpool_alloc(apc_pool* pool, size_t size TSRMLS_DC)
 {
     apc_unpool *upool = (apc_unpool*)pool;
 
@@ -103,7 +103,7 @@ static void apc_unpool_cleanup(apc_pool* pool TSRMLS_DC)
 {
 }
 
-static apc_pool* apc_unpool_create(apc_pool_type type, 
+static apc_pool* apc_unpool_create(apc_pool_type type,
                     apc_malloc_t allocate, apc_free_t deallocate,
                     apc_protect_t protect, apc_unprotect_t unprotect
 		    TSRMLS_DC)
@@ -169,7 +169,7 @@ struct _apc_realpool
     unsigned long count;
 
     pool_block *head;
-    pool_block first; 
+    pool_block first;
 };
 
 /* }}} */
@@ -219,7 +219,7 @@ static pool_block* create_pool_block(apc_realpool *rpool, size_t size TSRMLS_DC)
     }
 
     INIT_POOL_BLOCK(rpool, entry, size);
-    
+
     rpool->parent.size += realsize;
 
     rpool->count++;
@@ -240,7 +240,7 @@ static void* apc_realpool_alloc(apc_pool *pool, size_t size TSRMLS_DC)
     size_t *sizeinfo= NULL;
     pool_block *entry = NULL;
     unsigned long i;
-    
+
     if(APC_POOL_HAS_REDZONES(pool)) {
         redsize = REDZONE_SIZE(size); /* redsize might be re-using word size padding */
         realsize = size + redsize;    /* recalculating realsize */
@@ -319,9 +319,9 @@ found:
  * is accessible from gdb, eventhough it is never
  * used in code in non-debug builds.
  */
-static APC_USED int apc_realpool_check_integrity(apc_realpool *rpool) 
+static APC_USED int apc_realpool_check_integrity(apc_realpool *rpool)
 {
-    apc_pool *pool = &(rpool->parent); 
+    apc_pool *pool = &(rpool->parent);
     pool_block *entry;
     size_t *sizeinfo = NULL;
     unsigned char *start;
@@ -359,7 +359,7 @@ static APC_USED int apc_realpool_check_integrity(apc_realpool *rpool)
             if(!CHECK_REDZONE(redzone, redsize))
             {
                 /*
-                fprintf(stderr, "Redzone check failed for %p\n", 
+                fprintf(stderr, "Redzone check failed for %p\n",
                                 start + ALIGNWORD(sizeof(size_t)));*/
                 return 0;
             }
@@ -387,7 +387,7 @@ static void apc_realpool_free(apc_pool *pool, void *p TSRMLS_DC)
 /* }}} */
 
 /* {{{ apc_realpool_cleanup */
-static void apc_realpool_cleanup(apc_pool *pool TSRMLS_DC) 
+static void apc_realpool_cleanup(apc_pool *pool TSRMLS_DC)
 {
     pool_block *entry;
     pool_block *tmp;
@@ -407,7 +407,7 @@ static void apc_realpool_cleanup(apc_pool *pool TSRMLS_DC)
 /* }}} */
 
 /* {{{ apc_realpool_create */
-static apc_pool* apc_realpool_create(apc_pool_type type, apc_malloc_t allocate, apc_free_t deallocate, 
+static apc_pool* apc_realpool_create(apc_pool_type type, apc_malloc_t allocate, apc_free_t deallocate,
                                                          apc_protect_t protect, apc_unprotect_t unprotect
                                                          TSRMLS_DC)
 {

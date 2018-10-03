@@ -307,8 +307,8 @@ static PHP_MINFO_FUNCTION(apc)
 #endif
     php_info_print_table_row(2, "Locking type", APC_LOCK_TYPE);
 
-    for( i = 0, serializer = apc_get_serializers(TSRMLS_C); 
-                serializer->name != NULL; 
+    for( i = 0, serializer = apc_get_serializers(TSRMLS_C);
+                serializer->name != NULL;
                 serializer++, i++) {
         if(i != 0) smart_str_appends(&names, ", ");
         smart_str_appends(&names, serializer->name);
@@ -544,7 +544,7 @@ PHP_FUNCTION(apc_sma_info)
 /* }}} */
 
 /* {{{ _apc_update  */
-int _apc_update(char *strkey, int strkey_len, apc_cache_updater_t updater, void* data TSRMLS_DC) 
+int _apc_update(char *strkey, int strkey_len, apc_cache_updater_t updater, void* data TSRMLS_DC)
 {
     if(!APCG(enabled)) {
         return 0;
@@ -557,7 +557,7 @@ int _apc_update(char *strkey, int strkey_len, apc_cache_updater_t updater, void*
 
     HANDLE_BLOCK_INTERRUPTIONS();
     APCG(current_cache) = apc_user_cache;
-    
+
     if (!_apc_cache_user_update(apc_user_cache, strkey, strkey_len + 1, updater, data TSRMLS_CC)) {
         HANDLE_UNBLOCK_INTERRUPTIONS();
         return 0;
@@ -569,7 +569,7 @@ int _apc_update(char *strkey, int strkey_len, apc_cache_updater_t updater, void*
     return 1;
 }
 /* }}} */
-    
+
 /* {{{ _apc_store */
 int _apc_store(char *strkey, int strkey_len, const zval *val, const unsigned int ttl, const int exclusive TSRMLS_DC) {
     apc_cache_entry_t *entry;
@@ -706,7 +706,7 @@ struct _inc_update_args {
 static int inc_updater(apc_cache_t* cache, apc_cache_entry_t* entry, void* data) {
 
     struct _inc_update_args *args = (struct _inc_update_args*) data;
-    
+
     zval* val = entry->data.user.val;
 
     if(Z_TYPE_P(val) == IS_LONG) {
@@ -730,7 +730,7 @@ PHP_FUNCTION(apc_inc) {
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|lz", &strkey, &strkey_len, &(args.step), &success) == FAILURE) {
         return;
     }
-    
+
 	if (success) {
 		zval_dtor(success);
 	}
@@ -739,9 +739,9 @@ PHP_FUNCTION(apc_inc) {
         if(success) ZVAL_TRUE(success);
         RETURN_LONG(args.lval);
     }
-    
+
     if(success) ZVAL_FALSE(success);
-    
+
     RETURN_FALSE;
 }
 /* }}} */
@@ -757,7 +757,7 @@ PHP_FUNCTION(apc_dec) {
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|lz", &strkey, &strkey_len, &(args.step), &success) == FAILURE) {
         return;
     }
-    
+
 	if (success) {
 		zval_dtor(success);
 	}
@@ -768,9 +768,9 @@ PHP_FUNCTION(apc_dec) {
         if(success) ZVAL_TRUE(success);
         RETURN_LONG(args.lval);
     }
-    
+
     if(success) ZVAL_FALSE(success);
-    
+
     RETURN_FALSE;
 }
 /* }}} */
@@ -868,7 +868,7 @@ PHP_FUNCTION(apc_fetch) {
     } else if(Z_TYPE_P(key) == IS_ARRAY) {
         hash = Z_ARRVAL_P(key);
         MAKE_STD_ZVAL(result);
-        array_init(result); 
+        array_init(result);
         zend_hash_internal_pointer_reset_ex(hash, &hpos);
         while(zend_hash_get_current_data_ex(hash, (void**)&hentry, &hpos) == SUCCESS) {
             if(Z_TYPE_PP(hentry) != IS_STRING) {
@@ -939,7 +939,7 @@ PHP_FUNCTION(apc_exists) {
     } else if(Z_TYPE_P(key) == IS_ARRAY) {
         hash = Z_ARRVAL_P(key);
         MAKE_STD_ZVAL(result);
-        array_init(result); 
+        array_init(result);
         zend_hash_internal_pointer_reset_ex(hash, &hpos);
         while(zend_hash_get_current_data_ex(hash, (void**)&hentry, &hpos) == SUCCESS) {
             if(Z_TYPE_PP(hentry) != IS_STRING) {
@@ -1013,8 +1013,8 @@ PHP_FUNCTION(apc_delete) {
 /* }}} */
 
 /* {{{ proto mixed apc_delete_file(mixed keys)
- *       Deletes the given files from the opcode cache.  
- *       Accepts a string, array of strings, or APCIterator object. 
+ *       Deletes the given files from the opcode cache.
+ *       Accepts a string, array of strings, or APCIterator object.
  *       Returns True/False, or for an Array an Array of failed files.
  */
 PHP_FUNCTION(apc_delete_file) {

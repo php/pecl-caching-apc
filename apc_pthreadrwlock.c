@@ -23,7 +23,7 @@
 
 #ifdef APC_PTHREADRW_LOCKS
 
-pthread_rwlock_t *apc_pthreadrwlock_create(pthread_rwlock_t *lock TSRMLS_DC) 
+pthread_rwlock_t *apc_pthreadrwlock_create(pthread_rwlock_t *lock TSRMLS_DC)
 {
     int result;
     pthread_rwlockattr_t attr;
@@ -50,7 +50,7 @@ pthread_rwlock_t *apc_pthreadrwlock_create(pthread_rwlock_t *lock TSRMLS_DC)
         apc_error("pthread rwlock error: pshared was set to PTHREAD_PROCESS_SHARED." TSRMLS_CC);
     }
 
-    if(pthread_rwlock_init(lock, &attr)) { 
+    if(pthread_rwlock_init(lock, &attr)) {
         apc_error("unable to initialize pthread rwlock" TSRMLS_CC);
     }
 

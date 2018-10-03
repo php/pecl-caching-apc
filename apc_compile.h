@@ -136,7 +136,7 @@ extern void apc_free_function_after_execution(zend_function* src TSRMLS_DC);
 extern void apc_free_op_array_after_execution(zend_op_array *src TSRMLS_DC);
 
 /*
- * Optimization callback definition and registration function. 
+ * Optimization callback definition and registration function.
  */
 typedef zend_op_array* (*apc_optimize_function_t) (zend_op_array* TSRMLS_DC);
 extern apc_optimize_function_t apc_register_optimizer(apc_optimize_function_t optimizer TSRMLS_DC);
@@ -151,7 +151,7 @@ void apc_do_halt_compiler_register(const char *filename, long halt_offset TSRMLS
  * apc serialization functions
  */
 int APC_SERIALIZER_NAME(php) (APC_SERIALIZER_ARGS);
-int APC_UNSERIALIZER_NAME(php) (APC_UNSERIALIZER_ARGS); 
+int APC_UNSERIALIZER_NAME(php) (APC_UNSERIALIZER_ARGS);
 #endif
 
 /*

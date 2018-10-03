@@ -94,7 +94,7 @@ const char *apc_new_interned_string(const char *arKey, int nKeyLength TSRMLS_DC)
         }
         p = p->pNext;
     }
-   
+
     if (APCSG(interned_strings_top) + ZEND_MM_ALIGNED_SIZE(sizeof(Bucket) + nKeyLength + 1) >=
         APCSG(interned_strings_end)) {
         /* no memory */
@@ -237,14 +237,14 @@ void apc_interned_strings_init(TSRMLS_D)
             zend_interned_strings_restore = apc_dummy_interned_strings_restore_for_php;
 
             apc_copy_internal_strings(TSRMLS_C);
-        } 
+        }
     } else if (APCG(shm_strings_buffer)) {
         php_error_docref(NULL TSRMLS_CC, E_WARNING, "apc.shm_strings_buffer '%ld' exceed apc.shm_size '%ld'", APCG(shm_strings_buffer), APCG(shm_size));
     }
 }
 
 void apc_interned_strings_shutdown(TSRMLS_D)
-{	
+{
     if (apc_interned_strings_data) {
         zend_hash_clean(CG(function_table));
         zend_hash_clean(CG(class_table));

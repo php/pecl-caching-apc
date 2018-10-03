@@ -2,7 +2,7 @@
 APC: anonymous functions (php 5.3)
 --SKIPIF--
 <?php
-    require_once(dirname(__FILE__) . '/skipif.inc'); 
+    require_once(dirname(__FILE__) . '/skipif.inc');
     if(version_compare(zend_version(), '2.3.0') < 0) {
 		echo "skip\n";
 	}

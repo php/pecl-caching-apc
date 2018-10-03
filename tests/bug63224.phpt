@@ -2,7 +2,7 @@
 APC: Bug #63224 error in __sleep whit reference to other classes
 --SKIPIF--
 <?php
-    require_once(dirname(__FILE__) . '/skipif.inc'); 
+    require_once(dirname(__FILE__) . '/skipif.inc');
 	if (!extension_loaded("session")) die("skip");
     if (PHP_MAJOR_VERSION < 5 || (PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION < 4)) {
 		die('skip PHP 5.4+ only');
@@ -16,7 +16,7 @@ session_start();
 
 class A{
 	public \$b;
-	
+
 	public function __sleep(){
 		\$this->b->f();
 		return array('b');

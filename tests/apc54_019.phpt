@@ -2,7 +2,7 @@
 APC: Bug #59907	Issue with custom stream wrapper, include and APC
 --SKIPIF--
 <?php
-    require_once(dirname(__FILE__) . '/skipif.inc'); 
+    require_once(dirname(__FILE__) . '/skipif.inc');
     if (PHP_MAJOR_VERSION < 5 || (PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION < 4)) {
 		die('skip PHP 5.4+ only');
 	}
@@ -13,50 +13,50 @@ include "server_test.inc";
 $file = <<<FL
 class StreamWrapper {
     const PROTOCOL = 'mfx';
-    
+
     private static \$data = array();
     private \$path = null;
     private \$position = 0;
-    
+
     public function stream_open(\$path, \$mode , \$options , &\$opened_path) {
-        
+
         \$this->path = \$path;
-        
+
         return true;
     }
-            	
+
     public function stream_read(\$count) {
-        
+
         \$ret = substr(self::\$data[\$this->path], \$this->position, \$count);
         \$this->position += strlen(\$ret);
-        
+
         return \$ret;
     }
-    
+
     public function stream_write(\$data) {
-        
+
         self::\$data[\$this->path] = \$data;
-        
+
         return strlen(\$data);
     }
-    
+
     public function stream_tell() {
-        
+
         return \$this->position;
     }
-    
+
     public function stream_eof() {
-        
+
         return \$this->position >= strlen(self::\$data[\$this->path]);
     }
-    
+
     public function url_stat(\$path, \$flags) {
-        
+
         return \$this->stream_stat();
     }
-    
+
     public function stream_stat() {
-        
+
         \$stat = array(
             'dev' => 1,
             'ino' => 1,
@@ -72,7 +72,7 @@ class StreamWrapper {
             'blksize' => 1,
             'blocks' => 1
         );
-        
+
         return array_merge(array_values(\$stat), \$stat);
     }
 }

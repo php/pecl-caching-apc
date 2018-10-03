@@ -47,7 +47,7 @@ static int update_bytes_processed(apc_cache_t* cache, apc_cache_entry_t* entry, 
         HashTable *ht = val->value.ht;
         Bucket* curr = NULL;
         for (curr = ht->pListHead; curr != NULL; curr = curr->pListNext) {
-            if(curr->nKeyLength == 8 && 
+            if(curr->nKeyLength == 8 &&
                 (!memcmp(curr->arKey, "current", curr->nKeyLength))) {
                 zval* current =  ((zval**)curr->pData)[0];
                 current->value.lval = *bytes_ptr;
@@ -79,7 +79,7 @@ int apc_rfc1867_progress(uint event, void *event_data, void **extra TSRMLS_DC) {
         case MULTIPART_EVENT_START:
             {
                 multipart_event_start *data = (multipart_event_start *) event_data;
-                
+
                 RFC1867_DATA(content_length)    = data->content_length;
                 RFC1867_DATA(tracking_key)[0]   = '\0';
                 RFC1867_DATA(name)[0]           = '\0';
@@ -93,9 +93,9 @@ int apc_rfc1867_progress(uint event, void *event_data, void **extra TSRMLS_DC) {
                 RFC1867_DATA(rate)              = 0;
                 RFC1867_DATA(update_freq)       = (int) APCG(rfc1867_freq);
                 RFC1867_DATA(started)           = 0;
-                
+
                 if(RFC1867_DATA(update_freq) < 0) {  // frequency is a percentage, not bytes
-                    RFC1867_DATA(update_freq) = (int) (RFC1867_DATA(content_length) * APCG(rfc1867_freq) / 100); 
+                    RFC1867_DATA(update_freq) = (int) (RFC1867_DATA(content_length) * APCG(rfc1867_freq) / 100);
                 }
             }
             break;
@@ -104,19 +104,19 @@ int apc_rfc1867_progress(uint event, void *event_data, void **extra TSRMLS_DC) {
             {
                 int prefix_len = strlen(APCG(rfc1867_prefix));
                 multipart_event_formdata *data = (multipart_event_formdata *) event_data;
-                if(data->name && !strncasecmp(data->name, APCG(rfc1867_name), strlen(APCG(rfc1867_name))) 
-                    && data->value && data->length) { 
-                    
+                if(data->name && !strncasecmp(data->name, APCG(rfc1867_name), strlen(APCG(rfc1867_name)))
+                    && data->value && data->length) {
+
                     if(data->length >= sizeof(RFC1867_DATA(tracking_key)) - prefix_len) {
-                        apc_warning("Key too long for '%s'. Maximum size is '%d' characters." TSRMLS_CC, 
-                                    APCG(rfc1867_name), 
+                        apc_warning("Key too long for '%s'. Maximum size is '%d' characters." TSRMLS_CC,
+                                    APCG(rfc1867_name),
                                     sizeof(RFC1867_DATA(tracking_key)) - prefix_len);
                         break;
                     }
 
                     if(RFC1867_DATA(started)) {
-                        apc_warning("Upload progress key '%s' should be before the file upload entry in the form." TSRMLS_CC, 
-                                    APCG(rfc1867_name)); 
+                        apc_warning("Upload progress key '%s' should be before the file upload entry in the form." TSRMLS_CC,
+                                    APCG(rfc1867_name));
                         break;
                     }
 
@@ -201,7 +201,7 @@ int apc_rfc1867_progress(uint event, void *event_data, void **extra TSRMLS_DC) {
 
         case MULTIPART_EVENT_END:
             if(*RFC1867_DATA(tracking_key)) {
-                double now = my_time(); 
+                double now = my_time();
                 multipart_event_end *data = (multipart_event_end *) event_data;
                 RFC1867_DATA(bytes_processed) = data->post_bytes_processed;
                 if(now>RFC1867_DATA(start_time)) RFC1867_DATA(rate) = 8.0*RFC1867_DATA(bytes_processed)/(now-RFC1867_DATA(start_time));

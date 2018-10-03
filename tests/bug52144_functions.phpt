@@ -2,7 +2,7 @@
 APC: Bug #52144 (Error: Base lambda function for closure not found)
 --SKIPIF--
 <?php
-    require_once(dirname(__FILE__) . '/skipif.inc'); 
+    require_once(dirname(__FILE__) . '/skipif.inc');
     if (PHP_MAJOR_VERSION < 5 || (PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION < 4)) {
 		die('skip PHP 5.4+ only');
 	}
@@ -20,7 +20,7 @@ if (empty(\$_GET['tested'])) {
 
 \$script = "$lambdas";
 if (!file_exists(\$script)) {
-    file_put_contents(\$script, '<?php 
+    file_put_contents(\$script, '<?php
         if (!function_exists("dummy")) {
             function dummy() {
                 var_dump(__FUNCTION__);
@@ -34,7 +34,7 @@ if (!file_exists(\$script)) {
         \$func2 = function() {
             var_dump(__FUNCTION__ . "#2");
         };'
-    ); 
+    );
 
     apc_clear_cache();
     ini_set("apc.cache_by_default", 0);

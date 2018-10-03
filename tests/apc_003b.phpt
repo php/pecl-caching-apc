@@ -2,7 +2,7 @@
 APC: apc_store/fetch with objects (php 5.3)
 --SKIPIF--
 <?php
-    require_once(dirname(__FILE__) . '/skipif.inc'); 
+    require_once(dirname(__FILE__) . '/skipif.inc');
     if(version_compare(zend_version(), '2.3.0') < 0) {
 		echo "skip\n";
 	}
@@ -29,12 +29,12 @@ class bar extends foo
 	public    $pub = 'bar';
 	protected $pro = 'bar';
 	private   $pri = 'bar'; // we don't see this, we'd need php 5.1 new serialization
-	
+
 	function __construct()
 	{
 		$this->bar = true;
 	}
-	
+
 	function change()
 	{
 		$this->pri = 'mod';

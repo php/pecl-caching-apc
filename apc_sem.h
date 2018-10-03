@@ -35,7 +35,7 @@
 extern int apc_sem_create(int proj, int initval TSRMLS_DC);
 extern void apc_sem_destroy(int semid);
 extern void apc_sem_lock(int semid TSRMLS_DC);
-extern int apc_sem_nonblocking_lock(int semid TSRMLS_DC); 
+extern int apc_sem_nonblocking_lock(int semid TSRMLS_DC);
 extern void apc_sem_unlock(int semid TSRMLS_DC);
 extern void apc_sem_wait_for_zero(int semid TSRMLS_DC);
 extern int apc_sem_get_value(int semid TSRMLS_DC);

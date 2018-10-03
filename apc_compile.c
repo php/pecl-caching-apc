@@ -109,7 +109,7 @@ static int my_check_copy_constant(Bucket* src, va_list args);
 /* }}} */
 
 /* {{{ apc php serializers */
-int APC_SERIALIZER_NAME(php) (APC_SERIALIZER_ARGS) 
+int APC_SERIALIZER_NAME(php) (APC_SERIALIZER_ARGS)
 {
     smart_str strbuf = {0};
     php_serialize_data_t var_hash;
@@ -120,12 +120,12 @@ int APC_SERIALIZER_NAME(php) (APC_SERIALIZER_ARGS)
         *buf = (unsigned char*)strbuf.c;
         *buf_len = strbuf.len;
         smart_str_0(&strbuf);
-        return 1; 
+        return 1;
     }
     return 0;
 }
 
-int APC_UNSERIALIZER_NAME(php) (APC_UNSERIALIZER_ARGS) 
+int APC_UNSERIALIZER_NAME(php) (APC_UNSERIALIZER_ARGS)
 {
     const unsigned char *tmp = buf;
     php_unserialize_data_t var_hash;
@@ -250,7 +250,7 @@ static zval* my_serialize_object(zval* dst, const zval* src, apc_context_t* ctxt
     }
 
     if(serialize((unsigned char**)&buf.c, &buf.len, src, config TSRMLS_CC)) {
-        dst->type = src->type & ~IS_CONSTANT_INDEX; 
+        dst->type = src->type & ~IS_CONSTANT_INDEX;
         dst->value.str.len = buf.len;
         CHECK(dst->value.str.val = apc_pmemcpy(buf.c, (buf.len + 1), pool TSRMLS_CC));
     }
@@ -285,7 +285,7 @@ static zval* my_unserialize_object(zval* dst, const zval* src, apc_context_t* ct
 
 /* {{{ apc_string_pmemcpy */
 static char *apc_string_pmemcpy(char *str, size_t len, apc_pool* pool TSRMLS_DC)
-{	
+{
 #ifdef ZEND_ENGINE_2_4
 #ifndef ZTS
     if (pool->type != APC_UNPOOL) {
@@ -325,7 +325,7 @@ static APC_HOTSPOT zval* my_copy_zval(zval* dst, const zval* src, apc_context_t*
 
 
     if(ctxt->copy == APC_COPY_OUT_USER || ctxt->copy == APC_COPY_IN_USER) {
-        /* deep copies are refcount(1), but moved up for recursive 
+        /* deep copies are refcount(1), but moved up for recursive
          * arrays,  which end up being add_ref'd during its copy. */
         Z_SET_REFCOUNT_P(dst, 1);
         Z_UNSET_ISREF_P(dst);
@@ -369,7 +369,7 @@ static APC_HOTSPOT zval* my_copy_zval(zval* dst, const zval* src, apc_context_t*
         }
 
     case IS_OBJECT:
-    
+
         dst->type = IS_NULL;
         if(ctxt->copy == APC_COPY_IN_USER) {
             dst = my_serialize_object(dst, src, ctxt TSRMLS_CC);
@@ -498,7 +498,7 @@ static zend_function* my_copy_function(zend_function* dst, zend_function* src, a
     }
     /*
      * op_array bitwise copying overwrites what ever you modified
-     * before apc_copy_op_array - which is why this code is outside 
+     * before apc_copy_op_array - which is why this code is outside
      * my_bitwise_copy_function.
      */
 
@@ -696,7 +696,7 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
     }
 
     /* the interfaces are populated at runtime using ADD_INTERFACE */
-    dst->interfaces = NULL; 
+    dst->interfaces = NULL;
 
     /* the current count includes inherited interfaces as well,
        the real dynamic ones are the first <n> which are zero'd
@@ -709,8 +709,8 @@ static zend_class_entry* my_copy_class_entry(zend_class_entry* dst, zend_class_e
         }
     }
 
-    /* these will either be set inside my_fixup_hashtable or 
-     * they will be copied out from parent inside zend_do_inheritance 
+    /* these will either be set inside my_fixup_hashtable or
+     * they will be copied out from parent inside zend_do_inheritance
      */
     dst->parent = NULL;
     dst->constructor =  NULL;
@@ -907,7 +907,7 @@ static void my_free_hashtable(HashTable* ht, int type TSRMLS_DC)
 #ifdef ZEND_ENGINE_2_4
         if (!IS_INTERNED(curr->arKey) && !IS_TAILED(curr, arKey)) {
             apc_php_free((char*)curr->arKey TSRMLS_CC);
-        } 
+        }
 #else
         apc_php_free(curr->arKey TSRMLS_CC);
 #endif
@@ -1005,7 +1005,7 @@ static APC_HOTSPOT HashTable* my_copy_hashtable_ex(HashTable* dst,
             if (!arKey) {
                 /* this is ugly, but the old arkey[1] is gone, so we allocate all of the bytes as a tail-fragment (see IS_TAILED) */
                 CHECK((newp = (Bucket*) apc_pmemcpy(curr, sizeof(Bucket) + curr->nKeyLength, pool TSRMLS_CC)));
-                newp->arKey = (const char*)(newp+1); 
+                newp->arKey = (const char*)(newp+1);
             } else {
                 CHECK((newp = (Bucket*) apc_pmemcpy(curr, sizeof(Bucket), pool TSRMLS_CC)));
                 newp->arKey = arKey;
@@ -1224,7 +1224,7 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_con
     CHECK(dst->opcodes = (zend_op*) apc_pool_alloc(pool, (sizeof(zend_op) * src->last)));
 
     if(apc_reserved_offset != -1) {
-        /* Insanity alert: the void* pointer is cast into an apc_opflags_t 
+        /* Insanity alert: the void* pointer is cast into an apc_opflags_t
          * struct. apc_zend_init() checks to ensure that it fits in a void* */
         flags = (apc_opflags_t*) & (dst->reserved[apc_reserved_offset]);
         memset(flags, 0, sizeof(apc_opflags_t));
@@ -1263,7 +1263,7 @@ zend_op_array* apc_copy_op_array(zend_op_array* dst, zend_op_array* src, apc_con
                 if (flags != NULL) {
 #ifdef ZEND_ENGINE_2_4
                         if ((zo->extended_value & ZEND_FETCH_TYPE_MASK) == ZEND_FETCH_GLOBAL &&
-                                zo->op1_type == IS_CONST && 
+                                zo->op1_type == IS_CONST &&
                                 Z_TYPE_P(zo->op1.zv) == IS_STRING) {
                             if (PG(auto_globals_jit)) {
                                 /* The fetch is only required if auto_globals_jit=1  */
@@ -1273,7 +1273,7 @@ if (!strcmp(Z_STRVAL_P(zo->op1.zv), #member)) \
     flags->member = 1 /* no ';' here */
 #else
                         if (zo->op2.u.EA.type == ZEND_FETCH_GLOBAL &&
-                                zo->op1.op_type == IS_CONST && 
+                                zo->op1.op_type == IS_CONST &&
                                 zo->op1.u.constant.type == IS_STRING) {
                             znode * varname = &zo->op1;
                             if (PG(auto_globals_jit)) {
@@ -1366,17 +1366,17 @@ if (!strcmp(varname->u.constant.value.str.val, #member)) \
         if((APCG(fpstat)==0) && APCG(canonicalize)) {
             /* not pool allocated, because the pool allocations eat up shm space */
 #ifdef ZEND_ENGINE_2_4
-            if((zo->opcode == ZEND_INCLUDE_OR_EVAL) && 
+            if((zo->opcode == ZEND_INCLUDE_OR_EVAL) &&
                 (zo->op1_type == IS_CONST && Z_TYPE_P(zo->op1.zv) == IS_STRING)) {
                 /* constant includes */
-                if(!IS_ABSOLUTE_PATH(Z_STRVAL_P(zo->op1.zv),Z_STRLEN_P(zo->op1.zv))) { 
+                if(!IS_ABSOLUTE_PATH(Z_STRVAL_P(zo->op1.zv),Z_STRLEN_P(zo->op1.zv))) {
                     fileinfo = (apc_fileinfo_t*) apc_php_malloc(sizeof(apc_fileinfo_t) TSRMLS_CC);
                     if (apc_search_paths(Z_STRVAL_P(zo->op1.zv), PG(include_path), fileinfo TSRMLS_CC) == 0) {
 #else
-            if((zo->opcode == ZEND_INCLUDE_OR_EVAL) && 
+            if((zo->opcode == ZEND_INCLUDE_OR_EVAL) &&
                 (zo->op1.op_type == IS_CONST && zo->op1.u.constant.type == IS_STRING)) {
                 /* constant includes */
-                if(!IS_ABSOLUTE_PATH(Z_STRVAL_P(&zo->op1.u.constant),Z_STRLEN_P(&zo->op1.u.constant))) { 
+                if(!IS_ABSOLUTE_PATH(Z_STRVAL_P(&zo->op1.u.constant),Z_STRLEN_P(&zo->op1.u.constant))) {
                     fileinfo = (apc_fileinfo_t*) apc_php_malloc(sizeof(apc_fileinfo_t) TSRMLS_CC);
                     if (apc_search_paths(Z_STRVAL_P(&zo->op1.u.constant), PG(include_path), fileinfo TSRMLS_CC) == 0) {
 #endif
@@ -1695,7 +1695,7 @@ apc_class_t * apc_copy_modified_classes(HashTable *classes, apc_class_t *alloc_c
 #endif
 
 /* {{{ my_prepare_op_array_for_execution */
-static int my_prepare_op_array_for_execution(zend_op_array* dst, zend_op_array* src, apc_context_t* ctxt TSRMLS_DC) 
+static int my_prepare_op_array_for_execution(zend_op_array* dst, zend_op_array* src, apc_context_t* ctxt TSRMLS_DC)
 {
     /* combine my_fetch_global_vars and my_copy_data_exceptions.
      *   - Pre-fetch superglobals which would've been pre-fetched in parse phase.
@@ -1705,7 +1705,7 @@ static int my_prepare_op_array_for_execution(zend_op_array* dst, zend_op_array* 
     int i=src->last;
     zend_op *zo;
     zend_op *dzo;
-    apc_opflags_t * flags = apc_reserved_offset  != -1 ? 
+    apc_opflags_t * flags = apc_reserved_offset  != -1 ?
                                 (apc_opflags_t*) & (src->reserved[apc_reserved_offset]) : NULL;
     int needcopy = flags ? flags->deep_copy : 1;
     /* auto_globals_jit was not in php4 */
@@ -1932,7 +1932,7 @@ zend_class_entry* apc_copy_class_entry_for_execution(zend_class_entry* src, apc_
         /* These are slots to be populated later by ADD_INTERFACE insns */
         dst->interfaces = apc_php_malloc(
                             (sizeof(zend_class_entry*) * src->num_interfaces) TSRMLS_CC);
-        memset(dst->interfaces, 0, 
+        memset(dst->interfaces, 0,
                             sizeof(zend_class_entry*) * src->num_interfaces);
     }
     else
@@ -1943,7 +1943,7 @@ zend_class_entry* apc_copy_class_entry_for_execution(zend_class_entry* src, apc_
     /* Deep-copy the class properties, because they will be modified */
 
 #ifdef ZEND_ENGINE_2_4
-    CHECK(dst->name = apc_string_pmemcpy((char*)src->name, src->name_length+1, ctxt->pool TSRMLS_CC)); 
+    CHECK(dst->name = apc_string_pmemcpy((char*)src->name, src->name_length+1, ctxt->pool TSRMLS_CC));
 	dst->default_properties_count = src->default_properties_count;
     if (src->default_properties_count) {
         dst->default_properties_table = (zval**) apc_php_malloc((sizeof(zval*) * src->default_properties_count) TSRMLS_CC);
@@ -1990,7 +1990,7 @@ zend_class_entry* apc_copy_class_entry_for_execution(zend_class_entry* src, apc_
 #endif
 
     /* if inheritance results in a hash_del, it might result in
-     * a pefree() of the pointers here. Deep copying required. 
+     * a pefree() of the pointers here. Deep copying required.
      */
 
     my_copy_hashtable(&dst->constants_table,
@@ -2029,7 +2029,7 @@ zend_class_entry* apc_copy_class_entry_for_execution(zend_class_entry* src, apc_
                           1,
                           ctxt);
     }
-    else 
+    else
     {
         dst->static_members = &(dst->default_static_members);
     }
@@ -2050,7 +2050,7 @@ zend_class_entry* apc_copy_class_entry_for_execution(zend_class_entry* src, apc_
             i++;
         }
         dst->trait_aliases[i] = NULL;
-    } 
+    }
     if (src->trait_precedences) {
         int num_trait_precedences = 0;
 
@@ -2058,7 +2058,7 @@ zend_class_entry* apc_copy_class_entry_for_execution(zend_class_entry* src, apc_
         while (src->trait_precedences[num_trait_precedences]) {num_trait_precedences++;}
 
         /* copy all the trait precedences */
-        CHECK(dst->trait_precedences = 
+        CHECK(dst->trait_precedences =
                 (zend_trait_precedence **) apc_pool_alloc(ctxt->pool, sizeof(zend_trait_precedence *)*(num_trait_precedences+1)));
         i = 0;
         while (src->trait_precedences[i]) {
@@ -2067,7 +2067,7 @@ zend_class_entry* apc_copy_class_entry_for_execution(zend_class_entry* src, apc_
             i++;
         }
         dst->trait_precedences[i] = NULL;
-    } 
+    }
 #endif
 
     return dst;
@@ -2153,11 +2153,11 @@ long apc_file_halt_offset(const char *filename TSRMLS_DC)
     long value = -1;
 
     zend_mangle_property_name(&name, &len, haltoff, sizeof(haltoff) - 1, (char *)filename, strlen(filename), 0);
-    
+
     if (zend_hash_find(EG(zend_constants), name, len+1, (void **) &c) == SUCCESS) {
         value = Z_LVAL(c->value);
     }
-    
+
     pefree(name, 0);
 
     return value;
@@ -2170,12 +2170,12 @@ void apc_do_halt_compiler_register(const char *filename, long halt_offset TSRMLS
     char *name;
     char haltoff[] = "__COMPILER_HALT_OFFSET__";
     int len;
-   
+
     if(halt_offset > 0) {
-        
-        zend_mangle_property_name(&name, &len, haltoff, sizeof(haltoff) - 1, 
+
+        zend_mangle_property_name(&name, &len, haltoff, sizeof(haltoff) - 1,
                                     (char *)filename, strlen(filename), 0);
-        
+
         zend_register_long_constant(name, len+1, halt_offset, CONST_CS, 0 TSRMLS_CC);
 
         pefree(name, 0);
@@ -2290,7 +2290,7 @@ static int my_check_copy_default_property(Bucket* p, va_list args)
     zval ** parent_prop = NULL;
 
     if (parent &&
-        zend_hash_quick_find(&parent->default_properties, p->arKey, 
+        zend_hash_quick_find(&parent->default_properties, p->arKey,
             p->nKeyLength, p->h, (void **) &parent_prop)==SUCCESS) {
 
         if((parent_prop && child_prop) && (*parent_prop) == (*child_prop))
@@ -2410,7 +2410,7 @@ static int my_check_copy_constant(Bucket* p, va_list args)
     zval ** parent_const = NULL;
 
     if (parent &&
-        zend_hash_quick_find(&parent->constants_table, p->arKey, 
+        zend_hash_quick_find(&parent->constants_table, p->arKey,
             p->nKeyLength, p->h, (void **) &parent_const)==SUCCESS) {
 
         if((parent_const && child_const) && (*parent_const) == (*child_const))
@@ -2525,7 +2525,7 @@ zend_trait_precedence* apc_copy_trait_precedence(zend_trait_precedence *dst, zen
 #ifndef ZEND_ENGINE_2_5
     if (src->function) {
         CHECK(dst->function = my_copy_function(NULL, src->function, ctxt TSRMLS_CC));
-    } 
+    }
 #endif
 
     if (src->exclude_from_classes && *src->exclude_from_classes) {
@@ -2564,7 +2564,7 @@ zend_trait_precedence* apc_copy_trait_precedence_for_execution(zend_trait_preced
 
         while (src->exclude_from_classes[num_classes]) { num_classes++; }
 
-        CHECK(dst->exclude_from_classes = 
+        CHECK(dst->exclude_from_classes =
             (zend_class_entry **) apc_pool_alloc(ctxt->pool, sizeof(zend_class_entry *)*(num_classes+1)));
 
         while (src->exclude_from_classes[i] && i < num_classes) {

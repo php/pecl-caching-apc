@@ -2,7 +2,7 @@
 APC: classes with namespaces (php 5.3)
 --SKIPIF--
 <?php
-    require_once(dirname(__FILE__) . '/skipif.inc'); 
+    require_once(dirname(__FILE__) . '/skipif.inc');
     if(version_compare(zend_version(), '2.3.0') < 0) {
 		echo "skip\n";
 	}
@@ -14,7 +14,7 @@ apc.file_update_protection=0
 --FILE--
 <?php
 
-require_once(dirname(__FILE__) . '/php_5_3_ns.inc'); 
+require_once(dirname(__FILE__) . '/php_5_3_ns.inc');
 
 $a = new Foo\Bar\Baz();
 var_dump($a);

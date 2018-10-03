@@ -48,7 +48,7 @@ function server_start_one($host, $port, $code = 'echo "Hello world";', $php_opts
 
 		$handle = proc_open($cmd, $descriptorspec, $pipes, $doc_root);
 	}
-	
+
 	// note: even when server prints 'Listening on localhost:8964...Press Ctrl-C to quit.'
 	//       it might not be listening yet...need to wait until fsockopen() call returns
     $i = 0;
@@ -71,7 +71,7 @@ function server_start($code = 'echo "Hello world";', $php_opts = array(), $no_ro
 	for ($i = 0; $i < $num_servers; $i++) {
 		$h = server_start_one(PHP_CLI_SERVER_HOSTNAME, PHP_CLI_SERVER_PORT+$i, $code, $php_opts, $no_router);
 		$handles[] = $h;
-	}	
+	}
 
 	register_shutdown_function(
 		function($handles) use($router) {

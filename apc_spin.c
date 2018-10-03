@@ -48,7 +48,7 @@ zend_bool apc_slock_nonblocking_lock(slock_t *lock)
 {
     /* Technically we aren't supposed to call this directly, but the original
      *  code provides no method for absolute non-blocking locks, so we'll call into
-     *  the TAS (test and set) functionality directly 
+     *  the TAS (test and set) functionality directly
      */
     return !(TAS(lock));  /* if TAS returns 0 we obtained the lock, otherwise we failed */
 }

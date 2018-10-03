@@ -110,7 +110,7 @@ struct block_t {
     #define CHECK_CANARY(v) assert((v)->canary == 0x42424242)
     #define RESET_CANARY(v) (v)->canary = -42
 #else
-    #define SET_CANARY(v) 
+    #define SET_CANARY(v)
     #define CHECK_CANARY(v)
     #define RESET_CANARY(v)
 #endif
@@ -346,7 +346,7 @@ void apc_sma_init(int numseg, size_t segsize, char *mmap_file_mask TSRMLS_DC)
      * I don't think multiple anonymous mmaps makes any sense
      * so force sma_numseg to 1 in this case
      */
-    if(!mmap_file_mask || 
+    if(!mmap_file_mask ||
        (mmap_file_mask && !strlen(mmap_file_mask)) ||
        (mmap_file_mask && !strcmp(mmap_file_mask, "/dev/zero"))) {
         sma_numseg = 1;
@@ -372,7 +372,7 @@ void apc_sma_init(int numseg, size_t segsize, char *mmap_file_mask TSRMLS_DC)
 #else
         sma_segments[i] = apc_shm_attach(apc_shm_create(i, sma_segsize TSRMLS_CC), sma_segsize TSRMLS_CC);
 #endif
-        
+
         sma_segments[i].size = sma_segsize;
 
         shmaddr = sma_segments[i].shmaddr;
@@ -451,7 +451,7 @@ restart:
 
     off = sma_allocate(SMA_HDR(sma_lastseg), n, fragment, allocated);
 
-    if(off == -1 && APCG(current_cache)) { 
+    if(off == -1 && APCG(current_cache)) {
         /* retry failed allocation after we expunge */
         UNLOCK(SMA_LCK(sma_lastseg));
         APCG(current_cache)->expunge_cb(APCG(current_cache), (n+fragment) TSRMLS_CC);
@@ -467,7 +467,7 @@ restart:
 #endif
         return p;
     }
-    
+
     UNLOCK(SMA_LCK(sma_lastseg));
 
     for (i = 0; i < sma_numseg; i++) {
@@ -476,7 +476,7 @@ restart:
         }
         LOCK(SMA_LCK(i));
         off = sma_allocate(SMA_HDR(i), n, fragment, allocated);
-        if(off == -1 && APCG(current_cache)) { 
+        if(off == -1 && APCG(current_cache)) {
             /* retry failed allocation after we expunge */
             UNLOCK(SMA_LCK(i));
             APCG(current_cache)->expunge_cb(APCG(current_cache), (n+fragment) TSRMLS_CC);
@@ -555,7 +555,7 @@ void apc_sma_free(void* p TSRMLS_DC)
 
     assert(sma_initialized);
 
-    
+
     for (i = 0; i < sma_numseg; i++) {
         offset = (size_t)((char *)p - SMA_ADDR(i));
         if (p >= (void*)SMA_ADDR(i) && offset < sma_segsize) {
