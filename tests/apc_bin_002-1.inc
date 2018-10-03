@@ -39,4 +39,3 @@ class my_class {
 class my_i_class extends my_class {
   function dummy() { return 1; }
 }
-

@@ -358,4 +358,3 @@ form of a quick-start guide to start hacking on APC.
 
 If you made it to the end of this, you should have a pretty good idea of where things are in
 the code.  I skimmed over a lot of things, so plan on spending some time reading through the code.
-
