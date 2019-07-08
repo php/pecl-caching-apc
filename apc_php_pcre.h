@@ -29,9 +29,7 @@
 #include "pcre.h"
 #endif
 
-#if HAVE_LOCALE_H
 #include <locale.h>
-#endif
 
 PHP_FUNCTION(preg_match);
 PHP_FUNCTION(preg_match_all);
@@ -52,10 +50,8 @@ typedef struct {
 	pcre *re;
 	pcre_extra *extra;
 	int preg_options;
-#if HAVE_SETLOCALE
 	char *locale;
 	unsigned const char *tables;
-#endif
 	int compile_options;
 	int refcount;
 } pcre_cache_entry;
